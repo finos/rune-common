@@ -1,0 +1,44 @@
+version: '1.0'
+steps:
+  TagReleaseName:
+    title: Setup RELEASE_NAME variable with tag
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == true"
+    commands:
+      - cf_export RELEASE_NAME=${{TAG_NAME}}
+
+  BranchReleaseName:
+    title: Setup RELEASE_NAME variable with branch name
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == false"
+    commands:
+      - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}
+
+  Build:
+    title: Maven build
+    image: r.cfcr.io/regnosysops/regnosys/mvn-docker-build:latest
+    working_directory: ./
+    commands:
+      - rm -rf /codefresh/volume/.m2/com/regnosys  /codefresh/volume/.m2/com/isda
+      - mvn -s /settings.xml versions:set -DnewVersion=${{RELEASE_NAME}}
+      - mvn -s /settings.xml versions:update-property -Dproperty=com.regnosys.rosetta.version -DnewVersion=[${{RELEASE_NAME}}] -DallowSnapshots=true -DallowDowngrade=true
+      - mvn -U -s /settings.xml clean deploy
+
+  TagRepo:
+    title: Tag git repo with release name
+    image: alpine/git
+    when:
+      condition:
+        all:
+          isRelease: "${{TAG_REPO}}"
+    commands:
+      - echo This is a release build, tag repos with release name [${{RELEASE_NAME}}]
+      - git fetch --prune https://regnosys-ops:O6pl6qXtQLk6Z8KO2QFEcY@github.com/REGnosys/${{CF_REPO_NAME}}.git "+refs/tags/*:refs/tags/*"
+      - git tag ${{RELEASE_NAME}}
+      - git push https://regnosys-ops:O6pl6qXtQLk6Z8KO2QFEcY@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}

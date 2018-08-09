@@ -6,7 +6,7 @@
 
     <groupId>com.regnosys</groupId>
     <artifactId>rosetta-common</artifactId>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <version>0.0.0.master</version>
 
     <properties>
@@ -60,7 +60,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 
     <build>
         <plugins>

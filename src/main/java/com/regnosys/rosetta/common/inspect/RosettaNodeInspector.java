@@ -19,12 +19,6 @@ public class RosettaNodeInspector<T> {
         void onNode(Node<T> node);
     }
 
-    public interface RootVisitor<T> {
-        RootVisitor NO_OP_ROOT_VISITOR = (node -> {});
-
-        void onNode(Node<T> node);
-    }
-
     private final BiPredicate<Node<T>, Node<T>> visitorGuard;
 
     public RosettaNodeInspector() {
@@ -35,7 +29,7 @@ public class RosettaNodeInspector<T> {
         this.visitorGuard = visitorGuard;
     }
 
-    public void inspect(Node<T> rootNode, Visitor<T> visitor, RootVisitor<T> rootVisitor) {
+    public void inspect(Node<T> rootNode, Visitor<T> visitor, Visitor<T> rootVisitor) {
         rootVisitor.onNode(rootNode);
         inspect(rootNode, visitor);
     }

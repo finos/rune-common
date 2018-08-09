@@ -20,10 +20,9 @@ class RosettaNodeInspectorTest {
         List<PathType> allPaths = new LinkedList<>();
 
         RosettaNodeInspector<PathType> rosettaNodeInspector = new RosettaNodeInspector<>();
-        rosettaNodeInspector.inspect(
-                new PathTypeNode(PathType.root(Foo.class)),
-                (n) -> allPaths.add(n.get()),
-                RootVisitor.NO_OP_ROOT_VISITOR);
+        Visitor<PathType> addAllPathsVisitor = (node) -> allPaths.add(node.get());
+        Visitor<PathType> noOpRootVisitor = (node) -> {};
+        rosettaNodeInspector.inspect(new PathTypeNode(PathType.root(Foo.class)), addAllPathsVisitor, noOpRootVisitor);
 
         assertThat(allPaths, hasSize(8));
         assertThat(allPaths.stream().map(Object::toString).collect(Collectors.toList()),

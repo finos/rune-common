@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.inspect;
+package com.regnosys.rosetta.common.inspection;
 
 import java.lang.reflect.Method;
 import java.util.LinkedList;
@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspect.RosettaReflectionsUtil.getReturnType;
+import static com.regnosys.rosetta.common.inspection.RosettaReflectionsUtil.getReturnType;
 
 public class PathType {
 

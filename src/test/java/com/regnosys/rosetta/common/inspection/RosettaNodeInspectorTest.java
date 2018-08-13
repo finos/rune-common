@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.inspect;
+package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspect.RosettaNodeInspector.*;
+import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.*;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;

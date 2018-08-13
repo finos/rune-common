@@ -1,12 +1,12 @@
-package com.regnosys.rosetta.common.inspect;
+package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspect.RosettaReflectionsUtil.getAllPublicNoArgGetters;
-import static com.regnosys.rosetta.common.inspect.RosettaNodeInspector.Node;
+import static com.regnosys.rosetta.common.inspection.RosettaReflectionsUtil.getAllPublicNoArgGetters;
+import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Node;
 
 public class PathTypeNode implements Node<PathType> {
 

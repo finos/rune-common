@@ -13,20 +13,17 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.rosetta.model.lib.RosettaModelObject;
 
+/**
+ * A lazy-loading holder that returns a pre-configured {@link ObjectMapper} that serves as the default when
+ * serialising/deserializing Rosetta Model Objects.
+ */
 public class RosettaObjectMapper {
 
-    private RosettaObjectMapper() {
-    }
+    private RosettaObjectMapper() {}
 
-    private static final ObjectMapper INSTANCE = createRosettaMapper();
-
-    public static ObjectMapper getDefaultRosettaObjectMapper() {
-        return INSTANCE;
-    }
-
-    private static ObjectMapper createRosettaMapper() {
-    	return new ObjectMapper()
-        		.findAndRegisterModules()
+    private static class LazyHolder {
+        static final ObjectMapper INSTANCE = new ObjectMapper()
+                .findAndRegisterModules()
                 .registerModule(new JavaTimeModule())
                 .registerModule(new Jdk8Module())
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
@@ -36,15 +33,19 @@ public class RosettaObjectMapper {
                 .setAnnotationIntrospector(new RosettaBuilderIntrospector());
     }
 
+    public static ObjectMapper getDefaultRosettaObjectMapper() {
+        return LazyHolder.INSTANCE;
+    }
+
     private static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
 
         public Class<?> findPOJOBuilder(AnnotatedClass ac) {
             Class<?> rawClass = ac.getType().getRawClass();
+
             if (!Modifier.isAbstract(rawClass.getModifiers()) && RosettaModelObject.class.isAssignableFrom(rawClass)) {
                 try {
-                    return Class.forName(
-                            rawClass.getTypeName() + "$" + rawClass.getSimpleName() + "Builder", true,
-                            rawClass.getClassLoader());
+                    return Class.forName(rawClass.getTypeName() + "$" + rawClass.getSimpleName() + "Builder",
+                            true, rawClass.getClassLoader());
 
                 } catch (ClassNotFoundException e) {
                     throw new RosettaSerialiserException("Could not find the builder class for " + rawClass, e);

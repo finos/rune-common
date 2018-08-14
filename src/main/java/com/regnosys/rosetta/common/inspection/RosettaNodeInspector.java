@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.inspect;
+package com.regnosys.rosetta.common.inspection;
 
 import java.util.List;
 import java.util.function.BiPredicate;

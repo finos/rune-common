@@ -12,26 +12,26 @@ public class RosettaLicenceChecker {
     /**
      * Decrypts the rosetta licence key and checks if it is valid.
      * @param publicKey Public key to decrypt the licence file
-     * @param rosettaIngestLicence Location of Rosetta Licence key.
+     * @param applicationLicence Location of Rosetta Licence key.
      * @param applicationName Name of the application that must match the name in the licence
      * @param callback failure callback. Useful if you want to terminate the JVM on a failure.
-     * @return RosettaLicence object from the rosettaIngestLicence
+     * @return RosettaLicence object from the applicationLicence
      * @throws IOException
      * @throws URISyntaxException
      */
-    public static RosettaLicence check(String publicKey, String rosettaIngestLicence, String applicationName, Action callback) throws IOException, URISyntaxException {
-        if (rosettaIngestLicence == null) {
+    public static RosettaLicence check(String publicKey, String applicationLicence, String applicationName, Action callback) throws IOException, URISyntaxException {
+        if (applicationLicence == null) {
             callback.checkFailed("NO LICENCE FILE FOUND.");
             return null;
         }
-        Path rosettaIngestLicencePath = Paths.get(rosettaIngestLicence);
-        if (!Files.exists(rosettaIngestLicencePath)) {
-            callback.checkFailed("LICENCE '" + rosettaIngestLicencePath + "' DOES NOT EXIST.");
+        Path applicationLicencePath = Paths.get(applicationLicence);
+        if (!Files.exists(applicationLicencePath)) {
+            callback.checkFailed("LICENCE '" + applicationLicencePath + "' DOES NOT EXIST.");
             return null;
         }
 
         try {
-            RosettaLicence rosettaLicence = RosettaLicenceKey.readLicenceFile(publicKey, rosettaIngestLicencePath);
+            RosettaLicence rosettaLicence = RosettaLicenceKey.readLicenceFile(publicKey, applicationLicencePath);
 
             if (!rosettaLicence.getRosettaAppName().equals(applicationName)) {
                 callback.checkFailed("LICENCE FOR '" + rosettaLicence.getRosettaAppName() + "' CANNOT BE APPLIED TO '" + applicationName + "'.");

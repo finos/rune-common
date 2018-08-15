@@ -34,6 +34,15 @@ class RosettaNodeInspectorTest {
                         "Foo -> baz",
                         "Foo -> baz -> b",
                         "Foo -> baz -> c"));
+        assertThat(allPaths.stream().map(PathType::buildPath).collect(Collectors.toList()),
+                hasItems("bars",
+                        "bars.a",
+                        "bars.bazs",
+                        "bars.bazs.b",
+                        "bars.bazs.c",
+                        "baz",
+                        "baz.b",
+                        "baz.c"));
     }
 
     @SuppressWarnings("unused")

@@ -31,6 +31,13 @@ public class PathType {
 
     }
 
+    public String buildPath() {
+        List<String> path = getPath();
+        // remove root element, so it starts with the first accessor
+        path.remove(0);
+        return String.join(".", path);
+    }
+
     public List<String> getPath() {
         return elements.stream().map(Element::getAccessor).collect(Collectors.toList());
     }
@@ -57,16 +64,16 @@ public class PathType {
         private final String accessor;
         private final Class<?> type;
 
-        public Element(String accessor, Class<?> type) {
+        Element(String accessor, Class<?> type) {
             this.accessor = accessor;
             this.type = type;
         }
 
-        public String getAccessor() {
+        String getAccessor() {
             return accessor;
         }
 
-        public Class<?> getType() {
+        Class<?> getType() {
             return type;
         }
 

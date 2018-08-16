@@ -16,6 +16,8 @@ public class RosettaNodeInspector<T> {
     }
 
     public interface Visitor<T> {
+        Visitor<PathType> NO_OP_VISITOR = (node) -> {};
+
         void onNode(Node<T> node);
     }
 

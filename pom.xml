@@ -16,14 +16,14 @@
         <junit.platform.version>1.0.0</junit.platform.version>
         <reflections.version>0.9.11</reflections.version>
         <jackson.version>2.9.3</jackson.version>
-        <com.regnosys.rosetta.version>0.0.0.master</com.regnosys.rosetta.version>
+        <rosetta.workbench.version>0.0.0.master</rosetta.workbench.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.regnosys.rosetta</groupId>
             <artifactId>com.regnosys.rosetta.lib</artifactId>
-            <version>${com.regnosys.rosetta.version}</version>
+            <version>${rosetta.workbench.version}</version>
         </dependency>
         <dependency>
             <groupId>org.reflections</groupId>

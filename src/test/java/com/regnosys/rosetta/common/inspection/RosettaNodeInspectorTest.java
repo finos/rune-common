@@ -17,12 +17,12 @@ class RosettaNodeInspectorTest {
 
     @Test
     void shouldFindAllPaths() {
-        List<PathType> allPaths = new LinkedList<>();
+        List<PathObject<Class<?>>> allPaths = new LinkedList<>();
 
-        RosettaNodeInspector<PathType> rosettaNodeInspector = new RosettaNodeInspector<>();
-        Visitor<PathType> addAllPathsVisitor = (node) -> allPaths.add(node.get());
-        Visitor<PathType> noOpRootVisitor = (node) -> {};
-        rosettaNodeInspector.inspect(new PathTypeNode(PathType.root(Foo.class)), addAllPathsVisitor, noOpRootVisitor);
+        RosettaNodeInspector<PathObject<Class<?>>> rosettaNodeInspector = new RosettaNodeInspector<>();
+        Visitor<PathObject<Class<?>>> addAllPathsVisitor = (node) -> allPaths.add(node.get());
+        Visitor<PathObject<Class<?>>> noOpRootVisitor = (node) -> {};
+        rosettaNodeInspector.inspect(PathTypeNode.root(Foo.class), addAllPathsVisitor, noOpRootVisitor);
 
         assertThat(allPaths, hasSize(8));
         assertThat(allPaths.stream().map(Object::toString).collect(Collectors.toList()),
@@ -34,7 +34,7 @@ class RosettaNodeInspectorTest {
                         "Foo -> baz",
                         "Foo -> baz -> b",
                         "Foo -> baz -> c"));
-        assertThat(allPaths.stream().map(PathType::buildPath).collect(Collectors.toList()),
+        assertThat(allPaths.stream().map(PathObject::buildPath).collect(Collectors.toList()),
                 hasItems("bars",
                         "bars.a",
                         "bars.bazs",

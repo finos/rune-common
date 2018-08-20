@@ -8,7 +8,7 @@ public class RosettaNodeInspector<T> {
     public interface Node<T> {
         T get();
 
-        boolean visited(Node<T> childNode);
+        boolean test(Node<T> childNode);
 
         boolean inspect();
 
@@ -16,7 +16,7 @@ public class RosettaNodeInspector<T> {
     }
 
     public interface Visitor<T> {
-        Visitor<PathType> NO_OP_VISITOR = (node) -> {};
+        Visitor<PathObject> NO_OP_VISITOR = (node) -> {};
 
         void onNode(Node<T> node);
     }
@@ -24,7 +24,7 @@ public class RosettaNodeInspector<T> {
     private final BiPredicate<Node<T>, Node<T>> visitorGuard;
 
     public RosettaNodeInspector() {
-        this((parent, child) -> !parent.visited(child));
+        this((parent, child) -> !parent.test(child));
     }
 
     public RosettaNodeInspector(BiPredicate<Node<T>, Node<T>> visitorGuard) {

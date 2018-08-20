@@ -1,34 +1,25 @@
 package com.regnosys.rosetta.common.inspection;
 
-import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.RosettaReflectionsUtil.getReturnType;
+public class PathObject<T> {
 
-public class PathType {
+    private final LinkedList<Element<T>> elements;
 
-    public static PathType root(Class<?> type) {
-        return new PathType(type.getSimpleName(), type);
-    }
-
-    private final LinkedList<Element> elements;
-
-    private PathType(String accessor, Class<?> type) {
-        LinkedList<Element> newElements = new LinkedList<>();
-        newElements.add(new Element(accessor, type));
+    PathObject(String accessor, T t) {
+        LinkedList<Element<T>> newElements = new LinkedList<>();
+        newElements.add(new Element<>(accessor, t));
         this.elements = newElements;
-
     }
 
-    public PathType(PathType parent, Method method) {
-        LinkedList<Element> newElements = new LinkedList<>();
+    public PathObject(PathObject<T> parent, String accessor, T t) {
+        LinkedList<Element<T>> newElements = new LinkedList<>();
         newElements.addAll(parent.elements);
-        newElements.add(new Element(attrName(method), getReturnType(method)));
+        newElements.add(new Element<>(accessor, t));
         this.elements = newElements;
-
     }
 
     public String buildPath() {
@@ -42,17 +33,12 @@ public class PathType {
         return elements.stream().map(Element::getAccessor).collect(Collectors.toList());
     }
 
-    public List<Class<?>> getPathTypes() {
-        return elements.stream().map(Element::getType).collect(Collectors.toList());
+    public List<T> getPathObjects() {
+        return elements.stream().map(Element::getObject).collect(Collectors.toList());
     }
 
-    public Class<?> getType() {
-        return elements.getLast().getType();
-    }
-
-    private String attrName(Method method) {
-        String attrName = method.getName().replace("get", "");
-        return Character.toLowerCase(attrName.charAt(0)) + attrName.substring(1);
+    public T getObject() {
+        return elements.getLast().getObject();
     }
 
     @Override
@@ -60,21 +46,21 @@ public class PathType {
         return String.join(" -> ", getPath());
     }
 
-    private static class Element {
+    private static class Element<T> {
         private final String accessor;
-        private final Class<?> type;
+        private final T object;
 
-        Element(String accessor, Class<?> type) {
+        Element(String accessor, T object) {
             this.accessor = accessor;
-            this.type = type;
+            this.object = object;
         }
 
         String getAccessor() {
             return accessor;
         }
 
-        Class<?> getType() {
-            return type;
+        T getObject() {
+            return object;
         }
 
         @Override
@@ -83,19 +69,19 @@ public class PathType {
             if (o == null || getClass() != o.getClass()) return false;
             Element element = (Element) o;
             return Objects.equals(accessor, element.accessor) &&
-                    Objects.equals(type, element.type);
+                    Objects.equals(object, element.object);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(accessor, type);
+            return Objects.hash(accessor, object);
         }
 
         @Override
         public String toString() {
             return "Element{" +
                     "accessor='" + accessor + '\'' +
-                    ", type=" + type +
+                    ", object=" + object +
                     '}';
         }
     }

@@ -2,8 +2,11 @@ package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,6 +18,41 @@ import static org.hamcrest.Matchers.hasSize;
 
 class RosettaNodeInspectorTest {
 
+    private final static Baz BAZ = new Baz("A", 4);
+    private final static Bar BAR_1 = new Bar(1, Arrays.asList(BAZ));
+    private final static Bar BAR_2 = new Bar(2, null);
+    private final static Bar BAR_3 = new Bar(3, Collections.emptyList());
+
+    @Test
+    void shouldBlah() {
+        Foo foo = new Foo(Arrays.asList(BAR_1, BAR_2, BAR_3), BAZ);
+
+        List<PathObject<Object>> allPaths = new LinkedList<>();
+
+        RosettaNodeInspector<PathObject<Object>> rosettaNodeInspector = new RosettaNodeInspector<>();
+        Visitor<PathObject<Object>> addAllPathsVisitor = (node) -> allPaths.add(node.get());
+        Visitor<PathObject<Object>> noOpRootVisitor = (node) -> {};
+        rosettaNodeInspector.inspect(PathObjectNode.root(foo), addAllPathsVisitor, noOpRootVisitor);
+
+        assertThat(allPaths, hasSize(13));
+        assertThat(allPaths.stream()
+                        .map(object -> new ImmutablePair<>(object.fullPath(), object.getObject()))
+                        .collect(Collectors.toList()),
+                hasItems(new ImmutablePair<>("Foo.bars(0)", BAR_1),
+                        new ImmutablePair<>("Foo.bars(0).a", BAR_1.a),
+                        new ImmutablePair<>("Foo.bars(0).bazs(0)", BAZ),
+                        new ImmutablePair<>("Foo.bars(0).bazs(0).b", BAZ.b),
+                        new ImmutablePair<>("Foo.bars(0).bazs(0).c", BAZ.c),
+                        new ImmutablePair<>("Foo.bars(1)", BAR_2),
+                        new ImmutablePair<>("Foo.bars(1).a", BAR_2.a),
+                        new ImmutablePair<>("Foo.bars(1).bazs(0)", null),
+                        new ImmutablePair<>("Foo.bars(2)", BAR_3),
+                        new ImmutablePair<>("Foo.bars(2).a", BAR_3.a),
+                        new ImmutablePair<>("Foo.baz", BAZ),
+                        new ImmutablePair<>("Foo.baz.b", BAZ.b),
+                        new ImmutablePair<>("Foo.baz.c", BAZ.c)));
+    }
+
     @Test
     void shouldFindAllPaths() {
         List<PathObject<Class<?>>> allPaths = new LinkedList<>();
@@ -25,15 +63,15 @@ class RosettaNodeInspectorTest {
         rosettaNodeInspector.inspect(PathTypeNode.root(Foo.class), addAllPathsVisitor, noOpRootVisitor);
 
         assertThat(allPaths, hasSize(8));
-        assertThat(allPaths.stream().map(Object::toString).collect(Collectors.toList()),
-                hasItems("Foo -> bars",
-                        "Foo -> bars -> a",
-                        "Foo -> bars -> bazs",
-                        "Foo -> bars -> bazs -> b",
-                        "Foo -> bars -> bazs -> c",
-                        "Foo -> baz",
-                        "Foo -> baz -> b",
-                        "Foo -> baz -> c"));
+        assertThat(allPaths.stream().map(PathObject::fullPath).collect(Collectors.toList()),
+                hasItems("Foo.bars",
+                        "Foo.bars.a",
+                        "Foo.bars.bazs",
+                        "Foo.bars.bazs.b",
+                        "Foo.bars.bazs.c",
+                        "Foo.baz",
+                        "Foo.baz.b",
+                        "Foo.baz.c"));
         assertThat(allPaths.stream().map(PathObject::buildPath).collect(Collectors.toList()),
                 hasItems("bars",
                         "bars.a",

@@ -1,9 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -43,5 +41,27 @@ public class RosettaReflectionsUtil {
             }
         }
         return returnClass;
+    }
+
+    public static Object invokeGetter(Object o, Method method) {
+        try {
+            return method.invoke(o);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(String.format("Tried to call method %s on %s but was not allowed." +
+                    " Rosetta code generation assumptions have been broken.", method.getName(), o.getClass()), e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(String.format("Something went wrong when trying to call method %s on %s.",
+                    method.getName(), o.getClass()), e);
+        }
+    }
+
+    public static List<?> handleReturnTypes(Object invoke) {
+        if (invoke instanceof List) {
+            return (List<?>) invoke;
+        }
+        if (invoke instanceof Enum) {
+            return Collections.emptyList();
+        }
+        return Collections.singletonList(invoke);
     }
 }

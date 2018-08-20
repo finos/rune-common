@@ -1,34 +1,21 @@
 package com.regnosys.rosetta.common.inspection;
 
 import java.util.List;
-import java.util.function.BiPredicate;
 
 public class RosettaNodeInspector<T> {
 
     public interface Node<T> {
         T get();
 
-        boolean test(Node<T> childNode);
+        List<Node<T>> getChildren();
+
+        boolean isGuarded(Node<T> node);
 
         boolean inspect();
-
-        List<Node<T>> getChildren();
     }
 
     public interface Visitor<T> {
-        Visitor<PathObject> NO_OP_VISITOR = (node) -> {};
-
         void onNode(Node<T> node);
-    }
-
-    private final BiPredicate<Node<T>, Node<T>> visitorGuard;
-
-    public RosettaNodeInspector() {
-        this((parent, child) -> !parent.test(child));
-    }
-
-    public RosettaNodeInspector(BiPredicate<Node<T>, Node<T>> visitorGuard) {
-        this.visitorGuard = visitorGuard;
     }
 
     public void inspect(Node<T> rootNode, Visitor<T> visitor, Visitor<T> rootVisitor) {
@@ -39,7 +26,7 @@ public class RosettaNodeInspector<T> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void inspect(Node<T> node, Visitor<T> visitor) {
         for(Node<T> childNode : node.getChildren()) {
-            if (visitorGuard.test(node, childNode)) {
+            if (!node.isGuarded(childNode)) {
                 visitor.onNode(childNode);
 
                 if (childNode.inspect()) {

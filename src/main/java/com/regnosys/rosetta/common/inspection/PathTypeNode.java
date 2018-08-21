@@ -2,15 +2,13 @@ package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
 
-import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.RosettaReflectionsUtil.getAllPublicNoArgGetters;
+import static com.regnosys.rosetta.common.inspection.ReflectUtils.*;
 import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Node;
-import static com.regnosys.rosetta.common.inspection.RosettaReflectionsUtil.getReturnType;
 
 public class PathTypeNode implements Node<PathObject<Class<?>>> {
 
@@ -32,8 +30,8 @@ public class PathTypeNode implements Node<PathObject<Class<?>>> {
 
     @Override
     public List<Node<PathObject<Class<?>>>> getChildren() {
-        return getAllPublicNoArgGetters(pathType.getObject()).stream()
-                .map(method -> new PathObject<>(pathType, attrName(method), getReturnType(method)))
+        return methods(pathType.getObject()).stream()
+                .map(method -> new PathObject<>(pathType, attrName(method), returnType(method)))
                 .map(PathTypeNode::new)
                 .collect(Collectors.toList());
     }
@@ -51,10 +49,5 @@ public class PathTypeNode implements Node<PathObject<Class<?>>> {
     @Override
     public boolean inspect() {
         return RosettaModelObject.class.isAssignableFrom(this.pathType.getObject());
-    }
-
-    private String attrName(Method method) {
-        String attrName = method.getName().replace("get", "");
-        return Character.toLowerCase(attrName.charAt(0)) + attrName.substring(1);
     }
 }

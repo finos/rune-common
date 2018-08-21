@@ -5,12 +5,13 @@ import com.rosetta.model.lib.RosettaModelObject;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Node;
-import static com.regnosys.rosetta.common.inspection.RosettaReflectionsUtil.*;
+import static com.regnosys.rosetta.common.inspection.ReflectUtils.*;
 
 public class PathObjectNode implements Node<PathObject<Object>> {
 
@@ -29,18 +30,8 @@ public class PathObjectNode implements Node<PathObject<Object>> {
     @Override
     public List<Node<PathObject<Object>>> getChildren() {
         Object object = pathObject.getObject();
-        return getAllPublicNoArgGetters(object.getClass()).stream()
-                .map(method -> {
-                    List<?> resultOfGetter = handleReturnTypes(invokeGetter(object, method));
-                    List<PathObject<Object>> children = new ArrayList<>();
-                    for (int i = 0; i < resultOfGetter.size(); i++) {
-                        Object o = resultOfGetter.get(i);
-                        children.add(Collection.class.isAssignableFrom(method.getReturnType()) ?
-                                new PathObject<>(pathObject, attrName(method), i, o) :
-                                new PathObject<>(pathObject, attrName(method), o));
-                    }
-                    return children;
-                })
+        return methods(object.getClass()).stream()
+                .map(method -> mapToPathObjects(object, method))
                 .flatMap(List::stream)
                 .map(PathObjectNode::new)
                 .collect(Collectors.toList());
@@ -61,8 +52,26 @@ public class PathObjectNode implements Node<PathObject<Object>> {
         return RosettaModelObject.class.isInstance(this.pathObject.getObject());
     }
 
-    private String attrName(Method method) {
-        String attrName = method.getName().replace("get", "");
-        return Character.toLowerCase(attrName.charAt(0)) + attrName.substring(1);
+    private List<PathObject<Object>> mapToPathObjects(Object object, Method method) {
+        List<?> resultOfGetter = handleReturnTypes(invokeGetter(object, method));
+
+        List<PathObject<Object>> children = new ArrayList<>();
+        for (int i = 0; i < resultOfGetter.size(); i++) {
+            Object o = resultOfGetter.get(i);
+            children.add(returnsList(method) ?
+                    new PathObject<>(pathObject, attrName(method), i, o) :
+                    new PathObject<>(pathObject, attrName(method), o));
+        }
+        return children;
+    }
+
+    private List<?> handleReturnTypes(Object invoke) {
+        if (invoke instanceof List) {
+            return (List<?>) invoke;
+        }
+        if (invoke instanceof Enum) {
+            return Collections.emptyList();
+        }
+        return Collections.singletonList(invoke);
     }
 }

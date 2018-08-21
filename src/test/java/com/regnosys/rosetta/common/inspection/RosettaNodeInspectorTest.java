@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.inspection;
 
+import com.regnosys.rosetta.common.util.HierarchicalPath;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -31,26 +32,26 @@ class RosettaNodeInspectorTest {
 
         RosettaNodeInspector<PathObject<Object>> rosettaNodeInspector = new RosettaNodeInspector<>();
         Visitor<PathObject<Object>> addAllPathsVisitor = (node) -> allPaths.add(node.get());
-        Visitor<PathObject<Object>> noOpRootVisitor = (node) -> {};
-        rosettaNodeInspector.inspect(PathObjectNode.root(foo), addAllPathsVisitor, noOpRootVisitor);
+        rosettaNodeInspector.inspect(PathObjectNode.root(foo), addAllPathsVisitor);
 
-        assertThat(allPaths, hasSize(13));
+        assertThat(allPaths, hasSize(14));
         assertThat(allPaths.stream()
-                        .map(object -> new ImmutablePair<>(object.fullPath(), object.getObject()))
+                        .map(o -> new ImmutablePair<>(o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""), o.getObject()))
                         .collect(Collectors.toList()),
-                hasItems(new ImmutablePair<>("Foo.bars(0)", BAR_1),
-                        new ImmutablePair<>("Foo.bars(0).a", BAR_1.a),
-                        new ImmutablePair<>("Foo.bars(0).bazs(0)", BAZ),
-                        new ImmutablePair<>("Foo.bars(0).bazs(0).b", BAZ.b),
-                        new ImmutablePair<>("Foo.bars(0).bazs(0).c", BAZ.c),
-                        new ImmutablePair<>("Foo.bars(1)", BAR_2),
-                        new ImmutablePair<>("Foo.bars(1).a", BAR_2.a),
-                        new ImmutablePair<>("Foo.bars(1).bazs(0)", null),
-                        new ImmutablePair<>("Foo.bars(2)", BAR_3),
-                        new ImmutablePair<>("Foo.bars(2).a", BAR_3.a),
-                        new ImmutablePair<>("Foo.baz", BAZ),
-                        new ImmutablePair<>("Foo.baz.b", BAZ.b),
-                        new ImmutablePair<>("Foo.baz.c", BAZ.c)));
+                hasItems(new ImmutablePair<>("", foo),
+                        new ImmutablePair<>("bars(0)", BAR_1),
+                        new ImmutablePair<>("bars(0).a", BAR_1.a),
+                        new ImmutablePair<>("bars(0).bazs(0)", BAZ),
+                        new ImmutablePair<>("bars(0).bazs(0).b", BAZ.b),
+                        new ImmutablePair<>("bars(0).bazs(0).c", BAZ.c),
+                        new ImmutablePair<>("bars(1)", BAR_2),
+                        new ImmutablePair<>("bars(1).a", BAR_2.a),
+                        new ImmutablePair<>("bars(1).bazs(0)", null),
+                        new ImmutablePair<>("bars(2)", BAR_3),
+                        new ImmutablePair<>("bars(2).a", BAR_3.a),
+                        new ImmutablePair<>("baz", BAZ),
+                        new ImmutablePair<>("baz.b", BAZ.b),
+                        new ImmutablePair<>("baz.c", BAZ.c)));
     }
 
     @Test
@@ -63,16 +64,9 @@ class RosettaNodeInspectorTest {
         rosettaNodeInspector.inspect(PathTypeNode.root(Foo.class), addAllPathsVisitor, noOpRootVisitor);
 
         assertThat(allPaths, hasSize(8));
-        assertThat(allPaths.stream().map(PathObject::fullPath).collect(Collectors.toList()),
-                hasItems("Foo.bars",
-                        "Foo.bars.a",
-                        "Foo.bars.bazs",
-                        "Foo.bars.bazs.b",
-                        "Foo.bars.bazs.c",
-                        "Foo.baz",
-                        "Foo.baz.b",
-                        "Foo.baz.c"));
-        assertThat(allPaths.stream().map(PathObject::buildPath).collect(Collectors.toList()),
+        assertThat(allPaths.stream()
+                        .map(o -> o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""))
+                        .collect(Collectors.toList()),
                 hasItems("bars",
                         "bars.a",
                         "bars.bazs",

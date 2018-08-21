@@ -1,5 +1,8 @@
 package com.regnosys.rosetta.common.inspection;
 
+import com.google.common.base.Strings;
+import com.regnosys.rosetta.common.util.HierarchicalPath;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,15 +30,18 @@ public class PathObject<T> {
         this.elements = newElements;
     }
 
-    public String buildPath() {
+    public Optional<HierarchicalPath> getHierarchicalPath() {
+        String buildPath = buildPath();
+        return Strings.isNullOrEmpty(buildPath) ?
+                Optional.empty() :
+                Optional.of(HierarchicalPath.valueOf(buildPath));
+    }
+
+    private String buildPath() {
         List<String> path = getPath();
         // remove root element, so it starts with the first accessor
         path.remove(0);
         return String.join(".", path);
-    }
-
-    public String fullPath() {
-        return String.join(".", getPath());
     }
 
     public List<String> getPath() {

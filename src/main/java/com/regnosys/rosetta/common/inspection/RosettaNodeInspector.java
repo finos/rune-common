@@ -18,19 +18,23 @@ public class RosettaNodeInspector<T> {
         void onNode(Node<T> node);
     }
 
+    public void inspect(Node<T> rootNode, Visitor<T> visitor) {
+        inspect(rootNode, visitor, visitor);
+    }
+
     public void inspect(Node<T> rootNode, Visitor<T> visitor, Visitor<T> rootVisitor) {
         rootVisitor.onNode(rootNode);
-        inspect(rootNode, visitor);
+        inspectChildren(rootNode, visitor);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private void inspect(Node<T> node, Visitor<T> visitor) {
+    private void inspectChildren(Node<T> node, Visitor<T> visitor) {
         for(Node<T> childNode : node.getChildren()) {
             if (!node.isGuarded(childNode)) {
                 visitor.onNode(childNode);
 
                 if (childNode.inspect()) {
-                    inspect(childNode, visitor);
+                    inspectChildren(childNode, visitor);
                 }
             }
         }

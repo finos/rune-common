@@ -10,6 +10,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,19 +59,21 @@ public class RosettaLicenceKey {
         System.out.println("Created " + outFile);
     }
 
-    public static Path newLicenceFile(Path privateKeyPath, Path output, RosettaLicence rosettaLicence) throws IOException {
-        return Files.write(output, encrypt(privateKeyPath, rosettaLicence).getBytes());
+    public static Path newLicenceFile(Path privateKeyPath, Path output, RosettaLicence rosettaLicence) {
+        try {
+            return Files.write(output, encrypt(privateKeyPath, rosettaLicence).getBytes());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
-    public static RosettaLicence readLicenceFile(Path publicKeyPath, Path input) throws IOException {
-        return decrypt(publicKeyPath, new String(Files.readAllBytes(input)));
+    public static RosettaLicence readLicenceFile(Path publicKeyPath, Path input) {
+        try {
+            return decrypt(publicKeyPath, new String(Files.readAllBytes(input)));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
-
-    public static RosettaLicence readLicenceFile(String publicKeyClassPath, Path input) throws IOException, URISyntaxException {
-        Path publicKeyPath = Paths.get(ClassLoader.getSystemResource(publicKeyClassPath).toURI());
-        return decrypt(publicKeyPath, new String(Files.readAllBytes(input)));
-    }
-
 
     static String encrypt(Path privateKeyPath, RosettaLicence rosettaLicence) {
         try {

@@ -25,7 +25,7 @@ class RosettaNodeInspectorTest {
     private final static Bar BAR_3 = new Bar(3, Collections.emptyList());
 
     @Test
-    void shouldBlah() {
+    void shouldFindAllObjectPaths() {
         Foo foo = new Foo(Arrays.asList(BAR_1, BAR_2, BAR_3), BAZ);
 
         List<PathObject<Object>> allPaths = new LinkedList<>();
@@ -55,7 +55,7 @@ class RosettaNodeInspectorTest {
     }
 
     @Test
-    void shouldFindAllPaths() {
+    void shouldFindAllTypePaths() {
         List<PathObject<Class<?>>> allPaths = new LinkedList<>();
 
         RosettaNodeInspector<PathObject<Class<?>>> rosettaNodeInspector = new RosettaNodeInspector<>();

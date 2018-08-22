@@ -19,10 +19,18 @@
         <jackson.version>2.9.3</jackson.version>
         <hamcrest.version>2.0.0.0</hamcrest.version>
         <mockito.version>2.10.0</mockito.version>
+        <guava.version>26.0-jre</guava.version>
+
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.regnosys.rosetta</groupId>
                 <artifactId>com.regnosys.rosetta.lib</artifactId>
@@ -97,6 +105,10 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.regnosys.rosetta</groupId>
             <artifactId>com.regnosys.rosetta.lib</artifactId>

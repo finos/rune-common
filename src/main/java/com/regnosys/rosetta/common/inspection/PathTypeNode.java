@@ -2,40 +2,52 @@ package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.RosettaReflectionsUtil.getAllPublicNoArgGetters;
+import static com.regnosys.rosetta.common.inspection.ReflectUtils.*;
 import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Node;
 
-public class PathTypeNode implements Node<PathType> {
+public class PathTypeNode implements Node<PathObject<Class<?>>> {
 
-    private final PathType pathType;
+    static Predicate<Node<PathObject<Class<?>>>> INSPECTED = (node) -> {
+        LinkedList<Class<?>> path = node.get().getPathObjects();
+        path.removeLast();
+        return path.contains(node.get().getObject());
+    };
 
-    public PathTypeNode(PathType pathType) {
+    public static PathTypeNode root(Class<?> type) {
+        return new PathTypeNode(new PathObject<>(type.getSimpleName(), type));
+    }
+
+    private final PathObject<Class<?>> pathType;
+
+    public PathTypeNode(PathObject<Class<?>> pathType) {
         this.pathType = pathType;
     }
 
     @Override
-    public List<Node<PathType>> getChildren() {
-        return getAllPublicNoArgGetters(pathType.getType()).stream()
-                .map(method -> new PathType(pathType, method))
+    public List<Node<PathObject<Class<?>>>> getChildren() {
+        return methods(pathType.getObject()).stream()
+                .map(method -> new PathObject<>(pathType, attrName(method), returnType(method)))
                 .map(PathTypeNode::new)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public PathType get() {
+    public PathObject<Class<?>> get() {
         return pathType;
     }
 
     @Override
-    public boolean visited(Node<PathType> childNode) {
-        return pathType.getPathTypes().contains(childNode.get().getType());
+    public boolean isGuarded(Node<PathObject<Class<?>>> childNode) {
+        return INSPECTED.test(childNode);
     }
 
     @Override
     public boolean inspect() {
-        return RosettaModelObject.class.isAssignableFrom(this.pathType.getType());
+        return RosettaModelObject.class.isAssignableFrom(this.pathType.getObject());
     }
 }

@@ -30,6 +30,10 @@ public class PathObject<T> {
         this.elements = newElements;
     }
 
+    private PathObject(LinkedList<Element<T>> elements) {
+        this.elements = elements;
+    }
+
     public Optional<HierarchicalPath> getHierarchicalPath() {
         String buildPath = buildPath();
         return Strings.isNullOrEmpty(buildPath) ?
@@ -52,6 +56,15 @@ public class PathObject<T> {
 
     public LinkedList<T> getPathObjects() {
         return elements.stream().map(Element::getObject).collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    public Optional<PathObject<T>> getParent() {
+        if(elements.size() < 2)
+            return Optional.empty();
+
+        LinkedList<Element<T>> parent = new LinkedList<>(elements);
+        parent.removeLast();
+        return Optional.of(new PathObject<>(parent));
     }
 
     public T getObject() {

@@ -2,6 +2,7 @@ package com.regnosys.rosetta.common.inspection;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.regnosys.rosetta.common.util.HierarchicalPath;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -99,6 +100,30 @@ public class ReflectUtils {
         Class<?> type = getAttributeType(clazz, attributeName);
         String setterPrefix = List.class.isAssignableFrom(type) ? "add" : "set";
         return clazz.getMethod(setterPrefix + StringExtensions.toFirstUpper(attributeName), attributeType);
+    }
+
+    /**
+     * Given a HierarchicalPath, this method reflectively gets the value from the rosetta instance.
+     * @param rosettaModelObject
+     * @param hierarchicalPath
+     * @return
+     * @throws NoSuchMethodException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     */
+    public static Object valueOf(RosettaModelObject rosettaModelObject, HierarchicalPath hierarchicalPath) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Object current = rosettaModelObject;
+
+        for (HierarchicalPath.Element element : hierarchicalPath.allElements()) {
+            Method method = current.getClass().getMethod(getterName(element.getPath()));
+            Object invoke = method.invoke(current);
+            if (element.getIndex().isPresent()) {
+                List<?> listType = (List<?>) invoke;
+                invoke = listType.get(element.getIndex().getAsInt());
+            }
+            current = invoke;
+        }
+        return current;
     }
 
     @SuppressWarnings("unchecked")

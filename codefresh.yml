@@ -42,3 +42,19 @@ steps:
       - git fetch --prune https://regnosys-ops:O6pl6qXtQLk6Z8KO2QFEcY@github.com/REGnosys/${{CF_REPO_NAME}}.git "+refs/tags/*:refs/tags/*"
       - git tag ${{RELEASE_NAME}}
       - git push https://regnosys-ops:O6pl6qXtQLk6Z8KO2QFEcY@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
+
+
+  StartNextBuild:
+    title: Build rosetta-cdm and rosetta-model if on master
+    image: codefresh/cli
+    when:
+      branch:
+        only:
+          - master
+      condition:
+        all:
+          variableDefined: "${{TAG_REPO}} == false"
+          skipNextBuild: "{{SKIP_NEXT_BUILD}} == false"
+    commands:
+      - codefresh run REGnosys/rosetta-cdm/rosetta-cdm --branch master --detach
+      - codefresh run REGnosys/rosetta-model/rosetta-model --branch master --detach

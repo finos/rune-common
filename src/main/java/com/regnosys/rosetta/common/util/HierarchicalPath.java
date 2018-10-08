@@ -128,6 +128,8 @@ public class HierarchicalPath {
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static class Element {
+        public static final String DEFAULT_URI = "FpML";
+
         private final String uri;
         private final String path;
         private final OptionalInt index;
@@ -141,11 +143,11 @@ public class HierarchicalPath {
         }
 
         public static Element create(String path, Map<String, String> attrs) {
-            return new Element("FpML", path, OptionalInt.empty(), attrs);
+            return new Element(DEFAULT_URI, path, OptionalInt.empty(), attrs);
         }
 
         public static Element create(String path, OptionalInt index, Map<String, String> attrs) {
-            return new Element("FpML", path, index, attrs);
+            return new Element(DEFAULT_URI, path, index, attrs);
         }
 
         public static Element create(String uri, String path, OptionalInt index, Map<String, String> attrs) {

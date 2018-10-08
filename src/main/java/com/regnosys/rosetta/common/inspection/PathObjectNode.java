@@ -69,9 +69,6 @@ public class PathObjectNode implements Node<PathObject<Object>> {
         if (invoke instanceof List) {
             return (List<?>) invoke;
         }
-//        if (invoke instanceof Enum) {
-//            return Collections.emptyList();
-//        }
         return Collections.singletonList(invoke);
     }
 }

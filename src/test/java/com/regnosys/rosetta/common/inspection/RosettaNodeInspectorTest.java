@@ -26,7 +26,7 @@ class RosettaNodeInspectorTest {
 
     @Test
     void shouldFindAllObjectPaths() {
-        Foo foo = new Foo(Arrays.asList(BAR_1, BAR_2, BAR_3), BAZ);
+        Foo foo = new Foo(Arrays.asList(BAR_1, BAR_2, BAR_3), BAZ, Faz.XYZ);
 
         List<PathObject<Object>> allPaths = new LinkedList<>();
 
@@ -34,7 +34,7 @@ class RosettaNodeInspectorTest {
         Visitor<PathObject<Object>> addAllPathsVisitor = (node) -> allPaths.add(node.get());
         rosettaNodeInspector.inspect(PathObjectNode.root(foo), addAllPathsVisitor);
 
-        assertThat(allPaths, hasSize(14));
+        assertThat(allPaths, hasSize(15));
         assertThat(allPaths.stream()
                         .map(o -> new ImmutablePair<>(o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""), o.getObject()))
                         .collect(Collectors.toList()),
@@ -51,7 +51,8 @@ class RosettaNodeInspectorTest {
                         new ImmutablePair<>("bars(2).a", BAR_3.a),
                         new ImmutablePair<>("baz", BAZ),
                         new ImmutablePair<>("baz.b", BAZ.b),
-                        new ImmutablePair<>("baz.c", BAZ.c)));
+                        new ImmutablePair<>("baz.c", BAZ.c),
+                        new ImmutablePair<>("faz", Faz.XYZ)));
     }
 
     @Test
@@ -63,7 +64,7 @@ class RosettaNodeInspectorTest {
         Visitor<PathObject<Class<?>>> noOpRootVisitor = (node) -> {};
         rosettaNodeInspector.inspect(PathTypeNode.root(Foo.class), addAllPathsVisitor, noOpRootVisitor);
 
-        assertThat(allPaths, hasSize(8));
+        assertThat(allPaths, hasSize(9));
         assertThat(allPaths.stream()
                         .map(o -> o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""))
                         .collect(Collectors.toList()),
@@ -74,26 +75,29 @@ class RosettaNodeInspectorTest {
                         "bars.bazs.c",
                         "baz",
                         "baz.b",
-                        "baz.c"));
+                        "baz.c",
+                        "faz"));
     }
 
     @SuppressWarnings("unused")
     private static class Foo extends RosettaModelObject {
         private final List<Bar> bars;
         private final Baz baz;
+        private final Faz faz;
 
-        public Foo(List<Bar> bars, Baz baz) {
+        public Foo(List<Bar> bars, Baz baz, Faz faz) {
             this.bars = bars;
             this.baz = baz;
+            this.faz = faz;
         }
 
-        public List<Bar> getBars() {
-            return bars;
-        }
+        public List<Bar> getBars() { return bars; }
 
         public Baz getBaz() {
             return baz;
         }
+
+        public Faz getFaz() { return faz; }
 
         @Override
         public RosettaModelObjectBuilder toBuilder() {
@@ -163,4 +167,9 @@ class RosettaNodeInspectorTest {
             throw new UnsupportedOperationException();
         }
     }
+
+    private enum Faz {
+        XYZ
+    }
+
 }

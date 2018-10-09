@@ -128,7 +128,7 @@ public class HierarchicalPath {
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static class Element {
-        public static final String DEFAULT_URI = "FpML";
+        public static final String DEFAULT_URI = "FpML_5_10";
 
         private final String uri;
         private final String path;

@@ -2,7 +2,6 @@ package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -13,9 +12,12 @@ import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Node;
 public class PathTypeNode implements Node<PathObject<Class<?>>> {
 
     static Predicate<Node<PathObject<Class<?>>>> INSPECTED = (node) -> {
-        LinkedList<Class<?>> path = node.get().getPathObjects();
+    	return node.get().getPathObjects().size()>15;
+    	//simple depth limiting isn't perfect but the algorithm below doesn't allow for any searching in recursive data structures
+    	//e.g. ContractualProduct->econonmicTerms->optionPayout->underlyer->contractualProduct
+        /*List<Class<?>> path = node.get().getPathObjects();
         path.removeLast();
-        return path.contains(node.get().getObject());
+        return path.contains(node.get().getObject());*/
     };
 
     public static PathTypeNode root(Class<?> type) {

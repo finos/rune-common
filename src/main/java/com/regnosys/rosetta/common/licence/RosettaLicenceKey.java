@@ -11,7 +11,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,7 +42,7 @@ public class RosettaLicenceKey {
     public static void main(String[] args) throws IOException {
         if (args.length != 5) {
             System.out.println("Usage: RosettaLicenceKey <private-key> <client-id> <rosetta-app-name>, <rosetta-app-version>, <rosetta-app-expiry>");
-            System.out.println("Example: java com.regnosys.rosetta.licence.RosettaLicenceKey scripts/rosetta-licences/rosetta-licence-private-key.der 'the client name' rosetta-ingest 1.0.0 2018-12-31");
+            System.out.println("Example: java com.regnosys.rosetta.licence.RosettaLicenceKey scripts/rosetta-licences/rosetta-licence-private-key.der 'the client name' RosettaIngest 1.0.0 2018-12-31");
             System.exit(1);
         }
         String privateKey = args[0];

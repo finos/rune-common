@@ -20,6 +20,11 @@ public class StreamUtils {
 		return flattenTree(extract, new HashSet<>());
 	}
 	
+	public static <A> Stream<A> flattenTreeC(A initial, Function<A, Collection<A>> extract) {
+		return Stream.of(initial)
+				.flatMap(a->Stream.concat(Stream.of(a), extract.apply(a).stream()));
+	}
+	
 	public static <A>  Function<A, Stream<A>> flattenTree(Function<A, Stream<A>> extract, Collection<A> visited) {
 		return a-> {
 			if (visited.contains(a)) return Stream.empty();
@@ -28,16 +33,35 @@ public class StreamUtils {
 		};
 	}
 	
-	public static <A> void visitTreeC(A initial, Consumer<A> visitFunc, Function<A, Collection<A>> traversFunc) {
+	public static <A> void visitTreeC(A initial, Consumer<A> visitFunc, Function<A, Collection<A>> traverseFunc) {
 		Deque<A> toVisit = new ArrayDeque<>();
 		Set<A> visited = new HashSet<>();
 		toVisit.add(initial);
-		while (toVisit.isEmpty()) {
+		while (!toVisit.isEmpty()) {
 			A a = toVisit.removeFirst();
 			if (visited.contains(a)) continue;
 			visitFunc.accept(a);
-			Collection<A> nexts = traversFunc.apply(a);
+			Collection<A> nexts = traverseFunc.apply(a);
 			toVisit.addAll(nexts);
+			visited.add(a);
+		}
+	}
+	
+	public static <A> void visitBiTree(A initial, Consumer<A> visitFunction, 
+			Function<A, Collection<A>> traverseFunc1, 
+			Function<A, Collection<A>> traverseFunc2) {
+		Deque<A> toVisit = new ArrayDeque<>();
+		Set<A> visited = new HashSet<>();
+		toVisit.add(initial);
+		while (!toVisit.isEmpty()) {
+			A a = toVisit.removeFirst();
+			if (visited.contains(a)) continue;
+			visitFunction.accept(a);
+			Collection<A> nexts = traverseFunc1.apply(a);
+			toVisit.addAll(nexts);
+			nexts = traverseFunc2.apply(a);
+			toVisit.addAll(nexts);
+			visited.add(a);
 		}
 	}
 	

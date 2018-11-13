@@ -6,16 +6,14 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.jupiter.api.Test;
 
-import com.regnosys.rosetta.common.util.TeeInputStream.TeedInputStream;
-import com.regnosys.rosetta.common.util.TeeReader.TeedReader;
 
 class TestTeeReader {
 
@@ -26,7 +24,7 @@ class TestTeeReader {
 		byte[] b = s.getBytes();
 		ByteArrayInputStream bin = new ByteArrayInputStream(b);
 		TeeReader tin = new TeeReader(new InputStreamReader(bin));
-		TeedReader[] splitInto = tin.splitInto(2);
+		Reader[] splitInto = tin.splitInto(2);
 		BufferedReader reader1 = new BufferedReader(splitInto[0]);
 		BufferedReader reader2 = new BufferedReader(splitInto[1]);
 		
@@ -49,7 +47,7 @@ class TestTeeReader {
 		byte[] b = s2.getBytes();
 		ByteArrayInputStream bin = new ByteArrayInputStream(b);
 		TeeReader tin = new TeeReader(new InputStreamReader(bin));
-		TeedReader[] splitInto = tin.splitInto(2);
+		Reader[] splitInto = tin.splitInto(2);
 		BufferedReader reader1 = new BufferedReader(splitInto[0]);
 		BufferedReader reader2 = new BufferedReader(splitInto[1]);
 		

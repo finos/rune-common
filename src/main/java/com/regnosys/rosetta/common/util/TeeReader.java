@@ -8,16 +8,13 @@ public class TeeReader {
 	
 	private Reader in;
 	
-	char[] buffer = new char[1024];
-	int endPointer;
-	boolean ended=false;
+	private char[] buffer = new char[1024];
+	private int endPointer;
+	private boolean ended=false;
 	
-	Phaser barrier;
+	private Phaser barrier;
 	
-	int brokenCount;
-	
-	
-	TeedReader[] tees;
+	private TeedReader[] tees;
 
 
 	public TeeReader(Reader in) {
@@ -32,7 +29,7 @@ public class TeeReader {
 		}
 	}
 	
-	public TeedReader[] splitInto(int count) {
+	public Reader[] splitInto(int count) {
 		tees = new TeedReader[count];
 		for (int i=0;i<count;i++) {
 			tees[i]=new TeedReader();
@@ -67,10 +64,9 @@ public class TeeReader {
 		}
 	}
 	
-	
-	class TeedReader extends Reader {
+	private class TeedReader extends Reader {
 
-		volatile int pointer;
+		private volatile int pointer;
 		
 		@Override
 		public int read() throws IOException {

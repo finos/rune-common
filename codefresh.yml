@@ -24,7 +24,6 @@ steps:
     title: Maven build
     image: r.cfcr.io/regnosysops/regnosys/mvn-docker-build:java-8
     working_directory: ./
-    fail_fast: true
     commands:
       - rm -rf /codefresh/volume/.m2/com/regnosys
       - mvn -s /settings.xml versions:set -DnewVersion=${{RELEASE_NAME}}

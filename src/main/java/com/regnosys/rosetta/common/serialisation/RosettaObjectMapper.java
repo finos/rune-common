@@ -19,7 +19,7 @@ import com.rosetta.model.lib.RosettaModelObject;
  */
 public class RosettaObjectMapper {
 
-    private RosettaObjectMapper() {}
+    private RosettaObjectMap per() {}
 
     private static class LazyHolder {
         static final ObjectMapper INSTANCE = new ObjectMapper()

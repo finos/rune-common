@@ -29,6 +29,14 @@ steps:
       - mvn -s /settings.xml versions:set -DnewVersion=${{RELEASE_NAME}}
       - mvn -s /settings.xml versions:update-property -Dproperty=rosetta.workbench.version -DnewVersion=[${{RELEASE_NAME}}] -DallowSnapshots=true -DallowDowngrade=true
       - mvn -U -s /settings.xml clean deploy
+      on_fail:
+        Slack_notify:
+          image: tutum/curl
+          commands:
+            - echo $COMMIT_AUTHOR_NAME
+            - curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for $COMMIT_AUTHOR_NAME"}' ${{SLACK_CF}}
+
+
 
   TagRepo:
     title: Tag git repo with release name

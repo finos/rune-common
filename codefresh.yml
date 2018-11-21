@@ -34,17 +34,16 @@ steps:
   Slack_notify:
     title: Notify Slack channel if master failed
     image: tutum/curl
-    commands:
-      when:
-        branch:
-          only:
-            - codefresh_steps
+    when:
+      branch:
+        only:
+          - codefresh_steps
       condition:
-          myCondition: Build.result == 'failure'
-      commands:
-        - echo  ${{CF_COMMIT_AUTHOR}} && echo  ${{CF_REPO_OWNER}}  && echo  ${{CF_REPO_NAME}} 
-        - echo  ${{CF_BUILD_INITIATOR}} &&  echo ${{CF_COMMIT_MESSAGE}} 
-        - curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for ${{CF_COMMIT_AUTHOR}}"}' ${{SLACK_CF}}
+          buildFailed: Build.result == 'failure'
+    commands:
+       - echo  ${{CF_COMMIT_AUTHOR}} && echo  ${{CF_REPO_OWNER}}  && echo  ${{CF_REPO_NAME}} 
+       - echo  ${{CF_BUILD_INITIATOR}} &&  echo ${{CF_COMMIT_MESSAGE}} 
+       - curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for ${{CF_COMMIT_AUTHOR}}"}' ${{SLACK_CF}}
 
   TagRepo:
     title: Tag git repo with release name

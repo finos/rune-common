@@ -42,7 +42,7 @@ steps:
       condition:
           myCondition: Build.result == 'failure'
       commands:
-        - echo  ${{CF_COMMIT_AUTHOR}} && echo '  ${{CF_REPO_OWNER}} ' && echo '  ${{CF_REPO_NAME}} '
+        - echo  ${{CF_COMMIT_AUTHOR}} && echo  ${{CF_REPO_OWNER}}  && echo  ${{CF_REPO_NAME}} 
         - echo  ${{CF_BUILD_INITIATOR}} &&  echo ${{CF_COMMIT_MESSAGE}} 
         - curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for ${{CF_COMMIT_AUTHOR}}"}' ${{SLACK_CF}}
 

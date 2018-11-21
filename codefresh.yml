@@ -35,14 +35,14 @@ steps:
     title: Notify Slack channel if master failed
     image: tutum/curl
     when:
-      branch:
+       branch:
         only:
           - codefresh_steps
-      condition:
+    condition:
           buildFailed: steps.Build.result == 'failure'
     commands:
-       - echo  ${{CF_COMMIT_AUTHOR}} && echo  ${{CF_REPO_OWNER}}  && echo  ${{CF_REPO_NAME}} 
-       - echo  ${{CF_BUILD_INITIATOR}} &&  echo ${{CF_COMMIT_MESSAGE}} 
+       - echo Author is ${{CF_COMMIT_AUTHOR}} and repo-owner is  ${{CF_REPO_OWNER}} and repo is  ${{CF_REPO_NAME}} 
+       - echo Build initiator was ${{CF_BUILD_INITIATOR}} and message is ${{CF_COMMIT_MESSAGE}} 
        - curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for ${{CF_COMMIT_AUTHOR}}"}' ${{SLACK_CF}}
 
   TagRepo:

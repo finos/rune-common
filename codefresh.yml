@@ -22,13 +22,29 @@ steps:
 
   Build:
     title: Maven build
+    fail_fast: false
     image: r.cfcr.io/regnosysops/regnosys/mvn-docker-build:java-8
     working_directory: ./
     commands:
       - rm -rf /codefresh/volume/.m2/com/regnosys
       - mvn -s /settings.xml versions:set -DnewVersion=${{RELEASE_NAME}}
       - mvn -s /settings.xml versions:update-property -Dproperty=rosetta.workbench.version -DnewVersion=[${{RELEASE_NAME}}] -DallowSnapshots=true -DallowDowngrade=true
-      - mvn -U -s /settings.xml clean deploy || curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for $COMMIT_AUTHOR_NAME"}' ${{SLACK_CF}}
+      - mvn -U -s /settings.xml clean deploy
+
+ Slack_notify:
+    title: Notify Slack channel if master failed
+    image: tutum/curl
+    commands:
+      - echo  ${{CF_COMMIT_AUTHOR}}; echo "  ${{CF_REPO_OWNER}} " ; echo "  ${{CF_REPO_NAME}} ";
+      - echo  ${{CF_BUILD_INITIATOR}}; echo ${{CF_COMMIT_MESSAGE}} ;
+      when:
+        branch:
+          only:
+            - master
+      		condition:
+          			myCondition: Build.result == 'failure'
+      commands:
+        - curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for ${{CF_COMMIT_AUTHOR}}"}' ${{SLACK_CF}}
 
 
   TagRepo:
@@ -38,6 +54,7 @@ steps:
       condition:
         all:
           isRelease: "${{TAG_REPO}}"
+          myCondition: Build.result == 'success'
     commands:
       - echo This is a release build, tag repos with release name [${{RELEASE_NAME}}]
       - git fetch --prune https://regnosys-ops:O6pl6qXtQLk6Z8KO2QFEcY@github.com/REGnosys/${{CF_REPO_NAME}}.git "+refs/tags/*:refs/tags/*"
@@ -56,5 +73,6 @@ steps:
         all:
           variableDefined: "${{TAG_REPO}} == false"
           skipNextBuild: "{{SKIP_NEXT_BUILD}} == false"
+          myCondition: Build.result == 'success'
     commands:
       - codefresh run REGnosys/rosetta-components/rosetta-components --branch master --detach

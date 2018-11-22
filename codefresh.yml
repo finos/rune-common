@@ -31,9 +31,9 @@ steps:
       - mvn -s /settings.xml versions:update-property -Dproperty=rosetta.workbench.version -DnewVersion=[${{RELEASE_NAME}}] -DallowSnapshots=true -DallowDowngrade=true
       - mvn -U -s /settings.xml clean deploy
 
-  Slack_notify:
-    title: Notify Slack channel if master failed
-    image: tutum/curl
+  NotifySlackOnFail:
+    title: Trigger Slack dev channel notification if master build failed
+    image: codefresh/cli
     when:
        branch:
         only:
@@ -41,9 +41,11 @@ steps:
     condition:
           buildFailed: steps.Build.result == 'failure'
     commands:
-       - echo Author is ${{CF_COMMIT_AUTHOR}} and repo-owner is  ${{CF_REPO_OWNER}} and repo is  ${{CF_REPO_NAME}} 
-       - echo Build initiator was ${{CF_BUILD_INITIATOR}} and message is ${{CF_COMMIT_MESSAGE}} 
-       - curl -X POST --data-urlencode 'payload={"text":"Test slack integration via yaml for ${{CF_COMMIT_AUTHOR}}"}' ${{SLACK_CF}}
+       - echo Author is ${{CF_COMMIT_AUTHOR}} and commit msg is ${{CF_COMMIT_MESSAGE}} and repo is ${{CF_REPO_NAME}} and build initiator was ${{CF_BUILD_INITIATOR}}
+       - export COMMIT_AUTHOR=${${{CF_COMMIT_AUTHOR}}:-MissingAuthor}
+       - export REPO_NAME=${${{CF_REPO_NAME}}:-NoRepo}      
+       - export COMMIT_MESSAGE=${${{CF_COMMIT_MESSAGE}}:-NoCommitMsg}
+       - codefresh run slack-notifier -v REPO_NAME=$REPO_NAME -v COMMIT_AUTHOR=$COMMIT_AUTHOR -v COMMIT_MESSAGE=$COMMIT_MESSAGE  --detach
 
   TagRepo:
     title: Tag git repo with release name

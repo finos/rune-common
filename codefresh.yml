@@ -78,6 +78,6 @@ steps:
         all:
           buildPassed: steps.Build.result == 'success'
           variableDefined: "${{TAG_REPO}} == false"
-          skipNextBuild: "{{SKIP_NEXT_BUILD}} == false"
+          skipNextBuild: "${{SKIP_NEXT_BUILD}} == false"
     commands:
       - codefresh run REGnosys/rosetta-cdm/rosetta-cdm --branch master --detach

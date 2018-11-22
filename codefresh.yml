@@ -45,6 +45,7 @@ steps:
        - export COMMIT_AUTHOR=${${{CF_COMMIT_AUTHOR}}:-MissingAuthor}
        - export REPO_NAME=${${{CF_REPO_NAME}}:-NoRepo}      
        - export COMMIT_MESSAGE=${${{CF_COMMIT_MESSAGE}}:-NoCommitMsg}
+       - echo After substitution author is $COMMIT_AUTHOR and commit msg is $COMMIT_MESSAGE and repo is $REPO_NAME
        - codefresh run slack-notifier -v REPO_NAME=$REPO_NAME -v COMMIT_AUTHOR=$COMMIT_AUTHOR -v COMMIT_MESSAGE=$COMMIT_MESSAGE  --detach
 
   TagRepo:

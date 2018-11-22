@@ -22,7 +22,7 @@ steps:
 
   Build:
     title: Maven build
-    fail_fast: true
+    fail_fast: false
     image: r.cfcr.io/regnosysops/regnosys/mvn-docker-build:java-8
     working_directory: ./
     commands:

@@ -35,22 +35,22 @@ steps:
     title: Trigger Slack dev channel notification if master build failed
     image: codefresh/cli
     when:
-       branch:
+      branch:
         only:
           - codefresh_slack_yml
     condition:
       all:
         buildFailed: steps.Build.result == 'error'
     commands:
-       - export SAFE_COMMIT_AUTHOR='${{CF_COMMIT_AUTHOR}}'
-       - export COMMIT_AUTHOR=${SAFE_COMMIT_AUTHOR:-MissingAuthor}
-       - export SAFE_REPO_NAME='${{CF_REPO_NAME}}'
-       - export REPO_NAME=${SAFE_REPO_NAME:-NoRepo}
-       - export SAFE_COMMIT_MESSAGE='${{CF_COMMIT_MESSAGE}}'
-       - export COMMIT_MESSAGE=${SAFE_COMMIT_MESSAGE:-NoCommitMsg}
-       - echo Author is $SAFE_COMMIT_AUTHOR and commit msg is $SAFE_COMMIT_MESSAGE and repo is $SAFE_REPO_NAME
-       - echo After substitution author is $COMMIT_AUTHOR and commit msg is $COMMIT_MESSAGE and repo is $REPO_NAME
-       - codefresh run slack-notifier -v REPO_NAME="${REPO_NAME}" -v COMMIT_AUTHOR="${COMMIT_AUTHOR}" -v COMMIT_MESSAGE="${COMMIT_MESSAGE}"  --detach
+      - export SAFE_COMMIT_AUTHOR='${{CF_COMMIT_AUTHOR}}'
+      - export COMMIT_AUTHOR=${SAFE_COMMIT_AUTHOR:-MissingAuthor}
+      - export SAFE_REPO_NAME='${{CF_REPO_NAME}}'
+      - export REPO_NAME=${SAFE_REPO_NAME:-NoRepo}
+      - export SAFE_COMMIT_MESSAGE='${{CF_COMMIT_MESSAGE}}'
+      - export COMMIT_MESSAGE=${SAFE_COMMIT_MESSAGE:-NoCommitMsg}
+      - echo Author is $SAFE_COMMIT_AUTHOR and commit msg is $SAFE_COMMIT_MESSAGE and repo is $SAFE_REPO_NAME
+      - echo After substitution author is $COMMIT_AUTHOR and commit msg is $COMMIT_MESSAGE and repo is $REPO_NAME
+      - codefresh run slack-notifier -v REPO_NAME="${REPO_NAME}" -v COMMIT_AUTHOR="${COMMIT_AUTHOR}" -v COMMIT_MESSAGE="${COMMIT_MESSAGE}"  --detach
 
 
   TagRepo:

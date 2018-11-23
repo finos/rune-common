@@ -37,10 +37,10 @@ steps:
     when:
        branch:
         only:
-          - master
+          - codefresh_slack_yml
     condition:
       all:
-          buildFailed: steps.Build.result == 'error'
+        buildFailed: steps.Build.result == 'error'
     commands:
        - export SAFE_COMMIT_AUTHOR='${{CF_COMMIT_AUTHOR}}'
        - export COMMIT_AUTHOR=${SAFE_COMMIT_AUTHOR:-MissingAuthor}

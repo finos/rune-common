@@ -39,7 +39,8 @@ steps:
         only:
           - master
     condition:
-          buildFailed: steps.Build.result == 'failure'
+      all:
+          buildFailed: steps.Build.result == 'error'
     commands:
        - export SAFE_COMMIT_AUTHOR='${{CF_COMMIT_AUTHOR}}'
        - export COMMIT_AUTHOR=${SAFE_COMMIT_AUTHOR:-MissingAuthor}
@@ -68,7 +69,7 @@ steps:
 
 
   StartNextBuild:
-    title: Build rosetta-cdm and rosetta-model if on master
+    title: Build rosetta-components if on master
     image: codefresh/cli
     when:
       branch:
@@ -80,4 +81,4 @@ steps:
           variableDefined: "${{TAG_REPO}} == false"
           skipNextBuild: "${{SKIP_NEXT_BUILD}} == false"
     commands:
-      - codefresh run REGnosys/rosetta-cdm/rosetta-cdm --branch master --detach
+      - codefresh run REGnosys/rosetta-components/rosetta-components --branch master --detach

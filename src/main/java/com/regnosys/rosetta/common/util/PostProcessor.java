@@ -1,13 +1,13 @@
 package com.regnosys.rosetta.common.util;
 
-import java.util.Collections;
-import java.util.List;
+import com.rosetta.model.lib.RosettaModelObject;
 
-public interface PostProcessor<T> {
+public interface PostProcessor {
 
-    List<PathValue> process(T t);
+    RosettaModelObject process(RosettaModelObject t);
 
-    static <T> PostProcessor<T> empty() {
-        return x -> Collections.emptyList();
+    static PostProcessor empty() {
+        return (RosettaModelObject t) -> t;
     }
+
 }

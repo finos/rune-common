@@ -38,9 +38,10 @@ steps:
       branch:
         only:
           - master
-      condition:
-        all:
-          buildFailed: steps.Build.result == 'error'
+      steps:
+        - name: Build
+          on:
+            - failure
     commands:
       - export SAFE_COMMIT_AUTHOR='${{CF_COMMIT_AUTHOR}}'
       - export COMMIT_AUTHOR=${SAFE_COMMIT_AUTHOR:-MissingAuthor}
@@ -51,7 +52,21 @@ steps:
       - echo Author is $SAFE_COMMIT_AUTHOR and commit msg is $SAFE_COMMIT_MESSAGE and repo is $SAFE_REPO_NAME
       - echo After substitution author is $COMMIT_AUTHOR and commit msg is $COMMIT_MESSAGE and repo is $REPO_NAME
       - codefresh run slack-notifier -v REPO_NAME="${REPO_NAME}" -v COMMIT_AUTHOR="${COMMIT_AUTHOR}" -v COMMIT_MESSAGE="${COMMIT_MESSAGE}"  --detach
+      - exit 1
 
+  FailPipeline:
+    title: Fail the pipeline if the build failed
+    image: codefresh/cli
+    when:
+      branch:
+        ignore:
+          - master
+      steps:
+        - name: Build
+          on:
+            - failure
+    commands:
+      - exit 1
 
   TagRepo:
     title: Tag git repo with release name

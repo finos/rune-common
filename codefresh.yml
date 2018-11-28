@@ -54,7 +54,7 @@ steps:
       - codefresh run slack-notifier -v REPO_NAME="${REPO_NAME}" -v COMMIT_AUTHOR="${COMMIT_AUTHOR}" -v COMMIT_MESSAGE="${COMMIT_MESSAGE}"  --detach
 
   FailPipeline:
-    title: Fail the pipeline if the build failed
+    title: Fail pipeline if the Maven build failed
     image: codefresh/cli
     when:
       steps:

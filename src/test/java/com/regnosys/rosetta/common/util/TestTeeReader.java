@@ -54,10 +54,4 @@ class TestTeeReader {
 		assertEquals(submit1.get(), submit2.get());
 		assertEquals(100*s.length(), submit2.get().length());
 	}
-
-	@Test
-	void fail() {
-		throw new RuntimeException("FAIL NOW!");
-	}
-
 }

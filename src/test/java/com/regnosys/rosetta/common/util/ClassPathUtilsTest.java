@@ -8,7 +8,11 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ClassPathUtilsTest {
@@ -25,7 +29,10 @@ class ClassPathUtilsTest {
     void shouldFindAllFilesInDirectory() {
         List<Path> pathsFromClassPath = ClassPathUtils.findPathsFromClassPath(
                 ImmutableList.of("path-files"), ".*\\.rosetta", Optional.empty(), CLASS_LOADER);
-        assertEquals(1, pathsFromClassPath.size());
+        System.out.println(pathsFromClassPath);
+        assertEquals(2, pathsFromClassPath.size());
+        assertThat(pathsFromClassPath.stream().map(Path::toString).collect(Collectors.toList()),
+                hasItems(matchesPattern(".*test-path.rosetta"), matchesPattern(".*test-path-2.rosetta")));
     }
 
     @DisplayName("No regex provided")

@@ -29,8 +29,6 @@ class ClassPathUtilsTest {
     void shouldFindAllFilesInDirectory() {
         List<Path> pathsFromClassPath = ClassPathUtils.findPathsFromClassPath(
                 ImmutableList.of("path-files"), ".*\\.rosetta", Optional.empty(), CLASS_LOADER);
-        System.out.println(pathsFromClassPath);
-        assertEquals(2, pathsFromClassPath.size());
         assertThat(pathsFromClassPath.stream().map(Path::toString).collect(Collectors.toList()),
                 hasItems(matchesPattern(".*test-path.rosetta"), matchesPattern(".*test-path-2.rosetta")));
     }

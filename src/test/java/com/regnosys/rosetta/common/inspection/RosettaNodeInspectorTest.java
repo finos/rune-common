@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.regnosys.rosetta.common.util.HierarchicalPath;
+import com.rosetta.model.lib.HashFunction;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -12,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.*;
+import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Visitor;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -108,6 +109,11 @@ class RosettaNodeInspectorTest {
         protected int rosettaKeyValueHashCode() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public <T> T externalHash(HashFunction<T> algo) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @SuppressWarnings("unused")
@@ -137,6 +143,11 @@ class RosettaNodeInspectorTest {
         protected int rosettaKeyValueHashCode() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public <T> T externalHash(HashFunction<T> algo) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @SuppressWarnings("unused")
@@ -164,6 +175,11 @@ class RosettaNodeInspectorTest {
 
         @Override
         protected int rosettaKeyValueHashCode() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> T externalHash(HashFunction<T> algo) {
             throw new UnsupportedOperationException();
         }
     }

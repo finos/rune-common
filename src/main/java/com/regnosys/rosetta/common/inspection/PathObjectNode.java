@@ -4,13 +4,11 @@ import com.rosetta.model.lib.RosettaModelObject;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Node;
 import static com.regnosys.rosetta.common.inspection.ReflectUtils.*;
 
 public class PathObjectNode implements Node<PathObject<Object>> {

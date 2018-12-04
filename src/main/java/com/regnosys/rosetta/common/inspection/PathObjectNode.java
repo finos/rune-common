@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -47,7 +48,8 @@ public class PathObjectNode implements Node<PathObject<Object>> {
 
     @Override
     public boolean inspect() {
-        return RosettaModelObject.class.isInstance(this.pathObject.getObject());
+        return RosettaModelObject.class.isInstance(this.pathObject.getObject()) ||
+                RosettaModelObjectBuilder.class.isInstance(this.pathObject.getObject());
     }
 
     private List<PathObject<Object>> mapToPathObjects(Object object, Method method) {

@@ -59,6 +59,7 @@ public class ReflectUtils {
         return ReflectionUtils.getAllMethods(clazz,
                 ReflectUtils::isPublic,
                 ReflectUtils::isGetter,
+                ReflectUtils::isNotCreate,
                 ReflectUtils::hasNoArgs);
     }
 
@@ -67,6 +68,7 @@ public class ReflectUtils {
         return ReflectionUtils.getAllMethods(clazz,
                 ReflectUtils::isPublic,
                 ReflectUtils::isGetter,
+                ReflectUtils::isNotCreate,
                 ReflectUtils::hasNoArgs,
                 methodFilter);
     }
@@ -77,6 +79,10 @@ public class ReflectUtils {
 
     private static boolean isGetter(Method m) {
         return m.getName().startsWith("get");
+    }
+
+    private static boolean isNotCreate(Method m) {
+        return !m.getName().startsWith("getOrCreate");
     }
 
     private static boolean hasNoArgs(Method m) {

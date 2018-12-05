@@ -4,12 +4,6 @@ public class RosettaNodeInspector<T> {
 
     public interface Visitor<T> {
 
-        default void onNodeGuard(Node<T> node) {
-            if (node.inspect()) {
-                onNode(node);
-            }
-        }
-
         void onNode(Node<T> node);
     }
 
@@ -18,22 +12,22 @@ public class RosettaNodeInspector<T> {
     }
 
     public void inspect(Node<T> rootNode, Visitor<T> visitor, boolean childrenFirst) {
-        if (!childrenFirst) visitor.onNodeGuard(rootNode);
+        if (!childrenFirst) visitor.onNode(rootNode);
         inspectChildren(rootNode, visitor, childrenFirst);
-        if (childrenFirst) visitor.onNodeGuard(rootNode);
+        if (childrenFirst) visitor.onNode(rootNode);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void inspectChildren(Node<T> node, Visitor<T> visitor, boolean childrenFirst) {
         for (Node<T> childNode : node.getChildren()) {
             if (!node.isGuarded(childNode)) {
-                if (!childrenFirst) visitor.onNodeGuard(childNode);
+                if (!childrenFirst) visitor.onNode(childNode);
 
                 if (childNode.inspect()) {
                     inspectChildren(childNode, visitor, childrenFirst);
                 }
 
-                if (childrenFirst) visitor.onNodeGuard((childNode));
+                if (childrenFirst) visitor.onNode((childNode));
             }
         }
     }

@@ -105,7 +105,7 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected int rosettaKeyValueHashCode() {
+        protected <T> T externalRosettaKeyValueHash(HashFunction<T> hashFunction) {
             throw new UnsupportedOperationException();
         }
 
@@ -139,7 +139,7 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected int rosettaKeyValueHashCode() {
+        protected <T> T externalRosettaKeyValueHash(HashFunction<T> hashFunction) {
             throw new UnsupportedOperationException();
         }
 
@@ -173,7 +173,7 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected int rosettaKeyValueHashCode() {
+        protected <T> T externalRosettaKeyValueHash(HashFunction<T> hashFunction) {
             throw new UnsupportedOperationException();
         }
 

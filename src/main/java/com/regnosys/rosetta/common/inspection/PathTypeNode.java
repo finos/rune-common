@@ -7,7 +7,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.regnosys.rosetta.common.inspection.ReflectUtils.*;
-import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Node;
 
 public class PathTypeNode implements Node<PathObject<Class<?>>> {
 

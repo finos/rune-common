@@ -24,8 +24,8 @@ class TimeStatsTest {
 		startTimer.stop();
 		LongSummaryStatistics stats=TimeStatsCollector.rawStatsFor("timer");
 		assertEquals(2, stats.getCount());
-		assertThat((double)stats.getSum(), closeTo(100.0, 20.0));
-		assertThat(stats.getAverage(), closeTo(50.0, 10.0));
+		assertThat((double)stats.getSum(), closeTo(100000000.0, 20000000.0));
+		assertThat(stats.getAverage(), closeTo(50000000.0, 10000000.0));
 		System.out.println(TimeStatsCollector.statsFor("timer"));
 	}
 

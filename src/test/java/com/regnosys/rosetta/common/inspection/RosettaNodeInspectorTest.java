@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.regnosys.rosetta.common.util.HierarchicalPath;
-import com.rosetta.model.lib.HashFunction;
+import com.rosetta.model.lib.RosettaHashFunction;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -105,12 +105,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected <T> T externalRosettaKeyValueHash(HashFunction<T> hashFunction) {
+        protected <T> T externalRosettaKeyValueHash(RosettaHashFunction<T> rosettaHashFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public <T> T externalHash(HashFunction<T> algo) {
+        public <T> T externalHash(RosettaHashFunction<T> algo) {
             throw new UnsupportedOperationException();
         }
     }
@@ -139,12 +139,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected <T> T externalRosettaKeyValueHash(HashFunction<T> hashFunction) {
+        protected <T> T externalRosettaKeyValueHash(RosettaHashFunction<T> rosettaHashFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public <T> T externalHash(HashFunction<T> algo) {
+        public <T> T externalHash(RosettaHashFunction<T> algo) {
             throw new UnsupportedOperationException();
         }
     }
@@ -173,12 +173,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected <T> T externalRosettaKeyValueHash(HashFunction<T> hashFunction) {
+        protected <T> T externalRosettaKeyValueHash(RosettaHashFunction<T> rosettaHashFunction) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public <T> T externalHash(HashFunction<T> algo) {
+        public <T> T externalHash(RosettaHashFunction<T> algo) {
             throw new UnsupportedOperationException();
         }
     }

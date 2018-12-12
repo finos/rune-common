@@ -39,7 +39,13 @@ public class RosettaObjectMapper {
 
     private static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
 
-        public Class<?> findPOJOBuilder(AnnotatedClass ac) {
+        /**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public Class<?> findPOJOBuilder(AnnotatedClass ac) {
             Class<?> rawClass = ac.getType().getRawClass();
 
             if (!Modifier.isAbstract(rawClass.getModifiers()) && RosettaModelObject.class.isAssignableFrom(rawClass)) {

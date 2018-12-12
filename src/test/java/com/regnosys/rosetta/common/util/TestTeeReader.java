@@ -1,18 +1,14 @@
 package com.regnosys.rosetta.common.util;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 class TestTeeReader {
@@ -58,5 +54,4 @@ class TestTeeReader {
 		assertEquals(submit1.get(), submit2.get());
 		assertEquals(100*s.length(), submit2.get().length());
 	}
-
 }

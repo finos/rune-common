@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.regnosys.rosetta.common.util.HierarchicalPath;
+import com.rosetta.model.lib.HashHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -12,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.*;
+import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Visitor;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -61,10 +62,9 @@ class RosettaNodeInspectorTest {
 
         RosettaNodeInspector<PathObject<Class<?>>> rosettaNodeInspector = new RosettaNodeInspector<>();
         Visitor<PathObject<Class<?>>> addAllPathsVisitor = (node) -> allPaths.add(node.get());
-        Visitor<PathObject<Class<?>>> noOpRootVisitor = (node) -> {};
-        rosettaNodeInspector.inspect(PathTypeNode.root(Foo.class), addAllPathsVisitor, noOpRootVisitor);
+        rosettaNodeInspector.inspect(PathTypeNode.root(Foo.class), addAllPathsVisitor);
 
-        assertThat(allPaths, hasSize(9));
+        assertThat(allPaths, hasSize(10));
         assertThat(allPaths.stream()
                         .map(o -> o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""))
                         .collect(Collectors.toList()),
@@ -105,7 +105,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected int rosettaKeyValueHashCode() {
+        protected <T> T externalRosettaKeyValueHash(HashHelper<T> helper) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> T externalHash(HashHelper<T> helper) {
             throw new UnsupportedOperationException();
         }
     }
@@ -134,7 +139,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected int rosettaKeyValueHashCode() {
+        protected <T> T externalRosettaKeyValueHash(HashHelper<T> helper) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> T externalHash(HashHelper<T> helper) {
             throw new UnsupportedOperationException();
         }
     }
@@ -163,7 +173,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected int rosettaKeyValueHashCode() {
+        protected <T> T externalRosettaKeyValueHash(HashHelper<T> helper) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> T externalHash(HashHelper<T> helper) {
             throw new UnsupportedOperationException();
         }
     }

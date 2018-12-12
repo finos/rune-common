@@ -38,9 +38,10 @@ steps:
       branch:
         only:
           - master
-      condition:
-        all:
-          buildFailed: steps.Build.result == 'error'
+      steps:
+        - name: Build
+          on:
+            - failure
     commands:
       - export SAFE_COMMIT_AUTHOR='${{CF_COMMIT_AUTHOR}}'
       - export COMMIT_AUTHOR=${SAFE_COMMIT_AUTHOR:-MissingAuthor}

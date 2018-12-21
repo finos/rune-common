@@ -68,7 +68,7 @@ public class ReflectUtils {
 
 		Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName().equals(attributeName));
 		Field field = Iterables.getOnlyElement(fields);
-		return getFinalType(field.getType());
+		return getFinalType(field.getGenericType());
 
 	}
 

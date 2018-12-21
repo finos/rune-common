@@ -76,7 +76,10 @@ public class ReflectUtils {
     	if (type instanceof ParameterizedType) {
     		return getFinalType(((ParameterizedType)type).getActualTypeArguments()[0]);
     	}
-    	return (Class<?>) type;
+    	if (type instanceof Class) {
+        	return (Class<?>) type;
+    	}
+    	return null;
 	}
 
 	public static String attrName(Method method) {

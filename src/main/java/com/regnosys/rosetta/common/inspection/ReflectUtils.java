@@ -61,8 +61,25 @@ public class ReflectUtils {
             return type;
         }
     }
+    
+	@SuppressWarnings("unchecked")
+	public static Class<?> ultimateGenericType(Class<? extends RosettaModelObjectBuilder<?>> clazz,
+			String attributeName) {
 
-    public static String attrName(Method method) {
+		Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName().equals(attributeName));
+		Field field = Iterables.getOnlyElement(fields);
+		return getFinalType(field.getType());
+
+	}
+
+    private static Class<?> getFinalType(Type type) {
+    	if (type instanceof ParameterizedType) {
+    		return getFinalType(((ParameterizedType)type).getActualTypeArguments()[0]);
+    	}
+    	return (Class<?>) type;
+	}
+
+	public static String attrName(Method method) {
         return StringExtensions.toFirstLower(method.getName().replace("get", ""));
     }
 

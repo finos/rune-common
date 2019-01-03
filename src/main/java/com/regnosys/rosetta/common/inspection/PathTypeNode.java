@@ -1,7 +1,9 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.meta.FieldWithMetaI;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -32,9 +34,21 @@ public class PathTypeNode implements Node<PathObject<Class<?>>> {
     @Override
     public List<Node<PathObject<Class<?>>>> getChildren() {
         return methods(pathType.getObject()).stream()
-                .map(method -> new PathObject<>(pathType, attrName(method), returnType(method)))
+                .map(this::toPathObject)
                 .map(PathTypeNode::new)
                 .collect(Collectors.toList());
+    }
+    
+    private PathObject<Class<?>> toPathObject(Method method) {
+    	
+    	Class<?> returnType = returnType(method);
+    	if (FieldWithMetaI.class.isAssignableFrom(returnType)) {
+    		Class<?> genericType = getGenericType(method);
+    		PathObject<Class<?>> refObj = new PathObject<>(pathType, attrName(method), returnType);
+    		return new PathObject<Class<?>>(refObj, "getValue", genericType);
+    	}
+    	else
+    		return new PathObject<>(pathType, attrName(method), returnType);
     }
 
     @Override

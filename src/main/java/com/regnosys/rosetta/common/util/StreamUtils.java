@@ -4,12 +4,9 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
@@ -90,17 +87,6 @@ public class StreamUtils {
 		if (visited.contains(a)) return Stream.empty();
 		visited.add(a);
 		return Stream.concat(Stream.of(a), recurse(func.apply(a), func, visited));
-	}
-	
-	public static <A> Stream<A> optionalStream(Collection<A> c) {
-		if (c==null) return Stream.empty();
-		return c.stream();
-	}
-	
-	public static <T> Predicate<T> distinctByKey(
-		    Function<? super T, ?> ke) {
-		    Map<Object, Boolean> seen = new ConcurrentHashMap<>(); 
-		    return t -> seen.putIfAbsent(ke.apply(t), Boolean.TRUE) == null; 
 	}
 	
 	public static <T> UnaryOperator<T> peek(Consumer<T> c) {

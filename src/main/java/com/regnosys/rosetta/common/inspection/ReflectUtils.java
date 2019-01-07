@@ -6,7 +6,6 @@ import com.regnosys.rosetta.common.util.HierarchicalPath;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-
 import org.reflections.ReflectionUtils;
 
 import java.lang.reflect.*;
@@ -20,32 +19,24 @@ public class ReflectUtils {
 
     public static Class<?> returnType(Method method) {
         if (method.getReturnType().equals(List.class)) {
-            return getGenericType(method);
+            ParameterizedType genericReturnType = (ParameterizedType) method.getGenericReturnType();
+            Type type = genericReturnType.getActualTypeArguments()[0];
+            return (Class<?>) type;
         } else {
             return method.getReturnType();
         }
     }
 
-	public static Class<?> getGenericType(Method method) {
-		ParameterizedType genericReturnType = (ParameterizedType) method.getGenericReturnType();
-		Type type = genericReturnType.getActualTypeArguments()[0];
-		if (type instanceof ParameterizedType) {
-			Type rawType = ((ParameterizedType) type).getRawType();
-			return (Class<?>) rawType;
-		}
-		return (Class<?>) type;
-	}
-
     public static boolean returnsList(Method method) {
         return method.getReturnType().equals(List.class);
     }
 
-    public static Method getMethod(Class<?> originatingClass, String getter) throws NoSuchMethodException {
+    public static Method getMethod(Class<? extends RosettaModelObject> originatingClass, String getter) throws NoSuchMethodException {
         return originatingClass.getMethod(getter);
     }
 
     @SuppressWarnings("unchecked")
-    public static Class<?> genericType(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName) {
+    public static Class<?> genericType(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName) {
         Class<?> type = getAttributeType(clazz, attributeName);
 
         if (List.class.isAssignableFrom(type)) {
@@ -53,36 +44,13 @@ public class ReflectUtils {
             Field field = Iterables.getOnlyElement(fields);
             ParameterizedType genericReturnType = (ParameterizedType) field.getGenericType();
             Type genericType = genericReturnType.getActualTypeArguments()[0];
-            if (genericType instanceof ParameterizedType) {
-            	genericType = ((ParameterizedType)genericType).getRawType();
-            }
             return (Class<?>) genericType;
         } else {
             return type;
         }
     }
-    
-	@SuppressWarnings("unchecked")
-	public static Class<?> ultimateGenericType(Class<? extends RosettaModelObjectBuilder<?>> clazz,
-			String attributeName) {
 
-		Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName().equals(attributeName));
-		Field field = Iterables.getOnlyElement(fields);
-		return getFinalType(field.getGenericType());
-
-	}
-
-    private static Class<?> getFinalType(Type type) {
-    	if (type instanceof ParameterizedType) {
-    		return getFinalType(((ParameterizedType)type).getActualTypeArguments()[0]);
-    	}
-    	if (type instanceof Class) {
-        	return (Class<?>) type;
-    	}
-    	return null;
-	}
-
-	public static String attrName(Method method) {
+    public static String attrName(Method method) {
         return StringExtensions.toFirstLower(method.getName().replace("get", ""));
     }
 
@@ -134,7 +102,7 @@ public class ReflectUtils {
         return Optional.empty();
     }
 
-    public static Method setter(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName, Class<?> attributeType) throws NoSuchMethodException, NoSuchFieldException {
+    public static Method setter(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName, Class<?> attributeType) throws NoSuchMethodException, NoSuchFieldException {
         Class<?> type = getAttributeType(clazz, attributeName);
         String setterPrefix = List.class.isAssignableFrom(type) ? "add" : "set";
         return clazz.getMethod(setterPrefix + StringExtensions.toFirstUpper(attributeName), attributeType);
@@ -165,7 +133,7 @@ public class ReflectUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static void setChildBuilder(RosettaModelObjectBuilder<?> parentBuilder, RosettaModelObjectBuilder<?> childBuilder, String attributeName, int index) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, NoSuchMethodException {
+    public static void setChildBuilder(RosettaModelObjectBuilder parentBuilder, RosettaModelObjectBuilder childBuilder, String attributeName, int index) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, NoSuchMethodException {
         Field field = Iterables.getOnlyElement(ReflectionUtils.getAllFields(parentBuilder.getClass(), ReflectionUtils.withName(attributeName)));
         field.setAccessible(true);
 
@@ -173,7 +141,7 @@ public class ReflectUtils {
             if (field.get(parentBuilder) == null) {
                 field.set(parentBuilder, new ArrayList<>());
             }
-            List<RosettaModelObjectBuilder<?>> list = (List<RosettaModelObjectBuilder<?>>) field.get(parentBuilder);
+            List<RosettaModelObjectBuilder> list = (List<RosettaModelObjectBuilder>) field.get(parentBuilder);
 
             for (int i = 0; i < index + 1; i++) {
                 if (list.size() <= i) {
@@ -186,7 +154,7 @@ public class ReflectUtils {
             field.set(parentBuilder, childBuilder);
         }
     }
-    private static Class<?> getAttributeType(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName) {
+    private static Class<?> getAttributeType(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName) {
         Set<Method> methods = methods(clazz, methodNameFilter(getterName(attributeName)));
         Method method = Iterables.getOnlyElement(methods);
         return method.getReturnType();
@@ -201,7 +169,7 @@ public class ReflectUtils {
     }
 
 
-    public static Method getter(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName) {
+    public static Method getter(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName) {
         Set<Method> methods = methods(clazz, (method) -> method.getName().equals(getterName(attributeName)));
         return Iterables.getOnlyElement(methods);
     }

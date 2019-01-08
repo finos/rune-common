@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.inspection;
 
+import com.regnosys.rosetta.common.util.StreamUtils;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
@@ -29,7 +30,7 @@ public class PathObjectNode implements Node<PathObject<Object>> {
     @Override
     public List<Node<PathObject<Object>>> getChildren() {
         Object object = pathObject.getObject();
-        return methods(object.getClass()).stream()
+        return methods(object.getClass()).stream().filter(StreamUtils.distinctByKey(m->m.getName()))
                 .map(method -> mapToPathObjects(object, method))
                 .flatMap(List::stream)
                 .map(PathObjectNode::new)

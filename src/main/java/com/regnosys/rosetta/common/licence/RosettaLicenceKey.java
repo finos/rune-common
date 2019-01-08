@@ -90,7 +90,7 @@ public class RosettaLicenceKey {
 
     static RosettaLicence decrypt(Path publicKeyPath, String rosettaLicenceKey) {
         try {
-            byte[] decoded = Base64.getDecoder().decode(rosettaLicenceKey.replace("\n", ""));
+            byte[] decoded = Base64.getDecoder().decode(rosettaLicenceKey.replace("\n", "").replace("\r", ""));
             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(readAllBytes(publicKeyPath)));
             Cipher cipher = Cipher.getInstance(CIPHER);
             cipher.init(Cipher.DECRYPT_MODE, publicKey);

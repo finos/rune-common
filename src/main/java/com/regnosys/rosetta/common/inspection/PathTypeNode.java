@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.FieldWithMetaI;
+import com.rosetta.model.lib.meta.FieldWithMeta;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -42,13 +42,7 @@ public class PathTypeNode implements Node<PathObject<Class<?>>> {
     private PathObject<Class<?>> toPathObject(Method method) {
     	
     	Class<?> returnType = returnType(method);
-    	if (FieldWithMetaI.class.isAssignableFrom(returnType)) {
-    		Class<?> genericType = getGenericType(method);
-    		PathObject<Class<?>> refObj = new PathObject<>(pathType, attrName(method), returnType);
-    		return new PathObject<Class<?>>(refObj, "getValue", genericType);
-    	}
-    	else
-    		return new PathObject<>(pathType, attrName(method), returnType);
+		return new PathObject<>(pathType, attrName(method), returnType);
     }
 
     @Override

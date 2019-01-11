@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.util;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,10 @@ public class ClassPathUtils {
 
     public static List<Path> findRosettaFilePaths() {
         return findPathsFromClassPath(ImmutableList.of("model", "cdm/rosetta"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader());
+    }
+    
+    public static Path findBasicTypesFilePath() {
+        return Iterables.getOnlyElement(findPathsFromClassPath(ImmutableList.of("model"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader()));
     }
 
     public static Path toPath(URL resource) {

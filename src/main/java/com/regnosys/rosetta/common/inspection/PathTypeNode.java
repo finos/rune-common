@@ -1,14 +1,15 @@
 package com.regnosys.rosetta.common.inspection;
 
-import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.FieldWithMeta;
+import static com.regnosys.rosetta.common.inspection.ReflectUtils.attrName;
+import static com.regnosys.rosetta.common.inspection.ReflectUtils.methods;
+import static com.regnosys.rosetta.common.inspection.ReflectUtils.returnType;
 
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.ReflectUtils.*;
+import com.rosetta.model.lib.RosettaModelObject;
 
 public class PathTypeNode implements Node<PathObject<Class<?>>> {
 

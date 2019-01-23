@@ -2,33 +2,36 @@ package com.regnosys.rosetta.common.inspection;
 
 public class RosettaNodeInspector<T> {
 
-    public interface Visitor<T> {
+	public interface Visitor<T> {
 
-        void onNode(Node<T> node);
-    }
+		void onNode(Node<T> node);
+	}
 
-    public void inspect(Node<T> rootNode, Visitor<T> visitor) {
-        inspect(rootNode, visitor, false);
-    }
+	public void inspect(Node<T> rootNode, Visitor<T> visitor) {
+		inspect(rootNode, visitor, false);
+	}
 
-    public void inspect(Node<T> rootNode, Visitor<T> visitor, boolean childrenFirst) {
-        if (!childrenFirst) visitor.onNode(rootNode);
-        inspectChildren(rootNode, visitor, childrenFirst);
-        if (childrenFirst) visitor.onNode(rootNode);
-    }
+	public void inspect(Node<T> rootNode, Visitor<T> visitor, boolean childrenFirst) {
+		if (!childrenFirst)
+			visitor.onNode(rootNode);
+		inspectChildren(rootNode, visitor, childrenFirst);
+		if (childrenFirst)
+			visitor.onNode(rootNode);
+	}
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private void inspectChildren(Node<T> node, Visitor<T> visitor, boolean childrenFirst) {
-        for (Node<T> childNode : node.getChildren()) {
-            if (!node.isGuarded(childNode)) {
-                if (!childrenFirst) visitor.onNode(childNode);
+	private void inspectChildren(Node<T> node, Visitor<T> visitor, boolean childrenFirst) {
+		for (Node<T> childNode : node.getChildren()) {
+			if (!node.isGuarded(childNode)) {
+				if (!childrenFirst)
+					visitor.onNode(childNode);
 
-                if (childNode.inspect()) {
-                    inspectChildren(childNode, visitor, childrenFirst);
-                }
+				if (childNode.inspect()) {
+					inspectChildren(childNode, visitor, childrenFirst);
+				}
 
-                if (childrenFirst) visitor.onNode((childNode));
-            }
-        }
-    }
+				if (childrenFirst)
+					visitor.onNode((childNode));
+			}
+		}
+	}
 }

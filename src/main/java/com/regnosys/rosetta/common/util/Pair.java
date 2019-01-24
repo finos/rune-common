@@ -1,14 +1,8 @@
 package com.regnosys.rosetta.common.util;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public class Pair<L, R> implements Serializable {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 6124924390542411482L;
+public class Pair<L, R> {
 
 	private final L left;
 	private final R right;
@@ -46,9 +40,9 @@ public class Pair<L, R> implements Serializable {
 	public int hashCode() {
 		return Objects.hash(left, right);
 	}
-	
+
 	@Override
 	public String toString() {
-		return "(" + Objects.toString(left, "null") + "," + Objects.toString(right, "null") + ")"; 
+		return "(" + Objects.toString(left, "null") + "," + Objects.toString(right, "null") + ")";
 	}
 }

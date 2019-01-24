@@ -103,7 +103,12 @@ public class RosettaLicenceKey {
 
     static class RosettaLicenceException extends RuntimeException {
 
-        public RosettaLicenceException(String message, Throwable cause) {
+        /**
+		 * 
+		 */
+		private static final long serialVersionUID = -1223509897768565634L;
+
+		public RosettaLicenceException(String message, Throwable cause) {
             super(message, cause);
         }
     }

@@ -1,11 +1,8 @@
 package com.regnosys.rosetta.common.inspection;
 
-import com.regnosys.rosetta.common.util.HierarchicalPath;
-import com.rosetta.model.lib.HashHelper;
-import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,10 +10,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Visitor;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import org.junit.jupiter.api.Test;
+
+import com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Visitor;
+import com.regnosys.rosetta.common.util.HierarchicalPath;
+import com.regnosys.rosetta.common.util.Pair;
+import com.rosetta.model.lib.HashHelper;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
 class RosettaNodeInspectorTest {
 
@@ -37,23 +38,23 @@ class RosettaNodeInspectorTest {
 
         assertThat(allPaths, hasSize(15));
         assertThat(allPaths.stream()
-                        .map(o -> new ImmutablePair<>(o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""), o.getObject()))
+                        .map(o -> Pair.of(o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""), o.getObject()))
                         .collect(Collectors.toList()),
-                hasItems(new ImmutablePair<>("", foo),
-                        new ImmutablePair<>("bars(0)", BAR_1),
-                        new ImmutablePair<>("bars(0).a", BAR_1.a),
-                        new ImmutablePair<>("bars(0).bazs(0)", BAZ),
-                        new ImmutablePair<>("bars(0).bazs(0).b", BAZ.b),
-                        new ImmutablePair<>("bars(0).bazs(0).c", BAZ.c),
-                        new ImmutablePair<>("bars(1)", BAR_2),
-                        new ImmutablePair<>("bars(1).a", BAR_2.a),
-                        new ImmutablePair<>("bars(1).bazs(0)", null),
-                        new ImmutablePair<>("bars(2)", BAR_3),
-                        new ImmutablePair<>("bars(2).a", BAR_3.a),
-                        new ImmutablePair<>("baz", BAZ),
-                        new ImmutablePair<>("baz.b", BAZ.b),
-                        new ImmutablePair<>("baz.c", BAZ.c),
-                        new ImmutablePair<>("faz", Faz.XYZ)));
+                hasItems(Pair.of("", foo),
+                        Pair.of("bars(0)", BAR_1),
+                        Pair.of("bars(0).a", BAR_1.a),
+                        Pair.of("bars(0).bazs(0)", BAZ),
+                        Pair.of("bars(0).bazs(0).b", BAZ.b),
+                        Pair.of("bars(0).bazs(0).c", BAZ.c),
+                        Pair.of("bars(1)", BAR_2),
+                        Pair.of("bars(1).a", BAR_2.a),
+                        Pair.of("bars(1).bazs(0)", null),
+                        Pair.of("bars(2)", BAR_3),
+                        Pair.of("bars(2).a", BAR_3.a),
+                        Pair.of("baz", BAZ),
+                        Pair.of("baz.b", BAZ.b),
+                        Pair.of("baz.c", BAZ.c),
+                        Pair.of("faz", Faz.XYZ)));
     }
 
     @Test
@@ -100,7 +101,7 @@ class RosettaNodeInspectorTest {
         public Faz getFaz() { return faz; }
 
         @Override
-        public RosettaModelObjectBuilder toBuilder() {
+        public RosettaModelObjectBuilder<?> toBuilder() {
             throw new UnsupportedOperationException();
         }
 

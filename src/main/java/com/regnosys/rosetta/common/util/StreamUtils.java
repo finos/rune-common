@@ -25,19 +25,14 @@ public class StreamUtils {
 	
 	public static <A> Stream<A> flattenTreeC(A initial, Function<A, Collection<A>> extract) {
 		return Stream.of(initial)
-				.flatMap(a->Stream.concat(Stream.of(a), extract.apply(a).stream().flatMap(flattenTreeC(extract))));
+				.flatMap(a->Stream.concat(Stream.of(a), extract.apply(a).stream()));
 	}
-	
-	public static <A> Stream<A> flattenTree(A initial, Function<A, Stream<A>> extract) {
-		return Stream.of(initial)
-				.flatMap(a->Stream.concat(Stream.of(a), extract.apply(a).flatMap(flattenTree(extract))));
-	}
-	
+
 	public static <A>  Function<A, Stream<A>> flattenTree(Function<A, Stream<A>> extract, Collection<A> visited) {
 		return a-> {
 			if (visited.contains(a)) return Stream.empty();
 			visited.add(a);
-			return Stream.concat(Stream.of(a), extract.apply(a).flatMap(flattenTree(extract)));
+			return Stream.concat(Stream.of(a), extract.apply(a).flatMap(StreamUtils.flattenTree(extract)));
 		};
 	}
 	

@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.google.common.base.Strings;
-import com.regnosys.rosetta.common.util.HierarchicalPath;
+import com.rosetta.model.lib.path.RosettaPath;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,11 +34,11 @@ public class PathObject<T> {
         this.elements = elements;
     }
 
-    public Optional<HierarchicalPath> getHierarchicalPath() {
+    public Optional<RosettaPath> getHierarchicalPath() {
         String buildPath = buildPath();
         return Strings.isNullOrEmpty(buildPath) ?
                 Optional.empty() :
-                Optional.of(HierarchicalPath.valueOf(buildPath));
+                Optional.of(RosettaPath.valueOf(buildPath));
     }
 
     private String buildPath() {

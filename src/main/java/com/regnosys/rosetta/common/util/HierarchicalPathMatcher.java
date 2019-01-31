@@ -1,7 +1,9 @@
 package com.regnosys.rosetta.common.util;
 
+import com.rosetta.model.lib.path.RosettaPath;
+
 public interface HierarchicalPathMatcher {
 
-    boolean matches(HierarchicalPath p1, HierarchicalPath p2);
+    boolean matches(RosettaPath p1, RosettaPath p2);
 
 }

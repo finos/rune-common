@@ -39,9 +39,7 @@ public class PathObject<T> {
 
 	public Optional<HierarchicalPath> getHierarchicalPath() {
 		String buildPath = buildPath();
-		return Strings.isNullOrEmpty(buildPath) ?
-				Optional.empty() :
-				Optional.of(HierarchicalPath.valueOf(buildPath));
+		return Strings.isNullOrEmpty(buildPath) ? Optional.empty() : Optional.of(HierarchicalPath.valueOf(buildPath));
 	}
 
 	private String buildPath() {
@@ -116,8 +114,8 @@ public class PathObject<T> {
 				return false;
 			Element<?> element = (Element<?>) o;
 			return Objects.equals(accessor, element.accessor) &&
-					Objects.equals(index, element.index) &&
-					Objects.equals(object, element.object);
+				Objects.equals(index, element.index) &&
+				Objects.equals(object, element.object);
 		}
 
 		@Override
@@ -128,10 +126,10 @@ public class PathObject<T> {
 		@Override
 		public String toString() {
 			return "Element{" +
-					"accessor='" + accessor + '\'' +
-					", index=" + index +
-					", object=" + object +
-					"}";
+				"accessor='" + accessor + '\'' +
+				", index=" + index +
+				", object=" + object +
+				"}";
 		}
 	}
 }

@@ -2,11 +2,11 @@ package com.regnosys.rosetta.common.inspection;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.regnosys.rosetta.common.util.HierarchicalPath;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
+import com.rosetta.model.lib.path.RosettaPath;
 import org.reflections.ReflectionUtils;
 
 import java.lang.reflect.*;
@@ -157,11 +157,11 @@ public class ReflectUtils {
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 */
-	public static Object valueOf(RosettaModelObject rosettaModelObject, HierarchicalPath hierarchicalPath)
+	public static Object valueOf(RosettaModelObject rosettaModelObject, RosettaPath hierarchicalPath)
 			throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 		Object current = rosettaModelObject;
 
-		for (HierarchicalPath.Element element : hierarchicalPath.allElements()) {
+		for (RosettaPath.Element element : hierarchicalPath.allElements()) {
 			Method method = current	.getClass()
 									.getMethod(getterName(element.getPath()));
 			Object invoke = method.invoke(current);

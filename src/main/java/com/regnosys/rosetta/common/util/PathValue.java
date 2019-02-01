@@ -1,18 +1,20 @@
 package com.regnosys.rosetta.common.util;
 
+import com.rosetta.model.lib.path.RosettaPath;
+
 public class PathValue {
 
-    public static final PathValue EMPTY = new PathValue(HierarchicalPath.valueOf("generatedField"), "");
+    public static final PathValue EMPTY = new PathValue(RosettaPath.valueOf("generatedField"), "");
 
-    private final HierarchicalPath hierarchicalPath;
+    private final RosettaPath hierarchicalPath;
     private final String value;
 
-    public PathValue(HierarchicalPath hierarchicalPath, String value) {
+    public PathValue(RosettaPath hierarchicalPath, String value) {
         this.hierarchicalPath = hierarchicalPath;
         this.value = value;
     }
 
-    public HierarchicalPath getHierarchicalPath() {
+    public RosettaPath getHierarchicalPath() {
         return hierarchicalPath;
     }
 

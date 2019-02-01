@@ -10,10 +10,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.rosetta.model.lib.path.RosettaPath;
 import org.junit.jupiter.api.Test;
 
 import com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Visitor;
-import com.regnosys.rosetta.common.util.HierarchicalPath;
 import com.regnosys.rosetta.common.util.Pair;
 import com.rosetta.model.lib.HashHelper;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -38,7 +38,7 @@ class RosettaNodeInspectorTest {
 
         assertThat(allPaths, hasSize(15));
         assertThat(allPaths.stream()
-                        .map(o -> Pair.of(o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""), o.getObject()))
+                        .map(o -> Pair.of(o.getHierarchicalPath().map(RosettaPath::buildPath).orElse(""), o.getObject()))
                         .collect(Collectors.toList()),
                 hasItems(Pair.of("", foo),
                         Pair.of("bars(0)", BAR_1),
@@ -67,7 +67,7 @@ class RosettaNodeInspectorTest {
 
         assertThat(allPaths, hasSize(10));
         assertThat(allPaths.stream()
-                        .map(o -> o.getHierarchicalPath().map(HierarchicalPath::buildPath).orElse(""))
+                        .map(o -> o.getHierarchicalPath().map(RosettaPath::buildPath).orElse(""))
                         .collect(Collectors.toList()),
                 hasItems("bars",
                         "bars.a",

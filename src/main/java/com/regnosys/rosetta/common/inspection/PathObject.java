@@ -1,135 +1,134 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.google.common.base.Strings;
-import com.regnosys.rosetta.common.util.HierarchicalPath;
+import com.rosetta.model.lib.path.RosettaPath;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class PathObject<T> {
 
-	private final LinkedList<Element<T>> elements;
+    private final LinkedList<Element<T>> elements;
 
-	PathObject(String accessor, T t) {
-		LinkedList<Element<T>> newElements = new LinkedList<>();
-		newElements.add(new Element<>(accessor, t));
-		this.elements = newElements;
-	}
+    PathObject(String accessor, T t) {
+        LinkedList<Element<T>> newElements = new LinkedList<>();
+        newElements.add(new Element<>(accessor, t));
+        this.elements = newElements;
+    }
 
-	public PathObject(PathObject<T> parent, String accessor, T t) {
-		LinkedList<Element<T>> newElements = new LinkedList<>();
-		newElements.addAll(parent.elements);
-		newElements.add(new Element<>(accessor, t));
-		this.elements = newElements;
-	}
+    public PathObject(PathObject<T> parent, String accessor, T t) {
+        LinkedList<Element<T>> newElements = new LinkedList<>();
+        newElements.addAll(parent.elements);
+        newElements.add(new Element<>(accessor, t));
+        this.elements = newElements;
+    }
 
-	public PathObject(PathObject<T> parent, String accessor, int index, T t) {
-		LinkedList<Element<T>> newElements = new LinkedList<>();
-		newElements.addAll(parent.elements);
-		newElements.add(new Element<>(accessor, index, t));
-		this.elements = newElements;
-	}
+    public PathObject(PathObject<T> parent, String accessor, int index, T t) {
+        LinkedList<Element<T>> newElements = new LinkedList<>();
+        newElements.addAll(parent.elements);
+        newElements.add(new Element<>(accessor, index, t));
+        this.elements = newElements;
+    }
 
-	private PathObject(LinkedList<Element<T>> elements) {
-		this.elements = elements;
-	}
+    private PathObject(LinkedList<Element<T>> elements) {
+        this.elements = elements;
+    }
 
-	public Optional<HierarchicalPath> getHierarchicalPath() {
-		String buildPath = buildPath();
-		return Strings.isNullOrEmpty(buildPath) ? Optional.empty() : Optional.of(HierarchicalPath.valueOf(buildPath));
-	}
+    public Optional<RosettaPath> getHierarchicalPath() {
+        String buildPath = buildPath();
+        return Strings.isNullOrEmpty(buildPath) ?
+                Optional.empty() :
+                Optional.of(RosettaPath.valueOf(buildPath));
+    }
 
-	private String buildPath() {
-		List<String> path = getPath();
-		// remove root element, so it starts with the first accessor
-		path.remove(0);
-		return String.join(".", path);
-	}
+    private String buildPath() {
+        List<String> path = getPath();
+        // remove root element, so it starts with the first accessor
+        path.remove(0);
+        return String.join(".", path);
+    }
 
-	public List<String> getPath() {
-		return elements.stream()
-					   .map(e -> e.getAccessor() + (e.getIndex().map(i -> "(" + i + ")").orElse("")))
-					   .collect(Collectors.toList());
-	}
+    public List<String> getPath() {
+        return elements.stream()
+                .map(e -> e.getAccessor() + (e.getIndex().map(i -> "(" + i + ")").orElse("")))
+                .collect(Collectors.toList());
+    }
 
-	public LinkedList<T> getPathObjects() {
-		return elements.stream().map(Element::getObject).collect(Collectors.toCollection(LinkedList::new));
-	}
+    public LinkedList<T> getPathObjects() {
+        return elements.stream().map(Element::getObject).collect(Collectors.toCollection(LinkedList::new));
+    }
 
-	public Optional<PathObject<T>> getParent() {
-		if (elements.size() < 2)
-			return Optional.empty();
+    public Optional<PathObject<T>> getParent() {
+        if(elements.size() < 2)
+            return Optional.empty();
 
-		LinkedList<Element<T>> parent = new LinkedList<>(elements);
-		parent.removeLast();
-		return Optional.of(new PathObject<>(parent));
-	}
+        LinkedList<Element<T>> parent = new LinkedList<>(elements);
+        parent.removeLast();
+        return Optional.of(new PathObject<>(parent));
+    }
 
-	public T getObject() {
-		return elements.getLast().getObject();
-	}
+    public T getObject() {
+        return elements.getLast().getObject();
+    }
 
-	@Override
-	public String toString() {
-		return "PathObject { elements=" + elements + " }";
-	}
+    @Override
+    public String toString() {
+        return "PathObject{" +
+                "elements=" + elements +
+                '}';
+    }
 
-	private static class Element<T> {
-		private final String accessor;
-		private final Optional<Integer> index;
-		private final T object;
+    private static class Element<T> {
+        private final String accessor;
+        private final Optional<Integer> index;
+        private final T object;
 
-		Element(String accessor, T object) {
-			this.accessor = accessor;
-			this.index = Optional.empty();
-			this.object = object;
-		}
+        Element(String accessor, T object) {
+            this.accessor = accessor;
+            this.index = Optional.empty();
+            this.object = object;
+        }
 
-		Element(String accessor, int index, T object) {
-			this.accessor = accessor;
-			this.index = Optional.of(index);
-			this.object = object;
-		}
+        Element(String accessor, int index, T object) {
+            this.accessor = accessor;
+            this.index = Optional.of(index);
+            this.object = object;
+        }
 
-		String getAccessor() {
-			return accessor;
-		}
+        String getAccessor() {
+            return accessor;
+        }
 
-		Optional<Integer> getIndex() {
-			return index;
-		}
+        Optional<Integer> getIndex() {
+            return index;
+        }
 
-		T getObject() {
-			return object;
-		}
+        T getObject() {
+            return object;
+        }
 
-		@Override
-		public boolean equals(Object o) {
-			if (this == o)
-				return true;
-			if (o == null || getClass() != o.getClass())
-				return false;
-			Element<?> element = (Element<?>) o;
-			return Objects.equals(accessor, element.accessor) &&
-				Objects.equals(index, element.index) &&
-				Objects.equals(object, element.object);
-		}
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Element<?> element = (Element<?>) o;
+            return Objects.equals(accessor, element.accessor) &&
+                    Objects.equals(index, element.index) &&
+                    Objects.equals(object, element.object);
+        }
 
-		@Override
-		public int hashCode() {
-			return Objects.hash(accessor, index, object);
-		}
+        @Override
+        public int hashCode() {
+            return Objects.hash(accessor, index, object);
+        }
 
-		@Override
-		public String toString() {
-			return "Element{" +
-				"accessor='" + accessor + '\'' +
-				", index=" + index +
-				", object=" + object +
-				"}";
-		}
-	}
+        @Override
+        public String toString() {
+            return "Element{" +
+                    "accessor='" + accessor + '\'' +
+                    ", index=" + index +
+                    ", object=" + object +
+                    '}';
+        }
+    }
 }

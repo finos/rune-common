@@ -3,11 +3,11 @@ package com.regnosys.rosetta.common.inspection;
 import java.util.List;
 
 public interface Node<T> {
-    T get();
+	T get();
 
-    List<Node<T>> getChildren();
+	List<Node<T>> getChildren();
 
-    boolean isGuarded(Node<T> node);
+	boolean isGuarded(Node<T> node);
 
-    boolean inspect();
+	boolean inspect();
 }

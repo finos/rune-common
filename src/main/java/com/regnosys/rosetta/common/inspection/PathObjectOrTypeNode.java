@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.inspection;
 
+import com.regnosys.rosetta.common.inspection.PathObjectOrTypeNode.ObjectAndType;
 import com.rosetta.model.lib.RosettaModelObject;
 
 import java.lang.reflect.Method;
@@ -8,20 +9,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import com.regnosys.rosetta.common.inspection.PathObjectOrTypeNode.ObjectAndType;
 
 import static com.regnosys.rosetta.common.inspection.ReflectUtils.*;
 
 public class PathObjectOrTypeNode implements Node<PathObject<ObjectAndType>> {
 
-	static Predicate<Node<PathObject<ObjectAndType>>> IS_NULL = (node) -> node	.get()
-																				.getObject()
-																				.getObject() == null;
+	static Predicate<Node<PathObject<ObjectAndType>>> IS_NULL = (node) -> node.get()
+																			  .getObject()
+																			  .getObject() == null;
 
 	static Predicate<Node<PathObject<ObjectAndType>>> MAX_DEPTH = (node) -> {
-		return node	.get()
-					.getPathObjects()
-					.size() > 15;
+		return node.get()
+				   .getPathObjects()
+				   .size() > 15;
 		// simple depth limiting isn't perfect but the algorithm below doesn't allow for any searching in recursive data
 		// structures
 		// e.g. ContractualProduct->econonmicTerms->optionPayout->underlyer->contractualProduct
@@ -39,21 +39,21 @@ public class PathObjectOrTypeNode implements Node<PathObject<ObjectAndType>> {
 
 	@Override
 	public List<Node<PathObject<ObjectAndType>>> getChildren() {
-		if (pathObject	.getObject()
-						.getObject() != null) {
-			Object object = pathObject	.getObject()
-										.getObject();
-			return methods(object.getClass())	.stream()
-												.map(method -> mapToPathObjects(object, method))
-												.flatMap(List::stream)
+		if (pathObject.getObject()
+					  .getObject() != null) {
+			Object object = pathObject.getObject()
+									  .getObject();
+			return methods(object.getClass()).stream()
+											 .map(method -> mapToPathObjects(object, method))
+											 .flatMap(List::stream)
+											 .map(PathObjectOrTypeNode::new)
+											 .collect(Collectors.toList());
+		} else
+			return methods(pathObject.getObject()
+									 .getType()).stream()
+												.map(this::toPathObject)
 												.map(PathObjectOrTypeNode::new)
 												.collect(Collectors.toList());
-		} else
-			return methods(pathObject	.getObject()
-										.getType())	.stream()
-													.map(this::toPathObject)
-													.map(PathObjectOrTypeNode::new)
-													.collect(Collectors.toList());
 	}
 
 	private PathObject<ObjectAndType> toPathObject(Method method) {

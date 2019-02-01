@@ -6,7 +6,6 @@ import com.regnosys.rosetta.common.util.HierarchicalPath;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-
 import org.reflections.ReflectionUtils;
 
 import java.lang.reflect.*;
@@ -18,8 +17,7 @@ import java.util.Set;
 public class ReflectUtils {
 
 	public static Class<?> returnType(Method method) {
-		if (method	.getReturnType()
-					.equals(List.class)) {
+		if (method.getReturnType().equals(List.class)) {
 			return getGenericType(method);
 		} else {
 			return method.getReturnType();
@@ -37,8 +35,7 @@ public class ReflectUtils {
 	}
 
 	public static boolean returnsList(Method method) {
-		return method	.getReturnType()
-						.equals(List.class);
+		return method.getReturnType().equals(List.class);
 	}
 
 	public static Method getMethod(Class<?> originatingClass, String getter) throws NoSuchMethodException {
@@ -50,8 +47,7 @@ public class ReflectUtils {
 		Class<?> type = getAttributeType(clazz, attributeName);
 
 		if (List.class.isAssignableFrom(type)) {
-			Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName()
-																					.equals(attributeName));
+			Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName().equals(attributeName));
 			Field field = Iterables.getOnlyElement(fields);
 			ParameterizedType genericReturnType = (ParameterizedType) field.getGenericType();
 			Type genericType = genericReturnType.getActualTypeArguments()[0];
@@ -68,8 +64,7 @@ public class ReflectUtils {
 	public static Class<?> ultimateGenericType(Class<? extends RosettaModelObjectBuilder<?>> clazz,
 			String attributeName) {
 
-		Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName()
-																				.equals(attributeName));
+		Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName().equals(attributeName));
 		Field field = Iterables.getOnlyElement(fields);
 		return getFinalType(field.getGenericType());
 
@@ -86,8 +81,7 @@ public class ReflectUtils {
 	}
 
 	public static String attrName(Method method) {
-		return StringExtensions.toFirstLower(method	.getName()
-													.replace("get", ""));
+		return StringExtensions.toFirstLower(method.getName().replace("get", ""));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -114,13 +108,11 @@ public class ReflectUtils {
 	}
 
 	private static boolean isGetter(Method m) {
-		return m.getName()
-				.startsWith("get");
+		return m.getName().startsWith("get");
 	}
 
 	private static boolean isNotCreate(Method m) {
-		return !m	.getName()
-					.startsWith("getOrCreate");
+		return !m.getName().startsWith("getOrCreate");
 	}
 
 	private static boolean hasNoArgs(Method m) {
@@ -149,7 +141,7 @@ public class ReflectUtils {
 
 	/**
 	 * Given a HierarchicalPath, this method reflectively gets the value from the rosetta instance.
-	 * 
+	 *
 	 * @param rosettaModelObject
 	 * @param hierarchicalPath
 	 * @return
@@ -162,14 +154,13 @@ public class ReflectUtils {
 		Object current = rosettaModelObject;
 
 		for (HierarchicalPath.Element element : hierarchicalPath.allElements()) {
-			Method method = current	.getClass()
-									.getMethod(getterName(element.getPath()));
+			Method method = current.getClass()
+								   .getMethod(getterName(element.getPath()));
 			Object invoke = method.invoke(current);
-			if (element	.getIndex()
-						.isPresent()) {
+			if (element.getIndex().isPresent()) {
 				List<?> listType = (List<?>) invoke;
-				invoke = listType.get(element	.getIndex()
-												.getAsInt());
+				invoke = listType.get(element.getIndex()
+											 .getAsInt());
 			}
 			current = invoke;
 		}
@@ -182,8 +173,7 @@ public class ReflectUtils {
 		Field field = Iterables.getOnlyElement(ReflectionUtils.getAllFields(parentBuilder.getClass(), ReflectionUtils.withName(attributeName)));
 		field.setAccessible(true);
 
-		if (field	.getType()
-					.equals(List.class)) {
+		if (field.getType().equals(List.class)) {
 			if (field.get(parentBuilder) == null) {
 				field.set(parentBuilder, new ArrayList<>());
 			}
@@ -208,8 +198,7 @@ public class ReflectUtils {
 	}
 
 	private static Predicate<Method> methodNameFilter(String name) {
-		return (method) -> method	.getName()
-									.equals(name);
+		return (method) -> method.getName().equals(name);
 	}
 
 	private static String getterName(String attributeName) {
@@ -217,8 +206,7 @@ public class ReflectUtils {
 	}
 
 	public static Method getter(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName) {
-		Set<Method> methods = methods(clazz, (method) -> method	.getName()
-																.equals(getterName(attributeName)));
+		Set<Method> methods = methods(clazz, (method) -> method.getName().equals(getterName(attributeName)));
 		return Iterables.getOnlyElement(methods);
 	}
 

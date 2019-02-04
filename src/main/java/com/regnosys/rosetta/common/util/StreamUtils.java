@@ -5,12 +5,15 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collector;
+import java.util.stream.Collector.Characteristics;
 import java.util.stream.Stream;
 
 public class StreamUtils {
@@ -111,5 +114,22 @@ public class StreamUtils {
 	        c.accept(x);
 	        return x;
 	    };
+	}
+	
+	public <T> Collector<T, Set<T>, Optional<T>> only() {
+		return only((s)->new IllegalStateException("Expected only one result from collector but got "+s.toString()));
+	}
+	
+	public static <T> Collector<T, Set<T>, Optional<T>> only(Function<Set<T>, RuntimeException> exceptionSupplier) {
+		return Collector.of(HashSet::new, 
+				Set::add, (a,b)->{a.addAll(b);return a;},
+				(s)->{
+					if (s.size()>1) throw exceptionSupplier.apply(s);
+					else if (s.size()==0) return Optional.empty();
+					else {
+						return Optional.of(s.iterator().next());
+					}
+				}, 
+				Characteristics.CONCURRENT, Characteristics.UNORDERED);
 	}
 }

@@ -68,7 +68,7 @@ public class ClassPathUtils {
                 .collect(Collectors.toList());
     }
 
-    private static Stream<Path> loadFromClasspath(String path, ClassLoader classLoader) {
+    public static Stream<Path> loadFromClasspath(String path, ClassLoader classLoader) {
         List<Path> paths = new ArrayList<>();
         try {
             for (URL resource : Collections.list(classLoader.getResources(path))) {

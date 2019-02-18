@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import com.regnosys.rosetta.common.util.PathException;
 
 public class Path {
 
@@ -199,7 +200,7 @@ public class Path {
                 Optional<Integer> index = (match.group(3) != null) ? Optional.of(Integer.valueOf(match.group(3))) : Optional.empty();
                 return new PathElement(name, index, Collections.emptyMap());
             }
-            return null;
+            throw new PathException("Failed to parse path element " + s);
         }
 
         @Override

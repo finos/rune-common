@@ -50,11 +50,7 @@ public class Mapping {
 
     @Override
     public String toString() {
-        return "Mapping{" +
-                "xmlPath=" + xmlPath +
-                ", xmlValue=" + xmlValue +
-                ", rosettaPath=" + rosettaPath +
-                ", error='" + error + '\'' +
-                '}';
+        return String.format("Mapping{xmlPath=%s, xmlValue=%s, rosettaPath=%s, error=%s}",
+                xmlPath, xmlValue, rosettaPath, error);
     }
 }

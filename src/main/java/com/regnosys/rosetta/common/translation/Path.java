@@ -19,7 +19,7 @@ public class Path {
     private final List<PathElement> elements;
 
     public Path() {
-        this.elements = new ArrayList<>();
+        this.elements = ImmutableList.of();
     }
 
     public Path(List<PathElement> elements) {

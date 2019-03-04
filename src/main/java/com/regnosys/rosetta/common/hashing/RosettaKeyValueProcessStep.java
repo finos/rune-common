@@ -33,9 +33,9 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 	}
 
 	@Override
-	public <T extends RosettaModelObject> KeyPostProcessReport<T> runProcessStep(Class<T> topClass,
-			RosettaModelObjectBuilder<T> builder) {
-		KeyPostProcessReport<T> thisReport = new KeyPostProcessReport<>(builder, new HashMap<>());
+	public <T extends RosettaModelObject> KeyPostProcessReport<? extends T> runProcessStep(Class<T> topClass,
+			RosettaModelObjectBuilder<? extends T> builder) {
+		KeyPostProcessReport<? extends T> thisReport = new KeyPostProcessReport<>(builder, new HashMap<>());
 		report = thisReport;
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 		this.processRosetta(path, topClass, builder, null);
@@ -45,7 +45,7 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 
 	@Override
 	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
-			RosettaModelObjectBuilder<R> builder, RosettaModelObjectBuilder<?> parent, AttributeMeta... metas) {
+			RosettaModelObjectBuilder<? extends R> builder, RosettaModelObjectBuilder<?> parent, AttributeMeta... metas) {
 		if (builder instanceof RosettaKeyValueBuilder) {
 			RosettaKeyValueBuilder<?> keyBuilder = (RosettaKeyValueBuilder<?>) builder;
 			if (keyBuilder.getRosettaKeyValue()==null) {

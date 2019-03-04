@@ -11,11 +11,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.rosetta.model.lib.path.RosettaPath;
+import com.rosetta.model.lib.process.Processor;
+
 import org.junit.jupiter.api.Test;
 
 import com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Visitor;
 import com.regnosys.rosetta.common.util.Pair;
-import com.rosetta.model.lib.HashHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
@@ -106,12 +107,7 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        protected <T> T externalRosettaKeyValueHash(HashHelper<T> helper) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T> T externalHash(HashHelper<T> helper) {
+        protected void process(RosettaPath path, Processor processor) {
             throw new UnsupportedOperationException();
         }
     }
@@ -135,17 +131,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        public RosettaModelObjectBuilder toBuilder() {
+        public RosettaModelObjectBuilder<Bar> toBuilder() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        protected <T> T externalRosettaKeyValueHash(HashHelper<T> helper) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T> T externalHash(HashHelper<T> helper) {
+        protected void process(RosettaPath path, Processor processor) {
             throw new UnsupportedOperationException();
         }
     }
@@ -169,17 +160,12 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        public RosettaModelObjectBuilder toBuilder() {
+        public RosettaModelObjectBuilder<Baz> toBuilder() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        protected <T> T externalRosettaKeyValueHash(HashHelper<T> helper) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T> T externalHash(HashHelper<T> helper) {
+        protected void process(RosettaPath path, Processor processor) {
             throw new UnsupportedOperationException();
         }
     }

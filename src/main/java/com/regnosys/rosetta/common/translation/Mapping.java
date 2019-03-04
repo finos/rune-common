@@ -68,7 +68,7 @@ public class Mapping {
 
     @Override
     public String toString() {
-        return String.format("Mapping{xmlPath=%s, xmlValue=%s, rosettaPath=%s, error=%s}",
-                xmlPath, xmlValue, rosettaPath, error);
+        return String.format("Mapping{xmlPath=%s, xmlValue=%s, rosettaPath=%s, rosettaValue=%s, error=%s}",
+                xmlPath, xmlValue, rosettaPath, rosettaValue, error);
     }
 }

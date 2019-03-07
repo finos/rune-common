@@ -28,6 +28,8 @@ public class RosettaObjectMapper {
                 .registerModule(new Jdk8Module())
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                .configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
+                .configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
                 .setAnnotationIntrospector(new RosettaBuilderIntrospector());

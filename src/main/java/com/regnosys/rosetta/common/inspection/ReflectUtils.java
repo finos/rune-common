@@ -46,7 +46,7 @@ public class ReflectUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Class<?> genericType(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName) {
+	public static Class<?> genericType(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName) {
 		Class<?> type = getAttributeType(clazz, attributeName);
 
 		if (List.class.isAssignableFrom(type)) {
@@ -65,7 +65,7 @@ public class ReflectUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Class<?> ultimateGenericType(Class<? extends RosettaModelObjectBuilder<?>> clazz,
+	public static Class<?> ultimateGenericType(Class<? extends RosettaModelObjectBuilder> clazz,
 			String attributeName) {
 
 		Set<Field> fields = ReflectionUtils.getAllFields(clazz, (field) -> field.getName()
@@ -140,7 +140,7 @@ public class ReflectUtils {
 		return Optional.empty();
 	}
 
-	public static Method setter(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName, Class<?> attributeType)
+	public static Method setter(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName, Class<?> attributeType)
 			throws NoSuchMethodException, NoSuchFieldException {
 		Class<?> type = getAttributeType(clazz, attributeName);
 		String setterPrefix = List.class.isAssignableFrom(type) ? "add" : "set";
@@ -177,7 +177,7 @@ public class ReflectUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static void setChildBuilder(RosettaModelObjectBuilder<?> parentBuilder, RosettaModelObjectBuilder<?> childBuilder, String attributeName, int index)
+	public static void setChildBuilder(RosettaModelObjectBuilder parentBuilder, RosettaModelObjectBuilder childBuilder, String attributeName, int index)
 			throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, NoSuchMethodException {
 		Field field = Iterables.getOnlyElement(ReflectionUtils.getAllFields(parentBuilder.getClass(), ReflectionUtils.withName(attributeName)));
 		field.setAccessible(true);
@@ -187,7 +187,7 @@ public class ReflectUtils {
 			if (field.get(parentBuilder) == null) {
 				field.set(parentBuilder, new ArrayList<>());
 			}
-			List<RosettaModelObjectBuilder<?>> list = (List<RosettaModelObjectBuilder<?>>) field.get(parentBuilder);
+			List<RosettaModelObjectBuilder> list = (List<RosettaModelObjectBuilder>) field.get(parentBuilder);
 
 			for (int i = 0; i < index + 1; i++) {
 				if (list.size() <= i) {
@@ -201,7 +201,7 @@ public class ReflectUtils {
 		}
 	}
 
-	private static Class<?> getAttributeType(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName) {
+	private static Class<?> getAttributeType(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName) {
 		Set<Method> methods = methods(clazz, methodNameFilter(getterName(attributeName)));
 		Method method = Iterables.getOnlyElement(methods);
 		return method.getReturnType();
@@ -216,7 +216,7 @@ public class ReflectUtils {
 		return "get" + StringExtensions.toFirstUpper(attributeName);
 	}
 
-	public static Method getter(Class<? extends RosettaModelObjectBuilder<?>> clazz, String attributeName) {
+	public static Method getter(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName) {
 		Set<Method> methods = methods(clazz, (method) -> method	.getName()
 																.equals(getterName(attributeName)));
 		return Iterables.getOnlyElement(methods);

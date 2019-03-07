@@ -19,6 +19,7 @@ import com.regnosys.rosetta.common.inspection.RosettaNodeInspector.Visitor;
 import com.regnosys.rosetta.common.util.Pair;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.meta.RosettaMetaData;
 
 class RosettaNodeInspectorTest {
 
@@ -102,7 +103,7 @@ class RosettaNodeInspectorTest {
         public Faz getFaz() { return faz; }
 
         @Override
-        public RosettaModelObjectBuilder<?> toBuilder() {
+        public RosettaModelObjectBuilder toBuilder() {
             throw new UnsupportedOperationException();
         }
 
@@ -110,6 +111,11 @@ class RosettaNodeInspectorTest {
         protected void process(RosettaPath path, Processor processor) {
             throw new UnsupportedOperationException();
         }
+
+		@Override
+		public RosettaMetaData<? extends RosettaModelObject> getMetaData() {
+			return null;
+		}
     }
 
     @SuppressWarnings("unused")
@@ -131,7 +137,7 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        public RosettaModelObjectBuilder<Bar> toBuilder() {
+        public RosettaModelObjectBuilder toBuilder() {
             throw new UnsupportedOperationException();
         }
 
@@ -139,6 +145,11 @@ class RosettaNodeInspectorTest {
         protected void process(RosettaPath path, Processor processor) {
             throw new UnsupportedOperationException();
         }
+
+		@Override
+		public RosettaMetaData<? extends RosettaModelObject> getMetaData() {
+			return null;
+		}
     }
 
     @SuppressWarnings("unused")
@@ -160,7 +171,7 @@ class RosettaNodeInspectorTest {
         }
 
         @Override
-        public RosettaModelObjectBuilder<Baz> toBuilder() {
+        public RosettaModelObjectBuilder toBuilder() {
             throw new UnsupportedOperationException();
         }
 
@@ -168,6 +179,11 @@ class RosettaNodeInspectorTest {
         protected void process(RosettaPath path, Processor processor) {
             throw new UnsupportedOperationException();
         }
+
+		@Override
+		public RosettaMetaData<? extends RosettaModelObject> getMetaData() {
+			return null;
+		}
     }
 
     private enum Faz {

@@ -113,7 +113,7 @@ class RosettaNodeInspectorTest {
         }
 
 		@Override
-		public RosettaMetaData<? extends RosettaModelObject> getMetaData() {
+		public RosettaMetaData<? extends RosettaModelObject> metaData() {
 			return null;
 		}
     }
@@ -147,7 +147,7 @@ class RosettaNodeInspectorTest {
         }
 
 		@Override
-		public RosettaMetaData<? extends RosettaModelObject> getMetaData() {
+		public RosettaMetaData<? extends RosettaModelObject> metaData() {
 			return null;
 		}
     }
@@ -181,7 +181,7 @@ class RosettaNodeInspectorTest {
         }
 
 		@Override
-		public RosettaMetaData<? extends RosettaModelObject> getMetaData() {
+		public RosettaMetaData<? extends RosettaModelObject> metaData() {
 			return null;
 		}
     }

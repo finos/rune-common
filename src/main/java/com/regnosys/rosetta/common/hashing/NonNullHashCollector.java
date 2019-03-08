@@ -16,7 +16,7 @@ import java.util.Arrays;
 public class NonNullHashCollector extends SimpleBuilderProcessor implements Processor{
 
 	private final IntegerHashGenerator hashcodeGenerator;
-	private final IntegerReport report;
+	protected final IntegerReport report;
 
 	public NonNullHashCollector() {
 		this.hashcodeGenerator = new IntegerHashGenerator();

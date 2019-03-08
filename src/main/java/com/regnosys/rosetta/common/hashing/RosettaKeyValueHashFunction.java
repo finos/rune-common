@@ -16,11 +16,9 @@ import com.rosetta.model.lib.process.Processor;
 public class RosettaKeyValueHashFunction extends NonNullHashCollector implements Processor {
 
 	private final IntegerHashGenerator hashcodeGenerator;
-	private final IntegerReport report;
 	
 	public RosettaKeyValueHashFunction() {
 		this.hashcodeGenerator = new IntegerHashGenerator();
-		report = new IntegerReport(0);
 	}
 	
 	@Override
@@ -39,11 +37,6 @@ public class RosettaKeyValueHashFunction extends NonNullHashCollector implements
 			report.accumulate(hash);
 		}
 
-	}
-
-	@Override
-	public IntegerReport report() {
-		return report;
 	}
 
 }

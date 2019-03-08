@@ -50,6 +50,7 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 			RosettaKeyValueBuilder<?> keyBuilder = (RosettaKeyValueBuilder<?>) builder;
 			if (keyBuilder.getRosettaKeyValue()==null) {
 				BuilderProcessor hasher = hashCalculator.get();
+				hasher.processRosetta(path, rosettaType, builder, parent);
 				builder.process(path, hasher);
 				Report rep = hasher.report();
 				keyBuilder.setRosettaKeyValue(rep.toString());

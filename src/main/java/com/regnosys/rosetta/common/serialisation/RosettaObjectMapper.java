@@ -19,63 +19,83 @@ import com.rosetta.model.lib.RosettaModelObject;
  */
 public class RosettaObjectMapper {
 
-    private RosettaObjectMapper() {}
+	private RosettaObjectMapper() {
+	}
 
-    private static class LazyHolder {
-        static final ObjectMapper INSTANCE = new ObjectMapper()
-                .findAndRegisterModules()
-                .registerModule(new JavaTimeModule())
-                .registerModule(new Jdk8Module())
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                .configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
-                .configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
-                .setAnnotationIntrospector(new RosettaBuilderIntrospector());
-    }
+	// until we find how to properly configure a common one with all the introspector logic we need
+	// we will use a double
+	private static class LazyHolderForDropWizard {
+		static final ObjectMapper INSTANCE = new ObjectMapper()
+																.findAndRegisterModules()
+																.registerModule(new JavaTimeModule())
+																.registerModule(new Jdk8Module())
+																.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+																.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+																.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
+																.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
+																.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+																.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+	}
 
-    public static ObjectMapper getDefaultRosettaObjectMapper() {
-        return LazyHolder.INSTANCE;
-    }
+	private static class LazyHolder {
+		static final ObjectMapper INSTANCE = new ObjectMapper()
+																.findAndRegisterModules()
+																.registerModule(new JavaTimeModule())
+																.registerModule(new Jdk8Module())
+																.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+																.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+																.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
+																.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
+																.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+																.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+																.setAnnotationIntrospector(new RosettaBuilderIntrospector());
+	}
 
-    private static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
+	public static ObjectMapper getDefaultRosettaObjectMapper() {
+		return LazyHolder.INSTANCE;
+	}
 
-        /**
+	public static ObjectMapper forDropWizard() {
+		return LazyHolderForDropWizard.INSTANCE;
+	}
+
+	private static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
+
+		/**
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
 
 		@Override
 		public Class<?> findPOJOBuilder(AnnotatedClass ac) {
-            Class<?> rawClass = ac.getType().getRawClass();
+			Class<?> rawClass = ac	.getType()
+									.getRawClass();
 
-            if (!Modifier.isAbstract(rawClass.getModifiers()) && RosettaModelObject.class.isAssignableFrom(rawClass)) {
-                try {
-                    return Class.forName(rawClass.getTypeName() + "$" + rawClass.getSimpleName() + "Builder",
-                            true, rawClass.getClassLoader());
+			if (!Modifier.isAbstract(rawClass.getModifiers()) && RosettaModelObject.class.isAssignableFrom(rawClass)) {
+				try {
+					return Class.forName(rawClass.getTypeName() + "$" + rawClass.getSimpleName() + "Builder",
+							true, rawClass.getClassLoader());
 
-                } catch (ClassNotFoundException e) {
-                    throw new RosettaSerialiserException("Could not find the builder class for " + rawClass, e);
-                }
-            }
+				} catch (ClassNotFoundException e) {
+					throw new RosettaSerialiserException("Could not find the builder class for " + rawClass, e);
+				}
+			}
 
-            return super.findPOJOBuilder(ac);
-        }
+			return super.findPOJOBuilder(ac);
+		}
 
-        @Override
-        public Version version() {
-            return null;
-        }
-    }
+		@Override
+		public Version version() {
+			return null;
+		}
+	}
 
-    private static class RosettaSerialiserException extends RuntimeException {
-        private static final long serialVersionUID = 1L;
+	private static class RosettaSerialiserException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
 
-        RosettaSerialiserException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-
+		RosettaSerialiserException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
 
 }

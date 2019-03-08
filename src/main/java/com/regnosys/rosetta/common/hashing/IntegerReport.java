@@ -3,6 +3,10 @@ package com.regnosys.rosetta.common.hashing;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 
+/**
+ * @author TomForwood
+ * a Processor or BuilderProcessor report that contains an integer and allows accumulation too that integer to form a hash
+ */
 public class IntegerReport implements BuilderProcessor.Report, Processor.Report {
 	int result;
 	

@@ -9,8 +9,9 @@ import com.rosetta.model.lib.process.Processor;
 import java.util.Arrays;
 
 /**
- * A simple implementation of {@link HashHelper} that only considers non-null
+ * A simple implementation of {@link Processor and BuilderProcessor} that only considers non-null
  * values.
+ * For all non-null primitive values it uses the accumulate method of the integer report to accumulate a hashcode
  */
 public class NonNullHashCollector extends SimpleBuilderProcessor implements Processor{
 
@@ -47,7 +48,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
 
 	@Override
 	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
-			RosettaModelObjectBuilder<? extends R> builder, RosettaModelObjectBuilder<?> parent, AttributeMeta... metas) {
+			RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 		if (builder != null && !Arrays.stream(metas).anyMatch(m->m==AttributeMeta.IS_META)) {
 			report.accumulate();
 		}
@@ -55,7 +56,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
 
 	@Override
 	public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
-			RosettaModelObjectBuilder<?> parent, AttributeMeta... metas) {
+			RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 		if (instance!=null && !Arrays.stream(metas).anyMatch(m->m==AttributeMeta.IS_META)) {
 			int hash = hashcodeGenerator.generate(instance);
 			report.accumulate(hash);

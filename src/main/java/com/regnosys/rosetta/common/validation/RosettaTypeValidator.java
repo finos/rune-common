@@ -19,7 +19,7 @@ public class RosettaTypeValidator extends SimpleBuilderProcessor implements Post
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RosettaTypeValidator.class);
 
-	ValidationReport result;
+	private ValidationReport result;
 
 	@Override
 	public <T extends RosettaModelObject> ValidationReport runProcessStep(Class<T> topClass,

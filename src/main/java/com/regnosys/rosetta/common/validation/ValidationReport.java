@@ -39,7 +39,7 @@ public class ValidationReport implements PostProcessorReport, BuilderProcessor.R
 		return validationResults.stream().filter(ValidationResult::isSuccess).collect(Collectors.toList());
 	}
 
-	List<ValidationResult<?>> results() {
+	public List<ValidationResult<?>> results() {
 		return validationResults;
 	}
 

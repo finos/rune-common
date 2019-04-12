@@ -51,14 +51,15 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 	@Override
 	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
 			RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+		if (builder==null || !builder.hasData()) return;
 		if (builder instanceof RosettaKeyBuilder) {
 			RosettaKeyBuilder<?> keyBuilder = (RosettaKeyBuilder<?>) builder;
-			if (keyBuilder.getRosettaKey()==null) {
+			if (keyBuilder.getOrCreateMeta().getGlobalKey()==null) {
 				BuilderProcessor hasher = hashCalculator.get();
 				builder.process(path, hasher);
 				Report rep = hasher.report();
-				keyBuilder.setRosettaKey(rep.toString());
-				report.keyMap.put(rep.toString(),builder);
+				keyBuilder.getMeta().setGlobalKey(rep.toString());
+				report.keyMap.put(path,keyBuilder);
 			}
 		}
 	}
@@ -76,9 +77,9 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 	public class KeyPostProcessReport implements PostProcessorReport, Report {
 
 		private final RosettaModelObjectBuilder result;
-		private final Map<String, RosettaModelObjectBuilder> keyMap;
+		private final Map<RosettaPath, RosettaKeyBuilder<?>> keyMap;
 
-		public KeyPostProcessReport(RosettaModelObjectBuilder result, Map<String, RosettaModelObjectBuilder> keyMap) {
+		public KeyPostProcessReport(RosettaModelObjectBuilder result, Map<RosettaPath, RosettaKeyBuilder<?>> keyMap) {
 			super();
 			this.result = result;
 			this.keyMap = keyMap;
@@ -89,7 +90,7 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 			return result;
 		}
 
-		public Map<String, RosettaModelObjectBuilder> getKeyMap() {
+		public Map<RosettaPath, RosettaKeyBuilder<?>> getKeyMap() {
 			return keyMap;
 		}
 	}

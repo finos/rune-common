@@ -15,7 +15,7 @@ import com.rosetta.model.lib.process.PostProcessStep;
 
 public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implements PostProcessStep {
 	
-	KeyPostProcessReport report;
+	private KeyPostProcessReport report;
 	private final Supplier<? extends BuilderProcessor> hashCalculator;
 	
 	public RosettaKeyValueProcessStep(Supplier<? extends BuilderProcessor> s) {

@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import com.rosetta.lib.postprocess.PostProcessorReport;
-import com.rosetta.model.lib.RosettaKeyBuilder;
+import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
@@ -34,7 +34,7 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 
 	@Override
 	public String getName() {
-		return "RosettaKey postProcessor";
+		return "GlobalKey postProcessor";
 	}
 
 	@Override
@@ -52,8 +52,8 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
 			RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 		if (builder==null || !builder.hasData()) return;
-		if (builder instanceof RosettaKeyBuilder) {
-			RosettaKeyBuilder<?> keyBuilder = (RosettaKeyBuilder<?>) builder;
+		if (builder instanceof GlobalKeyBuilder) {
+			GlobalKeyBuilder<?> keyBuilder = (GlobalKeyBuilder<?>) builder;
 			if (keyBuilder.getOrCreateMeta().getGlobalKey()==null) {
 				BuilderProcessor hasher = hashCalculator.get();
 				builder.process(path, hasher);
@@ -77,9 +77,9 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 	public class KeyPostProcessReport implements PostProcessorReport, Report {
 
 		private final RosettaModelObjectBuilder result;
-		private final Map<RosettaPath, RosettaKeyBuilder<?>> keyMap;
+		private final Map<RosettaPath, GlobalKeyBuilder<?>> keyMap;
 
-		public KeyPostProcessReport(RosettaModelObjectBuilder result, Map<RosettaPath, RosettaKeyBuilder<?>> keyMap) {
+		public KeyPostProcessReport(RosettaModelObjectBuilder result, Map<RosettaPath, GlobalKeyBuilder<?>> keyMap) {
 			super();
 			this.result = result;
 			this.keyMap = keyMap;
@@ -90,7 +90,7 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 			return result;
 		}
 
-		public Map<RosettaPath, RosettaKeyBuilder<?>> getKeyMap() {
+		public Map<RosettaPath, GlobalKeyBuilder<?>> getKeyMap() {
 			return keyMap;
 		}
 	}

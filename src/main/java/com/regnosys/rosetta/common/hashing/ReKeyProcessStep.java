@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 import com.regnosys.rosetta.common.hashing.RosettaKeyProcessStep.KeyPostProcessReport;
 import com.rosetta.lib.postprocess.PostProcessorReport;
-import com.rosetta.model.lib.RosettaKeyBuilder;
+import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
@@ -51,8 +51,8 @@ public class ReKeyProcessStep implements PostProcessStep{
 			super();
 			this.report = report;
 			KeyPostProcessReport keyPostProcessReport = (KeyPostProcessReport)keyProcessor.report();
-			Map<RosettaPath, RosettaKeyBuilder<?>> globalKeyMap = keyPostProcessReport.getKeyMap();
-			externalGlobalMap = globalKeyMap.values().stream().map(RosettaKeyBuilder.class::cast)
+			Map<RosettaPath, GlobalKeyBuilder<?>> globalKeyMap = keyPostProcessReport.getKeyMap();
+			externalGlobalMap = globalKeyMap.values().stream().map(GlobalKeyBuilder.class::cast)
 				.map(k->k.getMeta())
 				.filter(m->m.getExternalKey()!=null)
 				.collect(Collectors.toMap(m->m.getExternalKey(), m->m.getGlobalKey(),

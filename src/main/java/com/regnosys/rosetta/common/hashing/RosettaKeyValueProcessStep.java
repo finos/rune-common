@@ -29,7 +29,7 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 
 	@Override
 	public String getName() {
-		return "RosettaKey postProcessor";
+		return "GlobalKey postProcessor";
 	}
 
 	@Override

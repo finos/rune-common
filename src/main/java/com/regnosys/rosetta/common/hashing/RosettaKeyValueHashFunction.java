@@ -2,7 +2,7 @@ package com.regnosys.rosetta.common.hashing;
 
 import java.util.Arrays;
 
-import com.rosetta.model.lib.RosettaKey;
+import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -10,7 +10,7 @@ import com.rosetta.model.lib.process.Processor;
 
 /**
  * Combines a {@link NonNullHashCollector} and {@link HashFunction} so that we have an easy way of asking a
- * {@link RosettaKey} model object for its hash value. The {@link NonNullHashCollector} ignores blank values such that
+ * {@link GlobalKey} model object for its hash value. The {@link NonNullHashCollector} ignores blank values such that
  *  * the hashcode can be used as a close proxy to equivalence.
  */
 public class RosettaKeyValueHashFunction extends NonNullHashCollector implements Processor {

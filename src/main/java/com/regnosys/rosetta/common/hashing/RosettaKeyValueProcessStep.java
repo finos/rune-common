@@ -15,7 +15,7 @@ import com.rosetta.model.lib.process.PostProcessStep;
 
 public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implements PostProcessStep {
 	
-	KeyPostProcessReport report;
+	private KeyPostProcessReport report;
 	private final Supplier<? extends BuilderProcessor> hashCalculator;
 	
 	public RosettaKeyValueProcessStep(Supplier<? extends BuilderProcessor> s) {
@@ -29,7 +29,7 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 
 	@Override
 	public String getName() {
-		return "RosettaKey postProcessor";
+		return "GlobalKey postProcessor";
 	}
 
 	@Override

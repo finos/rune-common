@@ -11,12 +11,14 @@ import com.rosetta.model.lib.process.BuilderProcessor;
 public abstract class SimpleBuilderProcessor implements BuilderProcessor{
 
 	@Override
-	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType, List<? extends RosettaModelObjectBuilder> builders, RosettaModelObjectBuilder parent,
+	public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, List<? extends RosettaModelObjectBuilder> builders, RosettaModelObjectBuilder parent,
 			AttributeMeta... metas) {
-		if (builders==null) return;
+		if (builders==null) return false;
+		boolean result=true;
 		for (RosettaModelObjectBuilder builder:builders) {
-			processRosetta(path, rosettaType, builder, parent, metas);
+			result &=processRosetta(path, rosettaType, builder, parent, metas);
 		}
+		return result;
 	}
 
 	@Override

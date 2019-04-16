@@ -35,16 +35,16 @@ public class RosettaTypeValidator extends SimpleBuilderProcessor implements Post
 	}
 
 	@Override
-	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+	public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
 			RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent,
 			AttributeMeta... metas) {
-		if (builder==null) return;
+		if (builder==null) return false;
 		RosettaMetaData<? extends RosettaModelObject> metaData = builder.metaData();
 		List<ValidationResult<?>> validationResults = result.getValidationResults();
 		metaData.dataRules().forEach(dr->validationResults.add(dr.validate(path, builder)));
 		metaData.choiceRuleValidators().forEach(dr->validationResults.add(dr.validate(path, builder)));
 		if (metaData.validator()!=null) validationResults.add(metaData.validator().validate(path, builder));
-		
+		return true;
 	}
 
 	@Override

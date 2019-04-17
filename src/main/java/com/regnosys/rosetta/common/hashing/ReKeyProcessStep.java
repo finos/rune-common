@@ -63,7 +63,7 @@ public class ReKeyProcessStep implements PostProcessStep{
 		}
 
 		@Override
-		public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder,
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 			if (builder instanceof ReferenceWithMetaBuilder) {
 				ReferenceWithMetaBuilder<?> reference = (ReferenceWithMetaBuilder<?>) builder;
@@ -74,6 +74,7 @@ public class ReKeyProcessStep implements PostProcessStep{
 				}
 				
 			}
+			return true;
 		}
 
 		@Override

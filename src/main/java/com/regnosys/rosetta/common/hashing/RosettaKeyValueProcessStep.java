@@ -44,7 +44,7 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 	}
 
 	@Override
-	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+	public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
 			RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 		if (builder instanceof RosettaKeyValueBuilder) {
 			RosettaKeyValueBuilder<?> keyBuilder = (RosettaKeyValueBuilder<?>) builder;
@@ -57,6 +57,7 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 				report.keyMap.put(rep.toString(),builder);
 			}
 		}
+		return true;
 	}
 
 	@Override

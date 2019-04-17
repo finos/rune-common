@@ -49,9 +49,9 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 	}
 
 	@Override
-	public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+	public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
 			RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-		if (builder==null || !builder.hasData()) return;
+		if (builder==null || !builder.hasData()) return false;
 		if (builder instanceof GlobalKeyBuilder) {
 			GlobalKeyBuilder<?> keyBuilder = (GlobalKeyBuilder<?>) builder;
 			if (keyBuilder.getOrCreateMeta().getGlobalKey()==null) {
@@ -62,6 +62,7 @@ public class RosettaKeyProcessStep extends SimpleBuilderProcessor implements Pos
 				report.keyMap.put(path,keyBuilder);
 			}
 		}
+		return true;
 	}
 
 	@Override

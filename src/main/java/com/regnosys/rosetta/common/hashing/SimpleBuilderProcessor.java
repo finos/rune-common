@@ -15,7 +15,9 @@ public abstract class SimpleBuilderProcessor implements BuilderProcessor{
 			AttributeMeta... metas) {
 		if (builders==null) return false;
 		boolean result=true;
-		for (RosettaModelObjectBuilder builder:builders) {
+		for (int i = 0; i < builders.size(); i++) {
+			RosettaModelObjectBuilder builder = builders.get(i);
+			path = path.withIndex(i);
 			result &=processRosetta(path, rosettaType, builder, parent, metas);
 		}
 		return result;

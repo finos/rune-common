@@ -30,20 +30,31 @@ public class RosettaObjectMapper {
 	}
 
 	private static class LazyHolder {
-		static final ObjectMapper INSTANCE = new ObjectMapper()	.findAndRegisterModules()
-																.registerModule(new GuavaModule())
-																.registerModule(new JodaModule())
-																.registerModule(new AfterburnerModule())
-																.registerModule(new ParameterNamesModule())
-																.registerModule(new Jdk8Module())
-																.registerModule(new JavaTimeModule())
-																.registerModule(new RosettaModule())
-																.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-																.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-																.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
-																.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
-																.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-																.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+		static final ObjectMapper INSTANCE;
+
+		static {
+			INSTANCE = getNewRosettaObjectMapper();
+		}
+	}
+
+	/**
+	 * Creating new RosettaObjectMapper instances is expensive, use the singleton instance if possible.
+	 */
+	public static ObjectMapper getNewRosettaObjectMapper() {
+		return new ObjectMapper().findAndRegisterModules()
+								 .registerModule(new GuavaModule())
+								 .registerModule(new JodaModule())
+								 .registerModule(new AfterburnerModule())
+								 .registerModule(new ParameterNamesModule())
+								 .registerModule(new Jdk8Module())
+								 .registerModule(new JavaTimeModule())
+								 .registerModule(new RosettaModule())
+								 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+								 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+								 .configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
+								 .configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
+								 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+								 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 	}
 
 	public static ObjectMapper getDefaultRosettaObjectMapper() {

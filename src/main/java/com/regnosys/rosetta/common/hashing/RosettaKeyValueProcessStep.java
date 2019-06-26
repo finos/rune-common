@@ -11,11 +11,11 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
+import com.rosetta.model.lib.process.BuilderProcessor.Report;
 import com.rosetta.model.lib.process.PostProcessStep;
 
-public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implements PostProcessStep {
+public class RosettaKeyValueProcessStep implements PostProcessStep {
 	
-	private KeyPostProcessReport report;
 	private final Supplier<? extends BuilderProcessor> hashCalculator;
 	
 	public RosettaKeyValueProcessStep(Supplier<? extends BuilderProcessor> s) {
@@ -36,38 +36,47 @@ public class RosettaKeyValueProcessStep extends SimpleBuilderProcessor implement
 	public <T extends RosettaModelObject> KeyPostProcessReport runProcessStep(Class<T> topClass,
 			RosettaModelObjectBuilder builder) {
 		KeyPostProcessReport thisReport = new KeyPostProcessReport(builder, new HashMap<>());
-		report = thisReport;
+		RosettaKeyValueProcessor processor = new RosettaKeyValueProcessor(thisReport);
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
-		this.processRosetta(path, topClass, builder, null);
-		builder.process(path, this);
+		processor.processRosetta(path, topClass, builder, null);
+		builder.process(path, processor);
 		return thisReport;
 	}
 
-	@Override
-	public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
-			RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-		if (builder instanceof RosettaKeyValueBuilder) {
-			RosettaKeyValueBuilder<?> keyBuilder = (RosettaKeyValueBuilder<?>) builder;
-			if (keyBuilder.getRosettaKeyValue()==null) {
-				BuilderProcessor hasher = hashCalculator.get();
-				hasher.processRosetta(path, rosettaType, builder, parent);
-				builder.process(path, hasher);
-				Report rep = hasher.report();
-				keyBuilder.setRosettaKeyValue(rep.toString());
-				report.keyMap.put(rep.toString(),builder);
-			}
+	class RosettaKeyValueProcessor extends SimpleBuilderProcessor {
+		private final KeyPostProcessReport report;
+		public RosettaKeyValueProcessor(KeyPostProcessReport report) {
+			super();
+			this.report = report;
 		}
-		return true;
-	}
 
-	@Override
-	public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
-			RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-	}
+		@Override
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+			if (builder instanceof RosettaKeyValueBuilder) {
+				RosettaKeyValueBuilder<?> keyBuilder = (RosettaKeyValueBuilder<?>) builder;
+				if (keyBuilder.getRosettaKeyValue()==null) {
+					BuilderProcessor hasher = hashCalculator.get();
+					hasher.processRosetta(path, rosettaType, builder, parent);
+					builder.process(path, hasher);
+					Report rep = hasher.report();
+					keyBuilder.setRosettaKeyValue(rep.toString());
+					report.keyMap.put(rep.toString(),builder);
+				}
+			}
+			return true;
+		}
 
-	@Override
-	public Report report() {
-		return report;
+		@Override
+		public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
+				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+		}
+
+		@Override
+		public Report report() {
+			return report;
+		}
+		
 	}
 	
 	public class KeyPostProcessReport implements PostProcessorReport, Report {

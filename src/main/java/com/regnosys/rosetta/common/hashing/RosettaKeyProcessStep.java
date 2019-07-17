@@ -67,8 +67,8 @@ public class RosettaKeyProcessStep implements PostProcessStep {
 					builder.process(path, hasher);
 					Report rep = hasher.report();
 					keyBuilder.getMeta().setGlobalKey(rep.toString());
-					report.keyMap.put(path,keyBuilder);
 				}
+				report.keyMap.put(path,keyBuilder);
 			}
 			return true;
 		}

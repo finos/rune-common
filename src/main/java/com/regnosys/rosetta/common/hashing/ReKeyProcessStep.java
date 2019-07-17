@@ -26,7 +26,7 @@ public class ReKeyProcessStep implements PostProcessStep{
 	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 		ReKeyPostProcessReport report = new ReKeyPostProcessReport();
-		ReKeyProcessor processor = new ReKeyProcessor(report);
+		ReKeyProcessor processor = new ReKeyProcessor(report, keyProcessor.runProcessStep(topClass, builder));
 		processor.processRosetta(path, topClass, builder, null);
 		builder.process(path, processor);
 		return report;
@@ -47,10 +47,9 @@ public class ReKeyProcessStep implements PostProcessStep{
 		private final ReKeyPostProcessReport report;
 		private final Map<String, String> externalGlobalMap;
 		
-		public ReKeyProcessor(ReKeyPostProcessReport report) {
+		public ReKeyProcessor(ReKeyPostProcessReport report, KeyPostProcessReport keyPostProcessReport) {
 			super();
 			this.report = report;
-			KeyPostProcessReport keyPostProcessReport = (KeyPostProcessReport)keyProcessor.report();
 			Map<RosettaPath, GlobalKeyBuilder<?>> globalKeyMap = keyPostProcessReport.getKeyMap();
 			externalGlobalMap = globalKeyMap.values().stream().map(GlobalKeyBuilder.class::cast)
 				.map(k->k.getMeta())

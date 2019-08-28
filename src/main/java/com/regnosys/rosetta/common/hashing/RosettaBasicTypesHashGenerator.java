@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 
+import com.rosetta.model.lib.records.Date;
+
 /**
  * For each basic type in Rosetta, specify a handler for the generation of a hashcode
  * @param <T> the object representing hashcode
@@ -21,6 +23,9 @@ public abstract class RosettaBasicTypesHashGenerator<T> {
         }
         else if (object instanceof LocalDate) {
             return handle((LocalDate) object);
+        }
+        else if (object instanceof Date) {
+        	return handle(((Date) object).toLocalDate());
         }
         else if (object instanceof LocalTime) {
             return handle((LocalTime) object);

@@ -1,14 +1,16 @@
 package com.regnosys.rosetta.common.serialisation;
 
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.json.PackageVersion;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -19,6 +21,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.records.Date;
+import com.rosetta.model.lib.records.DateImpl;
 
 /**
  * A lazy-loading holder that returns a pre-configured {@link ObjectMapper} that serves as the default when
@@ -49,6 +53,7 @@ public class RosettaObjectMapper {
 								 .registerModule(new Jdk8Module())
 								 .registerModule(new JavaTimeModule())
 								 .registerModule(new RosettaModule())
+								 .registerModule(new RosettaDateModule())
 								 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
 								 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 								 .configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
@@ -131,4 +136,26 @@ public class RosettaObjectMapper {
 		}
 	}
 
+	//TODO remove after Date becomes a class with a default constructor
+	private static class RosettaDateModule extends SimpleModule {
+		private static final long serialVersionUID = 1L;
+		{
+			addDeserializer(Date.class, new StdDeserializer<Date>(Date.class) {
+				private static final long serialVersionUID = 1L;
+				@Override
+				public Date deserialize(JsonParser p, DeserializationContext ctxt)
+						throws IOException, JsonProcessingException {
+					return new DateImpl(p.readValueAs(DateExtended.class).toLocalDate());
+				}
+			});
+		}
+	}
+
+	//TODO remove after Date becomes a class with a default constructor
+	public static class DateExtended extends DateImpl{
+		public DateExtended(@JsonProperty("day") int day, @JsonProperty("month") int month, @JsonProperty("year") int year) {
+			super(day, month, year);
+		}
+
+	}
 }

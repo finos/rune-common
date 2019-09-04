@@ -2,6 +2,7 @@ package com.regnosys.rosetta.common.serialisation;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -156,6 +157,8 @@ public class RosettaObjectMapper {
 		public DateExtended(@JsonProperty("day") int day, @JsonProperty("month") int month, @JsonProperty("year") int year) {
 			super(day, month, year);
 		}
-
+		public DateExtended(String date) {
+			super(LocalDate.parse(date));
+		}
 	}
 }

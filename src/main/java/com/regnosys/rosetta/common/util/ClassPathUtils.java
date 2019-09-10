@@ -40,9 +40,12 @@ public class ClassPathUtils {
     public static List<Path> findRosettaFilePaths() {
         return findPathsFromClassPath(ImmutableList.of("model", "cdm/rosetta"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader());
     }
-    
-    public static Path findBasicTypesFilePath() {
-        return Iterables.getOnlyElement(findPathsFromClassPath(ImmutableList.of("model"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader()));
+
+    /**
+     * Includes basictypes.rosetta and annotations.rosetta
+     */
+    public static List<Path> findStaticRosettaFilePaths() {
+        return ClassPathUtils.findPathsFromClassPath(ImmutableList.of("model"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader());
     }
 
     public static Path toPath(URL resource) {

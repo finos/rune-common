@@ -1,18 +1,21 @@
 package com.regnosys.rosetta.common.hashing;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Map.Entry;
 
 import com.regnosys.rosetta.common.hashing.RosettaKeyProcessStep.KeyPostProcessReport;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.meta.MetaFieldsI.MetaFieldsBuilderI;
 import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor.Report;
 import com.rosetta.model.lib.process.PostProcessStep;
+import com.rosetta.model.lib.process.ProcessingException;
 
 public class ReKeyProcessStep implements PostProcessStep{
 
@@ -45,20 +48,25 @@ public class ReKeyProcessStep implements PostProcessStep{
 	private class ReKeyProcessor extends SimpleBuilderProcessor {
 
 		private final ReKeyPostProcessReport report;
-		private final Map<String, String> externalGlobalMap;
+		private Map<String, String> externalGlobalMap;
 		
 		public ReKeyProcessor(ReKeyPostProcessReport report, KeyPostProcessReport keyPostProcessReport) {
 			super();
 			this.report = report;
 			Map<RosettaPath, GlobalKeyBuilder<?>> globalKeyMap = keyPostProcessReport.getKeyMap();
-			externalGlobalMap = globalKeyMap.values().stream().map(GlobalKeyBuilder.class::cast)
-				.map(k->k.getMeta())
-				.filter(m->m.getExternalKey()!=null)
-				.collect(Collectors.toMap(m->m.getExternalKey(), m->m.getGlobalKey(),
-						(v1,v2)->{
-							if (!v1.equals(v2))  throw new IllegalStateException(String.format("Duplicate key with differing values %s, %s", v1,v2));
-							return v1;
-						}));
+			externalGlobalMap = new HashMap<>();
+			for (Entry<RosettaPath, GlobalKeyBuilder<?>> globalKey:globalKeyMap.entrySet()) {
+				MetaFieldsBuilderI meta = globalKey.getValue().getMeta();
+				if (meta.getExternalKey()!=null) {
+					String external = meta.getExternalKey();
+					String global = meta.getGlobalKey();
+					if (externalGlobalMap.containsKey(external) && !externalGlobalMap.get(external).equals(global)) {
+						throw new ProcessingException("Two distinct rosetta objects have the same external key "+external, 
+								globalKey.getValue().toString(), "ReKeyPostProcessor", globalKey.getKey());
+					}
+					externalGlobalMap.put(external, global);
+				}
+			}
 		}
 
 		@Override

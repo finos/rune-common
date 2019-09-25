@@ -1,9 +1,5 @@
 package com.regnosys.rosetta.common.serialisation;
 
-import java.io.IOException;
-import java.lang.reflect.Modifier;
-import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
@@ -11,8 +7,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -24,6 +22,10 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
+
+import java.io.IOException;
+import java.lang.reflect.Modifier;
+import java.time.LocalDate;
 
 /**
  * A lazy-loading holder that returns a pre-configured {@link ObjectMapper} that serves as the default when
@@ -68,11 +70,10 @@ public class RosettaObjectMapper {
 	}
 
 	/**
-	 * Using a module class to append our annotation introspector with a minimal fuss 
-	 * 
+	 * Using a module class to append our annotation introspector with a minimal fuss
 	 */
 	private static class RosettaModule extends SimpleModule {
-		
+
 		private static final long serialVersionUID = 1L;
 
 		public RosettaModule() {
@@ -99,7 +100,7 @@ public class RosettaObjectMapper {
 	private static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
 
 		/**
-		 * 
+		 *
 		 */
 		private static final long serialVersionUID = 1L;
 
@@ -123,6 +124,23 @@ public class RosettaObjectMapper {
 			return super.findPOJOBuilder(ac);
 		}
 
+		/**
+		 * We generate multiple setters for the builders. When er detect this, we can just choose the correct one here.
+		 */
+		@Override public AnnotatedMethod resolveSetterConflict(MapperConfig<?> config, AnnotatedMethod setter1, AnnotatedMethod setter2) {
+			if (setter1.getParameterCount() == 1 && setter2.getParameterCount() == 1) {
+				if (paramIsBuilder(setter1))
+					return setter1;
+				if (paramIsBuilder(setter2))
+					return setter2;
+			}
+			return super.resolveSetterConflict(config, setter1, setter2);
+		}
+
+		private boolean paramIsBuilder(AnnotatedMethod setter) {
+			return setter.getParameter(0).getType().isTypeOrSubTypeOf(RosettaModelObject.class);
+		}
+
 		@Override
 		public Version version() {
 			return Version.unknownVersion();
@@ -140,9 +158,11 @@ public class RosettaObjectMapper {
 	//TODO remove after Date becomes a class with a default constructor
 	private static class RosettaDateModule extends SimpleModule {
 		private static final long serialVersionUID = 1L;
+
 		{
 			addDeserializer(Date.class, new StdDeserializer<Date>(Date.class) {
 				private static final long serialVersionUID = 1L;
+
 				@Override
 				public Date deserialize(JsonParser p, DeserializationContext ctxt)
 						throws IOException, JsonProcessingException {
@@ -153,10 +173,11 @@ public class RosettaObjectMapper {
 	}
 
 	//TODO remove after Date becomes a class with a default constructor
-	public static class DateExtended extends DateImpl{
+	public static class DateExtended extends DateImpl {
 		public DateExtended(@JsonProperty("day") int day, @JsonProperty("month") int month, @JsonProperty("year") int year) {
 			super(day, month, year);
 		}
+
 		public DateExtended(String date) {
 			super(LocalDate.parse(date));
 		}

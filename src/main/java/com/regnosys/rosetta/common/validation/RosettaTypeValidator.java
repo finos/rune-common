@@ -14,9 +14,10 @@ import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.PostProcessStep;
+import com.rosetta.model.lib.validation.ModelObjectValidator;
 import com.rosetta.model.lib.validation.ValidationResult;
 
-public class RosettaTypeValidator  implements PostProcessStep{
+public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValidator{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RosettaTypeValidator.class);
 
@@ -85,6 +86,7 @@ public class RosettaTypeValidator  implements PostProcessStep{
 	 * @param modelObject
 	 * @throws RuntimeException if validation fails
 	 */
+	@Override
 	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, T modelObject) {
 		final StringBuilder errors = new StringBuilder();
 		validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
@@ -101,6 +103,7 @@ public class RosettaTypeValidator  implements PostProcessStep{
 	 * @param modelObjects
 	 * @throws RuntimeException if validation fails
 	 */
+	@Override
 	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, List<T> modelObjects) {
 		final StringBuilder errors = new StringBuilder();
 		for (T modelObject : modelObjects) {

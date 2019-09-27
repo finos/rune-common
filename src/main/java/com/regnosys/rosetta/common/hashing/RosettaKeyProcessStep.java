@@ -62,12 +62,10 @@ public class RosettaKeyProcessStep implements PostProcessStep {
 			if (builder==null || !builder.hasData()) return false;
 			if (builder instanceof GlobalKeyBuilder) {
 				GlobalKeyBuilder<?> keyBuilder = (GlobalKeyBuilder<?>) builder;
-				if (keyBuilder.getOrCreateMeta().getGlobalKey()==null) {
-					BuilderProcessor hasher = hashCalculator.get();
-					builder.process(path, hasher);
-					Report rep = hasher.report();
-					keyBuilder.getMeta().setGlobalKey(rep.toString());
-				}
+				BuilderProcessor hasher = hashCalculator.get();
+				builder.process(path, hasher);
+				Report rep = hasher.report();
+				keyBuilder.getOrCreateMeta().setGlobalKey(rep.toString());
 				report.keyMap.put(path,keyBuilder);
 			}
 			return true;

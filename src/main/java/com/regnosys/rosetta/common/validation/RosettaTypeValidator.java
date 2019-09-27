@@ -2,6 +2,7 @@ package com.regnosys.rosetta.common.validation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +14,10 @@ import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.PostProcessStep;
+import com.rosetta.model.lib.validation.ModelObjectValidator;
 import com.rosetta.model.lib.validation.ValidationResult;
 
-public class RosettaTypeValidator  implements PostProcessStep{
+public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValidator{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RosettaTypeValidator.class);
 
@@ -73,5 +75,49 @@ public class RosettaTypeValidator  implements PostProcessStep{
 	@Override
 	public Integer getPriority() {
 		return 100;
+	}
+	
+	
+	/**
+	 * Runs the process step and collects errors. Throws an exception if validation fails
+	 * 
+	 * @param <T>
+	 * @param topClass
+	 * @param modelObject
+	 * @throws RuntimeException if validation fails
+	 */
+	@Override
+	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, T modelObject) {
+		final StringBuilder errors = new StringBuilder();
+		validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
+		if(errors.length() > 0) {
+			throw new RuntimeException("Object validation failed:" + errors.toString());
+		}
+	}
+	
+	/**
+	 * Runs the process step and collects errors. Throws an exception if validation fails
+	 * 
+	 * @param <T>
+	 * @param topClass
+	 * @param modelObjects
+	 * @throws RuntimeException if validation fails
+	 */
+	@Override
+	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, List<T> modelObjects) {
+		final StringBuilder errors = new StringBuilder();
+		for (T modelObject : modelObjects) {
+			validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
+		}
+		if(errors.length() > 0) {
+			throw new RuntimeException("Object validation failed:" + errors.toString());
+		}
+	}
+	
+	private <T extends RosettaModelObject> void validateAndCollectErrors(Class<T> topClass, T modelObject, Consumer<? super ValidationResult<?>> collector) {
+		runProcessStep(topClass, modelObject.toBuilder())
+			.getValidationResults()
+			.stream().filter((res)-> { return !res.isSuccess();})
+			.forEach(collector);
 	}
 }

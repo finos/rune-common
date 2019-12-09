@@ -54,6 +54,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
         @Override
         public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+            // Basic type reference collecting is not supported yet.
         }
 
         @Override
@@ -70,13 +71,15 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
             this.references = refs;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
             if (builder instanceof ReferenceWithMetaBuilder) {
                 ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMetaBuilder) builder;
                 if (referenceWithMetaBuilder.getValue() == null && referenceWithMetaBuilder.getGlobalReference() != null) {
-                    RosettaModelObjectBuilder o = (RosettaModelObjectBuilder) references.get(rosettaType, referenceWithMetaBuilder.getGlobalReference());
-                    // referenceWithMetaBuilder.setValue(o.build());
+                    ofNullable(references.get(referenceWithMetaBuilder.getValueType(), referenceWithMetaBuilder.getGlobalReference()))
+                            .map(RosettaModelObjectBuilder.class::cast)
+                            .ifPresent(b -> referenceWithMetaBuilder.setValue(b.build()));
                 }
             }
             return true;
@@ -84,17 +87,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
         @Override
         public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-            if (parent instanceof ReferenceWithMetaBuilder) {
-                ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMetaBuilder) parent;
-
-               // referenceWithMetaBuilder.getType();
-
-                if (referenceWithMetaBuilder.getValue() == null && referenceWithMetaBuilder.getGlobalReference() != null) {
-                    RosettaModelObjectBuilder o = (RosettaModelObjectBuilder) references.get(rosettaType, referenceWithMetaBuilder.getGlobalReference());
-                    // referenceWithMetaBuilder.setValue(o.build());
-                }
-            }
-
+            // Basic type reference resolving is not supported yet.
         }
 
         @Override

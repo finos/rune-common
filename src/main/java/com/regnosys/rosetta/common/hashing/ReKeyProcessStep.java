@@ -1,21 +1,21 @@
 package com.regnosys.rosetta.common.hashing;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import com.regnosys.rosetta.common.hashing.RosettaKeyProcessStep.KeyPostProcessReport;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.MetaFieldsI.MetaFieldsBuilderI;
-import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
+import com.rosetta.model.lib.meta.ReferenceWithMetaBuilderBase;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor.Report;
 import com.rosetta.model.lib.process.PostProcessStep;
 import com.rosetta.model.lib.process.ProcessingException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class ReKeyProcessStep implements PostProcessStep{
 
@@ -72,14 +72,13 @@ public class ReKeyProcessStep implements PostProcessStep{
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-			if (builder instanceof ReferenceWithMetaBuilder) {
-				ReferenceWithMetaBuilder<?> reference = (ReferenceWithMetaBuilder<?>) builder;
+			if (builder instanceof ReferenceWithMetaBuilderBase) {
+				ReferenceWithMetaBuilderBase<?> reference = (ReferenceWithMetaBuilderBase<?>) builder;
 				String externalReference = reference.getExternalReference();
 				String globalRef = externalGlobalMap.get(externalReference);
 				if (globalRef!=null) {
 					reference.setGlobalReference(globalRef);
 				}
-				
 			}
 			return true;
 		}

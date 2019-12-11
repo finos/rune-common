@@ -35,7 +35,9 @@ public class ValidationReport implements PostProcessorReport, BuilderProcessor.R
 	}
 
 	public List<ValidationResult<?>> validationFailures() {
-		return validationResults.stream().filter(ValidationResult::isSuccess).collect(Collectors.toList());
+		return validationResults.stream()
+				.filter(r -> !r.isSuccess())
+				.collect(Collectors.toList());
 	}
 
 	public List<ValidationResult<?>> results() {
@@ -53,9 +55,7 @@ public class ValidationReport implements PostProcessorReport, BuilderProcessor.R
 	}
 
 	private boolean failure() {
-		List<ValidationResult<?>> res = validationResults.stream().filter(result -> !result.isSuccess())
-				.collect(Collectors.toList());
-		return !res.isEmpty();
+		return !validationFailures().isEmpty();
 	}
 
 	public List<ValidationResult<?>> getValidationResults() {

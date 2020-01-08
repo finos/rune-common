@@ -124,9 +124,9 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         }
 
         public <T extends RosettaModelObject> Optional<T> getReferencedObject(Class<T> rosettaType, String globalReference) {
-            return  Optional.ofNullable(references.get(rosettaType, globalReference))
+            return Optional.ofNullable(references.get(rosettaType, globalReference))
                     .map(RosettaModelObjectBuilder.class::cast)
-                    .map(o -> o.build())
+                    .map(RosettaModelObjectBuilder::build)
                     .map(o -> (T) o);
         }
 

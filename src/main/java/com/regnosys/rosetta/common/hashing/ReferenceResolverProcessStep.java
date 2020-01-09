@@ -13,6 +13,8 @@ import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.PostProcessStep;
 
+import java.util.Optional;
+
 import static java.util.Optional.ofNullable;
 
 public class ReferenceResolverProcessStep implements PostProcessStep {
@@ -28,7 +30,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
     }
 
     @Override
-    public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
+    public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
         RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
         ReferenceCollector referenceCollector = new ReferenceCollector();
         builder.process(path, referenceCollector);
@@ -108,7 +110,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         }
     }
 
-    static class ReferenceResolverPostProcessorReport implements PostProcessorReport {
+    public static class ReferenceResolverPostProcessorReport implements PostProcessorReport {
         private final Table<Class<?>, String, Object> references;
         private final RosettaModelObjectBuilder builder;
 
@@ -119,6 +121,13 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
         public Table<Class<?>, String, Object> getReferences() {
             return this.references;
+        }
+
+        public <T extends RosettaModelObject> Optional<T> getReferencedObject(Class<T> rosettaType, String globalReference) {
+            return Optional.ofNullable(references.get(rosettaType, globalReference))
+                    .map(RosettaModelObjectBuilder.class::cast)
+                    .map(RosettaModelObjectBuilder::build)
+                    .map(o -> (T) o);
         }
 
         @Override

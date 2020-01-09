@@ -31,20 +31,22 @@ public class RosettaObjectBuilderCollectorProcessStep<B extends RosettaModelObje
 	}
 
 	@Override
-	public <T extends RosettaModelObject> RosettaObjectBuilderCollectorProcessReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
+	public <T extends RosettaModelObject> RosettaObjectBuilderCollectorProcessReport<B> runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
 		List<B> collectedObjects = new ArrayList<>();
-		RosettaObjectBuilderCollectorProcess<B> process = new RosettaObjectBuilderCollectorProcess<>(collectedObjects);
+		RosettaObjectBuilderCollectorProcess<B> process = new RosettaObjectBuilderCollectorProcess<>(collectRosettaBuilderType, collectedObjects);
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 		process.processRosetta(path, topClass, builder, null);
 		builder.process(path, process);
-		return new RosettaObjectBuilderCollectorProcessReport(builder, collectedObjects);
+		return new RosettaObjectBuilderCollectorProcessReport<>(builder, collectedObjects);
 	}
-	
-	private class RosettaObjectBuilderCollectorProcess<B extends RosettaModelObjectBuilder> extends SimpleBuilderProcessor {
 
-		private final List<B> collectedObjects;
+	private static class RosettaObjectBuilderCollectorProcess<X extends RosettaModelObjectBuilder> extends SimpleBuilderProcessor {
 
-		public RosettaObjectBuilderCollectorProcess(List<B> collectedObjects) {
+		private final Class<X> collectObjectType;
+		private final List<X> collectedObjects;
+
+		RosettaObjectBuilderCollectorProcess(Class<X> collectObjectType, List<X> collectedObjects) {
+			this.collectObjectType = collectObjectType;
 			this.collectedObjects = collectedObjects;
 		}
 
@@ -53,8 +55,8 @@ public class RosettaObjectBuilderCollectorProcessStep<B extends RosettaModelObje
 			if (builder == null || !builder.hasData()) {
 				return false;
 			}
-			if (collectRosettaBuilderType.isInstance(builder)) {
-				collectedObjects.add((B) builder);
+			if (collectObjectType.isInstance(builder)) {
+				collectedObjects.add(collectObjectType.cast(builder));
 			}
 			return true;
 		}
@@ -69,24 +71,23 @@ public class RosettaObjectBuilderCollectorProcessStep<B extends RosettaModelObje
 		}
 	}
 	
-	public class RosettaObjectBuilderCollectorProcessReport<B extends RosettaModelObjectBuilder> implements PostProcessorReport, Report {
+	public static class RosettaObjectBuilderCollectorProcessReport<C extends RosettaModelObjectBuilder> implements PostProcessorReport, Report {
 
-		private final B builder;
-		private final List<B> collectedObjects;
+		private final RosettaModelObjectBuilder topClassBuilder;
+		private final List<C> collectedBuilders;
 
-		public RosettaObjectBuilderCollectorProcessReport(B builder, List<B> collectedObjects) {
-			this.builder = builder;
-			this.collectedObjects = collectedObjects;
+		RosettaObjectBuilderCollectorProcessReport(RosettaModelObjectBuilder topClassBuilder, List<C> collectedBuilders) {
+			this.topClassBuilder = topClassBuilder;
+			this.collectedBuilders = collectedBuilders;
 		}
 
 		@Override
-		public B getResultObject() {
-			return builder;
+		public RosettaModelObjectBuilder getResultObject() {
+			return topClassBuilder;
 		}
 
-		public List<B> getCollectedObjects() {
-			return collectedObjects;
+		public List<C> getCollectedObjects() {
+			return collectedBuilders;
 		}
 	}
-	
 }

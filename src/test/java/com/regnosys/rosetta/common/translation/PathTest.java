@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PathTest {
 
-	public static final Path TEST_PATH = Path.parse("Contract.contractualPrice.priceNotation.assetIdentifier");
+	private static final Path TEST_PATH = Path.parse("Contract.contractualPrice.priceNotation.assetIdentifier");
 
 	@Test
 	void shouldMatchEndsWithFullPath() {

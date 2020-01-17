@@ -96,7 +96,7 @@ public class Path {
             for (int i = 0; i < path.length; i++) {
                 PathElement el = elements.get(dif + i);
                 String s = path[i];
-                if (!el.getPathName().equals(s))
+                if (!el.getPathName().equalsIgnoreCase(s))
                     return false;
             }
         }

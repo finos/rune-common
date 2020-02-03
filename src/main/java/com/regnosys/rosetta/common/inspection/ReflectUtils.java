@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.inspection;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -9,6 +10,7 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import org.reflections.ReflectionUtils;
 
+import javax.lang.model.type.ExecutableType;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -150,30 +152,29 @@ public class ReflectUtils {
 	/**
 	 * Given a HierarchicalPath, this method reflectively gets the value from the rosetta instance.
 	 * 
-	 * @param rosettaModelObject
+	 * @param object
 	 * @param hierarchicalPath
 	 * @return
 	 * @throws NoSuchMethodException
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 */
-	public static Object valueOf(RosettaModelObject rosettaModelObject, RosettaPath hierarchicalPath)
+	public static Optional<Object> valueOf(Object object, RosettaPath hierarchicalPath)
 			throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-		Object current = rosettaModelObject;
+		Object current = object;
 
 		for (RosettaPath.Element element : hierarchicalPath.allElements()) {
-			Method method = current	.getClass()
-									.getMethod(getterName(element.getPath()));
+			Method method = current.getClass().getMethod(getterName(element.getPath()));
 			Object invoke = method.invoke(current);
-			if (element	.getIndex()
-						.isPresent()) {
+			if (element.getIndex().isPresent()) {
 				List<?> listType = (List<?>) invoke;
-				invoke = listType.get(element	.getIndex()
-												.getAsInt());
+
+				invoke = listType.get(element.getIndex().getAsInt());
 			}
+			if (invoke == null) return Optional.empty();
 			current = invoke;
 		}
-		return current;
+		return Optional.ofNullable(current);
 	}
 
 	@SuppressWarnings("unchecked")

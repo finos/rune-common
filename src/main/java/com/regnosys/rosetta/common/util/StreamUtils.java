@@ -145,11 +145,7 @@ public class StreamUtils {
 		return o -> clazz.isInstance(o) ? Stream.of(clazz.cast(o)) : Stream.empty();
 	}
 
-	public <E> Stream<E> instancesOf(Stream<Object> stream, Class<E> clazz) {
-		return stream.filter(clazz::isInstance).map(clazz::cast);
-	}
-	
-	public <E> Stream<E> streamFilterAndCast(Stream<? super E> stream, Class<E> clazz) {
+	public static <E> Stream<E> instancesOf(Stream<Object> stream, Class<E> clazz) {
 		return stream.filter(clazz::isInstance).map(clazz::cast);
 	}
 }

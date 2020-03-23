@@ -6,11 +6,11 @@ public class Mapping {
 
     private final Path xmlPath;
     private final Object xmlValue;
-    private final Path rosettaPath;
-	private final Object rosettaValue;
-    private final String error;
+    private Path rosettaPath;
+	private Object rosettaValue;
+    private String error;
     private final boolean allowsMultiple;
-    private final boolean isCondition;
+    private boolean isCondition;
 
     public Mapping(Path xmlPath, Object xmlValue, Path rosettaPath, Object rosettaValue, String error, boolean allowsMultiple, boolean isCondition) {
         this.xmlPath = xmlPath;
@@ -22,7 +22,7 @@ public class Mapping {
 		this.isCondition = isCondition;
     }
 
-    public Path getXmlPath() {
+	public Path getXmlPath() {
         return xmlPath;
     }
 
@@ -34,13 +34,25 @@ public class Mapping {
         return rosettaPath;
     }
 
-    public Object getRosettaValue() {
+	public void setRosettaPath(Path rosettaPath) {
+		this.rosettaPath = rosettaPath;
+	}
+
+	public Object getRosettaValue() {
 		return rosettaValue;
 	}
 
-    public String getError() {
+	public void setRosettaValue(Object rosettaValue) {
+		this.rosettaValue = rosettaValue;
+	}
+
+	public String getError() {
         return error;
     }
+
+	public void setError(String error) {
+		this.error = error;
+	}
 
 	public boolean isAllowsMultiple() {
 		return allowsMultiple;
@@ -48,6 +60,10 @@ public class Mapping {
 
 	public boolean isCondition() {
 		return isCondition;
+	}
+
+	public void setCondition(boolean condition) {
+		isCondition = condition;
 	}
 
 	@Override

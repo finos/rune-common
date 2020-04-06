@@ -36,14 +36,6 @@ public class RosettaObjectMapper {
 	private RosettaObjectMapper() {
 	}
 
-	private static class LazyHolder {
-		static final ObjectMapper INSTANCE;
-
-		static {
-			INSTANCE = getNewRosettaObjectMapper();
-		}
-	}
-
 	/**
 	 * Creating new RosettaObjectMapper instances is expensive, use the singleton instance if possible.
 	 */
@@ -65,8 +57,9 @@ public class RosettaObjectMapper {
 								 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 	}
 
+	@Deprecated
 	public static ObjectMapper getDefaultRosettaObjectMapper() {
-		return LazyHolder.INSTANCE;
+		return getNewRosettaObjectMapper();
 	}
 
 	/**

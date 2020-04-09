@@ -1,0 +1,11 @@
+[
+  {
+    "group" : "group-1",
+    "name": "test-1",
+    "description": "Test 1",
+    "inputFile": "function-runner-test/input-test-1.json",
+    "expectedOutputFile": "function-runner-test/expected-output-test-1.json",
+    "executableFunctionClass": "com.regnosys.rosetta.common.testing.FunctionRunnerTest$TestFunc1",
+    "isNativeFunction": false
+  }
+]

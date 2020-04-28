@@ -19,11 +19,11 @@ import com.rosetta.model.lib.process.PostProcessStep;
  * Calculates all the RosettKey values for an object and it's children and returns them as a map from key->RosettaModelObject
  * It uses a BuilderProcessor supplied in the constructor to do the actual calculation of hashes for applicable objects.
  */
-public class RosettaKeyProcessStep implements PostProcessStep {
+public class GlobalKeyProcessStep implements PostProcessStep {
 	
 	private final Supplier<? extends BuilderProcessor> hashCalculator;
 	
-	public RosettaKeyProcessStep(Supplier<? extends BuilderProcessor> s) {
+	public GlobalKeyProcessStep(Supplier<? extends BuilderProcessor> s) {
 		this.hashCalculator = s;
 	}
 

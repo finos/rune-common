@@ -1,6 +1,6 @@
 package com.regnosys.rosetta.common.hashing;
 
-import com.regnosys.rosetta.common.hashing.RosettaKeyProcessStep.KeyPostProcessReport;
+import com.regnosys.rosetta.common.hashing.GlobalKeyProcessStep.KeyPostProcessReport;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -19,9 +19,9 @@ import java.util.Map.Entry;
 
 public class ReKeyProcessStep implements PostProcessStep{
 
-	private final RosettaKeyProcessStep keyProcessor;
+	private final GlobalKeyProcessStep keyProcessor;
 		
-	public ReKeyProcessStep(RosettaKeyProcessStep keyProcessor) {
+	public ReKeyProcessStep(GlobalKeyProcessStep keyProcessor) {
 		this.keyProcessor = keyProcessor;
 	}
 

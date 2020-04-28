@@ -45,6 +45,8 @@ public class FunctionRunner {
 
         String inputFile = executionDescriptor.getInputFile();
         String expectedOutputFile = executionDescriptor.getExpectedOutputFile();
+        LOGGER.info("Output File:  " + expectedOutputFile);
+
 
         if (executionDescriptor.isNativeFunction()) {
             JsonNode jsonNode = objectMapper.readTree(loadURL(inputFile));

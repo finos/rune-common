@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.functions.RosettaFunction;
+import com.rosetta.model.lib.process.PostProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +69,7 @@ public class FunctionRunner {
             ExecutableFunction<INPUT, OUTPUT> instance = instanceLoader.createInstance(functionClass);
 
             INPUT input = objectMapper.readValue(loadURL(inputFile), instance.getInputType());
-            OUTPUT actualOutput = instance.execute(input);
-
+            OUTPUT actualOutput = postProcess(instance.execute(input));
 
             String jsonActual = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(actualOutput);
             if (expectedOutputFile == null) {
@@ -79,6 +81,17 @@ public class FunctionRunner {
             return new FunctionRunnerResult<>(input, expectedOutput, actualOutput, jsonActual, jsonExpected);
         }
 
+    }
+
+    private <OUTPUT> OUTPUT postProcess(OUTPUT actualOutput) {
+        if (actualOutput instanceof RosettaModelObject) {
+            PostProcessor postProcessor = instanceLoader.createInstance(PostProcessor.class);
+            RosettaModelObject funcModelOutput = (RosettaModelObject) actualOutput;
+            RosettaModelObjectBuilder postProcessedBuilder = postProcessor.postProcess(funcModelOutput.getClass(), funcModelOutput.toBuilder());
+            RosettaModelObject postProcessed = postProcessedBuilder.build();
+            return (OUTPUT) postProcessed;
+        }
+        return actualOutput;
     }
 
     private Object runNativeFunction(JsonNode jsonNode, String functionClassName) throws ClassNotFoundException, IOException, InvocationTargetException, IllegalAccessException {

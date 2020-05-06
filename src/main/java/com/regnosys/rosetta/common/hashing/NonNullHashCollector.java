@@ -61,7 +61,6 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
                                  RosettaModelObjectBuilder parent, AttributeMeta... metas) {
         if (instance != null && !metaContains(metas, AttributeMeta.IS_META)) {
             int hash = hashcodeGenerator.generate(instance);
-        //    System.out.println(path.toString() + "   I:" + instance);
             report.accumulate(hash);
         }
     }
@@ -72,9 +71,6 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
      * -  Have a MetaFieldsBuilder and an IS_META meta attribute - This is meta attribute we want to hash like scheme
      */
     private boolean shouldIncludeInHash(RosettaModelObjectBuilder builder, AttributeMeta[] metas) {
-        // should include in hash if:
-        // -  metas is empty and we don't have a MetaFieldsBuilder - Its a regular attribute that we need to hash
-        // -  Have a MetaFieldsBuilder and an IS_META meta attribute - This is meta attribute we want to hash like scheme
         return builder != null && (metas.length == 0 && !isMetaFieldsBuilder(builder)) || (metaContains(metas, AttributeMeta.IS_META) && isMetaFieldsBuilder(builder));
     }
 

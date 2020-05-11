@@ -87,7 +87,9 @@ public class FunctionRunner {
         if (actualOutput instanceof RosettaModelObject) {
             PostProcessor postProcessor = instanceLoader.createInstance(PostProcessor.class);
             RosettaModelObject funcModelOutput = (RosettaModelObject) actualOutput;
-            RosettaModelObjectBuilder postProcessedBuilder = postProcessor.postProcess(funcModelOutput.getClass(), funcModelOutput.toBuilder());
+            RosettaModelObjectBuilder instance = funcModelOutput.toBuilder();
+            instance.prune();
+            RosettaModelObjectBuilder postProcessedBuilder = postProcessor.postProcess(funcModelOutput.getClass(), instance);
             RosettaModelObject postProcessed = postProcessedBuilder.build();
             return (OUTPUT) postProcessed;
         }

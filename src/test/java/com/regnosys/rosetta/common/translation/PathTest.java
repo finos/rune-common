@@ -43,8 +43,15 @@ class PathTest {
 	}
 
 	@Test
+	void shouldMatchNameWithWildcard2() {
+		Path p1 = Path.parse("*.trade.swap.swapStream.paymentDates.calculationPeriodDatesReference", true);
+		Path p2 = Path.parse("dataDocument.trade.swap.swapStream.paymentDates.calculationPeriodDatesReference");
+		assertTrue(p1.nameStartMatches(p2, true));
+	}
+
+	@Test
 	void shouldNotMatchNameWithWildcard() {
 		Path other = Path.parse("Contract.contractualPrice.*.assetIdentifier", true);
-		assertTrue(TEST_PATH.nameStartMatches(other, false));
+		assertFalse(TEST_PATH.nameStartMatches(other, false));
 	}
 }

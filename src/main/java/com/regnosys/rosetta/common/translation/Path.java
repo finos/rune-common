@@ -79,14 +79,14 @@ public class Path {
         for (int i = 0; i < elements.size(); i++) {
             String p1 = elements.get(i).pathName;
             String p2 = other.elements.get(i).pathName;
-            if (!(p1.equals(p2) || wildcardMatchesOrIgnored(allowWildcard, p1, p2)))
+            if (!(p1.equals(p2) || wildcardMatches(allowWildcard, p1, p2)))
                 return false;
         }
         return true;
     }
 
-    private boolean wildcardMatchesOrIgnored(boolean allowWildcard, String p1, String p2) {
-        return !allowWildcard || (WILDCARD.equals(p1) || WILDCARD.equals(p2));
+    private boolean wildcardMatches(boolean allowWildcard, String p1, String p2) {
+        return allowWildcard && (WILDCARD.equals(p1) || WILDCARD.equals(p2));
     }
 
     /**

@@ -28,4 +28,23 @@ class PathTest {
 	void shouldNotMatchEndsWithMissingLastElement() {
 		assertFalse(TEST_PATH.endsWith("Contract.contractualPrice.priceNotation".split("\\.")));
 	}
+
+	@Test
+	void shouldMatchNameWithoutWildcard() {
+		assertTrue(TEST_PATH.nameStartMatches(TEST_PATH));
+		assertTrue(TEST_PATH.nameStartMatches(TEST_PATH, false));
+		assertTrue(TEST_PATH.nameStartMatches(TEST_PATH, true));
+	}
+
+	@Test
+	void shouldMatchNameWithWildcard() {
+		Path other = Path.parse("Contract.contractualPrice.*.assetIdentifier", true);
+		assertTrue(TEST_PATH.nameStartMatches(other, true));
+	}
+
+	@Test
+	void shouldNotMatchNameWithWildcard() {
+		Path other = Path.parse("Contract.contractualPrice.*.assetIdentifier", true);
+		assertTrue(TEST_PATH.nameStartMatches(other, false));
+	}
 }

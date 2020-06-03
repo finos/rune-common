@@ -16,6 +16,8 @@ import com.regnosys.rosetta.common.util.PathException;
 
 public class Path {
 
+    private static final String WILDCARD = "*";
+
     private final List<PathElement> elements;
 
     public Path() {
@@ -64,13 +66,27 @@ public class Path {
      * matching only on the name
      */
     public boolean nameStartMatches(Path other) {
+        return nameStartMatches(other, false);
+    }
+
+    /**
+     * return true if the all the elements of this path are the start of the other path
+     * matching only on the name
+     */
+    public boolean nameStartMatches(Path other, boolean allowWildcard) {
         if (elements.size() > other.elements.size())
             return false;
         for (int i = 0; i < elements.size(); i++) {
-            if (!elements.get(i).pathName.equals(other.elements.get(i).pathName))
+            String p1 = elements.get(i).pathName;
+            String p2 = other.elements.get(i).pathName;
+            if (!(p1.equals(p2) || wildcardMatches(allowWildcard, p1, p2)))
                 return false;
         }
         return true;
+    }
+
+    private boolean wildcardMatches(boolean allowWildcard, String p1, String p2) {
+        return allowWildcard && (WILDCARD.equals(p1) || WILDCARD.equals(p2));
     }
 
     /**
@@ -121,9 +137,13 @@ public class Path {
     }
 
     public static Path parse(String pathString) {
+        return parse(pathString, false);
+    }
+
+    public static Path parse(String pathString, boolean allowWildcard) {
         return new Path(Arrays.stream(pathString.split("\\."))
                 .filter(s -> s.length() > 0)
-                .map(s -> PathElement.parse(s))
+                .map(s -> PathElement.parse(s, allowWildcard))
                 .collect(Collectors.toList()));
     }
 
@@ -191,10 +211,11 @@ public class Path {
             return pathName + index.map(i -> "(" + i + ")").orElse("");
         }
 
-        private static Pattern pattern = Pattern.compile("(\\w*)(\\[(\\d*)\\])?");
+        private static Pattern pattern = Pattern.compile("(\\w*)(\\[(\\d*)])?");
+        private static Pattern patternAllowWildcard = Pattern.compile("([*]|\\w*)(\\[(\\d*)])?");
 
-        public static PathElement parse(String s) {
-            Matcher match = pattern.matcher(s);
+        public static PathElement parse(String s, boolean allowWildcard) {
+            Matcher match = allowWildcard ? patternAllowWildcard.matcher(s) : pattern.matcher(s);
             if (match.matches()) {
                 String name = match.group(1);
                 Optional<Integer> index = (match.group(3) != null) ? Optional.of(Integer.valueOf(match.group(3))) : Optional.empty();

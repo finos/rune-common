@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
@@ -12,6 +13,7 @@ public class ExecutionDescriptor {
     private String group;
     private String name;
     private String description;
+    private String markDownFile;
     private String inputFile;
     private String expectedOutputFile;
     private String executableFunctionClass;
@@ -26,17 +28,16 @@ public class ExecutionDescriptor {
         }
     }
 
-    public ExecutionDescriptor() {
+    public static List<ExecutionDescriptor> loadExecutionDescriptor(ObjectMapper objectMapper, String resourceName, InputStream inputStream) {
+        try {
+            return objectMapper.readValue(inputStream, new TypeReference<List<ExecutionDescriptor>>() {
+            });
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to load expectations " + resourceName, e);
+        }
     }
 
-    public ExecutionDescriptor(String group, String name, String description, String inputFile, String expectedOutputFile, String executableFunctionClass, boolean nativeFunction) {
-        this.group = group;
-        this.name = name;
-        this.description = description;
-        this.inputFile = inputFile;
-        this.expectedOutputFile = expectedOutputFile;
-        this.executableFunctionClass = executableFunctionClass;
-        this.nativeFunction = nativeFunction;
+    public ExecutionDescriptor() {
     }
 
     public boolean isNativeFunction() {
@@ -65,5 +66,9 @@ public class ExecutionDescriptor {
 
     public String getExecutableFunctionClass() {
         return executableFunctionClass;
+    }
+
+    public String getMarkDownFile() {
+        return markDownFile;
     }
 }

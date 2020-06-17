@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PathTest {
 
 	private static final Path TEST_PATH = Path.parse("Contract.contractualPrice.priceNotation.assetIdentifier");
+	private static final Path TEST_PATH2 = Path.parse("answers.partyA.access_conditions.assetIdentifier.additional_termination_event[0].name");
 
 	@Test
 	void shouldMatchEndsWithFullPath() {
@@ -53,5 +54,22 @@ class PathTest {
 	void shouldNotMatchNameWithWildcard() {
 		Path other = Path.parse("Contract.contractualPrice.*.assetIdentifier", true);
 		assertFalse(TEST_PATH.nameStartMatches(other, false));
+	}
+
+	@Test
+	void shouldFullMatch() {
+		assertTrue(TEST_PATH2.fullStartMatches(TEST_PATH2));
+	}
+
+	@Test
+	void shouldNotFullMatchBecauseDifferentIndex() {
+		Path other = Path.parse("answers.partyA.access_conditions.assetIdentifier.additional_termination_event[1].name");
+		assertFalse(TEST_PATH2.fullStartMatches(other));
+	}
+
+	@Test
+	void shouldFullMatchNoIndex() {
+		Path other = Path.parse("answers.partyA.access_conditions.assetIdentifier.additional_termination_event.name");
+		assertTrue(TEST_PATH2.fullStartMatches(other));
 	}
 }

@@ -98,7 +98,7 @@ public class Path {
             return false;
         for (int i = 0; i < elements.size(); i++) {
             if (!elements.get(i).pathName.equals(other.elements.get(i).pathName) ||
-                    !elements.get(i).index.equals(other.elements.get(i).index))
+                    elements.get(i).index.orElse(0) != other.elements.get(i).index.orElse(0))
                 return false;
         }
         return true;
@@ -213,6 +213,10 @@ public class Path {
 
         private static Pattern pattern = Pattern.compile("(\\w*)(\\[(\\d*)])?");
         private static Pattern patternAllowWildcard = Pattern.compile("([*]|\\w*)(\\[(\\d*)])?");
+
+        public static PathElement parse(String s) {
+            return parse(s, false);
+        }
 
         public static PathElement parse(String s, boolean allowWildcard) {
             Matcher match = allowWildcard ? patternAllowWildcard.matcher(s) : pattern.matcher(s);

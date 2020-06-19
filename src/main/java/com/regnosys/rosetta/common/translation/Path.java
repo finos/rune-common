@@ -47,6 +47,10 @@ public class Path {
         return new Path(elements.subList(0, elements.size() - 1));
     }
 
+    public PathElement getLastElement() {
+        return elements.get(elements.size()-1);
+    }
+
     public Path append(Path append) {
         List<PathElement> list = ImmutableList.<PathElement>builder()
                 .addAll(elements)

@@ -48,4 +48,12 @@ public class PathUtils {
             throw new PathException("Unable to load excluded xml paths", e);
         }
     }
+
+    public static List<Path> filterSubPaths(List<Path> paths) {
+        return paths.stream()
+                .filter(path -> !paths.stream()
+                        .filter(p -> !p.fullStartMatches(path)) // do not compare against itself
+                        .anyMatch(i1 -> i1.endsWith(path)))
+                .collect(Collectors.toList());
+    }
 }

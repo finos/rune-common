@@ -10,10 +10,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,7 +46,11 @@ public class PathUtils {
         }
     }
 
-    public static List<Path> filterSubPaths(List<Path> paths) {
+    /**
+     * Filter sub-paths (e.g. that endWith other paths) from list of paths.
+     * e.g. given list ["a.b.c", "b.c", "c", "a.b", "x.y.z"] would be filtered to ["a.b.c", "a.b", "x.y.z"].
+     */
+    public static List<Path> filterSubPaths(Collection<Path> paths) {
         return paths.stream()
                 .filter(path -> !paths.stream()
                         .filter(p -> !p.fullStartMatches(path)) // do not compare against itself

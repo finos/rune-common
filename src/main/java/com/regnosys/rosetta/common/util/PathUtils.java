@@ -54,7 +54,7 @@ public class PathUtils {
         return paths.stream()
                 .filter(path -> !paths.stream()
                         .filter(p -> !p.fullStartMatches(path)) // do not compare against itself
-                        .anyMatch(i1 -> i1.endsWith(path)))
+                        .anyMatch(p -> p.endsWith(path)))
                 .collect(Collectors.toList());
     }
 }

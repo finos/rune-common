@@ -1,18 +1,12 @@
 package com.regnosys.rosetta.common.translation;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import com.google.common.collect.ImmutableList;
+import com.regnosys.rosetta.common.util.PathException;
+
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableList;
-import com.regnosys.rosetta.common.util.PathException;
 
 public class Path {
 
@@ -51,6 +45,10 @@ public class Path {
 
     public Path getParent() {
         return new Path(elements.subList(0, elements.size() - 1));
+    }
+
+    public PathElement getLastElement() {
+        return elements.get(elements.size()-1);
     }
 
     public Path append(Path append) {
@@ -113,6 +111,21 @@ public class Path {
                 PathElement el = elements.get(dif + i);
                 String s = path[i];
                 if (!el.getPathName().equalsIgnoreCase(s))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean endsWith(Path other) {
+        int thisSize = elements.size();
+        int otherSize = other.elements.size();
+        if (otherSize > thisSize) {
+            return false;
+        } else {
+            // from the last element to the first, check that each element is equal
+            for (int i = 1; i <= otherSize; i++) {
+                if (!elements.get(thisSize - i).equals(other.elements.get(otherSize - i)))
                     return false;
             }
         }

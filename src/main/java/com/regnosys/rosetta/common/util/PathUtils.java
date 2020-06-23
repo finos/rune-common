@@ -2,7 +2,6 @@ package com.regnosys.rosetta.common.util;
 
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.translation.Path;
-import com.regnosys.rosetta.common.translation.Path.PathElement;
 import com.rosetta.model.lib.path.RosettaPath;
 
 import java.io.IOException;
@@ -17,15 +16,25 @@ import java.util.stream.Stream;
 public class PathUtils {
 
     public static RosettaPath toRosettaPath(Path path) {
-        List<RosettaPath.Element> collect = path.getElements().stream()
-                .map(x -> RosettaPath.Element.create(x.getPathName(), toOptionalInt(x), x.getMetas()))
+        List<RosettaPath.Element> elements = path.getElements().stream()
+                .map(x -> RosettaPath.Element.create(x.getPathName(), toOptionalInt(x.getIndex()), x.getMetas()))
                 .collect(Collectors.toList());
-
-        return RosettaPath.createPathFromElements(collect);
+        return RosettaPath.createPathFromElements(elements);
     }
 
-    private static OptionalInt toOptionalInt(PathElement x) {
-        return x.getIndex().map(OptionalInt::of).orElse(OptionalInt.empty());
+    public static Path toPath(RosettaPath rosettaPath) {
+        List<Path.PathElement> pathElements = rosettaPath.allElements().stream()
+                .map(x -> new Path.PathElement(x.getPath(), toOptionalInteger(x.getIndex()), x.getMetas()))
+                .collect(Collectors.toList());
+        return new Path(pathElements);
+    }
+
+    private static OptionalInt toOptionalInt(Optional<Integer> i) {
+        return i.map(OptionalInt::of).orElse(OptionalInt.empty());
+    }
+
+    private static Optional<Integer> toOptionalInteger(OptionalInt i) {
+        return i.isPresent() ? Optional.of(i.getAsInt()) : Optional.empty();
     }
 
     /**
@@ -52,9 +61,9 @@ public class PathUtils {
      */
     public static List<Path> filterSubPaths(Collection<Path> paths) {
         return paths.stream()
-                .filter(path -> !paths.stream()
+                .filter(path -> paths.stream()
                         .filter(p -> !p.fullStartMatches(path)) // do not compare against itself
-                        .anyMatch(p -> p.endsWith(path)))
+                        .noneMatch(p -> p.endsWith(path)))
                 .collect(Collectors.toList());
     }
 }

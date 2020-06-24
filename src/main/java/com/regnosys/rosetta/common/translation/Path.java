@@ -39,6 +39,14 @@ public class Path {
         return new Path(newPath);
     }
 
+    public Path addElement(String name) {
+        return addElement(new PathElement(name));
+    }
+
+    public Path addElement(String name, Integer index) {
+        return addElement(new PathElement(name, Optional.ofNullable(index), Collections.emptyMap()));
+    }
+
     public List<PathElement> getElements() {
         return elements;
     }

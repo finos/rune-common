@@ -9,10 +9,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.translation.Path.PathElement;
 import static com.regnosys.rosetta.common.util.PathUtils.toPath;
 import static com.regnosys.rosetta.common.util.PathUtils.toRosettaPath;
-import static java.util.Optional.ofNullable;
 
 public class MappingProcessorUtils {
 
@@ -77,24 +75,5 @@ public class MappingProcessorUtils {
 		mapping.setRosettaValue(null);
 		mapping.setError(error);
 		mapping.setCondition(true);
-	}
-
-	public static Path getSynonymPath(Path basePath, String synonym) {
-		return getSynonymPath(basePath, "", synonym, null);
-	}
-
-	public static Path getSynonymPath(Path basePath, String synonym, Integer index) {
-		return getSynonymPath(basePath, "", synonym, index);
-	}
-
-	public static Path getSynonymPath(Path basePath, String prefix, String synonym) {
-		return getSynonymPath(basePath, prefix, synonym, null);
-	}
-
-	public static Path getSynonymPath(Path basePath, String prefix, String synonym, Integer index) {
-		PathElement element = ofNullable(index)
-				.map(i -> new PathElement(prefix + synonym, i))
-				.orElse(new PathElement(prefix + synonym));
-		return basePath.addElement(element);
 	}
 }

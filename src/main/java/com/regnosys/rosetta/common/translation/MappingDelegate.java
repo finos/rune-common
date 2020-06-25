@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface MappingDelegate {
 
-	void map(Path synonymPath, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent);
+	void map(Path synonymPath, Optional<RosettaModelObjectBuilder> builder, RosettaModelObjectBuilder parent);
 
 	void map(Path synonymPath, List<? extends RosettaModelObjectBuilder> builder, RosettaModelObjectBuilder parent);
 

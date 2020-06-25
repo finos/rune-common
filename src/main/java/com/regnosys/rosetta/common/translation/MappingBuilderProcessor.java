@@ -7,6 +7,7 @@ import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,8 +33,8 @@ public class MappingBuilderProcessor implements BuilderProcessor {
 			RosettaModelObjectBuilder builder,
 			RosettaModelObjectBuilder parent,
 			AttributeMeta... meta) {
-		if (builder != null && currentPath.equals(modelPath)) {
-			synonymPaths.forEach(p -> delegate.map(p, builder, parent));
+		if (currentPath.equals(modelPath)) {
+			synonymPaths.forEach(p -> delegate.map(p, Optional.ofNullable(builder), parent));
 		}
 		return true;
 	}
@@ -44,8 +45,8 @@ public class MappingBuilderProcessor implements BuilderProcessor {
 			List<? extends RosettaModelObjectBuilder> builder,
 			RosettaModelObjectBuilder parent,
 			AttributeMeta... meta) {
-		if (builder != null && matchesProcessorPathForMultipleCardinality(currentPath, rosettaType)) {
-			synonymPaths.forEach(p -> delegate.map(p, builder, parent));
+		if (matchesProcessorPathForMultipleCardinality(currentPath, rosettaType)) {
+			synonymPaths.forEach(p -> delegate.map(p, Optional.ofNullable(builder).orElse(Collections.emptyList()), parent));
 		}
 		return true;
 	}
@@ -59,8 +60,8 @@ public class MappingBuilderProcessor implements BuilderProcessor {
 
 	@Override
 	public <T> void processBasic(RosettaPath currentPath, Class<T> rosettaType, List<T> instance, RosettaModelObjectBuilder parent, AttributeMeta... meta) {
-		if (instance != null && currentPath.equals(modelPath)) {
-			synonymPaths.forEach(p -> delegate.mapBasic(p, instance, parent));
+		if (currentPath.equals(modelPath)) {
+			synonymPaths.forEach(p -> delegate.mapBasic(p, Optional.ofNullable(instance).orElse(Collections.emptyList()), parent));
 		}
 	}
 

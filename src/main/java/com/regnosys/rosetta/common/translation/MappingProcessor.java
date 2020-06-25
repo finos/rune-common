@@ -25,30 +25,40 @@ public abstract class MappingProcessor implements MappingDelegate {
 		this.params = mappingContext.getMappingParams();
 	}
 
+	@Override
+	public void map(Path synonymPath, Optional<RosettaModelObjectBuilder> builder, RosettaModelObjectBuilder parent) {
+		builder.ifPresent(b -> mapBasic(synonymPath, b, parent));
+	}
+
 	public void map(Path synonymPath, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent) {
 		// Default behaviour - do nothing
 	}
 
+	@Override
 	public void map(Path synonymPath, List<? extends RosettaModelObjectBuilder> builder, RosettaModelObjectBuilder parent) {
 		// Default behaviour - do nothing
 	}
 
+	@Override
 	public <T> void mapBasic(Path synonymPath, Optional<T> instance, RosettaModelObjectBuilder parent) {
-		instance.ifPresent(inst -> mapBasic(synonymPath, inst, parent));
+		instance.ifPresent(i -> mapBasic(synonymPath, i, parent));
 	}
 
 	public <T> void mapBasic(Path synonymPath, T instance, RosettaModelObjectBuilder parent) {
 		// Default behaviour - do nothing
 	}
 
+	@Override
 	public <T> void mapBasic(Path synonymPath, List<T> instance, RosettaModelObjectBuilder parent) {
 		// Default behaviour - do nothing
 	}
 
+	@Override
 	public RosettaPath getModelPath() {
 		return modelPath;
 	}
 
+	@Override
 	public List<Path> getSynonymPaths() {
 		return synonymPaths;
 	}

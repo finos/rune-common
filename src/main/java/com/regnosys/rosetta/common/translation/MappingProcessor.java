@@ -27,7 +27,7 @@ public abstract class MappingProcessor implements MappingDelegate {
 
 	@Override
 	public void map(Path synonymPath, Optional<RosettaModelObjectBuilder> builder, RosettaModelObjectBuilder parent) {
-		builder.ifPresent(b -> mapBasic(synonymPath, b, parent));
+		builder.ifPresent(b -> map(synonymPath, b, parent));
 	}
 
 	public void map(Path synonymPath, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent) {

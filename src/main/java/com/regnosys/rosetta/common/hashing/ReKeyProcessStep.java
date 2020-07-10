@@ -53,9 +53,9 @@ public class ReKeyProcessStep implements PostProcessStep{
 		public ReKeyProcessor(ReKeyPostProcessReport report, KeyPostProcessReport keyPostProcessReport) {
 			super();
 			this.report = report;
-			Map<RosettaPath, GlobalKeyBuilder<?>> globalKeyMap = keyPostProcessReport.getKeyMap();
+			Map<RosettaPath, GlobalKeyBuilder> globalKeyMap = keyPostProcessReport.getKeyMap();
 			externalGlobalMap = new HashMap<>();
-			for (Entry<RosettaPath, GlobalKeyBuilder<?>> globalKey:globalKeyMap.entrySet()) {
+			for (Entry<RosettaPath, GlobalKeyBuilder> globalKey:globalKeyMap.entrySet()) {
 				MetaFieldsBuilderI meta = globalKey.getValue().getMeta();
 				if (meta.getExternalKey()!=null) {
 					String external = meta.getExternalKey();

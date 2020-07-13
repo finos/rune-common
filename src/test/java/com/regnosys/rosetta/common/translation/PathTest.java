@@ -2,8 +2,7 @@ package com.regnosys.rosetta.common.translation;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PathTest {
 
@@ -71,5 +70,27 @@ class PathTest {
 	void shouldFullMatchNoIndex() {
 		Path other = Path.parse("answers.partyA.access_conditions.assetIdentifier.additional_termination_event.name");
 		assertTrue(TEST_PATH2.fullStartMatches(other));
+	}
+
+	@Test
+	void shouldNotNameMatchOnEmptyPath() {
+		assertFalse(new Path().nameStartMatches(TEST_PATH));
+		assertFalse(TEST_PATH.nameStartMatches(new Path()));
+	}
+
+	@Test
+	void shouldNameMatchOnBothEmptyPaths() {
+		assertTrue(new Path().nameStartMatches(new Path()));
+	}
+
+	@Test
+	void shouldNotFullMatchOnEmptyPath() {
+		assertFalse(new Path().fullStartMatches(TEST_PATH));
+		assertFalse(TEST_PATH.fullStartMatches(new Path()));
+	}
+
+	@Test
+	void shouldFullMatchOnBothEmptyPaths() {
+		assertTrue(new Path().fullStartMatches(new Path()));
 	}
 }

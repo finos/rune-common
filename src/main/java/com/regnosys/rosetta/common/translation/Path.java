@@ -80,6 +80,10 @@ public class Path {
      * matching only on the name
      */
     public boolean nameStartMatches(Path other, boolean allowWildcard) {
+        if (elements.isEmpty() && other.elements.isEmpty())
+            return true;
+		if (elements.isEmpty())
+			return false;
         if (elements.size() > other.elements.size())
             return false;
         for (int i = 0; i < elements.size(); i++) {
@@ -100,6 +104,10 @@ public class Path {
      * matching on the name and index
      */
     public boolean fullStartMatches(Path other) {
+        if (elements.isEmpty() && other.elements.isEmpty())
+            return true;
+		if (elements.isEmpty())
+            return false;
         if (elements.size() > other.elements.size())
             return false;
         for (int i = 0; i < elements.size(); i++) {

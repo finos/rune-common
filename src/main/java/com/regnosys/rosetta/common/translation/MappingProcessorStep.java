@@ -47,6 +47,13 @@ public class MappingProcessorStep implements PostProcessStep {
 		return null;
 	}
 
+	/**
+	 * Sort by model path so mapping processors are invoked in a consistent logical order.
+	 * If there are payouts, always process the cashflow payout after the other payouts because
+	 * third party cashflow payouts can breaks the Counterparty mappings if processed first.
+	 *
+	 * TODO: move this to the CDM.
+	 */
 	private static class PathComparator implements Comparator<MappingDelegate> {
 
 		private static final String CASHFLOW_PAYOUT_SUB_PATH = ".payout.cashflow";
@@ -77,6 +84,7 @@ public class MappingProcessorStep implements PostProcessStep {
 		}
 	}
 
+	// Sort by path, then if there's multiple mappers on the same path, sort by mapper name.
 	static final Comparator<MappingDelegate> MAPPING_DELEGATE_COMPARATOR = new PathComparator().thenComparing(p -> p.getClass().getName());
 
 	/**

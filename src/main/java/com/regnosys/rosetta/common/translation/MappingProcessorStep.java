@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-@SuppressWarnings("unused") // Used in xtend
+@SuppressWarnings("unused") // Used in rosetta-translate
 public class MappingProcessorStep implements PostProcessStep {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingProcessorStep.class);
@@ -22,7 +22,7 @@ public class MappingProcessorStep implements PostProcessStep {
 
 	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors) {
 		this.mappingDelegates = new ArrayList<>(mappingProcessors);
-		this.mappingDelegates.sort(Comparator.comparing((MappingDelegate p) -> p.getModelPath().buildPath()).thenComparing(p -> p.getClass().getName()));
+		this.mappingDelegates.sort(MAPPING_DELEGATE_COMPARATOR);
 	}
 
 	@Override
@@ -46,6 +46,38 @@ public class MappingProcessorStep implements PostProcessStep {
 		}
 		return null;
 	}
+
+	private static class PathComparator implements Comparator<MappingDelegate> {
+
+		private static final String CASHFLOW_PAYOUT_SUB_PATH = ".payout.cashflow";
+
+		@Override
+		public int compare(MappingDelegate o1, MappingDelegate o2) {
+			String path1 = o1.getModelPath().buildPath();
+			String path2 = o2.getModelPath().buildPath();
+
+			if (getPayoutSubPath(path1).equals(getPayoutSubPath(path2))) {
+				if (path1.contains(CASHFLOW_PAYOUT_SUB_PATH)) {
+					if (path2.contains(CASHFLOW_PAYOUT_SUB_PATH)) {
+						return path1.compareToIgnoreCase(path2);
+					}
+					return 1;
+				} else if (path2.contains(CASHFLOW_PAYOUT_SUB_PATH)) {
+					return -1;
+				}
+			}
+			return path1.compareToIgnoreCase(path2);
+		}
+
+		private Optional<String> getPayoutSubPath(String path) {
+			if (path.contains(".tradableProduct.product.contractualProduct.economicTerms.payout.")) {
+				return Optional.of(path.split("\\.payout\\.")[0]);
+			}
+			return Optional.empty();
+		}
+	}
+
+	static final Comparator<MappingDelegate> MAPPING_DELEGATE_COMPARATOR = new PathComparator().thenComparing(p -> p.getClass().getName());
 
 	/**
 	 * Implements BuilderProcessor and delegates to the given MappingProcessor when the path matches.

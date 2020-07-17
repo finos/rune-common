@@ -4,7 +4,6 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -15,14 +14,12 @@ public abstract class MappingProcessor implements MappingDelegate {
 
 	private final RosettaPath modelPath;
 	private final List<Path> synonymPaths;
-	private final List<Mapping> mappings;
-	private final Map<Object, Object> params;
+	private final MappingContext context;
 
-	public MappingProcessor(RosettaPath modelPath, List<Path> synonymPaths, MappingContext mappingContext) {
+	public MappingProcessor(RosettaPath modelPath, List<Path> synonymPaths, MappingContext context) {
 		this.modelPath = modelPath;
 		this.synonymPaths = synonymPaths;
-		this.mappings = mappingContext.getMappings();
-		this.params = mappingContext.getMappingParams();
+		this.context = context;
 	}
 
 	@Override
@@ -64,11 +61,11 @@ public abstract class MappingProcessor implements MappingDelegate {
 	}
 
 	protected List<Mapping> getMappings() {
-		return mappings;
+		return context.getMappings();
 	}
 
-	protected Map<Object, Object> getParams() {
-		return params;
+	protected MappingContext getContext() {
+		return context;
 	}
 
 	protected void setValueAndUpdateMappings(String synonymPath, Consumer<String> setter) {
@@ -76,6 +73,6 @@ public abstract class MappingProcessor implements MappingDelegate {
 	}
 
 	protected void setValueAndUpdateMappings(Path synonymPath, Consumer<String> setter) {
-		MappingProcessorUtils.setValueAndUpdateMappings(synonymPath, setter, mappings, modelPath);
+		MappingProcessorUtils.setValueAndUpdateMappings(synonymPath, setter, getMappings(), modelPath);
 	}
 }

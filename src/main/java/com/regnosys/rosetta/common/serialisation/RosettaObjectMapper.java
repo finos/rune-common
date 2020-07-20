@@ -19,6 +19,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
@@ -41,6 +42,7 @@ public class RosettaObjectMapper {
 	 */
 	public static ObjectMapper getNewRosettaObjectMapper() {
 		return new ObjectMapper().findAndRegisterModules()
+								 .registerModule(new KotlinModule())
 								 .registerModule(new GuavaModule())
 								 .registerModule(new JodaModule())
 								 .registerModule(new AfterburnerModule())

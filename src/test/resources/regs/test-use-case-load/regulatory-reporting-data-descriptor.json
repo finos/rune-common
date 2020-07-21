@@ -1,7 +1,7 @@
 [
   {
     "dataSetName": "Test set 1",
-    "inputType": "com.regnosys.rosetta.common.serialisation.EventTestModelObject",
+    "inputType": "com.regnosys.rosetta.common.serialisation.JsonReportDataLoaderTest$EventTestModelObject",
     "applicableReports": "*",
     "data": [
       {

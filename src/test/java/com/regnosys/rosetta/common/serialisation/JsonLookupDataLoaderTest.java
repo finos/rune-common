@@ -5,6 +5,7 @@ import com.regnosys.rosetta.common.serialisation.lookup.JsonLookupDataLoader;
 import com.regnosys.rosetta.common.serialisation.lookup.LookupDataSet;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,7 +16,7 @@ class JsonLookupDataLoaderTest {
 
     @Test
     void lookupsLoaded() {
-        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, "regs/test-reg-lookups").load();
+        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/regs/test-reg-lookups").toUri()).load();
         assertEquals(lookupDataSets.size(), 2);
         assertEquals(lookupDataSets.get(0).getName(), "IsExecutingEntityInvestmentFirm");
         assertEquals(lookupDataSets.get(0).getData().size(), 1);
@@ -25,13 +26,13 @@ class JsonLookupDataLoaderTest {
 
     @Test
     void descriptorPathDoesNotExist() {
-        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, "not-found").load();
+        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("not-found").toUri()).load();
         assertEquals(lookupDataSets.size(), 0);
     }
 
     @Test
     void descriptorPathDoesNotDoesNotContainDescriptorFile() {
-        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, "test-workspaces").load();
+        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/test-workspaces").toUri()).load();
         assertEquals(lookupDataSets.size(), 0);
     }
 

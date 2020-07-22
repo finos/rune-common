@@ -1,11 +1,16 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.util.ClassPathUtils;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Interface to lookup model related data from an external source. The data is typically a model instance that can be
@@ -22,11 +27,12 @@ public interface DataLoader<T> {
         }
     }
 
-    default <U> U fromClasspath(String filePath, Class<U> type, ObjectMapper rosettaObjectMapper, ClassLoader classLoader) {
-        return ClassPathUtils.loadFromClasspath(filePath, classLoader).findFirst()
-                .map(ClassPathUtils::toUrl)
-                .map(url -> readType(type, rosettaObjectMapper, url))
-                .orElseThrow(() -> new RuntimeException("Could not load " + filePath + " of type " + type));
+    default <U> U readType(Class<U> type, ObjectMapper rosettaObjectMapper, URI uri) {
+        try {
+            return rosettaObjectMapper.readValue(uri.toURL(), type);
+        } catch (IOException e) {
+            throw new RuntimeException(uri + " cannot be serialised to " + type, e);
+        }
     }
 
     default <U> U readType(Class<U> type, ObjectMapper rosettaObjectMapper, URL url) {
@@ -46,11 +52,11 @@ public interface DataLoader<T> {
         }
     }
 
-    default <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, URL url) {
+    default <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, InputStream inputStream) {
         try {
-            return rosettaObjectMapper.readValue(url, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
+            return rosettaObjectMapper.readValue(inputStream, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
         } catch (IOException e) {
-            throw new RuntimeException(url + " cannot be serialised to list of " + type, e);
+            throw new RuntimeException(inputStream + " cannot be serialised to list of " + type, e);
         }
     }
 
@@ -59,6 +65,24 @@ public interface DataLoader<T> {
             return classLoader.loadClass(type);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not load class for type " + type);
+        }
+    }
+
+    default Optional<InputStream> openStream(URL descriptorUrl) {
+        try {
+            return Optional.of(descriptorUrl.openStream());
+        } catch (FileNotFoundException e) {
+            return Optional.empty();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    default URL toURL(URI uri) {
+        try {
+            return uri.toURL();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
         }
     }
 

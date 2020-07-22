@@ -6,6 +6,7 @@ import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
 import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +19,7 @@ class JsonReportDataLoaderTest {
 
     @Test
     void lookupsLoaded() {
-        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, "regs/test-use-case-load").load();
+        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/regs/test-use-case-load").toUri()).load();
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
 
@@ -35,13 +36,13 @@ class JsonReportDataLoaderTest {
 
     @Test
     void descriptorPathDoesNotExist() {
-        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, "not-found").load();
+        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("not-found").toUri()).load();
         assertEquals(reportDataSets.size(), 0);
     }
 
     @Test
     void descriptorPathDoesNotDoesNotContainDescriptorFile() {
-        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, "test-workspaces").load();
+        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/test-workspaces").toUri()).load();
         assertEquals(reportDataSets.size(), 0);
     }
 

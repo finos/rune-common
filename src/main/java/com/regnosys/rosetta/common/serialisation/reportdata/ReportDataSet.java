@@ -7,10 +7,10 @@ import java.util.StringJoiner;
 public class ReportDataSet {
     private String dataSetName;
     private String inputType;
-    private String applicableReports;
+    private List<String> applicableReports;
     private List<ReportDataItem> data;
 
-    public ReportDataSet(String dataSetName, String inputType, String applicableReports, List<ReportDataItem> data) {
+    public ReportDataSet(String dataSetName, String inputType, List<String> applicableReports, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
         this.inputType = inputType;
         this.applicableReports = applicableReports;
@@ -28,7 +28,7 @@ public class ReportDataSet {
         return inputType;
     }
 
-    public String getApplicableReports() {
+    public List<String> getApplicableReports() {
         return applicableReports;
     }
 
@@ -57,7 +57,7 @@ public class ReportDataSet {
         return new StringJoiner(", ", ReportDataSet.class.getSimpleName() + "[", "]")
                 .add("dataSetName='" + dataSetName + "'")
                 .add("inputType='" + inputType + "'")
-                .add("applicableReports='" + applicableReports + "'")
+                .add("applicableReports=" + applicableReports)
                 .add("data=" + data)
                 .toString();
     }

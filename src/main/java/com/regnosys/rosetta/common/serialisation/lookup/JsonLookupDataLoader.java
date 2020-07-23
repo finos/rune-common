@@ -1,51 +1,25 @@
 package com.regnosys.rosetta.common.serialisation.lookup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.serialisation.DataLoader;
+import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
 
-import java.io.InputStream;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class JsonLookupDataLoader implements DataLoader<LookupDataSet> {
+public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> {
 
     public static final String DEFAULT_DESCRIPTOR_NAME = "regulatory-reporting-lookup-descriptor.json";
-    private final ClassLoader classLoader;
-    private final ObjectMapper rosettaObjectMapper;
-    private final URI descriptorPath;
-    private final String descriptorFileName;
 
-    JsonLookupDataLoader(ClassLoader classLoader,
+    public JsonLookupDataLoader(ClassLoader classLoader,
                          ObjectMapper rosettaObjectMapper,
                          URI descriptorPath,
-                         String descriptorFileName) {
-        this.classLoader = classLoader;
-        this.rosettaObjectMapper = rosettaObjectMapper;
-        this.descriptorPath = descriptorPath;
-        this.descriptorFileName = descriptorFileName;
-    }
-
-    public JsonLookupDataLoader(ClassLoader classLoader, ObjectMapper rosettaObjectMapper, URI descriptorPath) {
-        this(classLoader, rosettaObjectMapper, descriptorPath, DEFAULT_DESCRIPTOR_NAME);
+                         List<String> descriptorFileNames) {
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class);
     }
 
     @Override
-    public List<LookupDataSet> load() {
-        URI uri = descriptorPath.resolve(descriptorFileName);
-        Optional<InputStream> descriptorStream = openStream(toURL(uri));
-        if (!descriptorStream.isPresent()) {
-            return Collections.emptyList();
-        }
-
-        List<LookupDataSet> lookupDataSets = readTypeList(LookupDataSet.class, rosettaObjectMapper, descriptorStream.get());
-        return lookupDataSets.stream().map(this::loadInputFiles).collect(Collectors.toList());
-    }
-
-
-    private LookupDataSet loadInputFiles(LookupDataSet descriptor) {
+    protected LookupDataSet loadInputFiles(LookupDataSet descriptor) {
         List<LookupDataItem> loadedData = descriptor.getData().stream()
                 .map(data -> new LookupDataItem(
                         getKey(descriptor.getKeyType(), data),

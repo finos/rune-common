@@ -40,7 +40,7 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
     @Override
     public List<T> load() {
         return descriptorFileNames.stream()
-                .map(descriptorPath::resolve)
+                .map(this::resolve)
                 .map(this::toURL)
                 .map(this::openStream)
                 .filter(Optional::isPresent)
@@ -48,6 +48,10 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
                 .flatMap(Collection::stream)
                 .map(i -> loadInputFromFile ? loadInputFiles(i) : i)
                 .collect(Collectors.toList());
+    }
+
+    public URI resolve(String d) {
+        return URI.create(descriptorPath.toString() + d);
     }
 
     protected abstract T loadInputFiles(T descriptor);

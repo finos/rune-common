@@ -31,7 +31,7 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
     private Object getValue(String valueType, LookupDataItem data) {
         Class<?> valueTypeClass = loadClass(valueType, classLoader);
         if (data.getValue() instanceof String) {
-            return readType(valueTypeClass, rosettaObjectMapper, descriptorPath.resolve((String) data.getValue()));
+            return readType(valueTypeClass, rosettaObjectMapper, resolve((String) data.getValue()));
         } else {
             return fromObject(data.getValue(), valueTypeClass, rosettaObjectMapper);
         }
@@ -42,7 +42,7 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
         if (data.getKey().equals("*") || keyTypeClass == String.class) {
             return data.getKey();
         } else if (data.getKey() instanceof String) {
-            return readType(keyTypeClass, rosettaObjectMapper, descriptorPath.resolve((String) data.getKey()));
+            return readType(keyTypeClass, rosettaObjectMapper, resolve((String) data.getKey()));
         } else {
             return fromObject(data.getKey(), keyTypeClass, rosettaObjectMapper);
         }

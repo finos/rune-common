@@ -38,9 +38,8 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
 
     private Object getInput(String inputType, ReportDataItem data) {
         Class<?> inputTypeClass = loadClass(inputType, classLoader);
-
         if (data.getInput() instanceof String) {
-            return readType(inputTypeClass, rosettaObjectMapper, descriptorPath.resolve((String) data.getInput()));
+            return readType(inputTypeClass, rosettaObjectMapper, resolve((String) data.getInput()));
         } else {
             return fromObject(data.getInput(), inputTypeClass, rosettaObjectMapper);
         }

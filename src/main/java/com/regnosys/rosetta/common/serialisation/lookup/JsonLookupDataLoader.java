@@ -15,7 +15,7 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
                          ObjectMapper rosettaObjectMapper,
                          URI descriptorPath,
                          List<String> descriptorFileNames) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class);
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, true);
     }
 
     @Override

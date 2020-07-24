@@ -19,19 +19,22 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
     protected final ClassLoader classLoader;
     protected final ObjectMapper rosettaObjectMapper;
     protected final URI descriptorPath;
-    protected final List<String> descriptorFileNames;
     protected final Class<T> loadType;
+
+    private final boolean loadInputFromFile;
+    private final List<String> descriptorFileNames;
 
     protected AbstractJsonDataLoader(ClassLoader classLoader,
                                      ObjectMapper rosettaObjectMapper,
                                      URI descriptorPath,
                                      List<String> descriptorFileNames,
-                                     Class<T> loadType) {
+                                     Class<T> loadType, boolean loadInputFromFile) {
         this.classLoader = classLoader;
         this.rosettaObjectMapper = rosettaObjectMapper;
         this.descriptorPath = descriptorPath;
         this.descriptorFileNames = descriptorFileNames;
         this.loadType = loadType;
+        this.loadInputFromFile = loadInputFromFile;
     }
 
     @Override
@@ -43,7 +46,7 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
                 .filter(Optional::isPresent)
                 .map(descriptorStream -> readTypeList(loadType, rosettaObjectMapper, descriptorStream.get()))
                 .flatMap(Collection::stream)
-                .map(this::loadInputFiles)
+                .map(i -> loadInputFromFile ? loadInputFiles(i) : i)
                 .collect(Collectors.toList());
     }
 
@@ -65,39 +68,6 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
         }
     }
 
-    protected <U> U readType(Class<U> type, ObjectMapper rosettaObjectMapper, URL url) {
-        try {
-            return rosettaObjectMapper.readValue(url, type);
-        } catch (IOException e) {
-            throw new RuntimeException(url + " cannot be serialised to " + type, e);
-        }
-    }
-
-
-    protected <U> U readType(Class<U> type, ObjectMapper rosettaObjectMapper, String json) {
-        try {
-            return rosettaObjectMapper.readValue(json, type);
-        } catch (IOException e) {
-            throw new RuntimeException("JSON cannot be serialised to " + type + "[" + json + "]", e);
-        }
-    }
-
-    protected <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, InputStream inputStream) {
-        try {
-            return rosettaObjectMapper.readValue(inputStream, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
-        } catch (IOException e) {
-            throw new RuntimeException(inputStream + " cannot be serialised to list of " + type, e);
-        }
-    }
-
-    protected Class<?> loadClass(String type, ClassLoader classLoader) {
-        try {
-            return classLoader.loadClass(type);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Could not load class for type " + type);
-        }
-    }
-
     protected Optional<InputStream> openStream(URL descriptorUrl) {
         try {
             return Optional.of(descriptorUrl.openStream());
@@ -115,5 +85,30 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
             throw new RuntimeException(e);
         }
     }
+
+    private <U> U readType(Class<U> type, ObjectMapper rosettaObjectMapper, String json) {
+        try {
+            return rosettaObjectMapper.readValue(json, type);
+        } catch (IOException e) {
+            throw new RuntimeException("JSON cannot be serialised to " + type + "[" + json + "]", e);
+        }
+    }
+
+    private  <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, InputStream inputStream) {
+        try {
+            return rosettaObjectMapper.readValue(inputStream, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
+        } catch (IOException e) {
+            throw new RuntimeException(inputStream + " cannot be serialised to list of " + type, e);
+        }
+    }
+
+    protected Class<?> loadClass(String type, ClassLoader classLoader) {
+        try {
+            return classLoader.loadClass(type);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Could not load class for type " + type);
+        }
+    }
+
 
 }

@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
 
 import java.net.URI;
@@ -15,7 +16,16 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
                                 ObjectMapper rosettaObjectMapper,
                                 URI descriptorPath,
                                 List<String> descriptorFileNames) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class);
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, true);
+    }
+
+    @VisibleForTesting
+    public JsonReportDataLoader(ClassLoader classLoader,
+                                ObjectMapper rosettaObjectMapper,
+                                URI descriptorPath,
+                                List<String> descriptorFileNames,
+                                boolean loadInputFromFile) {
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, loadInputFromFile);
     }
 
     @Override

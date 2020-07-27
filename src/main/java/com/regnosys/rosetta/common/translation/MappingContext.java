@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,7 +19,7 @@ public class MappingContext {
 					new ThreadFactoryBuilder().setNameFormat("mapper-%d").build());
 
 	public MappingContext() {
-		this(new ArrayList<>(), new HashMap<>());
+		this(new ArrayList<>(), new ConcurrentHashMap<>());
 	}
 
 	public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams) {

@@ -15,13 +15,13 @@
 		<junit.jupiter.version>5.0.3</junit.jupiter.version>
 		<junit.platform.version>1.0.0</junit.platform.version>
 		<reflections.version>0.9.11</reflections.version>
-		<jackson.version>2.9.3</jackson.version>
+		<jackson.version>2.9.10</jackson.version>
 		<hamcrest.version>2.0.0.0</hamcrest.version>
 		<mockito.version>2.10.0</mockito.version>
 		<guava.version>26.0-jre</guava.version>
 		<slf4j-api.version>1.7.25</slf4j-api.version>
 		<logback.version>1.2.3</logback.version>
-	</properties>
+    </properties>
 
 	<dependencyManagement>
 		<dependencies>
@@ -86,7 +86,6 @@
 				<artifactId>jackson-datatype-joda</artifactId>
 				<version>${jackson.version}</version>
 			</dependency>
-
 			<dependency>
 				<groupId>org.hamcrest</groupId>
 				<artifactId>java-hamcrest</artifactId>
@@ -227,20 +226,11 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-core</artifactId>
 		</dependency>
-	</dependencies>
+    </dependencies>
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
-				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
-				</configuration>
-			</plugin>
-			<plugin>
+            <plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.19</version>
 				<dependencies>
@@ -265,7 +255,32 @@
 					</execution>
 				</executions>
 			</plugin>
-		</plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <executions>
+                    <execution>
+                        <id>compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>testCompile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+        </plugins>
 	</build>
 
 	<distributionManagement>

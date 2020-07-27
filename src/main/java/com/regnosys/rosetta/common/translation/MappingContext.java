@@ -3,13 +3,15 @@ package com.regnosys.rosetta.common.translation;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * A new MappingContext is created for each ingested file to hold any mapping state.
+ */
 public class MappingContext {
 
 	private final List<Mapping> mappings;

@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.common.translation;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -12,6 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused") // Used in rosetta-translate
 public class MappingProcessorStep implements PostProcessStep {
@@ -19,10 +24,12 @@ public class MappingProcessorStep implements PostProcessStep {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingProcessorStep.class);
 
 	private final List<MappingDelegate> mappingDelegates;
+	private final ExecutorService executor;
 
-	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors) {
+	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors, MappingContext context) {
 		this.mappingDelegates = new ArrayList<>(mappingProcessors);
 		this.mappingDelegates.sort(MAPPING_DELEGATE_COMPARATOR);
+		this.executor = context.getExecutor();
 	}
 
 	@Override
@@ -37,13 +44,39 @@ public class MappingProcessorStep implements PostProcessStep {
 
 	@Override
 	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
-		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
-		for (MappingDelegate mapper : mappingDelegates) {
-			LOGGER.info("Running mapper {} for model path {}", mapper.getClass().getSimpleName(), mapper.getModelPath());
-			MappingBuilderProcessor processor = new MappingBuilderProcessor(mapper);
-			processor.processRosetta(path, topClass, builder, null);
-			builder.process(path, processor);
+		LOGGER.debug("About to run {} mappingDelegates", mappingDelegates.size());
+		Stopwatch stopwatch = Stopwatch.createStarted();
+
+		CountDownLatch countDownLatch = new CountDownLatch(1);
+		executor.execute(() -> {
+			try {
+				RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+				for (MappingDelegate mapper : mappingDelegates) {
+					LOGGER.info("Running mapper {} for model path {}", mapper.getClass().getSimpleName(), mapper.getModelPath());
+					MappingBuilderProcessor processor = new MappingBuilderProcessor(mapper);
+					processor.processRosetta(path, topClass, builder, null);
+					builder.process(path, processor);
+				}
+			} finally {
+				countDownLatch.countDown();
+			}
+		});
+
+		LOGGER.debug("Wait for the mappers to complete before continuing");
+		Uninterruptibles.awaitUninterruptibly(countDownLatch, 800, TimeUnit.MILLISECONDS);
+		LOGGER.info("Mappers completed in {}", stopwatch.stop().toString());
+
+		LOGGER.debug("Shutdown mapper thread pool");
+		executor.shutdown();
+		try {
+			if (!executor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+				executor.shutdownNow();
+			}
+		} catch (InterruptedException e) {
+			executor.shutdownNow();
 		}
+
+		// Nothing to return
 		return null;
 	}
 
@@ -86,6 +119,8 @@ public class MappingProcessorStep implements PostProcessStep {
 
 	// Sort by path, then if there's multiple mappers on the same path, sort by mapper name.
 	static final Comparator<MappingDelegate> MAPPING_DELEGATE_COMPARATOR = new PathComparator().thenComparing(p -> p.getClass().getName());
+
+
 
 	/**
 	 * Implements BuilderProcessor and delegates to the given MappingProcessor when the path matches.

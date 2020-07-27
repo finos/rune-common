@@ -1,0 +1,13 @@
+{
+  "addressOfBranch": {
+    "country": {
+      "value": "GB"
+    }
+  },
+  "addressOfIncorporation": {
+    "country": {
+      "value": "CH"
+    }
+  },
+  "isInvestmentFirm": true
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "dataSetName": "Test set 1 expected",
+    "inputType": "com.regnosys.rosetta.common.serialisation.JsonReportDataLoaderTest$EventTestModelObject",
+    "expectedType": "com.regnosys.rosetta.common.serialisation.JsonReportDataLoaderTest$ExpectedReportDataItem",
+    "applicableReports": [],
+    "data": [
+      {
+        "name": "This is the desc of the usecase",
+        "input": "test1.json",
+        "expected": "test1-expected.json"
+      },
+      {
+        "name": "This is the desc of the another usecase that has inline json rather then a file",
+        "input": {
+          "eventDate": "2018-02-21",
+          "eventQualifier": "TerminatedTrade"
+        },
+        "expected": {
+          "key": "column 2",
+          "value": "TerminatedTrade-expected"
+        }
+      }
+    ]
+  }
+]

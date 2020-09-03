@@ -7,6 +7,7 @@ import java.util.StringJoiner;
 public class ReportDataSet {
     private String dataSetName;
     private String inputType;
+    private String expectedType;
     private List<String> applicableReports;
     private List<ReportDataItem> data;
 
@@ -28,6 +29,10 @@ public class ReportDataSet {
         return inputType;
     }
 
+    public String getExpectedType() {
+        return expectedType;
+    }
+
     public List<String> getApplicableReports() {
         return applicableReports;
     }
@@ -43,6 +48,7 @@ public class ReportDataSet {
         ReportDataSet that = (ReportDataSet) o;
         return Objects.equals(dataSetName, that.dataSetName) &&
                 Objects.equals(inputType, that.inputType) &&
+                Objects.equals(expectedType, that.expectedType) &&
                 Objects.equals(applicableReports, that.applicableReports) &&
                 Objects.equals(data, that.data);
     }
@@ -57,6 +63,7 @@ public class ReportDataSet {
         return new StringJoiner(", ", ReportDataSet.class.getSimpleName() + "[", "]")
                 .add("dataSetName='" + dataSetName + "'")
                 .add("inputType='" + inputType + "'")
+                .add("expectedType='" + expectedType + "'")
                 .add("applicableReports=" + applicableReports)
                 .add("data=" + data)
                 .toString();

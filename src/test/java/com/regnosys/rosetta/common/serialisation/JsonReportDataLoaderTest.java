@@ -29,12 +29,34 @@ class JsonReportDataLoaderTest {
         assertTrue(reportDataSets.get(0).getData().get(0).getInput() instanceof EventTestModelObject);
         assertTrue(reportDataSets.get(0).getData().get(1).getInput() instanceof EventTestModelObject);
 
-        assertEquals(reportDataSets.get(0).getData().get(0), new ReportDataItem(
-                "This is the desc of the usecase",
-                new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade")));
-        assertEquals(reportDataSets.get(0).getData().get(1), new ReportDataItem(
-                "This is the desc of the another usecase that has inline json rather then a file",
-                new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade")));
+        assertEquals(new ReportDataItem("This is the desc of the usecase",
+                        new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
+                        null),
+                reportDataSets.get(0).getData().get(0));
+        assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
+                        new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
+                        null),
+                reportDataSets.get(0).getData().get(1));
+    }
+
+    @Test
+    void lookupsLoadedExpected() {
+        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper,
+                Paths.get("src/test/resources/regs/test-use-case-load-expected").toUri(), DESCRIPTOR_FILE_NAMES).load();
+        assertEquals(reportDataSets.size(), 1);
+        assertEquals(reportDataSets.get(0).getData().size(), 2);
+
+        assertTrue(reportDataSets.get(0).getData().get(0).getExpected() instanceof ExpectedReportDataItem);
+        assertTrue(reportDataSets.get(0).getData().get(1).getExpected() instanceof ExpectedReportDataItem);
+
+        assertEquals(new ReportDataItem("This is the desc of the usecase",
+                        new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
+                        new ExpectedReportDataItem("column 1", "NewTrade-expected")),
+                reportDataSets.get(0).getData().get(0));
+        assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
+                        new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
+                        new ExpectedReportDataItem("column 2", "TerminatedTrade-expected")),
+                reportDataSets.get(0).getData().get(1));
     }
 
     @Test
@@ -77,5 +99,30 @@ class JsonReportDataLoaderTest {
         }
     }
 
+    static class ExpectedReportDataItem {
+        public String key;
+        public String value;
 
+        public ExpectedReportDataItem() {
+        }
+
+        public ExpectedReportDataItem(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ExpectedReportDataItem that = (ExpectedReportDataItem) o;
+            return Objects.equals(key, that.key) &&
+                    Objects.equals(value, that.value);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(key, value);
+        }
+    }
 }

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -98,30 +97,5 @@ class JsonReportDataLoaderTest {
         }
     }
 
-    static class ExpectedReportDataItem {
-        public String key;
-        public String value;
 
-        public ExpectedReportDataItem() {
-        }
-
-        public ExpectedReportDataItem(String key, String value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ExpectedReportDataItem that = (ExpectedReportDataItem) o;
-            return Objects.equals(key, that.key) &&
-                    Objects.equals(value, that.value);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(key, value);
-        }
-    }
 }

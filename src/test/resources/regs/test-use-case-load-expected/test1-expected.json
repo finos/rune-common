@@ -1,12 +1,8 @@
 {
-  "usecases": [
+  "fields": [
     {
-      "fields": [
-        {
-          "key": "column 1",
-          "value": "NewTrade-expected"
-        }
-      ]
+      "key": "column 1",
+      "value": "NewTrade-expected"
     }
   ]
 }

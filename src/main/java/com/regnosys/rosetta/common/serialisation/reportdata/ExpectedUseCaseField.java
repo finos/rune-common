@@ -4,18 +4,18 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 public class ExpectedUseCaseField {
-    private String key;
+    private String name;
     private String value;
 
     public ExpectedUseCaseField(){}
 
-    public ExpectedUseCaseField(String key, String value) {
-        this.key = key;
+    public ExpectedUseCaseField(String name, String value) {
+        this.name = name;
         this.value = value;
     }
 
-    public String getKey() {
-        return key;
+    public String getName() {
+        return name;
     }
 
     public String getValue() {
@@ -27,19 +27,19 @@ public class ExpectedUseCaseField {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ExpectedUseCaseField that = (ExpectedUseCaseField) o;
-        return Objects.equals(key, that.key) &&
+        return Objects.equals(name, that.name) &&
                 Objects.equals(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, value);
+        return Objects.hash(name, value);
     }
 
     @Override
     public String toString() {
         return new StringJoiner(", ", ExpectedUseCaseField.class.getSimpleName() + "[", "]")
-                .add("key='" + key + "'")
+                .add("name='" + name + "'")
                 .add("value='" + value + "'")
                 .toString();
     }

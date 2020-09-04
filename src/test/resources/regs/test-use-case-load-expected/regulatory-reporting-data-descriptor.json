@@ -19,7 +19,7 @@
         "expected": {
           "fields": [
             {
-              "key": "column 2",
+              "name": "column 2",
               "value": "TerminatedTrade-expected"
             }
           ]

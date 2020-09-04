@@ -17,8 +17,16 @@
           "eventQualifier": "TerminatedTrade"
         },
         "expected": {
-          "key": "column 2",
-          "value": "TerminatedTrade-expected"
+          "usecases": [
+            {
+              "fields": [
+                {
+                  "key": "column 2",
+                  "value": "TerminatedTrade-expected"
+                }
+              ]
+            }
+          ]
         }
       }
     ]

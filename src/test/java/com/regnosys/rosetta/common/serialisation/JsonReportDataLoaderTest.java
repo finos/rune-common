@@ -1,13 +1,12 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.serialisation.reportdata.JsonReportDataLoader;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
+import com.regnosys.rosetta.common.serialisation.reportdata.*;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -46,16 +45,16 @@ class JsonReportDataLoaderTest {
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
 
-        assertTrue(reportDataSets.get(0).getData().get(0).getExpected() instanceof ExpectedReportDataItem);
-        assertTrue(reportDataSets.get(0).getData().get(1).getExpected() instanceof ExpectedReportDataItem);
+        assertTrue(reportDataSets.get(0).getData().get(0).getExpected() instanceof ExpectedUseCaseList);
+        assertTrue(reportDataSets.get(0).getData().get(1).getExpected() instanceof ExpectedUseCaseList);
 
         assertEquals(new ReportDataItem("This is the desc of the usecase",
                         new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
-                        new ExpectedReportDataItem("column 1", "NewTrade-expected")),
+                        new ExpectedUseCaseList(Collections.singletonList(new ExpectedUseCase(Collections.singletonList(new ExpectedUseCaseField("column 1", "NewTrade-expected")))))),
                 reportDataSets.get(0).getData().get(0));
         assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
                         new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
-                        new ExpectedReportDataItem("column 2", "TerminatedTrade-expected")),
+                        new ExpectedUseCaseList(Collections.singletonList(new ExpectedUseCase(Collections.singletonList(new ExpectedUseCaseField("column 2", "TerminatedTrade-expected")))))),
                 reportDataSets.get(0).getData().get(1));
     }
 

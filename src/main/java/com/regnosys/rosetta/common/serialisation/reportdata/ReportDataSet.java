@@ -5,9 +5,10 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 public class ReportDataSet {
+    private final static String EXPECTED_TYPE = "com.regnosys.rosetta.common.serialisation.reportdata.ExpectedUseCaseList";
+
     private String dataSetName;
     private String inputType;
-    private String expectedType;
     private List<String> applicableReports;
     private List<ReportDataItem> data;
 
@@ -30,7 +31,7 @@ public class ReportDataSet {
     }
 
     public String getExpectedType() {
-        return expectedType;
+        return EXPECTED_TYPE;
     }
 
     public List<String> getApplicableReports() {
@@ -48,14 +49,13 @@ public class ReportDataSet {
         ReportDataSet that = (ReportDataSet) o;
         return Objects.equals(dataSetName, that.dataSetName) &&
                 Objects.equals(inputType, that.inputType) &&
-                Objects.equals(expectedType, that.expectedType) &&
                 Objects.equals(applicableReports, that.applicableReports) &&
                 Objects.equals(data, that.data);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(dataSetName, inputType, applicableReports, data);
+        return Objects.hash(dataSetName, inputType, EXPECTED_TYPE, applicableReports, data);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class ReportDataSet {
         return new StringJoiner(", ", ReportDataSet.class.getSimpleName() + "[", "]")
                 .add("dataSetName='" + dataSetName + "'")
                 .add("inputType='" + inputType + "'")
-                .add("expectedType='" + expectedType + "'")
+                .add("expectedType='" + EXPECTED_TYPE + "'")
                 .add("applicableReports=" + applicableReports)
                 .add("data=" + data)
                 .toString();

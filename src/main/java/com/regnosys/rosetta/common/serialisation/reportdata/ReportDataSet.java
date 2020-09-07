@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 public class ReportDataSet {
+    private final static String EXPECTED_TYPE = ExpectedResult.class.getName();
+
     private String dataSetName;
     private String inputType;
     private List<String> applicableReports;
@@ -28,6 +30,10 @@ public class ReportDataSet {
         return inputType;
     }
 
+    public String getExpectedType() {
+        return EXPECTED_TYPE;
+    }
+
     public List<String> getApplicableReports() {
         return applicableReports;
     }
@@ -49,7 +55,7 @@ public class ReportDataSet {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dataSetName, inputType, applicableReports, data);
+        return Objects.hash(dataSetName, inputType, EXPECTED_TYPE, applicableReports, data);
     }
 
     @Override
@@ -57,6 +63,7 @@ public class ReportDataSet {
         return new StringJoiner(", ", ReportDataSet.class.getSimpleName() + "[", "]")
                 .add("dataSetName='" + dataSetName + "'")
                 .add("inputType='" + inputType + "'")
+                .add("expectedType='" + EXPECTED_TYPE + "'")
                 .add("applicableReports=" + applicableReports)
                 .add("data=" + data)
                 .toString();

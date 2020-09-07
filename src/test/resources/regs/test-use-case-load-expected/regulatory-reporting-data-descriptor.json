@@ -2,7 +2,6 @@
   {
     "dataSetName": "Test set 1 expected",
     "inputType": "com.regnosys.rosetta.common.serialisation.JsonReportDataLoaderTest$EventTestModelObject",
-    "expectedType": "com.regnosys.rosetta.common.serialisation.JsonReportDataLoaderTest$ExpectedReportDataItem",
     "applicableReports": [],
     "data": [
       {

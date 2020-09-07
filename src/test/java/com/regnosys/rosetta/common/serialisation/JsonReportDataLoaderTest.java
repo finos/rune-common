@@ -44,16 +44,16 @@ class JsonReportDataLoaderTest {
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
 
-        assertTrue(reportDataSets.get(0).getData().get(0).getExpected() instanceof ExpectedUseCase);
-        assertTrue(reportDataSets.get(0).getData().get(1).getExpected() instanceof ExpectedUseCase);
+        assertTrue(reportDataSets.get(0).getData().get(0).getExpected() instanceof ExpectedResult);
+        assertTrue(reportDataSets.get(0).getData().get(1).getExpected() instanceof ExpectedResult);
 
         assertEquals(new ReportDataItem("This is the desc of the usecase",
                         new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
-                        new ExpectedUseCase(Collections.singletonList(new ExpectedUseCaseField("column 1", "NewTrade-expected")))),
+                        new ExpectedResult(Collections.singletonList(new ExpectedResultField("column 1", "NewTrade-expected")))),
                 reportDataSets.get(0).getData().get(0));
         assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
                         new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
-                        new ExpectedUseCase(Collections.singletonList(new ExpectedUseCaseField("column 2", "TerminatedTrade-expected")))),
+                        new ExpectedResult(Collections.singletonList(new ExpectedResultField("column 2", "TerminatedTrade-expected")))),
                 reportDataSets.get(0).getData().get(1));
     }
 

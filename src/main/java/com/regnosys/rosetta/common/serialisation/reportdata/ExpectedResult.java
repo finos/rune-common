@@ -4,16 +4,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-public class ExpectedUseCase {
-    private List<ExpectedUseCaseField> fields;
+public class ExpectedResult {
+    private List<ExpectedResultField> fields;
 
-    public ExpectedUseCase(){}
+    public ExpectedResult(){}
 
-    public ExpectedUseCase(List<ExpectedUseCaseField> fields) {
+    public ExpectedResult(List<ExpectedResultField> fields) {
         this.fields = fields;
     }
 
-    public List<ExpectedUseCaseField> getFields() {
+    public List<ExpectedResultField> getFields() {
         return fields;
     }
 
@@ -21,7 +21,7 @@ public class ExpectedUseCase {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ExpectedUseCase that = (ExpectedUseCase) o;
+        ExpectedResult that = (ExpectedResult) o;
         return Objects.equals(fields, that.fields);
     }
 
@@ -32,7 +32,7 @@ public class ExpectedUseCase {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", ExpectedUseCase.class.getSimpleName() + "[", "]")
+        return new StringJoiner(", ", ExpectedResult.class.getSimpleName() + "[", "]")
                 .add("fields=" + fields)
                 .toString();
     }

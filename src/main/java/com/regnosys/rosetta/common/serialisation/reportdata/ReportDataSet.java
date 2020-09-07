@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 public class ReportDataSet {
-    private final static String EXPECTED_TYPE = "com.regnosys.rosetta.common.serialisation.reportdata.ExpectedUseCase";
+    private final static String EXPECTED_TYPE = ExpectedResult.class.getName();
 
     private String dataSetName;
     private String inputType;

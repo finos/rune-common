@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JsonReportDataLoaderTest {
     private static final List<String> DESCRIPTOR_FILE_NAMES = Collections.singletonList(JsonReportDataLoader.DEFAULT_DESCRIPTOR_NAME);
-    private ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
     void lookupsLoaded() {

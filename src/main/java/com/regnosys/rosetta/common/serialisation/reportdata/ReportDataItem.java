@@ -11,6 +11,11 @@ public class ReportDataItem {
     public ReportDataItem() {
     }
 
+    public ReportDataItem(String name, Object input) {
+        this.name = name;
+        this.input = input;
+    }
+
     public ReportDataItem(String name, Object input, Object expected) {
         this.name = name;
         this.input = input;

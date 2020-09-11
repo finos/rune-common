@@ -176,6 +176,21 @@ public class Path {
                 .collect(Collectors.toList()));
     }
 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Path path = (Path) o;
+        return elements.equals(path.elements);
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(elements);
+    }
+
     @Override
     public String toString() {
         return String.join(".", elements.stream().map(PathElement::toString).collect(Collectors.toList()));

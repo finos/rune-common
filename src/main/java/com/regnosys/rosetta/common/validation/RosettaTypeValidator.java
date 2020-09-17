@@ -91,7 +91,7 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 		final StringBuilder errors = new StringBuilder();
 		validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
 		if(errors.length() > 0) {
-			throw new RuntimeException("Object validation failed:" + errors.toString());
+			throw new ModelObjectValidator.ModelObjectValidationException("Object validation failed:" + errors.toString());
 		}
 	}
 	
@@ -110,7 +110,7 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 			validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
 		}
 		if(errors.length() > 0) {
-			throw new RuntimeException("Object validation failed:" + errors.toString());
+			throw new ModelObjectValidator.ModelObjectValidationException("Object validation failed:" + errors.toString());
 		}
 	}
 	

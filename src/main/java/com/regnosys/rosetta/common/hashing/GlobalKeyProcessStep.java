@@ -4,12 +4,14 @@ import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.meta.FieldWithMetaBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.BuilderProcessor.Report;
 import com.rosetta.model.lib.process.PostProcessStep;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -20,9 +22,9 @@ import java.util.function.Supplier;
  * It uses a BuilderProcessor supplied in the constructor to do the actual calculation of hashes for applicable objects.
  */
 public class GlobalKeyProcessStep implements PostProcessStep {
-	
+
 	private final Supplier<? extends BuilderProcessor> hashCalculator;
-	
+
 	public GlobalKeyProcessStep(Supplier<? extends BuilderProcessor> s) {
 		this.hashCalculator = s;
 	}
@@ -46,7 +48,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		builder.process(path, process);
 		return thisReport;
 	}
-	
+
 	class KeyProcessProcess extends SimpleBuilderProcessor {
 		KeyPostProcessReport report;
 
@@ -68,7 +70,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 				builder.process(path, hasher);
 				Report rep = hasher.report();
 				keyBuilder.getOrCreateMeta().setGlobalKey(rep.toString());
-				report.keyMap.put(path,keyBuilder);
+				report.keyMap.put(path, keyBuilder);
 			}
 			return true;
 		}
@@ -77,19 +79,19 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
 				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 		}
-	
+
 		@Override
 		public Report report() {
 			return report;
 		}
 
 		private boolean isGlobalKey(RosettaModelObjectBuilder builder, AttributeMeta... metas) {
-			return builder instanceof GlobalKeyBuilder;
-//					// exclude FieldWithMetas unless they contain a IS_GLOBAL_KEY_FIELD meta
-//					&& !(builder instanceof FieldWithMetaBuilder && !Arrays.asList(metas).contains(AttributeMeta.IS_GLOBAL_KEY_FIELD));
+			return builder instanceof GlobalKeyBuilder
+					// exclude FieldWithMetas unless they contain a IS_GLOBAL_KEY_FIELD meta
+					&& !(builder instanceof FieldWithMetaBuilder && !Arrays.asList(metas).contains(AttributeMeta.IS_GLOBAL_KEY_FIELD));
 		}
 	}
-	
+
 	public class KeyPostProcessReport implements PostProcessorReport, Report {
 
 		private final RosettaModelObjectBuilder result;
@@ -109,5 +111,5 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 			return keyMap;
 		}
 	}
-	
+
 }

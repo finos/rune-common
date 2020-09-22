@@ -11,7 +11,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
-		<rosetta.dsl.version>3.2.6</rosetta.dsl.version>
+		<rosetta.dsl.version>0.0.0.master</rosetta.dsl.version>
 		<junit.jupiter.version>5.0.3</junit.jupiter.version>
 		<junit.platform.version>1.0.0</junit.platform.version>
 		<reflections.version>0.9.11</reflections.version>

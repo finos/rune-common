@@ -28,10 +28,14 @@ public class MappingProcessorUtils {
 		List<Mapping> mappingsFromSynonymPath = filterMappings(mappings, synonymPath);
 		getNonNullMappedValue(mappingsFromSynonymPath).ifPresent(value -> {
 			// set value on model, return boolean whether to update mappings
-			if (func.apply(value)) {
-				// update mappings
-				mappingsFromSynonymPath.forEach(m -> updateMappingSuccess(m, rosettaPath));
-			}
+			boolean success = func.apply(value);
+			// update mappings
+			mappingsFromSynonymPath.forEach(m -> {
+				if (success)
+					updateMappingSuccess(m, rosettaPath);
+				else
+					updateMappingFail(m, "no destination");
+			});
 		});
 	}
 

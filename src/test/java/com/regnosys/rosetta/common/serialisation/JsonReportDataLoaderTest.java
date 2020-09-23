@@ -1,9 +1,7 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.serialisation.reportdata.JsonReportDataLoader;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
+import com.regnosys.rosetta.common.serialisation.reportdata.*;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
@@ -29,12 +27,34 @@ class JsonReportDataLoaderTest {
         assertTrue(reportDataSets.get(0).getData().get(0).getInput() instanceof EventTestModelObject);
         assertTrue(reportDataSets.get(0).getData().get(1).getInput() instanceof EventTestModelObject);
 
-        assertEquals(reportDataSets.get(0).getData().get(0), new ReportDataItem(
-                "This is the desc of the usecase",
-                new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade")));
-        assertEquals(reportDataSets.get(0).getData().get(1), new ReportDataItem(
-                "This is the desc of the another usecase that has inline json rather then a file",
-                new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade")));
+        assertEquals(new ReportDataItem("This is the desc of the usecase",
+                        new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
+                        null),
+                reportDataSets.get(0).getData().get(0));
+        assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
+                        new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
+                        null),
+                reportDataSets.get(0).getData().get(1));
+    }
+
+    @Test
+    void lookupsLoadedExpected() {
+        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper,
+                Paths.get("src/test/resources/regs/test-use-case-load-expected").toUri(), DESCRIPTOR_FILE_NAMES).load();
+        assertEquals(reportDataSets.size(), 1);
+        assertEquals(reportDataSets.get(0).getData().size(), 2);
+
+        assertTrue(reportDataSets.get(0).getData().get(0).getExpected() instanceof ExpectedResult);
+        assertTrue(reportDataSets.get(0).getData().get(1).getExpected() instanceof ExpectedResult);
+
+        assertEquals(new ReportDataItem("This is the desc of the usecase",
+                        new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
+                        new ExpectedResult(Collections.singletonList(new ExpectedResultField("column 1", "NewTrade-expected")))),
+                reportDataSets.get(0).getData().get(0));
+        assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
+                        new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
+                        new ExpectedResult(Collections.singletonList(new ExpectedResultField("column 2", "TerminatedTrade-expected")))),
+                reportDataSets.get(0).getData().get(1));
     }
 
     @Test

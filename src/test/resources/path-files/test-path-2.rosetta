@@ -2,16 +2,13 @@ namespace "com.rosetta.teststruct.model"
 
 synonym source Bank_A
 
-class Top1 {
-	aField A1 (1..1);
+type Top1:
+	aField A1 (1..1)
 	[synonym Bank_A value a]
-}
 
-class A1 {
-	xField X1 (1..1);
-}
+type A1:
+	xField X1 (1..1)
 
-class X1 {
-	bField string (1..1);
+type X1:
+	bField string (1..1)
 	[synonym Bank_A value b]
-}

@@ -2,7 +2,7 @@ package com.regnosys.rosetta.common.hashing;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.meta.MetaFieldsI;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.Processor;
@@ -75,7 +75,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     }
 
     private boolean isMetaFieldsBuilder(RosettaModelObjectBuilder builder) {
-        return builder instanceof MetaFieldsI.MetaFieldsBuilderI;
+        return builder instanceof GlobalKeyFields.GlobalKeyFieldsBuilder;
     }
 
     private boolean metaContains(AttributeMeta[] metas, AttributeMeta attributeMeta) {

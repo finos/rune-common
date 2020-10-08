@@ -69,8 +69,10 @@ public class MappingProcessorStep implements PostProcessStep {
 		LOGGER.debug("Shutdown mapper thread pool");
 		executor.shutdown();
 		try {
-			if (!executor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+			if (!executor.awaitTermination(200, TimeUnit.MILLISECONDS)) {
 				executor.shutdownNow();
+			} else {
+				LOGGER.debug("All mapper threads terminated");
 			}
 		} catch (InterruptedException e) {
 			executor.shutdownNow();

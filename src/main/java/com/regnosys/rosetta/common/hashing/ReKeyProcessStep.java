@@ -5,7 +5,7 @@ import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.meta.MetaFieldsI.MetaFieldsBuilderI;
+import com.rosetta.model.lib.meta.GlobalKeyFields.GlobalKeyFieldsBuilder;
 import com.rosetta.model.lib.meta.ReferenceWithMetaBuilderBase;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -56,7 +56,7 @@ public class ReKeyProcessStep implements PostProcessStep{
 			Map<RosettaPath, GlobalKeyBuilder> globalKeyMap = keyPostProcessReport.getKeyMap();
 			externalGlobalMap = new HashMap<>();
 			for (Entry<RosettaPath, GlobalKeyBuilder> globalKey:globalKeyMap.entrySet()) {
-				MetaFieldsBuilderI meta = globalKey.getValue().getMeta();
+				GlobalKeyFieldsBuilder meta = globalKey.getValue().getMeta();
 				if (meta.getExternalKey()!=null) {
 					String external = meta.getExternalKey();
 					String global = meta.getGlobalKey();

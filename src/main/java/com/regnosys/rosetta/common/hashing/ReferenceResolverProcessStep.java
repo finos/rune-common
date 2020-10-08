@@ -6,7 +6,7 @@ import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.meta.MetaFieldsI;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -48,7 +48,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
             if (builder instanceof GlobalKeyBuilder) {
                 GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
-                ofNullable(globalKeyBuilder.getMeta()).map(MetaFieldsI::getGlobalKey)
+                ofNullable(globalKeyBuilder.getMeta()).map(GlobalKeyFields::getGlobalKey)
                         .ifPresent(globalKey -> references.put(rosettaType, globalKey, builder));
             }
             return true;

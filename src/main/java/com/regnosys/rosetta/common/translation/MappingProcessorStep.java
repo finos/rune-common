@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -25,11 +26,13 @@ public class MappingProcessorStep implements PostProcessStep {
 
 	private final List<MappingDelegate> mappingDelegates;
 	private final ExecutorService executor;
+	private final List<CompletableFuture<?>> invokedTasks;
 
 	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors, MappingContext context) {
 		this.mappingDelegates = new ArrayList<>(mappingProcessors);
 		this.mappingDelegates.sort(MAPPING_DELEGATE_COMPARATOR);
 		this.executor = context.getExecutor();
+		this.invokedTasks = context.getInvokedTasks();
 	}
 
 	@Override
@@ -57,12 +60,14 @@ public class MappingProcessorStep implements PostProcessStep {
 					processor.processRosetta(path, topClass, builder, null);
 					builder.process(path, processor);
 				}
+				// Mapper thread waits for invoked tasks to complete before continuing (subject to timeout before)
+				CompletableFuture.allOf(invokedTasks.toArray(new CompletableFuture[invokedTasks.size()])).join();
 			} finally {
 				countDownLatch.countDown();
 			}
 		});
 
-		LOGGER.debug("Wait for the mappers to complete before continuing");
+		LOGGER.debug("Main thread waits for the mappers to complete before continuing");
 		Uninterruptibles.awaitUninterruptibly(countDownLatch, 800, TimeUnit.MILLISECONDS);
 		LOGGER.info("Mappers completed in {}", stopwatch.stop().toString());
 

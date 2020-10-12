@@ -5,6 +5,7 @@ import com.rosetta.model.lib.path.RosettaPath;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
@@ -66,6 +67,13 @@ public abstract class MappingProcessor implements MappingDelegate {
 
 	protected MappingContext getContext() {
 		return context;
+	}
+
+	/**
+	 * Collect any mapping tasks invoked during mapping so we can wait until they're complete before continuing.
+	 */
+	protected void addInvokedTask(CompletableFuture<?> invokedTask) {
+		context.getInvokedTasks().add(invokedTask);
 	}
 
 	protected void setValueAndUpdateMappings(String synonymPath, Consumer<String> setter) {

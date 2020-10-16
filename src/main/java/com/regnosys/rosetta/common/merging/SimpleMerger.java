@@ -15,7 +15,7 @@ import static java.util.Optional.ofNullable;
 public class SimpleMerger implements BuilderMerger {
 
 	public static <B extends RosettaModelObjectBuilder> B merge(B left, B right) {
-		return (B) left.merge(right, new SimpleMerger());
+		return left.merge(right, new SimpleMerger());
 	}
 
 	@Override

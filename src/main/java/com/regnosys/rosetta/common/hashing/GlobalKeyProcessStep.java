@@ -76,11 +76,6 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		}
 
 		@Override
-		public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
-				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-		}
-
-		@Override
 		public Report report() {
 			return report;
 		}

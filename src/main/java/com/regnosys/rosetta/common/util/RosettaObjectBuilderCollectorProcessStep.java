@@ -51,7 +51,8 @@ public class RosettaObjectBuilderCollectorProcessStep<B extends RosettaModelObje
 		}
 
 		@Override
-		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder,
+				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 			if (builder == null || !builder.hasData()) {
 				return false;
 			}
@@ -60,17 +61,13 @@ public class RosettaObjectBuilderCollectorProcessStep<B extends RosettaModelObje
 			}
 			return true;
 		}
-	
-		@Override
-		public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-		}
-	
+
 		@Override
 		public Report report() {
 			return null;
 		}
 	}
-	
+
 	public static class RosettaObjectBuilderCollectorProcessReport<C extends RosettaModelObjectBuilder> implements PostProcessorReport, Report {
 
 		private final RosettaModelObjectBuilder topClassBuilder;

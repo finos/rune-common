@@ -36,4 +36,8 @@ public abstract class SimpleBuilderProcessor implements BuilderProcessor {
 		}
 	}
 
+	@Override
+	public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+		// Do nothing by default
+	}
 }

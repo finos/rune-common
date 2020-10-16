@@ -13,8 +13,9 @@ import static com.rosetta.util.CollectionUtils.*;
 
 public class SimpleUnmerger implements BuilderMerger {
 
-	public static <B extends RosettaModelObjectBuilder> B unmerge(B instance, B template) {
-		return instance.merge(template, new SimpleUnmerger()).prune();
+	@Override
+	public <B extends RosettaModelObjectBuilder> B merge(B instance, B template) {
+		return instance.merge(template, this).prune();
 	}
 
 	@Override

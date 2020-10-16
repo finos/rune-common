@@ -55,11 +55,6 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         }
 
         @Override
-        public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-            // Basic type reference collecting is not supported yet.
-        }
-
-        @Override
         public Report report() {
             return new ReferenceResolverReport(references);
         }
@@ -85,11 +80,6 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                 }
             }
             return true;
-        }
-
-        @Override
-        public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-            // Basic type reference resolving is not supported yet.
         }
 
         @Override

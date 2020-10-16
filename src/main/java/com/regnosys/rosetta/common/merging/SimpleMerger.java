@@ -14,8 +14,9 @@ import static java.util.Optional.ofNullable;
 
 public class SimpleMerger implements BuilderMerger {
 
-	public static <B extends RosettaModelObjectBuilder> B merge(B left, B right) {
-		return left.merge(right, new SimpleMerger());
+	@Override
+	public <B extends RosettaModelObjectBuilder> B merge(B left, B right) {
+		return left.merge(right, this);
 	}
 
 	@Override
@@ -31,7 +32,7 @@ public class SimpleMerger implements BuilderMerger {
 	public <B extends RosettaModelObjectBuilder> void mergeRosetta(List<B> left, List<B> right, Function<Integer, B> getOrCreate, Consumer<B> add) {
 		AtomicInteger index = new AtomicInteger();
 		for (Iterator<B> l = copy(left).iterator(), r = copy(right).iterator(); l.hasNext() || r.hasNext(); index.getAndIncrement()) {
-			mergeRosetta(nextOrGet(l, () ->  getOrCreate.apply(index.get())), nextOrNull(r), add);
+			mergeRosetta(nextOrGet(l, () -> getOrCreate.apply(index.get())), nextOrNull(r), add);
 		}
 	}
 

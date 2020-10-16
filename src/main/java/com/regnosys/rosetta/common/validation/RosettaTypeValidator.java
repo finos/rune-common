@@ -34,8 +34,8 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 		builder.process(path, processor);
 		return report;
 	}
-	
-	
+
+
 	class RosettaTypeProcessor extends SimpleBuilderProcessor {
 		private ValidationReport result;
 		public RosettaTypeProcessor(ValidationReport report) {
@@ -56,12 +56,6 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 		}
 
 		@Override
-		public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent,
-				AttributeMeta... metas) {
-			//basic types don't get validated
-		}
-		
-		@Override
 		public Report report() {
 			return result;
 		}
@@ -76,11 +70,11 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 	public Integer getPriority() {
 		return 100;
 	}
-	
-	
+
+
 	/**
 	 * Runs the process step and collects errors. Throws an exception if validation fails
-	 * 
+	 *
 	 * @param <T>
 	 * @param topClass
 	 * @param modelObject
@@ -94,10 +88,10 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 			throw new ModelObjectValidator.ModelObjectValidationException("Object validation failed:" + errors.toString());
 		}
 	}
-	
+
 	/**
 	 * Runs the process step and collects errors. Throws an exception if validation fails
-	 * 
+	 *
 	 * @param <T>
 	 * @param topClass
 	 * @param modelObjects
@@ -113,7 +107,7 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 			throw new ModelObjectValidator.ModelObjectValidationException("Object validation failed:" + errors.toString());
 		}
 	}
-	
+
 	private <T extends RosettaModelObject> void validateAndCollectErrors(Class<T> topClass, T modelObject, Consumer<? super ValidationResult<?>> collector) {
 		runProcessStep(topClass, modelObject.toBuilder())
 			.getValidationResults()

@@ -25,7 +25,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     }
 
     @Override
-    public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+    public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<R> rosettaType,
                                                               R instance, RosettaModelObject parent, AttributeMeta... metas) {
         if (instance != null && !metaContains(metas, AttributeMeta.IS_META)) {
             report.accumulate();
@@ -48,7 +48,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     }
 
     @Override
-    public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+    public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
                                                                  RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
         if (shouldIncludeInHash(builder, metas)) {
             report.accumulate();

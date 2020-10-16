@@ -58,7 +58,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path,
-				Class<? extends R> rosettaType,
+				Class<R> rosettaType,
 				RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... metas) {

@@ -45,7 +45,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         private final Table<Class<?>, String, Object> references = HashBasedTable.create();
 
         @Override
-        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
             if (builder instanceof GlobalKeyBuilder) {
                 GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
                 ofNullable(globalKeyBuilder.getMeta()).map(GlobalKeyFields::getGlobalKey)
@@ -75,7 +75,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
         @SuppressWarnings("unchecked")
         @Override
-        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
             if (builder instanceof ReferenceWithMetaBuilder) {
                 ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMetaBuilder) builder;
                 if (referenceWithMetaBuilder.getValue() == null && referenceWithMetaBuilder.getGlobalReference() != null) {

@@ -43,7 +43,7 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 		}
 
 		@Override
-		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
 				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent,
 				AttributeMeta... metas) {
 			if (builder==null) return false;

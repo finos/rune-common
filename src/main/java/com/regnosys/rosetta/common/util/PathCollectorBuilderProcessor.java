@@ -17,7 +17,7 @@ public class PathCollectorBuilderProcessor implements BuilderProcessor {
 
 	@Override
 	public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path,
-			Class<? extends R> rosettaType,
+			Class<R> rosettaType,
 			RosettaModelObjectBuilder builder,
 			RosettaModelObjectBuilder parent,
 			AttributeMeta... meta) {
@@ -26,7 +26,7 @@ public class PathCollectorBuilderProcessor implements BuilderProcessor {
 
 	@Override
 	public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path,
-			Class<? extends R> rosettaType,
+			Class<R> rosettaType,
 			List<? extends RosettaModelObjectBuilder> builders,
 			RosettaModelObjectBuilder parent,
 			AttributeMeta... meta) {

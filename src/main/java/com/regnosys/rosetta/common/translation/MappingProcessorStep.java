@@ -146,7 +146,7 @@ public class MappingProcessorStep implements PostProcessStep {
 
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath currentPath,
-				Class<? extends R> rosettaType,
+				Class<R> rosettaType,
 				RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... meta) {
@@ -158,7 +158,7 @@ public class MappingProcessorStep implements PostProcessStep {
 
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath currentPath,
-				Class<? extends R> rosettaType,
+				Class<R> rosettaType,
 				List<? extends RosettaModelObjectBuilder> builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... meta) {

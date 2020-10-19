@@ -1,10 +1,12 @@
 package com.regnosys.rosetta.common.merging;
 
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.merge.BuilderMerger;
+import com.rosetta.model.lib.process.AttributeMeta;
+import com.rosetta.model.lib.process.BuilderMerger;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -13,9 +15,21 @@ import static com.rosetta.util.CollectionUtils.*;
 
 public class SimpleUnmerger implements BuilderMerger {
 
+	private final Consumer<RosettaModelObjectBuilder> postProcessor;
+
+	public SimpleUnmerger() {
+		this(null);
+	}
+
+	public SimpleUnmerger(Consumer<RosettaModelObjectBuilder> postProcessor) {
+		this.postProcessor = postProcessor;
+	}
+
 	@Override
-	public <B extends RosettaModelObjectBuilder> B merge(B instance, B template) {
-		return instance.merge(template, this).prune();
+	public <B extends RosettaModelObjectBuilder> B run(B instance, B template) {
+		B unmerged = instance.merge(template, this).prune();
+		Optional.ofNullable(postProcessor).ifPresent(p -> p.accept(unmerged));
+		return unmerged;
 	}
 
 	@Override
@@ -34,7 +48,7 @@ public class SimpleUnmerger implements BuilderMerger {
 	}
 
 	@Override
-	public <T> void mergeBasic(T left, T right, Consumer<T> setter) {
+	public <T> void mergeBasic(T left, T right, Consumer<T> setter, AttributeMeta... metas) {
 		if (left != null && right != null) {
 			setter.accept(null);
 		}

@@ -83,7 +83,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		private boolean isGlobalKey(RosettaModelObjectBuilder builder, AttributeMeta... metas) {
 			return builder instanceof GlobalKeyBuilder
 					// exclude FieldWithMetas unless they contain a IS_GLOBAL_KEY_FIELD meta
-					&& !(builder instanceof FieldWithMetaBuilder && !Arrays.asList(metas).contains(AttributeMeta.IS_GLOBAL_KEY_FIELD));
+					&& !(builder instanceof FieldWithMetaBuilder && !Arrays.asList(metas).contains(AttributeMeta.GLOBAL_KEY_FIELD));
 		}
 	}
 

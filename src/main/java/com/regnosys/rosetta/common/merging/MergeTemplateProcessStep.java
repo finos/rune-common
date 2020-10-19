@@ -6,9 +6,10 @@ import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.Templatable;
-import com.rosetta.model.lib.merge.BuilderMerger;
+import com.rosetta.model.lib.meta.TemplateFields;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
+import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.PostProcessStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,7 @@ public class MergeTemplateProcessStep implements PostProcessStep {
 					.flatMap(templateRef -> templateSupplier.get(rosettaType, templateRef))
 					.ifPresent(template -> {
 						LOGGER.info("Merging {} template with {}", rosettaType.getSimpleName(), merger.getClass().getSimpleName());
-						merger.merge(builder, template.toBuilder());
+						merger.run(builder, template.toBuilder());
 					});
 
 			return true;
@@ -74,8 +75,11 @@ public class MergeTemplateProcessStep implements PostProcessStep {
 		}
 
 		private Optional<String> getTemplateGlobalReference(RosettaModelObjectBuilder builder) {
-			return Optional.ofNullable(builder instanceof Templatable.TemplatableBuilder ?
-					((Templatable.TemplatableBuilder) builder).getOrCreateMeta().getTemplateGlobalReference() : null);
+			return Optional.of(builder)
+					.filter(Templatable.TemplatableBuilder.class::isInstance)
+					.map(Templatable.TemplatableBuilder.class::cast)
+					.map(Templatable.TemplatableBuilder::getMeta)
+					.map(TemplateFields::getTemplateGlobalReference);
 		}
 	}
 }

@@ -8,13 +8,16 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.rosetta.util.CollectionUtils.*;
+import static com.rosetta.util.CollectionUtils.emptyIfNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
+/**
+ * Simple implementation of BuilderMerger interface that merges two objects together.
+ */
 public class SimpleMerger implements BuilderMerger {
 
 	private final Consumer<RosettaModelObjectBuilder> postProcessor;
@@ -28,45 +31,54 @@ public class SimpleMerger implements BuilderMerger {
 	}
 
 	@Override
-	public <B extends RosettaModelObjectBuilder> B run(B left, B right) {
-		B merged = left.merge(right, this);
+	public <T extends RosettaModelObjectBuilder> void run(T o1, T o2) {
+		// merge o2 into o1
+		T merged = requireNonNull(o1).merge(requireNonNull(o2), this).prune();
+		// optionally post process
 		Optional.ofNullable(postProcessor).ifPresent(p -> p.accept(merged));
-		return merged;
 	}
 
 	@Override
-	public <B extends RosettaModelObjectBuilder> void mergeRosetta(B left, B right, Consumer<B> setter) {
-		if (left != null && right != null) {
-			left.merge(right, this);
+	public <T extends RosettaModelObjectBuilder> void mergeRosetta(T o1, T o2, Consumer<T> o1Setter) {
+		if (o1 != null && o2 != null) {
+			// if both o1 and o2 are present, then we need to merge
+			o1.merge(o2, this);
 		} else {
-			ofNullable(right).ifPresent(setter);
+			// if o2 is present and o1 is absent, then we can just overwrite
+			ofNullable(o2).ifPresent(o1Setter);
 		}
 	}
 
 	@Override
-	public <B extends RosettaModelObjectBuilder> void mergeRosetta(List<B> left, List<B> right, Function<Integer, B> getOrCreate, Consumer<B> add) {
-		AtomicInteger index = new AtomicInteger();
-		for (Iterator<B> l = copy(left).iterator(), r = copy(right).iterator(); l.hasNext() || r.hasNext(); index.getAndIncrement()) {
-			mergeRosetta(nextOrGet(l, () -> getOrCreate.apply(index.get())), nextOrNull(r), add);
+	public <T extends RosettaModelObjectBuilder> void mergeRosetta(List<T> o1, List<T> o2, Function<Integer, T> o1GetOrCreateByIndex) {
+		// merge list items with matching indexes, e.g. object at list o1 index 0, merged with object at list o2 index 0, and so on..
+		// iterate through a copy of the lists to prevent a ConcurrentModificationException.
+		int i = 0;
+		for (Iterator<T> i2 = emptyIfNull(o2).iterator(); i2.hasNext(); i++) {
+			if (i2.hasNext()) {
+				o1GetOrCreateByIndex.apply(i).merge(i2.next(), this);
+			}
 		}
 	}
 
 	@Override
-	public <T> void mergeBasic(T left, T right, Consumer<T> setter, AttributeMeta... metas) {
-		if (left != null && right != null) {
+	public <T> void mergeBasic(T o1, T o2, Consumer<T> o1Setter, AttributeMeta... metas) {
+		if (o1 != null && o2 != null) {
 			if (!metaContains(metas, AttributeMeta.GLOBAL_KEY)) {
 				throw new IllegalArgumentException(
-						String.format("Attempting to merge 2 different basic values [left=%s, right=%s, type=%s]",
-								left, right, left.getClass().getSimpleName()));
+						String.format("Attempting to merge 2 different basic values [o1=%s, o2=%s, type=%s]",
+								o1, o2, o1.getClass().getSimpleName()));
 			}
 		} else {
-			ofNullable(right).ifPresent(setter);
+			// if o1 is absent and o2 is present, then we can just overwrite
+			ofNullable(o2).ifPresent(o1Setter);
 		}
 	}
 
 	@Override
-	public <T> void mergeBasic(List<T> left, List<T> right, Consumer<T> add) {
-		emptyIfNull(right).forEach(add);
+	public <T> void mergeBasic(List<T> o1, List<T> o2, Consumer<T> o1Add) {
+		// merge lists
+		emptyIfNull(o2).forEach(o1Add);
 	}
 
 	private boolean metaContains(AttributeMeta[] metas, AttributeMeta attributeMeta) {

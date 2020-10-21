@@ -25,9 +25,9 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     }
 
     @Override
-    public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+    public <R extends RosettaModelObject> void processRosetta(RosettaPath path, Class<R> rosettaType,
                                                               R instance, RosettaModelObject parent, AttributeMeta... metas) {
-        if (instance != null && !metaContains(metas, AttributeMeta.IS_META)) {
+        if (instance != null && !metaContains(metas, AttributeMeta.META)) {
             report.accumulate();
         }
     }
@@ -35,7 +35,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     @Override
     public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObject parent,
                                  AttributeMeta... metas) {
-        if (instance != null && !metaContains(metas, AttributeMeta.IS_META)) {
+        if (instance != null && !metaContains(metas, AttributeMeta.META)) {
             int hash = hashcodeGenerator.generate(instance);
             report.accumulate(hash);
         }
@@ -48,7 +48,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     }
 
     @Override
-    public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+    public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
                                                                  RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
         if (shouldIncludeInHash(builder, metas)) {
             report.accumulate();
@@ -59,7 +59,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     @Override
     public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
                                  RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-        if (instance != null && !metaContains(metas, AttributeMeta.IS_META)) {
+        if (instance != null && !metaContains(metas, AttributeMeta.META)) {
             int hash = hashcodeGenerator.generate(instance);
             report.accumulate(hash);
         }
@@ -71,7 +71,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
      * -  Have a MetaFieldsBuilder and an IS_META meta attribute - This is meta attribute we want to hash like scheme
      */
     private boolean shouldIncludeInHash(RosettaModelObjectBuilder builder, AttributeMeta[] metas) {
-        return builder != null && (metas.length == 0 && !isMetaFieldsBuilder(builder)) || (metaContains(metas, AttributeMeta.IS_META) && isMetaFieldsBuilder(builder));
+        return builder != null && (metas.length == 0 && !isMetaFieldsBuilder(builder)) || (metaContains(metas, AttributeMeta.META) && isMetaFieldsBuilder(builder));
     }
 
     private boolean isMetaFieldsBuilder(RosettaModelObjectBuilder builder) {

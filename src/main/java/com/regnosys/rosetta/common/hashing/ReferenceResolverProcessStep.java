@@ -45,18 +45,13 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         private final Table<Class<?>, String, Object> references = HashBasedTable.create();
 
         @Override
-        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
             if (builder instanceof GlobalKeyBuilder) {
                 GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
                 ofNullable(globalKeyBuilder.getMeta()).map(GlobalKeyFields::getGlobalKey)
                         .ifPresent(globalKey -> references.put(rosettaType, globalKey, builder));
             }
             return true;
-        }
-
-        @Override
-        public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-            // Basic type reference collecting is not supported yet.
         }
 
         @Override
@@ -75,7 +70,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
         @SuppressWarnings("unchecked")
         @Override
-        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
             if (builder instanceof ReferenceWithMetaBuilder) {
                 ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMetaBuilder) builder;
                 if (referenceWithMetaBuilder.getValue() == null && referenceWithMetaBuilder.getGlobalReference() != null) {
@@ -85,11 +80,6 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                 }
             }
             return true;
-        }
-
-        @Override
-        public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-            // Basic type reference resolving is not supported yet.
         }
 
         @Override

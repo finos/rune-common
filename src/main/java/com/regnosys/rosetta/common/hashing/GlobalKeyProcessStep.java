@@ -58,7 +58,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path,
-				Class<? extends R> rosettaType,
+				Class<R> rosettaType,
 				RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... metas) {
@@ -76,11 +76,6 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		}
 
 		@Override
-		public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
-				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-		}
-
-		@Override
 		public Report report() {
 			return report;
 		}
@@ -88,7 +83,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		private boolean isGlobalKey(RosettaModelObjectBuilder builder, AttributeMeta... metas) {
 			return builder instanceof GlobalKeyBuilder
 					// exclude FieldWithMetas unless they contain a IS_GLOBAL_KEY_FIELD meta
-					&& !(builder instanceof FieldWithMetaBuilder && !Arrays.asList(metas).contains(AttributeMeta.IS_GLOBAL_KEY_FIELD));
+					&& !(builder instanceof FieldWithMetaBuilder && !Arrays.asList(metas).contains(AttributeMeta.GLOBAL_KEY_FIELD));
 		}
 	}
 

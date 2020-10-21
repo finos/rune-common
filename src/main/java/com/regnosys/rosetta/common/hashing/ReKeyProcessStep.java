@@ -17,10 +17,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class ReKeyProcessStep implements PostProcessStep{
+public class ReKeyProcessStep implements PostProcessStep {
 
 	private final GlobalKeyProcessStep keyProcessor;
-		
+
 	public ReKeyProcessStep(GlobalKeyProcessStep keyProcessor) {
 		this.keyProcessor = keyProcessor;
 	}
@@ -44,24 +44,24 @@ public class ReKeyProcessStep implements PostProcessStep{
 	public String getName() {
 		return "Re-key PostProcessor";
 	}
-	
+
 	private class ReKeyProcessor extends SimpleBuilderProcessor {
 
 		private final ReKeyPostProcessReport report;
 		private Map<String, String> externalGlobalMap;
-		
+
 		public ReKeyProcessor(ReKeyPostProcessReport report, KeyPostProcessReport keyPostProcessReport) {
 			super();
 			this.report = report;
 			Map<RosettaPath, GlobalKeyBuilder> globalKeyMap = keyPostProcessReport.getKeyMap();
 			externalGlobalMap = new HashMap<>();
-			for (Entry<RosettaPath, GlobalKeyBuilder> globalKey:globalKeyMap.entrySet()) {
+			for (Entry<RosettaPath, GlobalKeyBuilder> globalKey : globalKeyMap.entrySet()) {
 				GlobalKeyFieldsBuilder meta = globalKey.getValue().getMeta();
-				if (meta.getExternalKey()!=null) {
+				if (meta.getExternalKey() != null) {
 					String external = meta.getExternalKey();
 					String global = meta.getGlobalKey();
 					if (externalGlobalMap.containsKey(external) && !externalGlobalMap.get(external).equals(global)) {
-						throw new ProcessingException("Two distinct rosetta objects have the same external key "+external, 
+						throw new ProcessingException("Two distinct rosetta objects have the same external key " + external,
 								globalKey.getValue().toString(), "ReKeyPostProcessor", globalKey.getKey());
 					}
 					externalGlobalMap.put(external, global);
@@ -70,13 +70,13 @@ public class ReKeyProcessStep implements PostProcessStep{
 		}
 
 		@Override
-		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, RosettaModelObjectBuilder builder,
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 			if (builder instanceof ReferenceWithMetaBuilderBase) {
 				ReferenceWithMetaBuilderBase<?> reference = (ReferenceWithMetaBuilderBase<?>) builder;
 				String externalReference = reference.getExternalReference();
 				String globalRef = externalGlobalMap.get(externalReference);
-				if (globalRef!=null) {
+				if (globalRef != null) {
 					reference.setGlobalReference(globalRef);
 				}
 			}
@@ -84,23 +84,19 @@ public class ReKeyProcessStep implements PostProcessStep{
 		}
 
 		@Override
-		public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-		}
-
-		@Override
 		public Report report() {
 			return report;
 		}
-		
+
 	}
-	
+
 	class ReKeyPostProcessReport implements Report, PostProcessorReport {
 
 		@Override
 		public RosettaModelObjectBuilder getResultObject() {
 			return null;
 		}
-		
+
 	}
 
 }

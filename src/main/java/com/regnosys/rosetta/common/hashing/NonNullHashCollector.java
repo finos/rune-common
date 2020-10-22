@@ -3,6 +3,7 @@ package com.regnosys.rosetta.common.hashing;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
+import com.rosetta.model.lib.meta.TemplateFields;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.Processor;
@@ -50,7 +51,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
                                                                  RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-        if (shouldIncludeInHash(builder, metas)) {
+        if (shouldIncludeInHash(builder, parent, metas)) {
             report.accumulate();
         }
         return true;
@@ -70,12 +71,23 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
      * -  metas is empty and we don't have a MetaFieldsBuilder - Its a regular attribute that we need to hash
      * -  Have a MetaFieldsBuilder and an IS_META meta attribute - This is meta attribute we want to hash like scheme
      */
-    private boolean shouldIncludeInHash(RosettaModelObjectBuilder builder, AttributeMeta[] metas) {
-        return builder != null && (metas.length == 0 && !isMetaFieldsBuilder(builder)) || (metaContains(metas, AttributeMeta.META) && isMetaFieldsBuilder(builder));
+    private boolean shouldIncludeInHash(RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta[] metas) {
+        return builder != null && builder.hasData()
+                && !isGlobalKeyFieldsBuilder(builder) // do not include meta folder in hash, however it's contents maybe included
+                && !isTemplateFieldsBuilder(builder) // do not include template folder in hash
+                && !isTemplateFieldsBuilder(parent) // do not include any fields from template folder in hash -> this should be done by excluding AttributeMeta.TEMPLATE_GLOBAL_REFERENCE
+                && (metas.length == 0
+                    || (!metaContains(metas, AttributeMeta.GLOBAL_KEY)
+                        && !metaContains(metas, AttributeMeta.EXTERNAL_KEY)
+                        && !metaContains(metas, AttributeMeta.GLOBAL_KEY_FIELD)));
     }
 
-    private boolean isMetaFieldsBuilder(RosettaModelObjectBuilder builder) {
+    private boolean isGlobalKeyFieldsBuilder(RosettaModelObjectBuilder builder) {
         return builder instanceof GlobalKeyFields.GlobalKeyFieldsBuilder;
+    }
+
+    private boolean isTemplateFieldsBuilder(RosettaModelObjectBuilder builder) {
+        return builder instanceof TemplateFields.TemplateFieldsBuilder;
     }
 
     private boolean metaContains(AttributeMeta[] metas, AttributeMeta attributeMeta) {

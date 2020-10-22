@@ -42,17 +42,17 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 	@Override
 	public <T extends RosettaModelObject> KeyPostProcessReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
 		KeyPostProcessReport thisReport = new KeyPostProcessReport(builder, new HashMap<>());
-		KeyProcessProcess process = new KeyProcessProcess(thisReport);
+		ReKeyProcessor reKeyProcessor = new ReKeyProcessor(thisReport);
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
-		process.processRosetta(path, topClass, builder, null);
-		builder.process(path, process);
+		reKeyProcessor.processRosetta(path, topClass, builder, null);
+		builder.process(path, reKeyProcessor);
 		return thisReport;
 	}
 
-	class KeyProcessProcess extends SimpleBuilderProcessor {
+	class ReKeyProcessor extends SimpleBuilderProcessor {
 		KeyPostProcessReport report;
 
-		KeyProcessProcess(KeyPostProcessReport report) {
+		ReKeyProcessor(KeyPostProcessReport report) {
 			this.report = report;
 		}
 
@@ -106,5 +106,4 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 			return keyMap;
 		}
 	}
-
 }

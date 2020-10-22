@@ -16,15 +16,15 @@ import static java.util.Objects.requireNonNull;
 /**
  * Simple implementation of BuilderMerger interface that subtracts one object from another.
  */
-public class SimpleUnmerger implements BuilderMerger {
+public class SimpleSplitter implements BuilderMerger {
 
 	private final Consumer<RosettaModelObjectBuilder> postProcessor;
 
-	public SimpleUnmerger() {
+	public SimpleSplitter() {
 		this(null);
 	}
 
-	public SimpleUnmerger(Consumer<RosettaModelObjectBuilder> postProcessor) {
+	public SimpleSplitter(Consumer<RosettaModelObjectBuilder> postProcessor) {
 		this.postProcessor = postProcessor;
 	}
 

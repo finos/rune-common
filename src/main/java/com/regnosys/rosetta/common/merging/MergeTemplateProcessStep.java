@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class MergeTemplateProcessStep implements PostProcessStep {
 
@@ -22,10 +23,12 @@ public class MergeTemplateProcessStep implements PostProcessStep {
 
 	private final BuilderMerger merger;
 	private final RosettaModelObjectSupplier templateSupplier;
+	private final Consumer<RosettaModelObjectBuilder> postProcessor;
 
-	public MergeTemplateProcessStep(BuilderMerger merger, RosettaModelObjectSupplier templateSupplier) {
+	public MergeTemplateProcessStep(BuilderMerger merger, RosettaModelObjectSupplier templateSupplier, Consumer<RosettaModelObjectBuilder> postProcessor) {
 		this.merger = merger;
 		this.templateSupplier = templateSupplier;
+		this.postProcessor = postProcessor;
 	}
 
 	@Override
@@ -44,6 +47,9 @@ public class MergeTemplateProcessStep implements PostProcessStep {
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 		process.processRosetta(path, topClass, builder, null);
 		builder.process(path, process);
+		builder.prune();
+		// optionally post process
+		Optional.ofNullable(postProcessor).ifPresent(p -> p.accept(builder));
 		return null;
 	}
 

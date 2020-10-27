@@ -23,6 +23,8 @@ public class MappingContext {
 					new ThreadFactoryBuilder().setNameFormat("mapper-%d").build());
 	// Collect any tasks invoked during mapping so we can wait until they're complete before continuing
 	private final List<CompletableFuture<?>> invokedTasks = new ArrayList<>();
+	
+	private final List<String> mappingErrors = new ArrayList<>();
 
 	public MappingContext() {
 		this(new ArrayList<>(), new ConcurrentHashMap<>());
@@ -47,5 +49,9 @@ public class MappingContext {
 
 	public List<CompletableFuture<?>> getInvokedTasks() {
 		return invokedTasks;
+	}
+
+	public List<String> getMappingErrors() {
+		return mappingErrors;
 	}
 }

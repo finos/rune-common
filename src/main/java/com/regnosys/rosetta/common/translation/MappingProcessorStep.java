@@ -16,8 +16,11 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @SuppressWarnings("unused") // Used in rosetta-translate
 public class MappingProcessorStep implements PostProcessStep {
@@ -50,25 +53,25 @@ public class MappingProcessorStep implements PostProcessStep {
 		LOGGER.debug("About to run {} mappingDelegates", mappingDelegates.size());
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
-		CountDownLatch countDownLatch = new CountDownLatch(1);
-		executor.execute(() -> {
-			try {
-				RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
-				for (MappingDelegate mapper : mappingDelegates) {
-					LOGGER.info("Running mapper {} for model path {}", mapper.getClass().getSimpleName(), mapper.getModelPath());
-					MappingBuilderProcessor processor = new MappingBuilderProcessor(mapper);
-					processor.processRosetta(path, topClass, builder, null);
-					builder.process(path, processor);
-				}
-				// Mapper thread waits for invoked tasks to complete before continuing (subject to timeout before)
-				CompletableFuture.allOf(invokedTasks.toArray(new CompletableFuture[invokedTasks.size()])).join();
-			} finally {
-				countDownLatch.countDown();
+		Future<?> mappingsFuture = executor.submit(() -> {
+			RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+			for (MappingDelegate mapper : mappingDelegates) {
+				LOGGER.info("Running mapper {} for model path {}", mapper.getClass().getSimpleName(), mapper.getModelPath());
+				MappingBuilderProcessor processor = new MappingBuilderProcessor(mapper);
+				processor.processRosetta(path, topClass, builder, null);
+				builder.process(path, processor);
 			}
+			// Mapper thread waits for invoked tasks to complete before continuing (subject to timeout before)
+			CompletableFuture.allOf(invokedTasks.toArray(new CompletableFuture[invokedTasks.size()])).join();
 		});
 
 		LOGGER.debug("Main thread waits for the mappers to complete before continuing");
-		Uninterruptibles.awaitUninterruptibly(countDownLatch, 800, TimeUnit.MILLISECONDS);
+		try {
+			Uninterruptibles.getUninterruptibly(mappingsFuture, 800, TimeUnit.MILLISECONDS);
+		} catch (ExecutionException | TimeoutException e1) {
+			throw new RuntimeException(e1);
+		}
+
 		LOGGER.info("Mappers completed in {}", stopwatch.stop().toString());
 
 		LOGGER.debug("Shutdown mapper thread pool");

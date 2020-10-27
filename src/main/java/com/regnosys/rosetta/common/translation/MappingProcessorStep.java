@@ -31,7 +31,10 @@ public class MappingProcessorStep implements PostProcessStep {
 	private final ExecutorService executor;
 	private final List<CompletableFuture<?>> invokedTasks;
 
+	private MappingContext context;
+
 	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors, MappingContext context) {
+		this.context = context;
 		this.mappingDelegates = new ArrayList<>(mappingProcessors);
 		this.mappingDelegates.sort(MAPPING_DELEGATE_COMPARATOR);
 		this.executor = context.getExecutor();
@@ -68,8 +71,12 @@ public class MappingProcessorStep implements PostProcessStep {
 		LOGGER.debug("Main thread waits for the mappers to complete before continuing");
 		try {
 			Uninterruptibles.getUninterruptibly(mappingsFuture, 800, TimeUnit.MILLISECONDS);
-		} catch (ExecutionException | TimeoutException e1) {
-			throw new RuntimeException(e1);
+		} catch (ExecutionException e1) {
+			LOGGER.error("Error running mapping processor", e1);
+			this.context.getMappingErrors().add("Error running mapping processors " + e1.getMessage());
+		} catch (TimeoutException e1) {
+			LOGGER.error("Timeout running mapping processor");
+			this.context.getMappingErrors().add("Timeout running mapping processors");
 		}
 
 		LOGGER.info("Mappers completed in {}", stopwatch.stop().toString());

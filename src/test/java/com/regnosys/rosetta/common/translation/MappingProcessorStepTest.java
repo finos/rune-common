@@ -13,7 +13,7 @@ import static org.hamcrest.Matchers.contains;
 
 class MappingProcessorStepTest {
 
-	private static final Foo FOO_1 = new Foo("A.b(1).c.contract.tradableProduct");
+	private static final Foo FOO_1 = new Foo("A.b.c.contract.tradableProduct");
 	private static final Bar BAR_1 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.buyer");
 	private static final Bar BAR_2 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.seller");
 	private static final Bar BAR_3 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.payer");

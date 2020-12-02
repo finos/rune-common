@@ -123,7 +123,7 @@ public class MappingProcessorStep implements PostProcessStep {
 					return -1;
 				}
 			}
-			return path1.compareToIgnoreCase(path2);
+			return o1.getModelPath().compareTo(o2.getModelPath());
 		}
 
 		private Optional<String> getPayoutSubPath(String path) {

@@ -1,14 +1,6 @@
 package com.regnosys.rosetta.common.validation;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.regnosys.rosetta.common.hashing.SimpleBuilderProcessor;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -18,13 +10,20 @@ import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.PostProcessStep;
 import com.rosetta.model.lib.validation.ModelObjectValidator;
 import com.rosetta.model.lib.validation.ValidationResult;
+import com.rosetta.model.lib.validation.ValidatorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RosettaTypeValidator.class);
 
 	@Inject
-	private Injector injector;
+	private ValidatorFactory validatorFactory;
 
 	@Override
 	public <T extends RosettaModelObject> ValidationReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
@@ -37,7 +36,6 @@ public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidat
 		builder.process(path, processor);
 		return report;
 	}
-
 
 	class RosettaTypeProcessor extends SimpleBuilderProcessor {
 		private ValidationReport result;
@@ -52,7 +50,7 @@ public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidat
 			if (builder==null) return false;
 			RosettaMetaData<? extends RosettaModelObject> metaData = builder.metaData();
 			List<ValidationResult<?>> validationResults = result.getValidationResults();
-			metaData.typeValidators().forEach(dr->validationResults.add(injector.getInstance(dr).validate(path, builder)));
+			metaData.dataRules(validatorFactory).forEach(dr->validationResults.add(dr.validate(path, builder)));
 			metaData.choiceRuleValidators().forEach(dr->validationResults.add(dr.validate(path, builder)));
 			if (metaData.validator()!=null) validationResults.add(metaData.validator().validate(path, builder));
 			return true;

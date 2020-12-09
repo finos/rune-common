@@ -1,12 +1,6 @@
 package com.regnosys.rosetta.common.validation;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.google.inject.Inject;
 import com.regnosys.rosetta.common.hashing.SimpleBuilderProcessor;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -16,15 +10,23 @@ import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.PostProcessStep;
 import com.rosetta.model.lib.validation.ModelObjectValidator;
 import com.rosetta.model.lib.validation.ValidationResult;
+import com.rosetta.model.lib.validation.ValidatorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValidator{
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RosettaTypeValidator.class);
 
+	@Inject
+	private ValidatorFactory validatorFactory;
 
 	@Override
-	public <T extends RosettaModelObject> ValidationReport runProcessStep(Class<T> topClass,
-			RosettaModelObjectBuilder builder) {
+	public <T extends RosettaModelObject> ValidationReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
 		LOGGER.debug("Running validation for " + topClass.getSimpleName());
 		builder.prune();
 		ValidationReport report = new ValidationReport(builder, new ArrayList<>());
@@ -34,7 +36,6 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 		builder.process(path, processor);
 		return report;
 	}
-
 
 	class RosettaTypeProcessor extends SimpleBuilderProcessor {
 		private ValidationReport result;
@@ -49,7 +50,7 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 			if (builder==null) return false;
 			RosettaMetaData<? extends RosettaModelObject> metaData = builder.metaData();
 			List<ValidationResult<?>> validationResults = result.getValidationResults();
-			metaData.dataRules().forEach(dr->validationResults.add(dr.validate(path, builder)));
+			metaData.dataRules(validatorFactory).forEach(dr->validationResults.add(dr.validate(path, builder)));
 			metaData.choiceRuleValidators().forEach(dr->validationResults.add(dr.validate(path, builder)));
 			if (metaData.validator()!=null) validationResults.add(metaData.validator().validate(path, builder));
 			return true;
@@ -63,7 +64,7 @@ public class RosettaTypeValidator  implements PostProcessStep, ModelObjectValida
 
 	@Override
 	public String getName() {
-		return "Rosetta type validator PostProcressor";
+		return "Rosetta type validator PostProcessor";
 	}
 
 	@Override

@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -26,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 public class MappingProcessorStep implements PostProcessStep {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingProcessorStep.class);
+	private final int mappingMaxTimeout;
 
 	private final List<MappingDelegate> mappingDelegates;
 	private final ExecutorService executor;
@@ -39,6 +39,7 @@ public class MappingProcessorStep implements PostProcessStep {
 		this.mappingDelegates.sort(MAPPING_DELEGATE_COMPARATOR);
 		this.executor = context.getExecutor();
 		this.invokedTasks = context.getInvokedTasks();
+		this.mappingMaxTimeout = 800;
 	}
 
 	@Override
@@ -65,12 +66,12 @@ public class MappingProcessorStep implements PostProcessStep {
 				builder.process(path, processor);
 			}
 			// Mapper thread waits for invoked tasks to complete before continuing (subject to timeout before)
-			CompletableFuture.allOf(invokedTasks.toArray(new CompletableFuture[invokedTasks.size()])).join();
+			awaitCompletion(invokedTasks);
 		});
 
 		LOGGER.debug("Main thread waits for the mappers to complete before continuing");
 		try {
-			Uninterruptibles.getUninterruptibly(mappingsFuture, 800, TimeUnit.MILLISECONDS);
+			Uninterruptibles.getUninterruptibly(mappingsFuture, mappingMaxTimeout, TimeUnit.MILLISECONDS);
 		} catch (ExecutionException e1) {
 			LOGGER.error("Error running mapping processor", e1);
 			this.context.getMappingErrors().add("Error running mapping processors " + e1.getMessage());
@@ -85,16 +86,28 @@ public class MappingProcessorStep implements PostProcessStep {
 		executor.shutdown();
 		try {
 			if (!executor.awaitTermination(200, TimeUnit.MILLISECONDS)) {
+				LOGGER.info("Failed to shutdown mapper executor in 200ms, force shutdown now");
 				executor.shutdownNow();
 			} else {
 				LOGGER.debug("All mapper threads terminated");
 			}
 		} catch (InterruptedException e) {
+			LOGGER.warn("Caught interrupted exception whilst running shutdownNow");
 			executor.shutdownNow();
 		}
 
 		// Nothing to return
 		return null;
+	}
+
+	private void awaitCompletion(List<CompletableFuture<?>> invokedTasks) {
+		try {
+			CompletableFuture.allOf(invokedTasks.toArray(new CompletableFuture[invokedTasks.size()])).get();
+		} catch (InterruptedException e) {
+			LOGGER.debug("Interrupt during mapping invokedTasks", e);
+		} catch (ExecutionException e) {
+			throw new RuntimeException(e.getMessage(), e.getCause());
+		}
 	}
 
 	/**

@@ -1,15 +1,27 @@
 package com.regnosys.rosetta.common.translation;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
+import com.rosetta.model.lib.process.BuilderMerger;
+import com.rosetta.model.lib.process.BuilderProcessor;
+import com.rosetta.model.lib.process.Processor;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 
 class MappingProcessorStepTest {
 
@@ -40,6 +52,29 @@ class MappingProcessorStepTest {
 				contains(FOO_1, BAR_1, BAR_2, BAR_3, BAR_4, BAR_5, BAR_6, FOO_2, BAR_7, BAR_8, BAR_9, BAR_10, BAR_11, BAR_12));
 	}
 
+	@Test
+	void shouldTerminateUncompletedInvokedTasks() throws InterruptedException {
+		List<MappingProcessor> list = Lists.newArrayList();
+		ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+		MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
+		mappingContext.getInvokedTasks().add(new CompletableFuture<>());
+		MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(list, mappingContext);
+
+		mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
+
+		Thread.sleep(1000);
+		assertThat(executorService.getActiveCount(), equalTo(0));
+		assertThat(mappingContext.getMappingErrors(), contains("Timeout running mapping processors"));
+	}
+
+	// invoked tasks completed within expected timeout
+
+	// invoked task not completed within expected timeout - done
+
+	// invoked task throws error (execution exception in awaitCompletion)
+
+	// assert when builder process method throws exception and message is recorded
+
 	private static class Foo extends MappingProcessor {
 		public Foo(String modelPath) {
 			super(RosettaPath.valueOf(modelPath), Collections.emptyList(), null);
@@ -59,6 +94,75 @@ class MappingProcessorStepTest {
 		@Override
 		public String toString() {
 			return "Bar{" + getModelPath().buildPath() + "}";
+		}
+	}
+
+	static class TestModel extends RosettaModelObject {
+		private final String value;
+
+		public TestModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		@Override
+		public RosettaModelObjectBuilder toBuilder() {
+			return new TestModelBuilder();
+		}
+
+		@Override
+		protected void process(RosettaPath path, Processor processor) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public RosettaMetaData<? extends RosettaModelObject> metaData() {
+			return null;
+		}
+	}
+
+	static class TestModelBuilder extends RosettaModelObjectBuilder {
+		protected String value;
+
+		@Override
+		public RosettaModelObject build() {
+			return new TestModel(value);
+		}
+
+		@Override
+		public <B extends RosettaModelObjectBuilder> B prune() {
+			return null;
+		}
+
+		@Override
+		public boolean hasData() {
+			return false;
+		}
+
+		@Override
+		public RosettaMetaData<? extends RosettaModelObject> metaData() {
+			return null;
+		}
+
+		@Override
+		public void process(RosettaPath rosettaPath, BuilderProcessor builderProcessor) {
+
+		}
+
+		@Override
+		public <B extends RosettaModelObjectBuilder> B merge(B b, BuilderMerger builderMerger) {
+			return null;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
+			this.value = value;
 		}
 	}
 }

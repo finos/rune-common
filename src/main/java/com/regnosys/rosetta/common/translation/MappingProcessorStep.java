@@ -26,12 +26,10 @@ public class MappingProcessorStep implements PostProcessStep {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingProcessorStep.class);
 	private final int mappingMaxTimeout;
-
 	private final List<MappingDelegate> mappingDelegates;
 	private final ExecutorService executor;
 	private final List<CompletableFuture<?>> invokedTasks;
-
-	private MappingContext context;
+	private final MappingContext context;
 
 	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors, MappingContext context) {
 		this.context = context;
@@ -41,6 +39,16 @@ public class MappingProcessorStep implements PostProcessStep {
 		this.invokedTasks = context.getInvokedTasks();
 		this.mappingMaxTimeout = 800;
 	}
+
+	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors, MappingContext context, int mappingMaxTimeout) {
+		this.context = context;
+		this.mappingDelegates = new ArrayList<>(mappingProcessors);
+		this.mappingDelegates.sort(MAPPING_DELEGATE_COMPARATOR);
+		this.executor = context.getExecutor();
+		this.invokedTasks = context.getInvokedTasks();
+		this.mappingMaxTimeout = mappingMaxTimeout;
+	}
+
 
 	@Override
 	public Integer getPriority() {

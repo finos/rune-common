@@ -53,16 +53,33 @@ class MappingProcessorStepTest {
 	}
 
 	@Test
-	void shouldTerminateUncompletedInvokedTasks() throws InterruptedException {
-		List<MappingProcessor> list = Lists.newArrayList();
+	void shouldCompleteWithinExpectedTimeout() throws InterruptedException {
 		ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
 		MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
-		mappingContext.getInvokedTasks().add(new CompletableFuture<>());
-		MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(list, mappingContext);
+
+		CompletableFuture<Object> completableFuture = CompletableFuture.completedFuture(null);
+		mappingContext.getInvokedTasks().add(completableFuture);
+
+		MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
 
 		mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
 
-		Thread.sleep(1000);
+		Thread.sleep(20);
+		assertThat(executorService.getActiveCount(), equalTo(0));
+		assertThat(mappingContext.getMappingErrors().isEmpty(), equalTo(true));
+	}
+
+	@Test
+	void shouldTerminateUncompletedInvokedTasks() throws InterruptedException {
+		ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+		MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
+		mappingContext.getInvokedTasks().add(new CompletableFuture<>());
+
+		MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
+
+		mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
+
+		Thread.sleep(20);
 		assertThat(executorService.getActiveCount(), equalTo(0));
 		assertThat(mappingContext.getMappingErrors(), contains("Timeout running mapping processors"));
 	}

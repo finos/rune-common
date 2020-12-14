@@ -104,13 +104,22 @@ class MappingProcessorStepTest {
         assertThat(mappingContext.getMappingErrors(), contains("Error running mapping processors: java.lang.RuntimeException: Error running task"));
     }
 
-    // invoked tasks completed within expected timeout
+    @Test
+    void shouldLogErrorWhenThereIsMappingProcessorError() throws InterruptedException {
+        ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
 
-    // invoked task not completed within expected timeout - done
+        CompletableFuture<Object> completableFuture = CompletableFuture.completedFuture(null);
+        mappingContext.getInvokedTasks().add(completableFuture);
 
-    // invoked task throws error (execution exception in awaitCompletion)
+        MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(FOO_1), mappingContext, 10);
 
-    // assert when builder process method throws exception and message is recorded
+        mappingProcessorStep.runProcessStep(TestModel.class, new BrokenTestModelBuilder());
+
+        Thread.sleep(20);
+        assertThat(executorService.getActiveCount(), equalTo(0));
+        assertThat(mappingContext.getMappingErrors(), contains("Error running mapping processors: java.lang.RuntimeException: Builder process error"));
+    }
 
     private static class Foo extends MappingProcessor {
         public Foo(String modelPath) {
@@ -200,6 +209,17 @@ class MappingProcessorStepTest {
 
         public void setValue(String value) {
             this.value = value;
+        }
+    }
+
+    static class BrokenTestModelBuilder extends  TestModelBuilder {
+        public BrokenTestModelBuilder() {
+            super();
+        }
+
+        @Override
+        public void process(RosettaPath rosettaPath, BuilderProcessor builderProcessor) {
+           throw new RuntimeException("Builder process error");
         }
     }
 }

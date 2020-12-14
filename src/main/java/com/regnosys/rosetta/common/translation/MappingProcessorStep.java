@@ -82,7 +82,7 @@ public class MappingProcessorStep implements PostProcessStep {
 			Uninterruptibles.getUninterruptibly(mappingsFuture, mappingMaxTimeout, TimeUnit.MILLISECONDS);
 		} catch (ExecutionException e1) {
 			LOGGER.error("Error running mapping processor", e1);
-			this.context.getMappingErrors().add("Error running mapping processors " + e1.getMessage());
+			this.context.getMappingErrors().add("Error running mapping processors: " + e1.getMessage());
 		} catch (TimeoutException e1) {
 			LOGGER.error("Timeout running mapping processor");
 			this.context.getMappingErrors().add("Timeout running mapping processors");
@@ -114,7 +114,7 @@ public class MappingProcessorStep implements PostProcessStep {
 		} catch (InterruptedException e) {
 			LOGGER.debug("Interrupt during mapping invokedTasks", e);
 		} catch (ExecutionException e) {
-			throw new RuntimeException(e.getMessage(), e.getCause());
+			throw new RuntimeException(e.getCause().getMessage(), e.getCause());
 		}
 	}
 

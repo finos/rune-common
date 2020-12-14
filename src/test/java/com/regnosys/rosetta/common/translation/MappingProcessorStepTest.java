@@ -25,161 +25,181 @@ import static org.hamcrest.Matchers.equalTo;
 
 class MappingProcessorStepTest {
 
-	private static final Foo FOO_1 = new Foo("A.b.c.contract.tradableProduct");
-	private static final Bar BAR_1 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.buyer");
-	private static final Bar BAR_2 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.seller");
-	private static final Bar BAR_3 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.payer");
-	private static final Bar BAR_4 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.receiver");
-	private static final Bar BAR_5 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.payer");
-	private static final Bar BAR_6 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.receiver");
-	private static final Foo FOO_2 = new Foo("A.b(2).c.contract.tradableProduct");
-	private static final Bar BAR_7 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.buyer");
-	private static final Bar BAR_8 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.seller");
-	private static final Bar BAR_9 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.payer");
-	private static final Bar BAR_10 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.receiver");
-	private static final Bar BAR_11 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.payer");
-	private static final Bar BAR_12 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.receiver");
+    private static final Foo FOO_1 = new Foo("A.b.c.contract.tradableProduct");
+    private static final Bar BAR_1 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.buyer");
+    private static final Bar BAR_2 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.seller");
+    private static final Bar BAR_3 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.payer");
+    private static final Bar BAR_4 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.receiver");
+    private static final Bar BAR_5 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.payer");
+    private static final Bar BAR_6 = new Bar("A.b(1).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.receiver");
+    private static final Foo FOO_2 = new Foo("A.b(2).c.contract.tradableProduct");
+    private static final Bar BAR_7 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.buyer");
+    private static final Bar BAR_8 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.creditDefaultPayout.generalTerms.buyerSeller.seller");
+    private static final Bar BAR_9 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.payer");
+    private static final Bar BAR_10 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.interestRatePayout(0).payerReceiver.receiver");
+    private static final Bar BAR_11 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.payer");
+    private static final Bar BAR_12 = new Bar("A.b(2).c.contract.tradableProduct.product.contractualProduct.economicTerms.payout.cashflow.payerReceiver.receiver");
 
-	// Mappers in randomised order
-	private static final List<MappingDelegate> MAPPERS =
-			Arrays.asList(BAR_10, BAR_3, BAR_1, BAR_11, BAR_4, BAR_12, BAR_6, FOO_2, BAR_7, FOO_1, BAR_2, BAR_9, BAR_8, BAR_5);
-	@Test
-	void shouldSortByPathWithCashflowPayoutLast() {
-		List<MappingDelegate> mappingDelegates = new ArrayList<>(MAPPERS);
-		mappingDelegates.sort(MappingProcessorStep.MAPPING_DELEGATE_COMPARATOR);
-		// assert list order
-		assertThat(mappingDelegates,
-				contains(FOO_1, BAR_1, BAR_2, BAR_3, BAR_4, BAR_5, BAR_6, FOO_2, BAR_7, BAR_8, BAR_9, BAR_10, BAR_11, BAR_12));
-	}
+    // Mappers in randomised order
+    private static final List<MappingDelegate> MAPPERS =
+            Arrays.asList(BAR_10, BAR_3, BAR_1, BAR_11, BAR_4, BAR_12, BAR_6, FOO_2, BAR_7, FOO_1, BAR_2, BAR_9, BAR_8, BAR_5);
 
-	@Test
-	void shouldCompleteWithinExpectedTimeout() throws InterruptedException {
-		ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-		MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
+    @Test
+    void shouldSortByPathWithCashflowPayoutLast() {
+        List<MappingDelegate> mappingDelegates = new ArrayList<>(MAPPERS);
+        mappingDelegates.sort(MappingProcessorStep.MAPPING_DELEGATE_COMPARATOR);
+        // assert list order
+        assertThat(mappingDelegates,
+                contains(FOO_1, BAR_1, BAR_2, BAR_3, BAR_4, BAR_5, BAR_6, FOO_2, BAR_7, BAR_8, BAR_9, BAR_10, BAR_11, BAR_12));
+    }
 
-		CompletableFuture<Object> completableFuture = CompletableFuture.completedFuture(null);
-		mappingContext.getInvokedTasks().add(completableFuture);
+    @Test
+    void shouldCompleteWithinExpectedTimeout() throws InterruptedException {
+        ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
 
-		MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
+        CompletableFuture<Object> completableFuture = CompletableFuture.completedFuture(null);
+        mappingContext.getInvokedTasks().add(completableFuture);
 
-		mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
+        MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
 
-		Thread.sleep(20);
-		assertThat(executorService.getActiveCount(), equalTo(0));
-		assertThat(mappingContext.getMappingErrors().isEmpty(), equalTo(true));
-	}
+        mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
 
-	@Test
-	void shouldTerminateUncompletedInvokedTasks() throws InterruptedException {
-		ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-		MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
-		mappingContext.getInvokedTasks().add(new CompletableFuture<>());
+        Thread.sleep(20);
+        assertThat(executorService.getActiveCount(), equalTo(0));
+        assertThat(mappingContext.getMappingErrors().isEmpty(), equalTo(true));
+    }
 
-		MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
+    @Test
+    void shouldTerminateUncompletedInvokedTasks() throws InterruptedException {
+        ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
+        mappingContext.getInvokedTasks().add(new CompletableFuture<>());
 
-		mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
+        MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
 
-		Thread.sleep(20);
-		assertThat(executorService.getActiveCount(), equalTo(0));
-		assertThat(mappingContext.getMappingErrors(), contains("Timeout running mapping processors"));
-	}
+        mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
 
-	// invoked tasks completed within expected timeout
+        Thread.sleep(20);
+        assertThat(executorService.getActiveCount(), equalTo(0));
+        assertThat(mappingContext.getMappingErrors(), contains("Timeout running mapping processors"));
+    }
 
-	// invoked task not completed within expected timeout - done
+    @Test
+    void shouldLogErrorFromInvokedTask() throws InterruptedException {
+        ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), executorService);
 
-	// invoked task throws error (execution exception in awaitCompletion)
+        CompletableFuture<Object> completableFuture = CompletableFuture.supplyAsync(() -> {
+            throw new RuntimeException("Error running task");
+        });
+        mappingContext.getInvokedTasks().add(completableFuture);
 
-	// assert when builder process method throws exception and message is recorded
+        MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 50);
 
-	private static class Foo extends MappingProcessor {
-		public Foo(String modelPath) {
-			super(RosettaPath.valueOf(modelPath), Collections.emptyList(), null);
-		}
+        mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
 
-		@Override
-		public String toString() {
-			return "Foo{" + getModelPath().buildPath() + "}";
-		}
-	}
+        Thread.sleep(100);
+        assertThat(executorService.getActiveCount(), equalTo(0));
+        assertThat(mappingContext.getMappingErrors(), contains("Error running mapping processors: java.lang.RuntimeException: Error running task"));
+    }
 
-	private static class Bar extends MappingProcessor {
-		public Bar(String modelPath) {
-			super(RosettaPath.valueOf(modelPath), Collections.emptyList(), null);
-		}
+    // invoked tasks completed within expected timeout
 
-		@Override
-		public String toString() {
-			return "Bar{" + getModelPath().buildPath() + "}";
-		}
-	}
+    // invoked task not completed within expected timeout - done
 
-	static class TestModel extends RosettaModelObject {
-		private final String value;
+    // invoked task throws error (execution exception in awaitCompletion)
 
-		public TestModel(String value) {
-			this.value = value;
-		}
+    // assert when builder process method throws exception and message is recorded
 
-		public String getValue() {
-			return value;
-		}
+    private static class Foo extends MappingProcessor {
+        public Foo(String modelPath) {
+            super(RosettaPath.valueOf(modelPath), Collections.emptyList(), null);
+        }
 
-		@Override
-		public RosettaModelObjectBuilder toBuilder() {
-			return new TestModelBuilder();
-		}
+        @Override
+        public String toString() {
+            return "Foo{" + getModelPath().buildPath() + "}";
+        }
+    }
 
-		@Override
-		protected void process(RosettaPath path, Processor processor) {
-			throw new UnsupportedOperationException();
-		}
+    private static class Bar extends MappingProcessor {
+        public Bar(String modelPath) {
+            super(RosettaPath.valueOf(modelPath), Collections.emptyList(), null);
+        }
 
-		@Override
-		public RosettaMetaData<? extends RosettaModelObject> metaData() {
-			return null;
-		}
-	}
+        @Override
+        public String toString() {
+            return "Bar{" + getModelPath().buildPath() + "}";
+        }
+    }
 
-	static class TestModelBuilder extends RosettaModelObjectBuilder {
-		protected String value;
+    static class TestModel extends RosettaModelObject {
+        private final String value;
 
-		@Override
-		public RosettaModelObject build() {
-			return new TestModel(value);
-		}
+        public TestModel(String value) {
+            this.value = value;
+        }
 
-		@Override
-		public <B extends RosettaModelObjectBuilder> B prune() {
-			return null;
-		}
+        public String getValue() {
+            return value;
+        }
 
-		@Override
-		public boolean hasData() {
-			return false;
-		}
+        @Override
+        public RosettaModelObjectBuilder toBuilder() {
+            return new TestModelBuilder();
+        }
 
-		@Override
-		public RosettaMetaData<? extends RosettaModelObject> metaData() {
-			return null;
-		}
+        @Override
+        protected void process(RosettaPath path, Processor processor) {
+            throw new UnsupportedOperationException();
+        }
 
-		@Override
-		public void process(RosettaPath rosettaPath, BuilderProcessor builderProcessor) {
+        @Override
+        public RosettaMetaData<? extends RosettaModelObject> metaData() {
+            return null;
+        }
+    }
 
-		}
+    static class TestModelBuilder extends RosettaModelObjectBuilder {
+        protected String value;
 
-		@Override
-		public <B extends RosettaModelObjectBuilder> B merge(B b, BuilderMerger builderMerger) {
-			return null;
-		}
+        @Override
+        public RosettaModelObject build() {
+            return new TestModel(value);
+        }
 
-		public String getValue() {
-			return value;
-		}
+        @Override
+        public <B extends RosettaModelObjectBuilder> B prune() {
+            return null;
+        }
 
-		public void setValue(String value) {
-			this.value = value;
-		}
-	}
+        @Override
+        public boolean hasData() {
+            return false;
+        }
+
+        @Override
+        public RosettaMetaData<? extends RosettaModelObject> metaData() {
+            return null;
+        }
+
+        @Override
+        public void process(RosettaPath rosettaPath, BuilderProcessor builderProcessor) {
+
+        }
+
+        @Override
+        public <B extends RosettaModelObjectBuilder> B merge(B b, BuilderMerger builderMerger) {
+            return null;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
 }

@@ -15,43 +15,49 @@ import java.util.concurrent.Executors;
  */
 public class MappingContext {
 
-	private final List<Mapping> mappings;
-	private final Map<Object, Object> mappingParams;
-	// Execute mapping on separate thread pool
-	private final ExecutorService executor =
-			Executors.newFixedThreadPool(5,
-					new ThreadFactoryBuilder().setNameFormat("mapper-%d").build());
-	// Collect any tasks invoked during mapping so we can wait until they're complete before continuing
-	private final List<CompletableFuture<?>> invokedTasks = new ArrayList<>();
-	
-	private final List<String> mappingErrors = new ArrayList<>();
+    private final List<Mapping> mappings;
+    private final Map<Object, Object> mappingParams;
+    // Execute mapping on separate thread pool
+    private final ExecutorService executor;
+    // Collect any tasks invoked during mapping so we can wait until they're complete before continuing
+    private final List<CompletableFuture<?>> invokedTasks = new ArrayList<>();
 
-	public MappingContext() {
-		this(new ArrayList<>(), new ConcurrentHashMap<>());
-	}
+    private final List<String> mappingErrors = new ArrayList<>();
 
-	public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams) {
-		this.mappings = mappings;
-		this.mappingParams = mappingParams;
-	}
+    public MappingContext() {
+        this(new ArrayList<>(), new ConcurrentHashMap<>());
+    }
 
-	public List<Mapping> getMappings() {
-		return mappings;
-	}
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, ExecutorService executor) {
+        this.mappings = mappings;
+        this.mappingParams = mappingParams;
+        this.executor = executor;
+    }
 
-	public Map<Object, Object> getMappingParams() {
-		return mappingParams;
-	}
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams) {
+        this.mappings = mappings;
+        this.mappingParams = mappingParams;
+        this.executor = Executors.newFixedThreadPool(5,
+                        new ThreadFactoryBuilder().setNameFormat("mapper-%d").build());
+    }
 
-	public ExecutorService getExecutor() {
-		return executor;
-	}
+    public List<Mapping> getMappings() {
+        return mappings;
+    }
 
-	public List<CompletableFuture<?>> getInvokedTasks() {
-		return invokedTasks;
-	}
+    public Map<Object, Object> getMappingParams() {
+        return mappingParams;
+    }
 
-	public List<String> getMappingErrors() {
-		return mappingErrors;
-	}
+    public ExecutorService getExecutor() {
+        return executor;
+    }
+
+    public List<CompletableFuture<?>> getInvokedTasks() {
+        return invokedTasks;
+    }
+
+    public List<String> getMappingErrors() {
+        return mappingErrors;
+    }
 }

@@ -68,6 +68,7 @@ class MappingProcessorStepTest {
         Thread.sleep(20);
         assertThat(executorService.getActiveCount(), equalTo(0));
         assertThat(mappingContext.getMappingErrors().isEmpty(), equalTo(true));
+        executorService.shutdown();
     }
 
     @Test
@@ -83,6 +84,7 @@ class MappingProcessorStepTest {
         Thread.sleep(20);
         assertThat(executorService.getActiveCount(), equalTo(0));
         assertThat(mappingContext.getMappingErrors(), contains("Timeout running mapping processors"));
+        executorService.shutdown();
     }
 
     @Test
@@ -102,6 +104,7 @@ class MappingProcessorStepTest {
         Thread.sleep(100);
         assertThat(executorService.getActiveCount(), equalTo(0));
         assertThat(mappingContext.getMappingErrors(), contains("Error running mapping processors: java.lang.RuntimeException: Error running task"));
+        executorService.shutdown();
     }
 
     @Test
@@ -119,6 +122,7 @@ class MappingProcessorStepTest {
         Thread.sleep(20);
         assertThat(executorService.getActiveCount(), equalTo(0));
         assertThat(mappingContext.getMappingErrors(), contains("Error running mapping processors: java.lang.RuntimeException: Builder process error"));
+        executorService.shutdown();
     }
 
     private static class Foo extends MappingProcessor {

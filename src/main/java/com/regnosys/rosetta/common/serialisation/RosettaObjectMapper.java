@@ -1,9 +1,7 @@
 package com.regnosys.rosetta.common.serialisation;
 
-import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.Version;
@@ -15,10 +13,6 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.PropertyWriter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -26,8 +20,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.ReferenceWithMeta;
-import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 
@@ -62,12 +54,7 @@ public class RosettaObjectMapper {
 								 .configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
 								 .configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
 								 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-								 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
-								 //The next three lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
-								 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
-								 .setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))
-								 .addMixIn(ReferenceWithMeta.class, ReferenceMixIn.class)
-								.addMixIn(ReferenceWithMetaBuilder.class, ReferenceMixIn.class);
+								 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 	}
 
 	@Deprecated
@@ -187,48 +174,5 @@ public class RosettaObjectMapper {
 		public DateExtended(String date) {
 			super(LocalDate.parse(date));
 		}
-	}
-	
-	//This class serves to ensure that the value of a reference doesn't get serialized if the
-	//reference or global key field is populated
-	public static class ReferenceFilter extends SimpleBeanPropertyFilter {
-
-		@Override
-		public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider,
-				PropertyWriter writer) throws Exception {
-			if (!filterOut(pojo, writer.getName())) {
-				writer.serializeAsField(pojo, jgen, provider);
-			}
-		}
-
-		@Override
-		public void serializeAsField(Object bean, JsonGenerator jgen, SerializerProvider provider,
-				BeanPropertyWriter writer) throws Exception {
-			if (!filterOut(bean, writer.getName())) {
-				writer.serializeAsField(bean, jgen, provider);
-			}
-		}
-
-		private boolean filterOut(Object pojo, String name) {
-			if (!name.equals("value")) return false;
-			if (pojo instanceof ReferenceWithMeta) {
-				return hasReference((ReferenceWithMeta<?>)pojo);
-			}
-			else if (pojo instanceof ReferenceWithMetaBuilder) {
-				return hasReference((ReferenceWithMetaBuilder<?>)pojo);
-			}
-			return false;
-		}
-
-		private boolean hasReference(ReferenceWithMeta<?> pojo) {
-			return pojo.getGlobalReference()!=null || (pojo.getReference()!=null && pojo.getReference().getReference()!=null);
-		}
-		private boolean hasReference(ReferenceWithMetaBuilder<?> pojo) {
-			return pojo.getGlobalReference()!=null || (pojo.getReference()!=null && pojo.getReference().getReference()!=null);
-		}
-	}
-	@JsonFilter("ReferenceFilter")
-	public abstract class ReferenceMixIn {
-		
 	}
 }

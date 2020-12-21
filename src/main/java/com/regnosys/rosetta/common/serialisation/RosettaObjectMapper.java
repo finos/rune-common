@@ -26,6 +26,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.meta.Keys;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.records.Date;
@@ -131,7 +132,7 @@ public class RosettaObjectMapper {
 		}
 
 		/**
-		 * We generate multiple setters for the builders. When er detect this, we can just choose the correct one here.
+		 * We generate multiple setters for the builders. When we detect this, we can just choose the correct one here.
 		 */
 		@Override public AnnotatedMethod resolveSetterConflict(MapperConfig<?> config, AnnotatedMethod setter1, AnnotatedMethod setter2) {
 			if (setter1.getParameterCount() == 1 && setter2.getParameterCount() == 1) {
@@ -139,12 +140,23 @@ public class RosettaObjectMapper {
 					return setter1;
 				if (paramIsBuilder(setter2))
 					return setter2;
+				
+				if (isKeys(setter1)) {
+					return setter1;
+				}
+				else if (isKeys(setter2)) {
+					return setter2;
+				}
 			}
 			return super.resolveSetterConflict(config, setter1, setter2);
 		}
 
 		private boolean paramIsBuilder(AnnotatedMethod setter) {
 			return setter.getParameter(0).getType().isTypeOrSubTypeOf(RosettaModelObject.class);
+		}
+		
+		private boolean isKeys(AnnotatedMethod setter) {
+			return setter.getParameter(0).getType().isTypeOrSubTypeOf(Keys.class);
 		}
 
 		@Override

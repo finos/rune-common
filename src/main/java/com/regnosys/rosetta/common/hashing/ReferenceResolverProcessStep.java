@@ -51,11 +51,10 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
 				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-			if (builder instanceof GlobalKeyBuilder && builder instanceof FieldWithMetaBuilder) {
+			if (builder instanceof GlobalKeyBuilder) {
 				GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
-				FieldWithMetaBuilder<?> fieldWithMetaBuilder = (FieldWithMetaBuilder<?>)builder;
-				Object value = fieldWithMetaBuilder.getValue();
-				Class<?> valueClass = fieldWithMetaBuilder.getValueType();
+				Object value = getValue(builder);
+				Class<?> valueClass = getValueType(builder);
 				ofNullable(globalKeyBuilder.getMeta()).map(m -> m.getGlobalKey())
 						.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
 				ofNullable(globalKeyBuilder).map(g -> g.getMeta()).map(m -> m.getKeys()).ifPresent(ks -> {
@@ -63,6 +62,21 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 				});
 			}
 			return true;
+		}
+
+		private Object getValue(RosettaModelObjectBuilder builder) {
+			if (builder instanceof FieldWithMetaBuilder) {
+				return ((FieldWithMetaBuilder<?>) builder).getValue();
+			}
+			else return builder;
+		}
+		
+		private Class<?> getValueType(RosettaModelObjectBuilder builder) {
+			if (builder instanceof FieldWithMetaBuilder) {
+				return ((FieldWithMetaBuilder<?>) builder).getValueType();
+			}
+			//TODO this is pretty unpleasant - RosettaModelObjectBuilder should have a getBuiltType method
+			else return builder.build().getClass();
 		}
 
 		@Override

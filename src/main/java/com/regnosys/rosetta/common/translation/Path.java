@@ -118,6 +118,21 @@ public class Path {
         return true;
     }
 
+    public boolean nameIndexMatches(Path other) {
+        if (elements.isEmpty() && other.elements.isEmpty())
+            return true;
+        if (elements.isEmpty())
+            return false;
+        if (elements.size() != other.elements.size())
+            return false;
+        for (int i = 0; i < elements.size(); i++) {
+            if (!elements.get(i).pathName.equals(other.elements.get(i).pathName) ||
+                    elements.get(i).index.orElse(0) != other.elements.get(i).index.orElse(0))
+                return false;
+        }
+        return true;
+    }
+
     public boolean endsWith(String... path) {
         int dif = elements.size() - path.length;
         if (dif < 0)
@@ -175,7 +190,6 @@ public class Path {
                 .map(s -> PathElement.parse(s, allowWildcard))
                 .collect(Collectors.toList()));
     }
-
 
     @Override
     public boolean equals(Object o) {

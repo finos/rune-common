@@ -62,7 +62,7 @@ public class PathUtils {
     public static List<Path> filterSubPaths(Collection<Path> paths) {
         return paths.stream()
                 .filter(path -> paths.stream()
-                        .filter(p -> !p.fullStartMatches(path)) // do not compare against itself
+                        .filter(p -> !p.nameIndexMatches(path)) // do not compare against itself
                         .noneMatch(p -> p.endsWith(path)))
                 .collect(Collectors.toList());
     }

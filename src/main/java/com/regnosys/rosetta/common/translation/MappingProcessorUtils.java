@@ -41,7 +41,7 @@ public class MappingProcessorUtils {
 
 	public static List<Mapping> filterMappings(List<Mapping> mappings, Path synonymPath) {
 		return mappings.stream()
-				.filter(p -> synonymPath.fullStartMatches(p.getXmlPath()))
+				.filter(p -> synonymPath.nameIndexMatches(p.getXmlPath()))
 				.collect(Collectors.toList());
 	}
 
@@ -62,6 +62,10 @@ public class MappingProcessorUtils {
 				.filter(Objects::nonNull)
 				.map(String::valueOf)
 				.findFirst();
+	}
+
+	public static Optional<String> getNonNullMappedValue(Path synonymPath, List<Mapping> mappings) {
+		return getNonNullMappedValue(filterMappings(mappings, synonymPath));
 	}
 
 	public static void updateMappings(Path synonymPath, List<Mapping> mappings, RosettaPath rosettaPath) {

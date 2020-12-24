@@ -69,7 +69,9 @@ public class MappingProcessorUtils {
 	}
 
 	public static void updateMappings(Path synonymPath, List<Mapping> mappings, RosettaPath rosettaPath) {
-		filterMappings(mappings, synonymPath).forEach(m -> updateMappingSuccess(m, rosettaPath));
+		mappings.stream()
+				.filter(p -> synonymPath.fullStartMatches(p.getXmlPath()))
+				.forEach(m -> updateMappingSuccess(m, rosettaPath));
 	}
 
 	public static void updateMappingSuccess(Mapping mapping, RosettaPath rosettaPath) {

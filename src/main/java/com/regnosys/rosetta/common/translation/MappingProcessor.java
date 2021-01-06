@@ -83,4 +83,8 @@ public abstract class MappingProcessor implements MappingDelegate {
 	protected void setValueAndUpdateMappings(Path synonymPath, Consumer<String> setter) {
 		MappingProcessorUtils.setValueAndUpdateMappings(synonymPath, setter, getMappings(), modelPath);
 	}
+
+	protected Optional<String> getValueAndUpdateMappings(Path synonymPath) {
+		return MappingProcessorUtils.getValueAndUpdateMappings(synonymPath, getMappings(), modelPath);
+	}
 }

@@ -14,14 +14,15 @@ import static com.regnosys.rosetta.common.util.PathUtils.toRosettaPath;
 
 public class MappingProcessorUtils {
 
-	public static void setValueAndUpdateMappings(Path synonymPath, Consumer<String> setter, List<Mapping> mappings, RosettaPath rosettaPath) {
+	public static Optional<String> getValueAndUpdateMappings(Path synonymPath, List<Mapping> mappings, RosettaPath rosettaPath) {
 		List<Mapping> mappingsFromSynonymPath = filterMappings(mappings, synonymPath);
-		getNonNullMappedValue(mappingsFromSynonymPath).ifPresent(value -> {
-			// set value on model
-			setter.accept(value);
-			// update mappings
-			mappingsFromSynonymPath.forEach(m -> updateMappingSuccess(m, rosettaPath));
-		});
+		Optional<String> mappedValue = getNonNullMappedValue(mappingsFromSynonymPath);
+		mappedValue.ifPresent(value -> mappingsFromSynonymPath.forEach(m -> updateMappingSuccess(m, rosettaPath)));
+		return mappedValue;
+	}
+
+	public static void setValueAndUpdateMappings(Path synonymPath, Consumer<String> setter, List<Mapping> mappings, RosettaPath rosettaPath) {
+		getValueAndUpdateMappings(synonymPath, mappings, rosettaPath).ifPresent(setter::accept);
 	}
 
 	public static void setValueAndOptionallyUpdateMappings(Path synonymPath, Function<String, Boolean> func, List<Mapping> mappings, RosettaPath rosettaPath) {

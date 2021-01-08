@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -219,7 +220,7 @@ public class MappingProcessorStep implements PostProcessStep {
 		}
 
 		private boolean matchesProcessorPathForMultipleCardinality(RosettaPath currentPath, Class<?> rosettaType) {
-			return ReferenceWithMeta.class.isAssignableFrom(rosettaType) ?
+			return ReferenceWithMeta.class.isAssignableFrom(rosettaType) || FieldWithMeta.class.isAssignableFrom(rosettaType) ?
 					// so the parse handlers match on the list rather than each list item
 					currentPath.equals(modelPath.getParent()) :
 					currentPath.equals(modelPath);

@@ -86,6 +86,7 @@ public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidat
 		final StringBuilder errors = new StringBuilder();
 		validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
 		if(errors.length() > 0) {
+			LOGGER.error("Validation failed for type {}: {}", topClass, errors);
 			throw new ModelObjectValidator.ModelObjectValidationException("Object validation failed:" + errors.toString());
 		}
 	}

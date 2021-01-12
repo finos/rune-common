@@ -291,7 +291,6 @@ public class Path {
             final int prime = 31;
             int result = 1;
             result = prime * result + ((index == null) ? 0 : index.hashCode());
-            result = prime * result + ((metas == null) ? 0 : metas.hashCode());
             result = prime * result + ((pathName == null) ? 0 : pathName.hashCode());
             return result;
         }
@@ -310,11 +309,12 @@ public class Path {
                     return false;
             } else if (!index.equals(other.index))
                 return false;
-            if (metas == null) {
-                if (other.metas != null)
+            if (metas != null && other.metas!=null) {
+            	//if one is null they are considered to match
+            	//if neither is null then actually compare them
+            	if (!metas.equals(other.metas))
                     return false;
-            } else if (!metas.equals(other.metas))
-                return false;
+            }
             if (pathName == null) {
                 if (other.pathName != null)
                     return false;

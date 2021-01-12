@@ -309,9 +309,9 @@ public class Path {
                     return false;
             } else if (!index.equals(other.index))
                 return false;
-            if (metas != null && other.metas!=null) {
-            	//if one is null they are considered to match
-            	//if neither is null then actually compare them
+            if (metas != null && other.metas!=null && !metas.isEmpty() && ! other.metas.isEmpty()) {
+            	//if one is null or empty they are considered to match
+            	//if neither is null or empty then actually compare them
             	if (!metas.equals(other.metas))
                     return false;
             }

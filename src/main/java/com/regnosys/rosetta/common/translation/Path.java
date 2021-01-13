@@ -212,7 +212,7 @@ public class Path {
 
     public static class PathElement {
         private final String pathName;
-        private Optional<Integer> index;
+        private Optional<Integer> index;//this can't be final because sometimes we don't know this is index[0] until we find index[1] later
         private final Map<String, String> metas;
 
         public PathElement(String pathName) {
@@ -238,10 +238,6 @@ public class Path {
 
         public PathElement(String pathName, int index, Map<String, String> metas) {
             this(pathName, Optional.of(index), metas);
-        }
-
-        public void setIndex(int i) {
-            index = Optional.of(i);
         }
 
         public int forceGetIndex() {

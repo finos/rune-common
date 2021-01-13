@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.translation;
 
+import com.regnosys.rosetta.common.util.PathUtils;
 import com.rosetta.model.lib.path.RosettaPath;
 
 import java.util.List;
@@ -67,6 +68,47 @@ public class MappingProcessorUtils {
 
 	public static Optional<String> getNonNullMappedValue(Path synonymPath, List<Mapping> mappings) {
 		return getNonNullMappedValue(filterMappings(mappings, synonymPath));
+	}
+
+	public static Optional<String> getNonNullMappedValue(List<Mapping> mappings, Path startsWith, String... endsWith) {
+		return getNonNullMapping(mappings, startsWith, endsWith)
+				.map(Mapping::getXmlValue)
+				.map(String::valueOf);
+	}
+
+	public static Optional<Mapping> getNonNullMapping(List<Mapping> mappings, Path synonymPath) {
+		return mappings.stream()
+				.filter(m -> synonymPath.nameIndexMatches(m.getXmlPath()))
+				.filter(m -> m.getXmlValue() != null)
+				.findFirst();
+	}
+
+	public static Optional<Mapping> getNonNullMapping(List<Mapping> mappings, Path startsWith, String... endsWith) {
+		return mappings.stream()
+				.filter(m -> startsWith.fullStartMatches(m.getXmlPath()))
+				.filter(m -> m.getXmlPath().endsWith(endsWith))
+				.filter(m -> m.getXmlValue() != null)
+				.findFirst();
+	}
+
+	public static Optional<Mapping> getNonNullMapping(List<Mapping> mappings, RosettaPath modelPathStartsWith, Path synonymPathStartsWith,
+			String... synonymPathEndsWith) {
+		return mappings.stream()
+				.filter(m -> synonymPathStartsWith.fullStartMatches(m.getXmlPath()))
+				.filter(m -> m.getXmlPath().endsWith(synonymPathEndsWith))
+				.filter(m -> Optional.ofNullable(modelPathStartsWith).map(PathUtils::toPath).map(p -> p.fullStartMatches(m.getRosettaPath())).orElse(true))
+				.filter(m -> m.getXmlValue() != null)
+				.findFirst();
+	}
+
+	public static Optional<Path> subPath(String lastElement, Path path) {
+		if (path.endsWith(lastElement)) {
+			return Optional.of(path);
+		}
+		if (path.getElements().size() > 0) {
+			return subPath(lastElement, path.getParent());
+		}
+		return Optional.empty();
 	}
 
 	public static void updateMappings(Path synonymPath, List<Mapping> mappings, RosettaPath rosettaPath) {

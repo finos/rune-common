@@ -57,8 +57,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 				Class<?> valueClass = getValueType(builder);
 				ofNullable(globalKeyBuilder.getMeta()).map(m -> m.getGlobalKey())
 						.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
-				ofNullable(globalKeyBuilder).map(g -> g.getMeta()).map(m -> m.getKeys()).ifPresent(ks -> {
-					ks.getKeys().stream().forEach(k -> references.put(valueClass, k.getKeyValue(), value));
+				ofNullable(globalKeyBuilder).map(g -> g.getMeta()).map(m -> m.getKey()).ifPresent(ks -> {
+					ks.stream().forEach(k -> references.put(valueClass, k.getKeyValue(), value));
 				});
 			}
 			return true;

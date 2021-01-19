@@ -71,7 +71,7 @@ public class RosettaObjectMapper {
 								 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
 								 .setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))
 								 .addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
-								 .addMixIn(ReferenceWithMetaBuilder.class, ReferenceWithMetaMixIn.class)
+								 .addMixIn(ReferenceWithMetaBuilder.class, ReferenceWithMetaBuilderMixIn.class)
 								 .addMixIn(GlobalKeyFields.class, GlobalKeyFieldsMixIn.class)
 								 .addMixIn(GlobalKeyFieldsBuilder.class, GlobalKeyFieldsBuilderMixIn.class)
 								 .addMixIn(Key.class, KeyMixIn.class)
@@ -266,6 +266,12 @@ public class RosettaObjectMapper {
 	public interface ReferenceWithMetaMixIn {
 		@JsonProperty("address")
 		Reference getReference();
+	}
+
+	@JsonFilter("ReferenceFilter")
+	public interface ReferenceWithMetaBuilderMixIn {
+		@JsonProperty("address")
+		ReferenceBuilder getReference();
 	}
 
 	public abstract class ReferenceMixIn {

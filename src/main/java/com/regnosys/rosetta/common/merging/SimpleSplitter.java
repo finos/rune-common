@@ -47,11 +47,11 @@ public class SimpleSplitter implements BuilderMerger {
 	}
 
 	@Override
-	public <T extends RosettaModelObjectBuilder> void mergeRosetta(List<T> o1, List<T> o2, Function<Integer, T> o1GetOrCreateByIndex) {
+	public <T extends RosettaModelObjectBuilder> void mergeRosetta(List<? extends T> o1, List<? extends T> o2, Function<Integer, T> o1GetOrCreateByIndex) {
 		// merge list items with matching indexes, e.g. object at list o1 index 0, merged with object at list o2 index 0, and so on..
 		// iterate through a copy of the lists to prevent a ConcurrentModificationException.
 		int i = 0;
-		for (Iterator<T> i2 = emptyIfNull(o2).iterator(); i2.hasNext(); i++) {
+		for (Iterator<? extends T> i2 = emptyIfNull(o2).iterator(); i2.hasNext(); i++) {
 			if (i2.hasNext()) {
 				o1GetOrCreateByIndex.apply(i).merge(i2.next(), this);
 			}
@@ -66,7 +66,7 @@ public class SimpleSplitter implements BuilderMerger {
 	}
 
 	@Override
-	public <T> void mergeBasic(List<T> o1, List<T> o2, Consumer<T> o1Add) {
+	public <T> void mergeBasic(List<? extends T> o1, List<? extends T> o2, Consumer<T> o1Add) {
 		emptyIfNull(o1).removeAll(emptyIfNull(o2));
 	}
 }

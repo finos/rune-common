@@ -63,7 +63,7 @@ class MappingProcessorStepTest {
 
         MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
 
-        mappingProcessorStep.runProcessStep(TestModel.class, new TestModelBuilder());
+        mappingProcessorStep.runProcessStep(TestModel.class, (TestModel)new TestModelBuilder());
 
         Thread.sleep(20);
         assertThat(executorService.getActiveCount(), equalTo(0));
@@ -147,14 +147,15 @@ class MappingProcessorStepTest {
         }
     }
 
-    static class TestModel extends RosettaModelObject {
+    static class TestModelImpl implements RosettaModelObject, TestModel {
         private final String value;
 
-        public TestModel(String value) {
+        public TestModelImpl(String value) {
             this.value = value;
         }
 
-        public String getValue() {
+        @Override
+		public String getValue() {
             return value;
         }
 
@@ -164,7 +165,7 @@ class MappingProcessorStepTest {
         }
 
         @Override
-        protected void process(RosettaPath path, Processor processor) {
+        public void process(RosettaPath path, Processor processor) {
             throw new UnsupportedOperationException();
         }
 
@@ -172,14 +173,32 @@ class MappingProcessorStepTest {
         public RosettaMetaData<? extends RosettaModelObject> metaData() {
             return null;
         }
-    }
 
-    static class TestModelBuilder extends RosettaModelObjectBuilder {
+		@Override
+		public RosettaModelObject build() {
+			return this;
+		}
+
+		@Override
+		public Class<? extends RosettaModelObject> getType() {
+			throw new UnsupportedOperationException("method getType in RosettaModelObject has not been implemented");
+		}
+    }
+    
+    interface TestModel extends RosettaModelObject {
+
+    	String getValue();
+
+    	Class<? extends RosettaModelObject> getType();
+
+    }
+    
+    static class TestModelBuilder implements TestModel, RosettaModelObjectBuilder {
         protected String value;
 
         @Override
         public RosettaModelObject build() {
-            return new TestModel(value);
+            return new TestModelImpl(value);
         }
 
         @Override
@@ -214,6 +233,21 @@ class MappingProcessorStepTest {
         public void setValue(String value) {
             this.value = value;
         }
+
+		@Override
+		public RosettaModelObjectBuilder toBuilder() {
+			return this;
+		}
+
+		@Override
+		public Class<? extends RosettaModelObject> getType() {
+			throw new UnsupportedOperationException("method getType in RosettaModelObject has not been implemented");
+		}
+
+		@Override
+		public void process(RosettaPath path, Processor processor) {
+			throw new UnsupportedOperationException("method process in RosettaModelObject has not been implemented");
+		}
     }
 
     static class BrokenTestModelBuilder extends  TestModelBuilder {

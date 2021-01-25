@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.common.merging;
 
-import com.regnosys.rosetta.common.hashing.SimpleBuilderProcessor;
 import com.regnosys.rosetta.common.util.RosettaModelObjectSupplier;
+import com.regnosys.rosetta.common.util.SimpleBuilderProcessor;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -42,9 +42,10 @@ public class MergeTemplateProcessStep implements PostProcessStep {
 	}
 
 	@Override
-	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
+	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<? extends T> topClass, T instance) {
 		MergeTemplateBuilderProcessor process = new MergeTemplateBuilderProcessor();
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+		RosettaModelObjectBuilder builder= instance.toBuilder();
 		process.processRosetta(path, topClass, builder, null);
 		builder.process(path, process);
 		builder.prune();

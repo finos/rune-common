@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.inspection;
 
+@Deprecated
 public class RosettaNodeInspector<T> {
 
 	public interface Visitor<T> {

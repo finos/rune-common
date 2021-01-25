@@ -62,10 +62,10 @@ public class MappingProcessorStep implements PostProcessStep {
 	}
 
 	@Override
-	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
+	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<? extends T> topClass, T instance) {
 		LOGGER.debug("About to run {} mappingDelegates", mappingDelegates.size());
 		Stopwatch stopwatch = Stopwatch.createStarted();
-
+		RosettaModelObjectBuilder builder = instance.toBuilder();
 		Future<?> mappingsFuture = executor.submit(() -> {
 			RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 			for (MappingDelegate mapper : mappingDelegates) {
@@ -208,7 +208,7 @@ public class MappingProcessorStep implements PostProcessStep {
 		}
 
 		@Override
-		public <T> void processBasic(RosettaPath currentPath, Class<T> rosettaType, List<T> instance, RosettaModelObjectBuilder parent, AttributeMeta... meta) {
+		public <T> void processBasic(RosettaPath currentPath, Class<T> rosettaType, Collection<? extends T> instance, RosettaModelObjectBuilder parent, AttributeMeta... meta) {
 			if (currentPath.equals(modelPath)) {
 				synonymPaths.forEach(p -> delegate.mapBasic(p, Optional.ofNullable(instance).orElse(Collections.emptyList()), parent));
 			}

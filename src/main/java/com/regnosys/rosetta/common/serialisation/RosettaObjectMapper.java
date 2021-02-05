@@ -156,7 +156,7 @@ public class RosettaObjectMapper {
 			if (a instanceof AnnotatedMethod) {
 				AnnotatedMethod am = (AnnotatedMethod)a;
 				if (am.getParameterCount()==1) {
-					if (am.getName().startsWith("set")) {
+					if (am.getName().startsWith("set") && RosettaModelObject.class.isAssignableFrom(am.getDeclaringClass())) {
 						String firstLower = StringExtensions.toFirstLower(am.getName().substring(3));
 						if (firstLower .equals("key") && GlobalKeyFields.class.isAssignableFrom(am.getDeclaringClass())) {
 							firstLower = "location";

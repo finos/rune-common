@@ -36,8 +36,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 	}
 
 	@Override
-	public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(Class<? extends T> topClass,
-			T instance) {
+	public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(
+			Class<? extends T> topClass, T instance) {
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 		ReferenceCollector referenceCollector = new ReferenceCollector();
 		instance.process(path, referenceCollector);
@@ -71,15 +71,15 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		private Object getValue(RosettaModelObject builder) {
 			if (builder instanceof FieldWithMeta) {
 				return ((FieldWithMeta<?>) builder).getValue();
-			}
-			else return builder;
+			} else
+				return builder;
 		}
-		
+
 		private Class<?> getValueType(RosettaModelObject builder) {
 			if (builder instanceof FieldWithMeta) {
 				return ((FieldWithMeta<?>) builder).getValueType();
-			}
-			else return builder.getType();
+			} else
+				return builder.getType();
 		}
 
 		@Override
@@ -105,20 +105,19 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 				String lookup = null;
 				if (referenceWithMetaBuilder.getGlobalReference() != null) {
 					lookup = referenceWithMetaBuilder.getGlobalReference();
-				}
-				else if (referenceWithMetaBuilder.getReference()!=null) {
+				} else if (referenceWithMetaBuilder.getReference() != null) {
 					lookup = referenceWithMetaBuilder.getReference().getReference();
 				}
-				
-				if (lookup!=null) {
+
+				if (lookup != null) {
 					Map<Class<?>, Object> column = references.column(lookup);
-					if (column!=null) {
+					if (column != null) {
 						List<Entry<Class<?>, Object>> collect = column.entrySet().stream()
-							.filter(e->doTest(referenceWithMetaBuilder.getValueType(),e.getKey())).collect(Collectors.toList());
-						collect.stream()
-							.map(e->e.getValue())
-							.map(RosettaModelObjectBuilder.class::cast)
-							.forEach(b -> referenceWithMetaBuilder.setValue(b.build()));
+								.filter(e -> doTest(referenceWithMetaBuilder.getValueType(), e.getKey()))
+								.collect(Collectors.toList());
+						collect.stream().map(e -> e.getValue())
+								// .map(RosettaModelObjectBuilder.class::cast)
+								.forEach(b -> referenceWithMetaBuilder.setValue(b));
 					}
 				}
 			}

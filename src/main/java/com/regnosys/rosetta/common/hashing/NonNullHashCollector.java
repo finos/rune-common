@@ -22,6 +22,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
 
     private final IntegerHashGenerator hashcodeGenerator;
     protected final IntegerReport report;
+    private static final RosettaPath EXTERNAL_REFERENCE_PATH_ELEMENT = RosettaPath.valueOf("externalReference");
 
     public NonNullHashCollector() {
         this.hashcodeGenerator = new IntegerHashGenerator();
@@ -64,10 +65,15 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
     @Override
     public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance,
                                  RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-        if (instance != null && !metaContains(metas, AttributeMeta.META)) {
+        if (instance != null && (!metaContains(metas, AttributeMeta.META) || isExternalKeyOrReference(path, parent, metas))) {
             int hash = hashcodeGenerator.generate(instance);
             report.accumulate(hash);
         }
+    }
+
+    private boolean isExternalKeyOrReference(RosettaPath path, RosettaModelObjectBuilder parent, AttributeMeta[] metas) {
+        return metaContains(metas, AttributeMeta.EXTERNAL_KEY)
+                || (ReferenceWithMetaBuilder.class.isInstance(parent) && path.endsWith(EXTERNAL_REFERENCE_PATH_ELEMENT));
     }
 
     /**
@@ -99,9 +105,7 @@ public class NonNullHashCollector extends SimpleBuilderProcessor implements Proc
             // if the parent contains a reference, don't include any children in the hash (and stop processing)
             return new Result(false, false);
         }
-        if (metaContains(metas, AttributeMeta.GLOBAL_KEY)
-                || metaContains(metas, AttributeMeta.EXTERNAL_KEY)
-                || metaContains(metas, AttributeMeta.GLOBAL_KEY_FIELD)) {
+        if (metaContains(metas, AttributeMeta.GLOBAL_KEY) || metaContains(metas, AttributeMeta.GLOBAL_KEY_FIELD)) {
             return new Result(false, false);
         }
         return new Result(true, true);

@@ -7,6 +7,7 @@ import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.FieldWithMetaBuilder;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -18,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 public class ReferenceResolverProcessStep implements PostProcessStep {
@@ -55,11 +57,13 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 				GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
 				Object value = getValue(builder);
 				Class<?> valueClass = getValueType(builder);
-				ofNullable(globalKeyBuilder.getMeta()).map(m -> m.getGlobalKey())
+				ofNullable(globalKeyBuilder.getMeta())
+						.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getGlobalKey)
 						.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
-				ofNullable(globalKeyBuilder).map(g -> g.getMeta()).map(m -> m.getKey()).ifPresent(ks -> {
-					ks.stream().forEach(k -> references.put(valueClass, k.getKeyValue(), value));
-				});
+				of(globalKeyBuilder)
+						.map(GlobalKeyBuilder::getMeta)
+						.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKey)
+						.ifPresent(keys -> keys.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
 			}
 			return true;
 		}
@@ -118,7 +122,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 						List<Entry<Class<?>, Object>> collect = column.entrySet().stream()
 							.filter(e->doTest(referenceWithMetaBuilder.getValueType(),e.getKey())).collect(Collectors.toList());
 						collect.stream()
-							.map(e->e.getValue())
+							.map(Entry::getValue)
 							.map(RosettaModelObjectBuilder.class::cast)
 							.forEach(b -> referenceWithMetaBuilder.setValue(b.build()));
 					}

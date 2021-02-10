@@ -26,7 +26,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
 	@Override
 	public Integer getPriority() {
-		return 3;
+		return 2;
 	}
 
 	@Override

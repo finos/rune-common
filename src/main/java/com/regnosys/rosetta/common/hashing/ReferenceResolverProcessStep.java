@@ -7,6 +7,7 @@ import com.rosetta.model.lib.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.FieldWithMetaBuilder;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -55,11 +56,13 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 				GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
 				Object value = getValue(builder);
 				Class<?> valueClass = getValueType(builder);
-				ofNullable(globalKeyBuilder.getMeta()).map(m -> m.getGlobalKey())
-						.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
-				ofNullable(globalKeyBuilder).map(g -> g.getMeta()).map(m -> m.getKey()).ifPresent(ks -> {
-					ks.stream().forEach(k -> references.put(valueClass, k.getKeyValue(), value));
-				});
+				if (valueClass != null) {
+					ofNullable(globalKeyBuilder.getMeta()).map(m -> m.getGlobalKey())
+							.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
+					ofNullable(globalKeyBuilder).map(g -> g.getMeta()).map(m -> m.getKey()).ifPresent(ks -> {
+						ks.stream().forEach(k -> references.put(valueClass, k.getKeyValue(), value));
+					});
+				}
 			}
 			return true;
 		}
@@ -76,7 +79,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 				return ((FieldWithMetaBuilder<?>) builder).getValueType();
 			}
 			//TODO this is pretty unpleasant - RosettaModelObjectBuilder should have a getBuiltType method
-			else return builder.build().getClass();
+			else return Optional.ofNullable(builder.build()).map(RosettaModelObject::getClass).orElse(null);
 		}
 
 		@Override

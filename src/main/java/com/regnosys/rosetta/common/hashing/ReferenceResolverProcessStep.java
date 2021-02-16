@@ -26,7 +26,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
 	@Override
 	public Integer getPriority() {
-		return 3;
+		return 2;
 	}
 
 	@Override
@@ -53,18 +53,18 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
 				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-			if (builder instanceof GlobalKeyBuilder) {
+			if (builder instanceof GlobalKeyBuilder && builder != null && builder.hasData()) {
 				GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
 				Object value = getValue(builder);
 				Class<?> valueClass = getValueType(builder);
-				if (valueClass != null) {
+				if (value != null && valueClass != null) {
 					ofNullable(globalKeyBuilder.getMeta())
 							.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getGlobalKey)
 							.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
 					of(globalKeyBuilder)
 							.map(GlobalKeyBuilder::getMeta)
-							.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKeys)
-							.ifPresent(ks -> ks.getKeys().forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
+							.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKey)
+							.ifPresent(keys -> keys.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
 				}
 			}
 			return true;
@@ -93,6 +93,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
 	private static class ReferenceResolver extends SimpleBuilderProcessor {
 
+		private static final RosettaPath LINEAGE_PATH_ELEMENT = RosettaPath.valueOf("lineage");
+
 		private final Table<Class<?>, String, Object> references;
 
 		private ReferenceResolver(Table<Class<?>, String, Object> refs) {
@@ -103,6 +105,9 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
 				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+			if (path.endsWith(LINEAGE_PATH_ELEMENT))
+				return false;
+
 			if (builder instanceof ReferenceWithMetaBuilder) {
 				ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMetaBuilder) builder;
 				String lookup = null;

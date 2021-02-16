@@ -26,15 +26,18 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.Keys;
-import com.rosetta.model.lib.meta.ReferenceWithMeta;
-import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
+import com.rosetta.model.lib.meta.*;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.time.LocalDate;
+import java.util.List;
+
+import static com.rosetta.model.lib.meta.GlobalKeyFields.*;
+import static com.rosetta.model.lib.meta.Key.*;
+import static com.rosetta.model.lib.meta.Reference.*;
 
 /**
  * A lazy-loading holder that returns a pre-configured {@link ObjectMapper} that serves as the default when
@@ -67,8 +70,15 @@ public class RosettaObjectMapper {
 								 //The next three lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
 								 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
 								 .setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))
-								 .addMixIn(ReferenceWithMeta.class, ReferenceMixIn.class)
-								.addMixIn(ReferenceWithMetaBuilder.class, ReferenceMixIn.class);
+								 .addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
+								 .addMixIn(ReferenceWithMetaBuilder.class, ReferenceWithMetaBuilderMixIn.class)
+								 .addMixIn(GlobalKeyFields.class, GlobalKeyFieldsMixIn.class)
+								 .addMixIn(GlobalKeyFieldsBuilder.class, GlobalKeyFieldsBuilderMixIn.class)
+								 .addMixIn(Key.class, KeyMixIn.class)
+								 .addMixIn(KeyBuilder.class, KeyMixIn.class)
+								 .addMixIn(Reference.class, ReferenceMixIn.class)
+								 .addMixIn(ReferenceBuilder.class, ReferenceMixIn.class);
+
 	}
 
 	@Deprecated
@@ -106,9 +116,6 @@ public class RosettaObjectMapper {
 
 	private static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
 
-		/**
-		 *
-		 */
 		private static final long serialVersionUID = 1L;
 
 		@Override
@@ -141,10 +148,10 @@ public class RosettaObjectMapper {
 				if (paramIsBuilder(setter2))
 					return setter2;
 				
-				if (isKeys(setter1)) {
+				if (isKey(setter1)) {
 					return setter1;
 				}
-				else if (isKeys(setter2)) {
+				else if (isKey(setter2)) {
 					return setter2;
 				}
 			}
@@ -155,8 +162,8 @@ public class RosettaObjectMapper {
 			return setter.getParameter(0).getType().isTypeOrSubTypeOf(RosettaModelObject.class);
 		}
 		
-		private boolean isKeys(AnnotatedMethod setter) {
-			return setter.getParameter(0).getType().isTypeOrSubTypeOf(Keys.class);
+		private boolean isKey(AnnotatedMethod setter) {
+			return setter.getParameter(0).getType().isTypeOrSubTypeOf(Key.class);
 		}
 
 		@Override
@@ -239,8 +246,36 @@ public class RosettaObjectMapper {
 			return pojo.getGlobalReference()!=null || (pojo.getReference()!=null && pojo.getReference().getReference()!=null);
 		}
 	}
+
+	public interface GlobalKeyFieldsMixIn {
+		@JsonProperty("location")
+		List<Key> getKey();
+	}
+
+	public interface GlobalKeyFieldsBuilderMixIn {
+		@JsonProperty("location")
+		List<KeyBuilder> getKey();
+	}
+
+	public abstract class KeyMixIn {
+		@JsonProperty("value")
+		String keyValue;
+	}
+
 	@JsonFilter("ReferenceFilter")
+	public interface ReferenceWithMetaMixIn {
+		@JsonProperty("address")
+		Reference getReference();
+	}
+
+	@JsonFilter("ReferenceFilter")
+	public interface ReferenceWithMetaBuilderMixIn {
+		@JsonProperty("address")
+		ReferenceBuilder getReference();
+	}
+
 	public abstract class ReferenceMixIn {
-		
+		@JsonProperty("value")
+		String reference;
 	}
 }

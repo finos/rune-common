@@ -57,13 +57,15 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 				GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
 				Object value = getValue(builder);
 				Class<?> valueClass = getValueType(builder);
-				ofNullable(globalKeyBuilder.getMeta())
-						.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getGlobalKey)
-						.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
-				of(globalKeyBuilder)
-						.map(GlobalKeyBuilder::getMeta)
-						.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKey)
-						.ifPresent(keys -> keys.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
+				if (valueClass != null) {
+					ofNullable(globalKeyBuilder.getMeta())
+							.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getGlobalKey)
+							.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
+					of(globalKeyBuilder)
+							.map(GlobalKeyBuilder::getMeta)
+							.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKey)
+							.ifPresent(keys -> keys.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
+				}
 			}
 			return true;
 		}

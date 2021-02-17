@@ -115,11 +115,11 @@ class MappingProcessorStepTest {
         CompletableFuture<Object> completableFuture = CompletableFuture.completedFuture(null);
         mappingContext.getInvokedTasks().add(completableFuture);
 
-        MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(FOO_1), mappingContext, 10);
+        MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(FOO_1), mappingContext, 1000);
 
         mappingProcessorStep.runProcessStep(TestModel.class, new BrokenTestModelBuilder());
 
-        Thread.sleep(20);
+        Thread.sleep(2000);
         assertThat(executorService.getActiveCount(), equalTo(0));
         assertThat(mappingContext.getMappingErrors(), contains("Error running mapping processors: java.lang.RuntimeException: Builder process error"));
         executorService.shutdown();

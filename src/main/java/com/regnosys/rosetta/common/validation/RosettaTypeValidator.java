@@ -73,39 +73,30 @@ public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidat
 
 
 	/**
-	 * Runs the process step and collects errors. Throws an exception if validation fails
+	 * Runs the process step and collects errors.
 	 *
 	 * @param <T>
 	 * @param topClass
 	 * @param modelObject
-	 * @throws RuntimeException if validation fails
 	 */
 	@Override
 	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, T modelObject) {
 		final StringBuilder errors = new StringBuilder();
 		validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
-		if(errors.length() > 0) {
-			LOGGER.error("Validation failed for type {}: {}", topClass, errors);
-			throw new ModelObjectValidator.ModelObjectValidationException("Object validation failed:" + errors.toString());
-		}
 	}
 
 	/**
-	 * Runs the process step and collects errors. Throws an exception if validation fails
+	 * Runs the process step and collects errors.
 	 *
 	 * @param <T>
 	 * @param topClass
 	 * @param modelObjects
-	 * @throws RuntimeException if validation fails
 	 */
 	@Override
 	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, List<T> modelObjects) {
 		final StringBuilder errors = new StringBuilder();
 		for (T modelObject : modelObjects) {
 			validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));
-		}
-		if(errors.length() > 0) {
-			throw new ModelObjectValidator.ModelObjectValidationException("Object validation failed:" + errors.toString());
 		}
 	}
 

@@ -9,6 +9,7 @@ import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.FieldWithMeta;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -21,13 +22,14 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 public class ReferenceResolverProcessStep implements PostProcessStep {
 
 	@Override
 	public Integer getPriority() {
-		return 3;
+		return 2;
 	}
 
 	@Override
@@ -36,8 +38,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 	}
 
 	@Override
-	public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(
-			Class<? extends T> topClass, T instance) {
+	public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(Class<? extends T> topClass,
+			T instance) {
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 		ReferenceCollector referenceCollector = new ReferenceCollector();
 		instance.process(path, referenceCollector);
@@ -55,26 +57,30 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
 				R instance, RosettaModelObject parent, AttributeMeta... metas) {
-			if (instance instanceof GlobalKey) {
-				GlobalKey globalKeyBuilder = (GlobalKey) instance;
+			if (instance instanceof GlobalKey && instance != null) {
+				GlobalKey globalKey = (GlobalKey) instance;
 				Object value = getValue(instance);
 				Class<?> valueClass = getValueType(instance);
-				ofNullable(globalKeyBuilder.getMeta()).map(m -> m.getGlobalKey())
-						.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
-				ofNullable(globalKeyBuilder).map(g -> g.getMeta()).map(m -> m.getKey()).ifPresent(ks -> {
-					ks.stream().forEach(k -> references.put(valueClass, k.getKeyValue(), value));
-				});
+				if (value != null && valueClass != null) {
+					ofNullable(globalKey.getMeta())
+							.map(GlobalKeyFields::getGlobalKey)
+							.ifPresent(gk -> references.put(valueClass, gk, value));
+					of(globalKey)
+							.map(GlobalKey::getMeta)
+							.map(GlobalKeyFields::getKey)
+							.ifPresent(keys -> keys.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
+				}
 			}
 			return true;
 		}
 
-		private Object getValue(RosettaModelObject builder) {
-			if (builder instanceof FieldWithMeta) {
-				return ((FieldWithMeta<?>) builder).getValue();
+		private Object getValue(RosettaModelObject instance) {
+			if (instance instanceof FieldWithMeta) {
+				return ((FieldWithMeta<?>) instance).getValue();
 			} else
-				return builder;
+				return instance;
 		}
-
+		
 		private Class<?> getValueType(RosettaModelObject builder) {
 			if (builder instanceof FieldWithMeta) {
 				return ((FieldWithMeta<?>) builder).getValueType();
@@ -90,6 +96,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
 	private static class ReferenceResolver extends SimpleBuilderProcessor {
 
+		private static final RosettaPath LINEAGE_PATH_ELEMENT = RosettaPath.valueOf("lineage");
+
 		private final Table<Class<?>, String, Object> references;
 
 		private ReferenceResolver(Table<Class<?>, String, Object> refs) {
@@ -100,24 +108,28 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
 				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+			if (path.endsWith(LINEAGE_PATH_ELEMENT))
+				return false;
+
 			if (builder instanceof ReferenceWithMeta.ReferenceWithMetaBuilder) {
 				ReferenceWithMeta.ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMeta.ReferenceWithMetaBuilder) builder;
 				String lookup = null;
 				if (referenceWithMetaBuilder.getGlobalReference() != null) {
 					lookup = referenceWithMetaBuilder.getGlobalReference();
-				} else if (referenceWithMetaBuilder.getReference() != null) {
+				}
+				else if (referenceWithMetaBuilder.getReference()!=null) {
 					lookup = referenceWithMetaBuilder.getReference().getReference();
 				}
-
-				if (lookup != null) {
+				
+				if (lookup!=null) {
 					Map<Class<?>, Object> column = references.column(lookup);
-					if (column != null) {
+					if (column!=null) {
 						List<Entry<Class<?>, Object>> collect = column.entrySet().stream()
-								.filter(e -> doTest(referenceWithMetaBuilder.getValueType(), e.getKey()))
-								.collect(Collectors.toList());
-						collect.stream().map(e -> e.getValue())
-								// .map(RosettaModelObjectBuilder.class::cast)
-								.forEach(b -> referenceWithMetaBuilder.setValue(b));
+							.filter(e->doTest(referenceWithMetaBuilder.getValueType(),e.getKey())).collect(Collectors.toList());
+						collect.stream()
+							.map(Entry::getValue)
+							.map(RosettaModelObjectBuilder.class::cast)
+							.forEach(b -> referenceWithMetaBuilder.setValue(b.build()));
 					}
 				}
 			}

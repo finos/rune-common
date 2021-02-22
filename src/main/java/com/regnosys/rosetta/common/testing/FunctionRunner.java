@@ -76,9 +76,15 @@ public class FunctionRunner {
                 return new FunctionRunnerResult<>(input, null, actualOutput, jsonActual, null);
             }
 
-            OUTPUT expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), instance.getOutputType());
-            String jsonExpected = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(expectedOutput);
-            return new FunctionRunnerResult<>(input, expectedOutput, actualOutput, jsonActual, jsonExpected);
+            try {
+                OUTPUT expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), instance.getOutputType());
+                String jsonExpected = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(expectedOutput);
+                return new FunctionRunnerResult<>(input, expectedOutput, actualOutput, jsonActual, jsonExpected);
+            } catch (IOException e) {
+                LOGGER.warn("Unable to deserialise expected json file, proceeding without it.");
+                // TODO: load the url into a string and print it here
+                return new FunctionRunnerResult<>(input, null, actualOutput, jsonActual, "");
+            }
         }
 
     }

@@ -68,7 +68,9 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 					of(globalKey)
 							.map(GlobalKey::getMeta)
 							.map(GlobalKeyFields::getKey)
-							.ifPresent(keys -> keys.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
+							.ifPresent(keys -> keys.stream()
+									.filter(k->k.getKeyValue()!=null)
+									.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
 				}
 			}
 			return true;
@@ -128,8 +130,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 							.filter(e->doTest(referenceWithMetaBuilder.getValueType(),e.getKey())).collect(Collectors.toList());
 						collect.stream()
 							.map(Entry::getValue)
-							.map(RosettaModelObjectBuilder.class::cast)
-							.forEach(b -> referenceWithMetaBuilder.setValue(b.build()));
+							.forEach(b -> referenceWithMetaBuilder.setValue(b));
 					}
 				}
 			}

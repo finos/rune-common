@@ -218,7 +218,7 @@ public class ReflectUtils {
 		return "get" + StringExtensions.toFirstUpper(attributeName);
 	}
 
-	public static Method getter(Class<? extends RosettaModelObjectBuilder> clazz, String attributeName) {
+	public static Method getter(Class<? extends RosettaModelObject> clazz, String attributeName) {
 		Set<Method> methods = methods(clazz, (method) -> method	.getName()
 																.equals(getterName(attributeName)));
 		return Iterables.getOnlyElement(methods);

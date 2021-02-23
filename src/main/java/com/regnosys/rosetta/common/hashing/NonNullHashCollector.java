@@ -68,7 +68,7 @@ public class NonNullHashCollector extends SimpleProcessor {
 	 */
 	private Result shouldIncludeInHash(RosettaModelObject instance, RosettaModelObject parent,
 			AttributeMeta[] metas) {
-		if (instance == null) {
+		if (instance == null || !instance.toBuilder().hasData()) {
 			return new Result(false, false);
 		}
 		if (isGlobalKeyFields(instance)) {

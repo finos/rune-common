@@ -74,6 +74,7 @@ public class RosettaObjectMapper {
 								.registerModule(new RosettaModule())
 								.registerModule(new RosettaDateModule())
 								.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+								.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
 								.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 								.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
 								.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)

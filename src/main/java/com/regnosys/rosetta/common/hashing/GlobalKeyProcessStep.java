@@ -1,14 +1,15 @@
 package com.regnosys.rosetta.common.hashing;
 
+import com.regnosys.rosetta.common.util.SimpleBuilderProcessor;
 import com.rosetta.lib.postprocess.PostProcessorReport;
-import com.rosetta.model.lib.GlobalKeyBuilder;
+import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.meta.FieldWithMetaBuilder;
+import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
-import com.rosetta.model.lib.process.BuilderProcessor.Report;
+import com.rosetta.model.lib.process.Processor;
 import com.rosetta.model.lib.process.PostProcessStep;
 
 import java.util.Arrays;
@@ -19,13 +20,13 @@ import java.util.function.Supplier;
 /**
  * @author TomForwood
  * Calculates all the global key values for an object and it's children and returns them as a map from key->RosettaModelObject
- * It uses a BuilderProcessor supplied in the constructor to do the actual calculation of hashes for applicable objects.
+ * It uses a Processor supplied in the constructor to do the actual calculation of hashes for applicable objects.
  */
 public class GlobalKeyProcessStep implements PostProcessStep {
 
-	private final Supplier<? extends BuilderProcessor> hashCalculator;
+	private final Supplier<? extends Processor> hashCalculator;
 
-	public GlobalKeyProcessStep(Supplier<? extends BuilderProcessor> s) {
+	public GlobalKeyProcessStep(Supplier<? extends Processor> s) {
 		this.hashCalculator = s;
 	}
 
@@ -40,7 +41,8 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 	}
 
 	@Override
-	public <T extends RosettaModelObject> KeyPostProcessReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
+	public <T extends RosettaModelObject> KeyPostProcessReport runProcessStep(Class<? extends T> topClass, T instance) {
+		RosettaModelObjectBuilder builder = instance.toBuilder();
 		KeyPostProcessReport thisReport = new KeyPostProcessReport(builder, new HashMap<>());
 		ReKeyProcessor reKeyProcessor = new ReKeyProcessor(thisReport);
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
@@ -65,10 +67,10 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 			if (builder == null || !builder.hasData())
 				return false;
 			if (isGlobalKey(builder, metas)) {
-				GlobalKeyBuilder keyBuilder = (GlobalKeyBuilder) builder;
-				BuilderProcessor hasher = hashCalculator.get();
+				GlobalKey.GlobalKeyBuilder keyBuilder = (GlobalKey.GlobalKeyBuilder) builder;
+				Processor hasher = hashCalculator.get();
 				builder.process(path, hasher);
-				Report rep = hasher.report();
+				Processor.Report rep = hasher.report();
 				keyBuilder.getOrCreateMeta().setGlobalKey(rep.toString());
 				report.keyMap.put(path, keyBuilder);
 			}
@@ -81,18 +83,18 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		}
 
 		private boolean isGlobalKey(RosettaModelObjectBuilder builder, AttributeMeta... metas) {
-			return builder instanceof GlobalKeyBuilder
+			return builder instanceof GlobalKey
 					// exclude FieldWithMetas unless they contain a IS_GLOBAL_KEY_FIELD meta
-					&& !(builder instanceof FieldWithMetaBuilder && !Arrays.asList(metas).contains(AttributeMeta.GLOBAL_KEY_FIELD));
+					&& !(builder instanceof FieldWithMeta && !Arrays.asList(metas).contains(AttributeMeta.GLOBAL_KEY_FIELD));
 		}
 	}
 
-	public class KeyPostProcessReport implements PostProcessorReport, Report {
+	public class KeyPostProcessReport implements PostProcessorReport, BuilderProcessor.Report {
 
 		private final RosettaModelObjectBuilder result;
-		private final Map<RosettaPath, GlobalKeyBuilder> keyMap;
+		private final Map<RosettaPath, GlobalKey> keyMap;
 
-		public KeyPostProcessReport(RosettaModelObjectBuilder result, Map<RosettaPath, GlobalKeyBuilder> keyMap) {
+		public KeyPostProcessReport(RosettaModelObjectBuilder result, Map<RosettaPath, GlobalKey> keyMap) {
 			this.result = result;
 			this.keyMap = keyMap;
 		}
@@ -102,7 +104,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 			return result;
 		}
 
-		public Map<RosettaPath, GlobalKeyBuilder> getKeyMap() {
+		public Map<RosettaPath, GlobalKey> getKeyMap() {
 			return keyMap;
 		}
 	}

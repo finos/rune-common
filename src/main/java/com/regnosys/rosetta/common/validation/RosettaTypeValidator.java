@@ -1,9 +1,8 @@
 package com.regnosys.rosetta.common.validation;
 
 import com.google.inject.Inject;
-import com.regnosys.rosetta.common.hashing.SimpleBuilderProcessor;
+import com.regnosys.rosetta.common.util.SimpleProcessor;
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -26,33 +25,33 @@ public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidat
 	private ValidatorFactory validatorFactory;
 
 	@Override
-	public <T extends RosettaModelObject> ValidationReport runProcessStep(Class<T> topClass, RosettaModelObjectBuilder builder) {
+	public <T extends RosettaModelObject> ValidationReport runProcessStep(Class<? extends T> topClass, T instance) {
 		LOGGER.debug("Running validation for " + topClass.getSimpleName());
-		builder.prune();
-		ValidationReport report = new ValidationReport(builder, new ArrayList<>());
+		ValidationReport report = new ValidationReport(instance, new ArrayList<>());
 		RosettaTypeProcessor processor = new RosettaTypeProcessor(report);
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
-		processor.processRosetta(path, topClass, builder, null);
-		builder.process(path, processor);
+		processor.processRosetta(path, topClass, instance, null);
+		instance.process(path, processor);
 		return report;
 	}
 
-	class RosettaTypeProcessor extends SimpleBuilderProcessor {
+	class RosettaTypeProcessor extends SimpleProcessor {
 		private ValidationReport result;
 		public RosettaTypeProcessor(ValidationReport report) {
 			result = report;
 		}
 
 		@Override
-		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
-				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent,
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+				R instance, RosettaModelObject parent,
 				AttributeMeta... metas) {
-			if (builder==null) return false;
-			RosettaMetaData<? extends RosettaModelObject> metaData = builder.metaData();
+			if (instance==null) return false;
+			@SuppressWarnings("unchecked")
+			RosettaMetaData<R> metaData = (RosettaMetaData<R>)instance.metaData();
 			List<ValidationResult<?>> validationResults = result.getValidationResults();
-			metaData.dataRules(validatorFactory).forEach(dr->validationResults.add(dr.validate(path, builder)));
-			metaData.choiceRuleValidators().forEach(dr->validationResults.add(dr.validate(path, builder)));
-			if (metaData.validator()!=null) validationResults.add(metaData.validator().validate(path, builder));
+			metaData.dataRules(validatorFactory).forEach(dr->validationResults.add(dr.validate(path, instance)));
+			metaData.choiceRuleValidators().forEach(dr->validationResults.add(dr.validate(path, instance)));
+			if (metaData.validator()!=null) validationResults.add(metaData.validator().validate(path, instance));
 			return true;
 		}
 
@@ -102,7 +101,7 @@ public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidat
 	}
 
 	private <T extends RosettaModelObject> void validateAndCollectErrors(Class<T> topClass, T modelObject, Consumer<? super ValidationResult<?>> collector) {
-		runProcessStep(topClass, modelObject.toBuilder())
+		runProcessStep(topClass, modelObject)
 			.getValidationResults()
 			.stream().filter((res)-> { return !res.isSuccess();})
 			.forEach(collector);

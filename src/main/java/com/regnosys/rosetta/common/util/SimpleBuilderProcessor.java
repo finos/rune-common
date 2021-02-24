@@ -1,11 +1,11 @@
-package com.regnosys.rosetta.common.hashing;
+package com.regnosys.rosetta.common.util;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
-
+import java.util.Collection;
 import java.util.List;
 
 public abstract class SimpleBuilderProcessor implements BuilderProcessor {
@@ -28,7 +28,7 @@ public abstract class SimpleBuilderProcessor implements BuilderProcessor {
 	}
 
 	@Override
-	public <T> void processBasic(RosettaPath path, Class<T> rosettaType, List<T> instances, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+	public <T> void processBasic(RosettaPath path, Class<T> rosettaType, Collection<? extends T> instances, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
 		if (instances == null)
 			return;
 		for (T instance : instances) {

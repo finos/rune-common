@@ -2,17 +2,20 @@ package com.regnosys.rosetta.common.hashing;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import com.regnosys.rosetta.common.util.SimpleBuilderProcessor;
+import com.regnosys.rosetta.common.util.SimpleProcessor;
 import com.rosetta.lib.postprocess.PostProcessorReport;
-import com.rosetta.model.lib.GlobalKeyBuilder;
+import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.meta.FieldWithMetaBuilder;
+import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
-import com.rosetta.model.lib.meta.ReferenceWithMetaBuilder;
+import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.PostProcessStep;
+import com.rosetta.model.lib.process.Processor;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,54 +38,56 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 	}
 
 	@Override
-	public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(Class<T> topClass,
-			RosettaModelObjectBuilder builder) {
+	public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(Class<? extends T> topClass,
+			T instance) {
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 		ReferenceCollector referenceCollector = new ReferenceCollector();
-		builder.process(path, referenceCollector);
+		instance.process(path, referenceCollector);
 		ReferenceResolver referenceResolver = new ReferenceResolver(referenceCollector.references);
+		RosettaModelObjectBuilder builder = instance.toBuilder();
 		builder.process(path, referenceResolver);
 		referenceResolver.report();
 		return new ReferenceResolverPostProcessorReport(referenceCollector.references, builder);
 	}
 
-	private static class ReferenceCollector extends SimpleBuilderProcessor {
+	private static class ReferenceCollector extends SimpleProcessor {
 
 		private final Table<Class<?>, String, Object> references = HashBasedTable.create();
 
 		@Override
-		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
-				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-			if (builder instanceof GlobalKeyBuilder && builder != null && builder.hasData()) {
-				GlobalKeyBuilder globalKeyBuilder = (GlobalKeyBuilder) builder;
-				Object value = getValue(builder);
-				Class<?> valueClass = getValueType(builder);
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+				R instance, RosettaModelObject parent, AttributeMeta... metas) {
+			if (instance instanceof GlobalKey && instance != null) {
+				GlobalKey globalKey = (GlobalKey) instance;
+				Object value = getValue(instance);
+				Class<?> valueClass = getValueType(instance);
 				if (value != null && valueClass != null) {
-					ofNullable(globalKeyBuilder.getMeta())
-							.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getGlobalKey)
-							.ifPresent(globalKey -> references.put(valueClass, globalKey, value));
-					of(globalKeyBuilder)
-							.map(GlobalKeyBuilder::getMeta)
-							.map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKey)
-							.ifPresent(keys -> keys.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
+					ofNullable(globalKey.getMeta())
+							.map(GlobalKeyFields::getGlobalKey)
+							.ifPresent(gk -> references.put(valueClass, gk, value));
+					of(globalKey)
+							.map(GlobalKey::getMeta)
+							.map(GlobalKeyFields::getKey)
+							.ifPresent(keys -> keys.stream()
+									.filter(k->k.getKeyValue()!=null)
+									.forEach(k -> references.put(valueClass, k.getKeyValue(), value)));
 				}
 			}
 			return true;
 		}
 
-		private Object getValue(RosettaModelObjectBuilder builder) {
-			if (builder instanceof FieldWithMetaBuilder) {
-				return ((FieldWithMetaBuilder<?>) builder).getValue();
-			}
-			else return builder;
+		private Object getValue(RosettaModelObject instance) {
+			if (instance instanceof FieldWithMeta) {
+				return ((FieldWithMeta<?>) instance).getValue();
+			} else
+				return instance;
 		}
 		
-		private Class<?> getValueType(RosettaModelObjectBuilder builder) {
-			if (builder instanceof FieldWithMetaBuilder) {
-				return ((FieldWithMetaBuilder<?>) builder).getValueType();
-			}
-			//TODO this is pretty unpleasant - RosettaModelObjectBuilder should have a getBuiltType method
-			else return builder.build().getClass();
+		private Class<?> getValueType(RosettaModelObject builder) {
+			if (builder instanceof FieldWithMeta) {
+				return ((FieldWithMeta<?>) builder).getValueType();
+			} else
+				return builder.getType();
 		}
 
 		@Override
@@ -108,8 +113,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 			if (path.endsWith(LINEAGE_PATH_ELEMENT))
 				return false;
 
-			if (builder instanceof ReferenceWithMetaBuilder) {
-				ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMetaBuilder) builder;
+			if (builder instanceof ReferenceWithMeta.ReferenceWithMetaBuilder) {
+				ReferenceWithMeta.ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMeta.ReferenceWithMetaBuilder) builder;
 				String lookup = null;
 				if (referenceWithMetaBuilder.getGlobalReference() != null) {
 					lookup = referenceWithMetaBuilder.getGlobalReference();
@@ -125,8 +130,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 							.filter(e->doTest(referenceWithMetaBuilder.getValueType(),e.getKey())).collect(Collectors.toList());
 						collect.stream()
 							.map(Entry::getValue)
-							.map(RosettaModelObjectBuilder.class::cast)
-							.forEach(b -> referenceWithMetaBuilder.setValue(b.build()));
+							.forEach(b -> referenceWithMetaBuilder.setValue(b));
 					}
 				}
 			}
@@ -143,7 +147,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		}
 	}
 
-	static class ReferenceResolverReport implements BuilderProcessor.Report {
+	static class ReferenceResolverReport implements BuilderProcessor.Report, Processor.Report {
 		private final Table<Class<?>, String, Object> references;
 
 		private ReferenceResolverReport(Table<Class<?>, String, Object> refs) {

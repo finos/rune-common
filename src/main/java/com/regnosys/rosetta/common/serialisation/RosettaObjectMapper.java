@@ -176,11 +176,17 @@ public class RosettaObjectMapper {
 		{
 			if (ac instanceof AnnotatedClass) {
 				AnnotatedClass acc = (AnnotatedClass) ac;
-				Set<String> names = StreamSupport.stream(acc.memberMethods().spliterator(), false)
+				Set<String> names = null;
+				if (RosettaModelObject.class.isAssignableFrom(ac.getRawType())) {
+				 names= StreamSupport.stream(acc.memberMethods().spliterator(), false)
 					.map(m->BeanUtil.getPropertyName(m.getAnnotated()))
 					.filter(n->n!=null)
 					.filter(n->n.startsWith("orCreate") || n.startsWith("type")|| n.startsWith("valueType"))
 					.collect(Collectors.toSet());
+				}
+				else {
+					names = Set.of();
+				}
 				return JsonIgnoreProperties.Value.forIgnoredProperties(names).withAllowSetters();
 			}
 			if (ac instanceof AnnotatedMethod) {

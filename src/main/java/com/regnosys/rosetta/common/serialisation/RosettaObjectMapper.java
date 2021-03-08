@@ -139,7 +139,7 @@ public class RosettaObjectMapper {
 					try {
 						String builderName = null;
 						if (rawClass.getName().endsWith("BuilderImpl")) builderName = rawClass.getName();
-						if (rawClass.getName().endsWith("Builder")) builderName = rawClass.getName()+"Impl";
+						else if (rawClass.getName().endsWith("Builder")) builderName = rawClass.getName()+"Impl";
 						else if (rawClass.getName().endsWith("Impl")) builderName = rawClass.getName().replaceAll("Impl$", "BuilderImpl");
 						else builderName = rawClass.getTypeName() + "$" + rawClass.getSimpleName() + "BuilderImpl";
 						

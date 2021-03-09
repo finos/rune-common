@@ -50,17 +50,19 @@ public class FunctionRunner {
         String expectedOutputFile = executionDescriptor.getExpectedOutputFile();
         LOGGER.info("Output File:  " + expectedOutputFile);
 
-
         if (executionDescriptor.isNativeFunction()) {
             JsonNode jsonNode = objectMapper.readTree(loadURL(inputFile));
 
-            Object actualOutput = runNativeFunction(jsonNode, executionDescriptor.getExecutableFunctionClass());
+            Object actualOutput = postProcess(runNativeFunction(jsonNode, executionDescriptor.getExecutableFunctionClass()));
             String jsonActual = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(actualOutput);
 
             if (expectedOutputFile == null) {
                 return new FunctionRunnerResult(jsonNode, null, actualOutput, jsonActual, null);
             }
-            Object expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), actualOutput.getClass());
+            Class<?> actualOutputClass = RosettaModelObject.class.isInstance(actualOutput) ?
+                    ((RosettaModelObject) actualOutput).getType() :
+                    actualOutput.getClass();
+            Object expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), actualOutputClass);
             String jsonExpected = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(expectedOutput);
 
             return new FunctionRunnerResult(jsonNode, expectedOutput, actualOutput, jsonActual, jsonExpected);

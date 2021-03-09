@@ -50,11 +50,10 @@ public class FunctionRunner {
         String expectedOutputFile = executionDescriptor.getExpectedOutputFile();
         LOGGER.info("Output File:  " + expectedOutputFile);
 
-
         if (executionDescriptor.isNativeFunction()) {
             JsonNode jsonNode = objectMapper.readTree(loadURL(inputFile));
 
-            Object actualOutput = runNativeFunction(jsonNode, executionDescriptor.getExecutableFunctionClass());
+            Object actualOutput = postProcess(runNativeFunction(jsonNode, executionDescriptor.getExecutableFunctionClass()));
             String jsonActual = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(actualOutput);
 
             if (expectedOutputFile == null) {

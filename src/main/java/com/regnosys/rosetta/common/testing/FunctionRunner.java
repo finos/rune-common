@@ -59,10 +59,7 @@ public class FunctionRunner {
             if (expectedOutputFile == null) {
                 return new FunctionRunnerResult(jsonNode, null, actualOutput, jsonActual, null);
             }
-            Class<?> actualOutputClass = RosettaModelObject.class.isInstance(actualOutput) ?
-                    ((RosettaModelObject) actualOutput).getType() :
-                    actualOutput.getClass();
-            Object expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), actualOutputClass);
+            Object expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), getType(actualOutput));
             String jsonExpected = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(expectedOutput);
 
             return new FunctionRunnerResult(jsonNode, expectedOutput, actualOutput, jsonActual, jsonExpected);
@@ -88,7 +85,12 @@ public class FunctionRunner {
                 return new FunctionRunnerResult<>(input, null, actualOutput, jsonActual, "");
             }
         }
+    }
 
+    private Class<?> getType(Object actualOutput) {
+        return RosettaModelObject.class.isInstance(actualOutput) ?
+                ((RosettaModelObject) actualOutput).getType() :
+                actualOutput.getClass();
     }
 
     private <OUTPUT> OUTPUT postProcess(OUTPUT actualOutput) {

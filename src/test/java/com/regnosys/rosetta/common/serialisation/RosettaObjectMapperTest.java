@@ -8,7 +8,7 @@ import com.rosetta.model.lib.meta.Key;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
-public class TestRosettaObjectMapper {
+public class RosettaObjectMapperTest {
 
 	@Test
 	void testSerialiseBuilder() throws IOException {

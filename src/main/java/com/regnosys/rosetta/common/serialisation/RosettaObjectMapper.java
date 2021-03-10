@@ -280,8 +280,7 @@ public class RosettaObjectMapper {
 		List<Key> getKey();
 	}
 
-
-	private abstract interface KeyMixIn {
+	private interface KeyMixIn {
 		@JsonProperty("value")
 		String getKeyValue();
 		
@@ -293,15 +292,11 @@ public class RosettaObjectMapper {
 	private interface ReferenceWithMetaMixIn {
 		@JsonProperty("address")
 		Reference getReference();
+		@JsonIgnore
+		Object getOrCreateValue();
 	}
 
-	/*@JsonFilter("ReferenceFilter")
-	private interface ReferenceWithMetaBuilderMixIn {
-		@JsonProperty("address")
-		ReferenceBuilder getReference();
-	}*/
-
-	private abstract interface ReferenceMixIn {
+	private interface ReferenceMixIn {
 		@JsonProperty("value")
 		String getReference();
 	}

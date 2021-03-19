@@ -93,7 +93,7 @@ public class RosettaTypeValidator implements PostProcessStep, ModelObjectValidat
 	 * @param modelObjects
 	 */
 	@Override
-	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, List<T> modelObjects) {
+	public <T extends RosettaModelObject> void validateAndFailOnErorr(Class<T> topClass, List<? extends T> modelObjects) {
 		final StringBuilder errors = new StringBuilder();
 		for (T modelObject : modelObjects) {
 			validateAndCollectErrors(topClass, modelObject, (res) -> errors.append(System.lineSeparator()).append(res.toString()));

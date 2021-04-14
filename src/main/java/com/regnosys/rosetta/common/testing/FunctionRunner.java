@@ -3,6 +3,7 @@ package com.regnosys.rosetta.common.testing;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
+import com.regnosys.rosetta.common.hashing.ReferenceResolverProcessStep;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -99,11 +100,20 @@ public class FunctionRunner {
             RosettaModelObject funcModelOutput = (RosettaModelObject) actualOutput;
             RosettaModelObjectBuilder instance = funcModelOutput.toBuilder();
             instance.prune();
-            RosettaModelObjectBuilder postProcessedBuilder = postProcessor.postProcess(funcModelOutput.getClass(), instance);
+            RosettaModelObjectBuilder postProcessedBuilder = postProcessor.postProcess(funcModelOutput.getType(), instance);
             RosettaModelObject postProcessed = postProcessedBuilder.build();
             return (OUTPUT) postProcessed;
         }
         return actualOutput;
+    }
+
+    private <INPUT> INPUT resolveReferences(INPUT input) {
+        if (input instanceof RosettaModelObject) {
+            RosettaModelObjectBuilder builder = ((RosettaModelObject) input).toBuilder();
+            new ReferenceResolverProcessStep().runProcessStep(builder.getType(), builder);
+            return (INPUT) builder.build();
+        }
+        return input;
     }
 
     private Object runNativeFunction(JsonNode jsonNode, String functionClassName) throws ClassNotFoundException, IOException, InvocationTargetException, IllegalAccessException {
@@ -163,7 +173,7 @@ public class FunctionRunner {
         // single arg
         if (!jsonNode.isArray() && parameterTypes.length == 1) {
             return new Object[]{
-                    objectMapper.treeToValue(jsonNode, parameterTypes[0])
+                    resolveReferences(objectMapper.treeToValue(jsonNode, parameterTypes[0]))
             };
         } else {// multi args as array
             JsonNode[] jsonArrayNodes = Iterables.toArray(jsonNode, JsonNode.class);
@@ -171,7 +181,7 @@ public class FunctionRunner {
 
             if (parameterTypes.length == jsonArrayNodes.length) {
                 for (int i = 0; i < parameterTypes.length; i++) {
-                    argsList[i] = objectMapper.treeToValue(jsonArrayNodes[i], parameterTypes[i]);
+                    argsList[i] = resolveReferences(objectMapper.treeToValue(jsonArrayNodes[i], parameterTypes[i]));
                 }
             } else {
                 throw new IllegalArgumentException(String.format("The function %s requires %s arguments, but %s was supplied in the json array.",

@@ -101,11 +101,12 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 					xmlCapturing.getLastIndex().ifPresent(i -> captureIndexes.put("other", i));
 					Collection<MappingConsumer<TYPE>> mappingConsumers = mappings.get(capturer);
 					String xmlValue = m.getXmlValue() == null ? null : m.getXmlValue().toString();
-					for (MappingConsumer<TYPE> mc : mappingConsumers) {
-						List<PathValue<?>> results = mc.accept(captureIndexes, xmlValue, new PathValue<>(BASE_PATH, type));
-						for (PathValue<?> r : results) {
-							if (xmlValue != null) {
-								allMappings.add(new Mapping(m.getXmlPath(), xmlValue, r.modelPath, r.value,null,true, r.conditional));
+
+					if (xmlValue != null) {
+						for (MappingConsumer<TYPE> mc : mappingConsumers) {
+							List<PathValue<?>> results = mc.accept(captureIndexes, xmlValue, new PathValue<>(BASE_PATH, type));
+							for (PathValue<?> r : results) {
+								allMappings.add(new Mapping(m.getXmlPath(), xmlValue, r.modelPath, r.value, null, true, r.conditional));
 							}
 						}
 					}

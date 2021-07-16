@@ -36,6 +36,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.google.common.collect.Sets;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
@@ -186,7 +187,7 @@ public class RosettaObjectMapper {
 					.collect(Collectors.toSet());
 				}
 				else {
-					names = Set.of();
+					names = Sets.newHashSet();
 				}
 				return JsonIgnoreProperties.Value.forIgnoredProperties(names).withAllowSetters();
 			}

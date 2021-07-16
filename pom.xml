@@ -16,7 +16,7 @@
         <junit.jupiter.version>5.0.3</junit.jupiter.version>
         <junit.platform.version>1.0.0</junit.platform.version>
         <reflections.version>0.9.11</reflections.version>
-        <jackson.version>2.9.10</jackson.version>
+        <jackson.version>2.9.10.7</jackson.version>
         <hamcrest.version>2.0.0.0</hamcrest.version>
         <mockito.version>2.10.0</mockito.version>
         <guava.version>26.0-jre</guava.version>

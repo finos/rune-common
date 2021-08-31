@@ -2,6 +2,7 @@ package com.regnosys.rosetta.common.translation.flat;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.regnosys.rosetta.common.translation.Mapping;
 import com.regnosys.rosetta.common.translation.MappingContext;
@@ -139,7 +140,7 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 	protected abstract void doHardCodings(TYPE object);
 
 	protected MappingConsumer<TYPE> nonNullConsumer(MappingConsumer<TYPE> consumer) {
-		return (i, v, r) -> v != null ? consumer.accept(i, v, r) : List.of();
+		return (i, v, r) -> v != null ? consumer.accept(i, v, r) : Lists.newArrayList();
 	}
 
 	private void doConditionalStuff(TYPE workflow) {
@@ -151,7 +152,7 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 	protected <T> MappingConsumer<T> capture(String name) {
 		return (indexes, value, workflow) -> {
 			captures.put(name, new Capture(indexes, value));
-			return List.of(new PathValue<>(workflow.getModelPath(), value, true));
+			return Lists.newArrayList(new PathValue<>(workflow.getModelPath(), value, true));
 		};
 	}
 

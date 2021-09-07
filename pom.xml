@@ -14,13 +14,13 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.release>8</maven.compiler.release>
         <rosetta.dsl.version>4.18.1</rosetta.dsl.version>
-        <junit.jupiter.version>5.0.3</junit.jupiter.version>
-        <junit.platform.version>1.0.0</junit.platform.version>
+        <junit.jupiter.version>5.7.2</junit.jupiter.version>
+        <junit.platform.version>1.7.2</junit.platform.version>
         <reflections.version>0.9.11</reflections.version>
-        <jackson.version>2.9.10</jackson.version>
-        <hamcrest.version>2.0.0.0</hamcrest.version>
+        <jackson.version>2.10.5</jackson.version>
+        <hamcrest.version>2.2</hamcrest.version>
         <mockito.version>2.10.0</mockito.version>
-        <guava.version>26.0-jre</guava.version>
+        <guava.version>30.1.1-jre</guava.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <logback.version>1.2.3</logback.version>
     </properties>
@@ -95,7 +95,7 @@
             </dependency>
             <dependency>
                 <groupId>org.hamcrest</groupId>
-                <artifactId>java-hamcrest</artifactId>
+                <artifactId>hamcrest</artifactId>
                 <version>${hamcrest.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -150,8 +150,7 @@
     <dependencies>
         <dependency>
             <groupId>org.hamcrest</groupId>
-            <artifactId>java-hamcrest</artifactId>
-            <scope>test</scope>
+            <artifactId>hamcrest</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -242,15 +241,9 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-surefire-provider</artifactId>
-                        <version>${junit.platform.version}</version>
-                    </dependency>
-                </dependencies>
+                <version>3.0.0-M5</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

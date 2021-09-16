@@ -106,7 +106,7 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 						List<PathValue<?>> results = mc.accept(captureIndexes, xmlValue, new PathValue<>(BASE_PATH, type));
 						for (PathValue<?> r : results) {
 							if (xmlValue != null) {
-								allMappings.add(new Mapping(m.getXmlPath(), xmlValue, r.modelPath, r.value,null,true, r.conditional));
+								allMappings.add(new Mapping(m.getXmlPath(), xmlValue, r.modelPath, r.value, null, true, r.conditional, false));
 							}
 						}
 					}

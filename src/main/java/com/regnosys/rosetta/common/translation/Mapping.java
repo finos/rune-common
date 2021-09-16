@@ -10,16 +10,20 @@ public class Mapping {
 	private Object rosettaValue;
     private String error;
     private final boolean allowsMultiple;
-    private boolean isCondition;
+    // mapping for a synonym condition, e.g. set when path = "x->y->z"
+    private boolean condition;
+    // error if multiple external paths are mapped into a single model path
+    private boolean duplicate;
 
-    public Mapping(Path xmlPath, Object xmlValue, Path rosettaPath, Object rosettaValue, String error, boolean allowsMultiple, boolean isCondition) {
+    public Mapping(Path xmlPath, Object xmlValue, Path rosettaPath, Object rosettaValue, String error, boolean allowsMultiple, boolean condition, boolean duplicate) {
         this.xmlPath = xmlPath;
         this.xmlValue = xmlValue;
         this.rosettaPath = rosettaPath;
 		this.rosettaValue = rosettaValue;
         this.error = error;
 		this.allowsMultiple = allowsMultiple;
-		this.isCondition = isCondition;
+		this.condition = condition;
+		this.duplicate = duplicate;
     }
 
 	public Path getXmlPath() {
@@ -59,32 +63,49 @@ public class Mapping {
 	}
 
 	public boolean isCondition() {
-		return isCondition;
+		return condition;
 	}
 
 	public void setCondition(boolean condition) {
-		isCondition = condition;
+		this.condition = condition;
+	}
+
+	public boolean isDuplicate() {
+		return duplicate;
+	}
+
+	public void setDuplicate(boolean duplicate) {
+		this.duplicate = duplicate;
 	}
 
 	@Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Mapping mapping = (Mapping) o;
-        return Objects.equals(xmlPath, mapping.xmlPath) &&
-                Objects.equals(xmlValue, mapping.xmlValue) &&
-                Objects.equals(rosettaPath, mapping.rosettaPath) &&
-                Objects.equals(error, mapping.error);
-    }
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		Mapping mapping = (Mapping) o;
+		return allowsMultiple == mapping.allowsMultiple && condition == mapping.condition && duplicate == mapping.duplicate && Objects.equals(xmlPath,
+				mapping.xmlPath) && Objects.equals(xmlValue, mapping.xmlValue) && Objects.equals(rosettaPath, mapping.rosettaPath)
+				&& Objects.equals(rosettaValue, mapping.rosettaValue) && Objects.equals(error, mapping.error);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(xmlPath, xmlValue, rosettaPath, error);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(xmlPath, xmlValue, rosettaPath, rosettaValue, error, allowsMultiple, condition, duplicate);
+	}
 
-    @Override
-    public String toString() {
-        return String.format("Mapping{xmlPath=%s, xmlValue=%s, rosettaPath=%s, rosettaValue=%s, error=%s}",
-                xmlPath, xmlValue, rosettaPath, rosettaValue, error);
-    }
+	@Override
+	public String toString() {
+		return "Mapping{" +
+				"xmlPath=" + xmlPath +
+				", xmlValue=" + xmlValue +
+				", rosettaPath=" + rosettaPath +
+				", rosettaValue=" + rosettaValue +
+				", error='" + error + '\'' +
+				", allowsMultiple=" + allowsMultiple +
+				", condition=" + condition +
+				", duplicate=" + duplicate +
+				'}';
+	}
 }

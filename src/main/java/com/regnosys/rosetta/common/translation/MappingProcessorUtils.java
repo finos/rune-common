@@ -121,6 +121,7 @@ public class MappingProcessorUtils {
 		mapping.setRosettaPath(toPath(rosettaPath));
 		mapping.setError(null);
 		mapping.setCondition(true);
+		mapping.setDuplicate(false);
 	}
 
 	public static void updateMappingFail(Mapping mapping, String error) {

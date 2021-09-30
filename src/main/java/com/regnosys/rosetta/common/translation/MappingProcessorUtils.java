@@ -54,6 +54,21 @@ public class MappingProcessorUtils {
 				.collect(Collectors.toList());
 	}
 
+	public static List<Mapping> filterMappings(List<Mapping> mappings, Path synonymPath, Path startsWithModelPath) {
+		return mappings.stream()
+				.filter(m -> synonymPath.nameIndexMatches(m.getXmlPath()))
+				.filter(m -> m.getRosettaPath() != null)
+				.filter(m -> startsWithModelPath.fullStartMatches(m.getRosettaPath()))
+				.collect(Collectors.toList());
+	}
+
+	public static List<Mapping> getEmptyMappings(List<Mapping> mappings, Path synonymPath) {
+		return mappings.stream()
+				.filter(p -> synonymPath.nameIndexMatches(p.getXmlPath()))
+				.filter(m -> m.getRosettaPath() == null || m.getError() != null)
+				.collect(Collectors.toList());
+	}
+
 	/**
 	 * After filtering mappings (either by synonym or cdm path), there are sometimes multiple mapping objects
 	 * but there should be only one non-null value.
@@ -101,6 +116,14 @@ public class MappingProcessorUtils {
 				.findFirst();
 	}
 
+	public static Optional<Mapping> getNonNullMappingForModelPath(List<Mapping> mappings, Path modelPath) {
+		return mappings.stream()
+				.filter(m -> m.getRosettaPath() != null)
+				.filter(m -> modelPath.nameIndexMatches(m.getRosettaPath()))
+				.filter(m -> m.getXmlValue() != null)
+				.findFirst();
+	}
+
 	public static Optional<Path> subPath(String lastElement, Path path) {
 		if (path.endsWith(lastElement)) {
 			return Optional.of(path);
@@ -117,11 +140,15 @@ public class MappingProcessorUtils {
 				.forEach(m -> updateMappingSuccess(m, rosettaPath));
 	}
 
-	public static void updateMappingSuccess(Mapping mapping, RosettaPath rosettaPath) {
-		mapping.setRosettaPath(toPath(rosettaPath));
+	public static void updateMappingSuccess(Mapping mapping, Path rosettaPath) {
+		mapping.setRosettaPath(rosettaPath);
 		mapping.setError(null);
 		mapping.setCondition(true);
 		mapping.setDuplicate(false);
+	}
+
+	public static void updateMappingSuccess(Mapping mapping, RosettaPath rosettaPath) {
+		updateMappingSuccess(mapping, toPath(rosettaPath));
 	}
 
 	public static void updateMappingFail(Mapping mapping, String error) {

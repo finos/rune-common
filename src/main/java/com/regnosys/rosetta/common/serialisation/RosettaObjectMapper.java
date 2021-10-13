@@ -8,10 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -61,34 +58,38 @@ public class RosettaObjectMapper {
 	private RosettaObjectMapper() {
 	}
 
+	public static ObjectMapper getNewMinimalRosettaObjectMapper() {
+		return new ObjectMapper()
+				.registerModule(new GuavaModule())
+				.registerModule(new JodaModule())
+				.registerModule(new ParameterNamesModule())
+				.registerModule(new Jdk8Module())
+				.registerModule(new JavaTimeModule())
+				.registerModule(new RosettaModule())
+				.registerModule(new RosettaDateModule())
+				.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+				.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
+				.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
+				.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+				.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+				//The next three lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
+				//the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
+				.setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))
+				.addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
+				.addMixIn(GlobalKeyFields.class, GlobalKeyFieldsMixIn.class)
+				.addMixIn(Key.class, KeyMixIn.class)
+				.addMixIn(Reference.class, ReferenceMixIn.class)
+				.setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
+	}
+
 	/**
 	 * Creating new RosettaObjectMapper instances is expensive, use the singleton instance if possible.
 	 */
 	public static ObjectMapper getNewRosettaObjectMapper() {
-		return new ObjectMapper().findAndRegisterModules()
-								.registerModule(new GuavaModule())
-								.registerModule(new JodaModule())
-								.registerModule(new AfterburnerModule())
-								.registerModule(new ParameterNamesModule())
-								.registerModule(new Jdk8Module())
-								.registerModule(new JavaTimeModule())
-								.registerModule(new RosettaModule())
-								.registerModule(new RosettaDateModule())
-								.setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-								.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-								.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-								.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
-								.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
-								.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-								.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
-								//The next three lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
-								//the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
-								.setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))
-								.addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
-								.addMixIn(GlobalKeyFields.class, GlobalKeyFieldsMixIn.class)
-								.addMixIn(Key.class, KeyMixIn.class)
-								.addMixIn(Reference.class, ReferenceMixIn.class)
-								.setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
+		return getNewMinimalRosettaObjectMapper().findAndRegisterModules()
+								.registerModule(new AfterburnerModule());
 
 	}
 
@@ -100,7 +101,7 @@ public class RosettaObjectMapper {
 	/**
 	 * Using a module class to append our annotation introspector with a minimal fuss
 	 */
-	private static class RosettaModule extends SimpleModule {
+	protected static class RosettaModule extends SimpleModule {
 
 		private static final long serialVersionUID = 1L;
 
@@ -125,7 +126,7 @@ public class RosettaObjectMapper {
 		}
 	}
 
-	private static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
+	protected static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
 
 		private static final long serialVersionUID = 1L;
 
@@ -207,7 +208,7 @@ public class RosettaObjectMapper {
 		}
 	}
 
-	private static class RosettaSerialiserException extends RuntimeException {
+	protected static class RosettaSerialiserException extends RuntimeException {
 		private static final long serialVersionUID = 1L;
 
 		RosettaSerialiserException(String message, Throwable cause) {
@@ -216,7 +217,7 @@ public class RosettaObjectMapper {
 	}
 
 	//TODO remove after Date becomes a class with a default constructor
-	private static class RosettaDateModule extends SimpleModule {
+	protected static class RosettaDateModule extends SimpleModule {
 		private static final long serialVersionUID = 1L;
 
 		{
@@ -276,12 +277,12 @@ public class RosettaObjectMapper {
 		}
 	}
 
-	private interface GlobalKeyFieldsMixIn {
+	protected interface GlobalKeyFieldsMixIn {
 		@JsonProperty("location")
 		List<Key> getKey();
 	}
 
-	private interface KeyMixIn {
+	protected interface KeyMixIn {
 		@JsonProperty("value")
 		String getKeyValue();
 		
@@ -290,14 +291,14 @@ public class RosettaObjectMapper {
 	}
 
 	@JsonFilter("ReferenceFilter")
-	private interface ReferenceWithMetaMixIn {
+	protected interface ReferenceWithMetaMixIn {
 		@JsonProperty("address")
 		Reference getReference();
 		@JsonIgnore
 		Object getOrCreateValue();
 	}
 
-	private interface ReferenceMixIn {
+	protected interface ReferenceMixIn {
 		@JsonProperty("value")
 		String getReference();
 	}

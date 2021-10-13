@@ -59,7 +59,7 @@ public class RosettaObjectMapper {
 	}
 
 	public static ObjectMapper getNewMinimalRosettaObjectMapper() {
-		return new ObjectMapper()
+		return new ObjectMapper().findAndRegisterModules()
 				.registerModule(new GuavaModule())
 				.registerModule(new JodaModule())
 				.registerModule(new ParameterNamesModule())
@@ -88,7 +88,7 @@ public class RosettaObjectMapper {
 	 * Creating new RosettaObjectMapper instances is expensive, use the singleton instance if possible.
 	 */
 	public static ObjectMapper getNewRosettaObjectMapper() {
-		return getNewMinimalRosettaObjectMapper().findAndRegisterModules()
+		return getNewMinimalRosettaObjectMapper()
 								.registerModule(new AfterburnerModule());
 
 	}

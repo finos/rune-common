@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import com.regnosys.rosetta.common.serialisation.reportdata.*;
 import org.junit.jupiter.api.Test;
 
@@ -49,11 +50,16 @@ class JsonReportDataLoaderTest {
 
         assertEquals(new ReportDataItem("This is the desc of the usecase",
                         new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
-                        new ExpectedResult(Collections.singletonList(new ExpectedResultField("column 1", "NewTrade-expected")))),
+                        new ExpectedResult(
+                                ImmutableMap.of("report1", Collections.singletonList(new ExpectedResultField("column 1", "NewTrade-expected"))))
+
+                ),
                 reportDataSets.get(0).getData().get(0));
         assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
                         new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
-                        new ExpectedResult(Collections.singletonList(new ExpectedResultField("column 2", "TerminatedTrade-expected")))),
+                        new ExpectedResult(
+                                ImmutableMap.of("report2", Collections.singletonList(new ExpectedResultField("column 2", "TerminatedTrade-expected"))))
+                ),
                 reportDataSets.get(0).getData().get(1));
     }
 

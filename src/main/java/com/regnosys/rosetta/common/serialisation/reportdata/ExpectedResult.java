@@ -1,20 +1,24 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 public class ExpectedResult {
-    private List<ExpectedResultField> fields;
+    private Map<String, List<ExpectedResultField>> expectationsPerReport;
 
     public ExpectedResult(){}
 
-    public ExpectedResult(List<ExpectedResultField> fields) {
-        this.fields = fields;
+    @JsonCreator
+    public ExpectedResult(@JsonProperty Map<String, List<ExpectedResultField>> expectationsPerReport) {
+        this.expectationsPerReport = expectationsPerReport;
     }
 
-    public List<ExpectedResultField> getFields() {
-        return fields;
+    public Map<String, List<ExpectedResultField>> getExpectationsPerReport() {
+        return expectationsPerReport;
     }
 
     @Override
@@ -22,18 +26,18 @@ public class ExpectedResult {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ExpectedResult that = (ExpectedResult) o;
-        return Objects.equals(fields, that.fields);
+        return Objects.equals(expectationsPerReport, that.expectationsPerReport);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getFields());
+        return Objects.hash(expectationsPerReport);
     }
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", ExpectedResult.class.getSimpleName() + "[", "]")
-                .add("fields=" + fields)
-                .toString();
+        return "ExpectedResult{" +
+                "expectationsPerReport=" + expectationsPerReport +
+                '}';
     }
 }

@@ -16,7 +16,7 @@
           "eventQualifier": "TerminatedTrade"
         },
         "expected": {
-          "fields": [
+          "report2": [
             {
               "name": "column 2",
               "value": "TerminatedTrade-expected"

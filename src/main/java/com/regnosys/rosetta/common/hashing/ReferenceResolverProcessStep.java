@@ -99,6 +99,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 	private static class ReferenceResolver extends SimpleBuilderProcessor {
 
 		private static final RosettaPath LINEAGE_PATH_ELEMENT = RosettaPath.valueOf("lineage");
+		private static final RosettaPath EVENT_EFFECT_PATH_ELEMENT = RosettaPath.valueOf("eventEffect");
 
 		private final Table<Class<?>, String, Object> references;
 
@@ -110,7 +111,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 		@Override
 		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType,
 				RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-			if (path.endsWith(LINEAGE_PATH_ELEMENT))
+			if (path.endsWith(LINEAGE_PATH_ELEMENT) || path.endsWith(EVENT_EFFECT_PATH_ELEMENT))
 				return false;
 
 			if (builder instanceof ReferenceWithMeta.ReferenceWithMetaBuilder) {

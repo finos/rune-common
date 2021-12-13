@@ -13,7 +13,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.release>8</maven.compiler.release>
-        <rosetta.dsl.version>0.0.0.master</rosetta.dsl.version>
+        <rosetta.dsl.version>4.23.2</rosetta.dsl.version>
         <junit.jupiter.version>5.0.3</junit.jupiter.version>
         <junit.platform.version>1.0.0</junit.platform.version>
         <reflections.version>0.9.11</reflections.version>

@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.common.testing;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
@@ -16,6 +18,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -167,13 +170,12 @@ public class FunctionRunner {
         return RosettaFunction.class.isAssignableFrom(functionClass);
     }
 
-    private Object[] getMethodArguments(Method method, JsonNode jsonNode) throws IOException {
-        Class<?>[] parameterTypes = method.getParameterTypes();
-
+    private Object[] getMethodArguments(Method method, JsonNode jsonNode) throws IOException, ClassNotFoundException {
+        Type[] parameterTypes = method.getGenericParameterTypes();
         // single arg
         if (!jsonNode.isArray() && parameterTypes.length == 1) {
             return new Object[]{
-                    resolveReferences(objectMapper.treeToValue(jsonNode, parameterTypes[0]))
+                    resolveReferences(objectMapper.treeToValue(jsonNode, Class.forName(parameterTypes[0].getTypeName())))
             };
         } else {// multi args as array
             JsonNode[] jsonArrayNodes = Iterables.toArray(jsonNode, JsonNode.class);
@@ -181,7 +183,9 @@ public class FunctionRunner {
 
             if (parameterTypes.length == jsonArrayNodes.length) {
                 for (int i = 0; i < parameterTypes.length; i++) {
-                    argsList[i] = resolveReferences(objectMapper.treeToValue(jsonArrayNodes[i], parameterTypes[i]));
+                    JavaType javaType =  objectMapper.getTypeFactory().constructType(parameterTypes[i]);
+                    JsonParser jsonParser = objectMapper.treeAsTokens(jsonArrayNodes[i]);
+                    argsList[i] = resolveReferences(objectMapper.readValue(jsonParser, javaType));
                 }
             } else {
                 throw new IllegalArgumentException(String.format("The function %s requires %s arguments, but %s was supplied in the json array.",

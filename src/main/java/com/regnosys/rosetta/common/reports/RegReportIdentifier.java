@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.regulation;
+package com.regnosys.rosetta.common.reports;
 
 import java.util.List;
 import java.util.Objects;

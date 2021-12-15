@@ -1,5 +1,8 @@
 package com.regnosys.rosetta.common.reports;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Comparator;
 import java.util.StringJoiner;
 
@@ -11,7 +14,12 @@ public class ReportField implements Comparable<ReportField> {
 	private final String value;
 	private final String issue;
 
-	public ReportField(String name, String rule, Integer repeatableIndex, String value, String issue) {
+	@JsonCreator
+	public ReportField(@JsonProperty("name") String name,
+					   @JsonProperty("rule") String rule,
+					   @JsonProperty("repeatableIndex") Integer repeatableIndex,
+					   @JsonProperty("value") String value,
+					   @JsonProperty("issue") String issue) {
 		this.name = name;
 		this.rule = rule;
 		this.repeatableIndex = repeatableIndex;

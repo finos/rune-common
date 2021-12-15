@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.common.reports;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.regnosys.rosetta.common.serialisation.reportdata.ExpectedResult;
 import com.rosetta.model.lib.RosettaModelObject;
 
@@ -16,7 +18,14 @@ public class RegReportUseCase {
 	private final ExpectedResult expectedResults;
 	private final RosettaModelObject input;
 
-	public RegReportUseCase(String useCase, String dataSetName, List<ReportField> results, RosettaModelObject useCaseReport, String useCaseReportJavaClassName, ExpectedResult expectedResults, RosettaModelObject input) {
+	@JsonCreator
+	public RegReportUseCase(@JsonProperty("useCase") String useCase,
+							@JsonProperty("dataSetName") String dataSetName,
+							@JsonProperty("results") List<ReportField> results,
+							@JsonProperty("useCaseReport") RosettaModelObject useCaseReport,
+							@JsonProperty("useCaseReportJavaClassName") String useCaseReportJavaClassName,
+							@JsonProperty("expectedResults") ExpectedResult expectedResults,
+							@JsonProperty("input") RosettaModelObject input) {
 		this.useCase = useCase;
 		this.dataSetName = dataSetName;
 		this.results = results;

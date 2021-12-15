@@ -1,5 +1,8 @@
 package com.regnosys.rosetta.common.reports;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -10,7 +13,11 @@ public class RegReportIdentifier {
 	private final String name;
 	private final String generatedJavaClassName;
 
-	public RegReportIdentifier(String body, List<String> corpusList, String name, String generatedJavaClassName) {
+	@JsonCreator
+	public RegReportIdentifier(@JsonProperty("body") String body,
+							   @JsonProperty("corpusList") List<String> corpusList,
+							   @JsonProperty("name") String name,
+							   @JsonProperty("generatedJavaClassName") String generatedJavaClassName) {
 		this.body = body;
 		this.corpusList = corpusList;
 		this.name = name;

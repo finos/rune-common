@@ -1,5 +1,8 @@
 package com.regnosys.rosetta.common.reports;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -8,7 +11,9 @@ public class RegReport {
 	private final RegReportIdentifier identifier;
 	private final List<RegReportUseCase> useCases;
 
-	public RegReport(RegReportIdentifier identifier, List<RegReportUseCase> useCases) {
+	@JsonCreator
+	public RegReport(@JsonProperty("identifier") RegReportIdentifier identifier,
+					 @JsonProperty("useCases") List<RegReportUseCase> useCases) {
 		this.identifier = identifier;
 		this.useCases = useCases;
 	}

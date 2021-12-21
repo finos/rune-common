@@ -13,7 +13,9 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.release>8</maven.compiler.release>
+
         <rosetta.dsl.version>4.24.1</rosetta.dsl.version>
+
         <reflections.version>0.9.11</reflections.version>
         <jackson.version>2.13.0</jackson.version>
         <guice.version>5.0.1</guice.version>
@@ -25,6 +27,7 @@
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-text.version>1.9</commons-text.version>
 
+        <!-- duplicated in rosetta-testing -->
         <junit.jupiter.version>5.7.2</junit.jupiter.version>
         <junit.platform.version>1.7.2</junit.platform.version>
         <mockito.version>3.9.0</mockito.version>

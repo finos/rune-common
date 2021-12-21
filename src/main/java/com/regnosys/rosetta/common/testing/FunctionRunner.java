@@ -174,8 +174,9 @@ public class FunctionRunner {
         Type[] parameterTypes = method.getGenericParameterTypes();
         // single arg
         if (!jsonNode.isArray() && parameterTypes.length == 1) {
+            Class<?> parameterType = this.classLoader.loadClass(parameterTypes[0].getTypeName());
             return new Object[]{
-                    resolveReferences(objectMapper.treeToValue(jsonNode, Class.forName(parameterTypes[0].getTypeName())))
+                    resolveReferences(objectMapper.treeToValue(jsonNode, parameterType))
             };
         } else {// multi args as array
             JsonNode[] jsonArrayNodes = Iterables.toArray(jsonNode, JsonNode.class);

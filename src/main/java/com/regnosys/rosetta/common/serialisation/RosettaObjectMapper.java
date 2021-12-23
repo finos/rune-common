@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
@@ -36,15 +37,14 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.Sets;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.GlobalKeyFields;
-import com.rosetta.model.lib.meta.Key;
-import com.rosetta.model.lib.meta.Reference;
-import com.rosetta.model.lib.meta.ReferenceWithMeta;
+import com.rosetta.model.lib.meta.*;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
+
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -126,7 +126,7 @@ public class RosettaObjectMapper {
 		}
 	}
 
-	protected static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector {
+	protected static class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector implements BackwardsCompatibleAnnotationIntrospector {
 
 		private static final long serialVersionUID = 1L;
 
@@ -155,6 +155,8 @@ public class RosettaObjectMapper {
 			}
 			return super.findPOJOBuilder(ac);
 		}
+
+		@Override
 		public PropertyName findNameForDeserialization(Annotated a)
 		{
 			if (a instanceof AnnotatedMethod) {
@@ -174,7 +176,14 @@ public class RosettaObjectMapper {
 			}
 			return super.findNameForDeserialization(a);
 		}
-		
+
+		@Override
+		public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ann) {
+			return findPropertyIgnorals(ann);
+		}
+
+		@Deprecated
+		@Override
 		public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac)
 		{
 			if (ac instanceof AnnotatedClass) {
@@ -183,7 +192,7 @@ public class RosettaObjectMapper {
 				if (RosettaModelObject.class.isAssignableFrom(ac.getRawType())) {
 				 names= StreamSupport.stream(acc.memberMethods().spliterator(), false)
 					.map(m->BeanUtil.getPropertyName(m.getAnnotated()))
-					.filter(n->n!=null)
+					.filter(Objects::nonNull)
 					.filter(n->n.startsWith("orCreate") || n.startsWith("type")|| n.startsWith("valueType"))
 					.collect(Collectors.toSet());
 				}

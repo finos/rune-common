@@ -19,7 +19,7 @@
         <reflections.version>0.9.11</reflections.version>
         <jackson.version>2.13.0</jackson.version>
         <guice.version>4.2.3</guice.version>
-        <guava.version>26.0-jre</guava.version>
+        <guava.version>29.0-jre</guava.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <logback.version>1.2.3</logback.version>
 

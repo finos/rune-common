@@ -26,8 +26,13 @@ public class MappingContext {
     private final List<String> mappingErrors = new ArrayList<>();
 
     public MappingContext(Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
-        this(new ArrayList<>(),
-                new ConcurrentHashMap<>(),
+        this(new ArrayList<>(), new ConcurrentHashMap<>(), synonymToEnumMap);
+    }
+
+    // Unit testing
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
+        this(mappings,
+                mappingParams,
                 synonymToEnumMap,
                 Executors.newFixedThreadPool(5, new ThreadFactoryBuilder().setNameFormat("mapper-%d").build()));
     }

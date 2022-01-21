@@ -87,4 +87,8 @@ public abstract class MappingProcessor implements MappingDelegate {
 	protected Optional<String> getValueAndUpdateMappings(Path synonymPath) {
 		return MappingProcessorUtils.getValueAndUpdateMappings(synonymPath, getMappings(), modelPath);
 	}
+
+	protected SynonymToEnumMap getSynonymToEnumMap() {
+		return context.getSynonymToEnumMap();
+	}
 }

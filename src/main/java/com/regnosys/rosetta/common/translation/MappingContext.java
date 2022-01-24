@@ -17,6 +17,7 @@ public class MappingContext {
 
     private final List<Mapping> mappings;
     private final Map<Object, Object> mappingParams;
+    private final SynonymToEnumMap synonymToEnumMap;
     // Execute mapping on separate thread pool
     private final ExecutorService executor;
     // Collect any tasks invoked during mapping so we can wait until they're complete before continuing
@@ -24,21 +25,23 @@ public class MappingContext {
 
     private final List<String> mappingErrors = new ArrayList<>();
 
-    public MappingContext() {
-        this(new ArrayList<>(), new ConcurrentHashMap<>());
+    public MappingContext(Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
+        this(new ArrayList<>(), new ConcurrentHashMap<>(), synonymToEnumMap);
     }
 
-    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, ExecutorService executor) {
+    // Unit testing
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
+        this(mappings,
+                mappingParams,
+                synonymToEnumMap,
+                Executors.newFixedThreadPool(5, new ThreadFactoryBuilder().setNameFormat("mapper-%d").build()));
+    }
+
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap, ExecutorService executor) {
         this.mappings = mappings;
         this.mappingParams = mappingParams;
+        this.synonymToEnumMap = new SynonymToEnumMap(synonymToEnumMap);
         this.executor = executor;
-    }
-
-    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams) {
-        this.mappings = mappings;
-        this.mappingParams = mappingParams;
-        this.executor = Executors.newFixedThreadPool(5,
-                        new ThreadFactoryBuilder().setNameFormat("mapper-%d").build());
     }
 
     public List<Mapping> getMappings() {
@@ -59,5 +62,9 @@ public class MappingContext {
 
     public List<String> getMappingErrors() {
         return mappingErrors;
+    }
+
+    public SynonymToEnumMap getSynonymToEnumMap() {
+        return synonymToEnumMap;
     }
 }

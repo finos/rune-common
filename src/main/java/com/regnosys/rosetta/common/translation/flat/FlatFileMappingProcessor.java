@@ -10,11 +10,8 @@ import com.regnosys.rosetta.common.translation.MappingProcessor;
 import com.regnosys.rosetta.common.translation.Path;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
-import com.rosetta.model.lib.records.Date;
-import com.rosetta.model.lib.records.DateImpl;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Map.Entry;
@@ -73,13 +70,6 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 
 	protected BigDecimal parseDecimal(String value) {
 		return new BigDecimal(value);
-	}
-
-	protected Date parseISODate(String value) {
-		return new DateImpl(LocalDate.parse(value, dateParser));
-	}
-	protected Date parseLocalDate(String value) {
-		return new DateImpl(LocalDate.parse(value, localDateParser));
 	}
 
 	@Override

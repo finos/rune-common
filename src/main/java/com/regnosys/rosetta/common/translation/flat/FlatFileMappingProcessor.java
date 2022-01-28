@@ -28,7 +28,6 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 
 	protected final DateTimeFormatter dateParser = DateTimeFormatter.BASIC_ISO_DATE;
 	protected final DateTimeFormatter localTimeParser = DateTimeFormatter.ISO_LOCAL_TIME;
-	protected final DateTimeFormatter localDateParser = DateTimeFormatter.ISO_LOCAL_DATE;
 
 	@FunctionalInterface
 	protected interface MappingConsumer<T> {

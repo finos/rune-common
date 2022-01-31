@@ -11,7 +11,6 @@ import com.regnosys.rosetta.common.translation.Path;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.records.Date;
-import com.rosetta.model.lib.records.DateImpl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,7 +30,6 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 
 	protected final DateTimeFormatter dateParser = DateTimeFormatter.BASIC_ISO_DATE;
 	protected final DateTimeFormatter localTimeParser = DateTimeFormatter.ISO_LOCAL_TIME;
-	protected final DateTimeFormatter localDateParser = DateTimeFormatter.ISO_LOCAL_DATE;
 
 	@FunctionalInterface
 	protected interface MappingConsumer<T> {
@@ -75,11 +73,11 @@ public abstract class FlatFileMappingProcessor<TYPE extends RosettaModelObjectBu
 		return new BigDecimal(value);
 	}
 
+	/**
+	 * Format "yyyyMMdd"
+	 */
 	protected Date parseISODate(String value) {
-		return new DateImpl(LocalDate.parse(value, dateParser));
-	}
-	protected Date parseLocalDate(String value) {
-		return new DateImpl(LocalDate.parse(value, localDateParser));
+		return Date.of(LocalDate.parse(value, dateParser));
 	}
 
 	@Override

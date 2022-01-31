@@ -2,21 +2,13 @@ package com.regnosys.rosetta.common.serialisation;
 
 import ch.qos.logback.core.joran.util.beans.BeanUtil;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.json.PackageVersion;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyName;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.Annotated;
@@ -28,6 +20,7 @@ import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -37,7 +30,10 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.Sets;
 import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.*;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
+import com.rosetta.model.lib.meta.Key;
+import com.rosetta.model.lib.meta.Reference;
+import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 
@@ -225,27 +221,28 @@ public class RosettaObjectMapper {
 		}
 	}
 
-	//TODO remove after Date becomes a class with a default constructor
 	protected static class RosettaDateModule extends SimpleModule {
 		private static final long serialVersionUID = 1L;
 
 		{
 			addDeserializer(Date.class, new StdDeserializer<Date>(Date.class) {
-				private static final long serialVersionUID = 1L;
-
 				@Override
-				public Date deserialize(JsonParser p, DeserializationContext ctxt)
-						throws IOException, JsonProcessingException {
-					return new DateImpl(p.readValueAs(DateExtended.class).toLocalDate());
+				public Date deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+					return Date.of(p.readValueAs(DateExtended.class).toLocalDate());
+				}
+			});
+			addSerializer(Date.class, new StdSerializer<Date>(Date.class) {
+				@Override
+				public void serialize(Date value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+					gen.writeString(value.toString());
 				}
 			});
 		}
 	}
 
-	//TODO remove after Date becomes a class with a default constructor
 	public static class DateExtended extends DateImpl {
-		public DateExtended(@JsonProperty("day") int day, @JsonProperty("month") int month, @JsonProperty("year") int year) {
-			super(day, month, year);
+		public DateExtended(@JsonProperty("year") int year, @JsonProperty("month") int month, @JsonProperty("day") int day) {
+			super(year, month, day);
 		}
 
 		public DateExtended(String date) {

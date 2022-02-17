@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
+import com.regnosys.rosetta.common.hashing.ReferenceResolverConfig;
 import com.regnosys.rosetta.common.hashing.ReferenceResolverProcessStep;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -36,15 +37,18 @@ public class FunctionRunner {
     private final InstanceLoader instanceLoader;
     private final ClassLoader classLoader;
     private final ObjectMapper objectMapper;
+    private final ReferenceResolverConfig resolverConfig;
 
     public FunctionRunner(ExecutionDescriptor executionDescriptor,
                           InstanceLoader instanceLoader,
                           ClassLoader classLoader,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          ReferenceResolverConfig resolverConfig) {
         this.executionDescriptor = executionDescriptor;
         this.instanceLoader = instanceLoader;
         this.classLoader = classLoader;
         this.objectMapper = objectMapper;
+        this.resolverConfig = resolverConfig;
     }
 
     public <INPUT, OUTPUT> FunctionRunnerResult<INPUT, OUTPUT> run() throws ClassNotFoundException, IOException, InvocationTargetException, IllegalAccessException {
@@ -113,7 +117,7 @@ public class FunctionRunner {
     private <INPUT> INPUT resolveReferences(INPUT input) {
         if (input instanceof RosettaModelObject) {
             RosettaModelObjectBuilder builder = ((RosettaModelObject) input).toBuilder();
-            new ReferenceResolverProcessStep().runProcessStep(builder.getType(), builder);
+            new ReferenceResolverProcessStep(resolverConfig).runProcessStep(builder.getType(), builder);
             return (INPUT) builder.build();
         }
         return input;

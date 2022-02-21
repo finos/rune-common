@@ -2,6 +2,7 @@ package com.regnosys.rosetta.common.testing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
+import com.regnosys.rosetta.common.hashing.ReferenceResolverConfig;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,10 @@ class FunctionRunnerTest {
             fail("Could not read find executionDescriptor for group-1:test-1");
         }
 
-        FunctionRunner functionRunner = new FunctionRunner(executionDescriptor.get(), this::getInstance, this.getClass().getClassLoader(), objectMapper);
+        FunctionRunner functionRunner = new FunctionRunner(executionDescriptor.get(),
+                this::getInstance,
+                this.getClass().getClassLoader(),
+                objectMapper);
         FunctionRunner.FunctionRunnerResult<Object, Object> run = functionRunner.run();
 
 

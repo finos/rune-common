@@ -37,18 +37,15 @@ public class FunctionRunner {
     private final InstanceLoader instanceLoader;
     private final ClassLoader classLoader;
     private final ObjectMapper objectMapper;
-    private final ReferenceResolverConfig resolverConfig;
 
     public FunctionRunner(ExecutionDescriptor executionDescriptor,
                           InstanceLoader instanceLoader,
                           ClassLoader classLoader,
-                          ObjectMapper objectMapper,
-                          ReferenceResolverConfig resolverConfig) {
+                          ObjectMapper objectMapper) {
         this.executionDescriptor = executionDescriptor;
         this.instanceLoader = instanceLoader;
         this.classLoader = classLoader;
         this.objectMapper = objectMapper;
-        this.resolverConfig = resolverConfig;
     }
 
     public <INPUT, OUTPUT> FunctionRunnerResult<INPUT, OUTPUT> run() throws ClassNotFoundException, IOException, InvocationTargetException, IllegalAccessException {
@@ -117,6 +114,7 @@ public class FunctionRunner {
     private <INPUT> INPUT resolveReferences(INPUT input) {
         if (input instanceof RosettaModelObject) {
             RosettaModelObjectBuilder builder = ((RosettaModelObject) input).toBuilder();
+            ReferenceResolverConfig resolverConfig = instanceLoader.createInstance(ReferenceResolverConfig.class);
             new ReferenceResolverProcessStep(resolverConfig).runProcessStep(builder.getType(), builder);
             return (INPUT) builder.build();
         }

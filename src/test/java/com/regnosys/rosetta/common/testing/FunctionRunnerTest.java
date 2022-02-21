@@ -33,8 +33,7 @@ class FunctionRunnerTest {
         FunctionRunner functionRunner = new FunctionRunner(executionDescriptor.get(),
                 this::getInstance,
                 this.getClass().getClassLoader(),
-                objectMapper,
-                ReferenceResolverConfig.noScopeOrExcludedPaths());
+                objectMapper);
         FunctionRunner.FunctionRunnerResult<Object, Object> run = functionRunner.run();
 
 

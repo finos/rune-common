@@ -112,7 +112,10 @@ public class FunctionRunner {
     }
 
     private <INPUT> INPUT resolveReferences(INPUT input) {
-        if (input instanceof RosettaModelObject) {
+        if (input instanceof List) {
+            List<?> builderList = ((List<?>) input).stream().map(this::resolveReferences).collect(Collectors.toList());
+            return (INPUT) builderList;
+        } else if (input instanceof RosettaModelObject) {
             RosettaModelObjectBuilder builder = ((RosettaModelObject) input).toBuilder();
             ReferenceResolverConfig resolverConfig = instanceLoader.createInstance(ReferenceResolverConfig.class);
             new ReferenceResolverProcessStep(resolverConfig).runProcessStep(builder.getType(), builder);

@@ -104,15 +104,22 @@ public class Path {
      * matching on the name and index
      */
     public boolean fullStartMatches(Path other) {
+        return fullStartMatches(other, false);
+    }
+
+    public boolean fullStartMatches(Path other, boolean allowWildcard) {
         if (elements.isEmpty() && other.elements.isEmpty())
             return true;
-		if (elements.isEmpty())
+        if (elements.isEmpty())
             return false;
         if (elements.size() > other.elements.size())
             return false;
         for (int i = 0; i < elements.size(); i++) {
-            if (!elements.get(i).pathName.equals(other.elements.get(i).pathName) ||
-                    elements.get(i).index.orElse(0) != other.elements.get(i).index.orElse(0))
+            String p1 = elements.get(i).pathName;
+            String p2 = other.elements.get(i).pathName;
+            if (wildcardMatches(allowWildcard, p1, p2))
+                continue;
+            if (!p1.equals(p2) || elements.get(i).index.orElse(0) != other.elements.get(i).index.orElse(0))
                 return false;
         }
         return true;

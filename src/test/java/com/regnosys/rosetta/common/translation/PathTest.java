@@ -73,15 +73,21 @@ class PathTest {
 	}
 
 	@Test
-	void shouldFullMatchWildcard() {
-		Path other = Path.valueOf("*").append(Path.parse("partyA.access_conditions.assetIdentifier.additional_termination_event.name"));
-		assertTrue(TEST_PATH2.fullStartMatches(other, true));
+	void shouldFullStartMatchWildcard() {
+		Path subPath = Path.valueOf("*").append(Path.parse("partyA.access_conditions"));
+		assertTrue(subPath.fullStartMatches(TEST_PATH2, true));
 	}
 
 	@Test
 	void shouldFullMatchWildcardNoAllowed() {
-		Path other = Path.valueOf("*").append(Path.parse("partyA.access_conditions.assetIdentifier.additional_termination_event.name"));
-		assertFalse(TEST_PATH2.fullStartMatches(other, false));
+		Path subPath = Path.valueOf("*").append(Path.parse("partyA.access_conditions"));
+		assertFalse(subPath.fullStartMatches(TEST_PATH2, false));
+	}
+
+	@Test
+	void shouldNotFullStartMatchWildcard() {
+		Path subPath = Path.valueOf("*").append(Path.parse("partyA.access_conditions.no_match"));
+		assertFalse(subPath.fullStartMatches(TEST_PATH2, true));
 	}
 
 	@Test

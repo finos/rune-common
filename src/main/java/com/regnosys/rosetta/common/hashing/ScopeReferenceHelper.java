@@ -14,30 +14,29 @@ public class ScopeReferenceHelper<T> {
 
     private final ReferenceConfig referenceConfig;
     private final Map<Path, T> scopeToDataMap = new ConcurrentHashMap<>();
-    private final Supplier<T> data;
+    private final Supplier<T> newDataStructureSupplier;
 
-    public ScopeReferenceHelper(ReferenceConfig referenceConfig, Supplier<T> data) {
+    public ScopeReferenceHelper(ReferenceConfig referenceConfig, Supplier<T> newDataStructureSupplier) {
         this.referenceConfig = referenceConfig;
-        this.data = data;
+        this.newDataStructureSupplier = newDataStructureSupplier;
     }
 
     public void collectScopePath(RosettaPath path, Class<?> rosettaType) {
         if (this.referenceConfig.getScopeType() != null && this.referenceConfig.getScopeType().isAssignableFrom(rosettaType)) {
-            scopeToDataMap.putIfAbsent(PathUtils.toPath(path), data.get());
+            scopeToDataMap.putIfAbsent(PathUtils.toPath(path), newDataStructureSupplier.get());
         }
     }
 
     public T getDataForModelPath(Path modelPath) {
         Path scopePath = getScopePath(modelPath);
-        return scopeToDataMap.computeIfAbsent(scopePath, x -> data.get());
+        return scopeToDataMap.computeIfAbsent(scopePath, x -> newDataStructureSupplier.get());
     }
 
     private Path getScopePath(Path modelPath) {
-        Path scopePath = scopeToDataMap.keySet().stream()
+        return scopeToDataMap.keySet().stream()
                 .filter(p -> p.fullStartMatches(modelPath))
                 .findFirst()
                 .orElse(EMPTY_SCOPE);
-        return scopePath;
     }
 
     public Map<Path, T> getScopeToDataMap() {

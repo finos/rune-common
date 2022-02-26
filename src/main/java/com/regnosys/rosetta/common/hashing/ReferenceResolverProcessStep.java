@@ -15,17 +15,13 @@ import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.ReferenceWithMeta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
-import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.PostProcessStep;
-import com.rosetta.model.lib.process.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.of;
@@ -57,7 +53,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         ReferenceCollector collector = new ReferenceCollector(referenceConfig);
         instance.process(path, collector);
         ReferenceResolver resolver =
-                new ReferenceResolver(referenceConfig, collector.globalReferences, collector.helper.getScopeToDataMap());
+                new ReferenceResolver(referenceConfig, collector.globalReferences, collector.helper);
         RosettaModelObjectBuilder builder = instance.toBuilder();
         builder.process(path, resolver);
         return new ReferenceResolverPostProcessorReport<T>((T) builder.build());
@@ -137,17 +133,16 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceResolver.class);
 
         private final Table<Class<?>, String, Object> globalReferences;
-        private final Map<Path, Table<Class<?>, String, Object>> scopeReferences;
-        private final AtomicReference<RosettaPath> currentScopePath = new AtomicReference<>(RosettaPath.valueOf("emptyScope"));
+        private final ScopeReferenceHelper<Table<Class<?>, String, Object>> helper;
         private final ReferenceConfig config;
 
         private ReferenceResolver(
                 ReferenceConfig config,
                 Table<Class<?>, String, Object> globalReferences,
-                Map<Path, Table<Class<?>, String, Object>> scopeReferences) {
+                ScopeReferenceHelper<Table<Class<?>, String, Object>> helper) {
             this.config = config;
             this.globalReferences = globalReferences;
-            this.scopeReferences = scopeReferences;
+            this.helper = helper;
         }
 
         @SuppressWarnings({"unchecked", "rawtypes"})
@@ -160,9 +155,6 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
             if (config.getExcludedPaths().stream().anyMatch(endsWithPathElement -> path.endsWith(endsWithPathElement))) {
                 return false;
             }
-            if (config.getScopeType() != null && config.getScopeType().isAssignableFrom(rosettaType)) {
-                currentScopePath.set(path);
-            }
             if (builder instanceof ReferenceWithMetaBuilder) {
                 ReferenceWithMetaBuilder referenceWithMetaBuilder = (ReferenceWithMetaBuilder) builder;
                 if (referenceWithMetaBuilder.getGlobalReference() != null) {
@@ -171,7 +163,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                             referenceWithMetaBuilder,
                             path);
                 } else if (referenceWithMetaBuilder.getReference() != null) {
-                    Table<Class<?>, String, Object> currentScopeReferences = scopeReferences.get(currentScopePath.get());
+                    Path currentModelPath = PathUtils.toPath(path);
+                    Table<Class<?>, String, Object> currentScopeReferences = helper.getDataForModelPath(currentModelPath);
                     if (currentScopeReferences != null) {
                         setReferenceValue(referenceWithMetaBuilder.getReference().getReference(),
                                 currentScopeReferences,
@@ -193,8 +186,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                     clazzToReferencedObjectEntries.stream()
                             .map(Entry::getValue)
                             .forEach(referencedObject -> {
-                                LOGGER.debug("Setting resolved object [key={}, type={}, path={}, scope={}]",
-                                        keyValue, referenceWithMeta.getValueType().getName(), path, currentScopePath.get());
+                                LOGGER.debug("Setting resolved object [key={}, type={}, path={}]",
+                                        keyValue, referenceWithMeta.getValueType().getName(), path);
                                 referenceWithMeta.setValue(referencedObject);
                             });
                 }

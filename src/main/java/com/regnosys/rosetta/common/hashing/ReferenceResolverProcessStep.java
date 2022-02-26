@@ -2,6 +2,8 @@ package com.regnosys.rosetta.common.hashing;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import com.regnosys.rosetta.common.translation.Path;
+import com.regnosys.rosetta.common.util.PathUtils;
 import com.regnosys.rosetta.common.util.SimpleBuilderProcessor;
 import com.regnosys.rosetta.common.util.SimpleProcessor;
 import com.rosetta.lib.postprocess.PostProcessorReport;
@@ -23,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -32,10 +33,10 @@ import static java.util.Optional.ofNullable;
 
 public class ReferenceResolverProcessStep implements PostProcessStep {
 
-    private final ReferenceResolverConfig config;
+    private final ReferenceConfig referenceConfig;
 
-    public ReferenceResolverProcessStep(ReferenceResolverConfig config) {
-        this.config = config;
+    public ReferenceResolverProcessStep(ReferenceConfig referenceConfig) {
+        this.referenceConfig = referenceConfig;
     }
 
     @Override
@@ -53,14 +54,13 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
             Class<? extends T> topClass,
             T instance) {
         RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
-        ReferenceCollector collector = new ReferenceCollector(config.getScopeType());
+        ReferenceCollector collector = new ReferenceCollector(referenceConfig);
         instance.process(path, collector);
         ReferenceResolver resolver =
-                new ReferenceResolver(config, collector.globalReferences, collector.scopeReferences);
+                new ReferenceResolver(referenceConfig, collector.globalReferences, collector.helper.getScopeToDataMap());
         RosettaModelObjectBuilder builder = instance.toBuilder();
         builder.process(path, resolver);
-        resolver.report();
-        return new ReferenceResolverPostProcessorReport(collector.globalReferences, collector.scopeReferences, builder);
+        return new ReferenceResolverPostProcessorReport<T>((T) builder.build());
     }
 
     private static class ReferenceCollector extends SimpleProcessor {
@@ -72,12 +72,10 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         // - String: reference key value (e.g. "quantity-1")
         // - Object: referenced object (e.g. populated Quantity object to be set on ReferenceWithMetaQuantity.value)
         private final Table<Class<?>, String, Object> globalReferences = HashBasedTable.create();
-        private final Map<RosettaPath, Table<Class<?>, String, Object>> scopeReferences = new ConcurrentHashMap<>();
-        private final AtomicReference<RosettaPath> currentScopePath = new AtomicReference<>(RosettaPath.valueOf("emptyScope"));
-        private final Class<?> scopeType;
+        private final ScopeReferenceHelper<Table<Class<?>, String, Object>> helper;
 
-        public ReferenceCollector(Class<?> scopeType) {
-            this.scopeType = scopeType;
+        public ReferenceCollector(ReferenceConfig referenceConfig) {
+            this.helper = new ScopeReferenceHelper<>(referenceConfig, () -> HashBasedTable.create());
         }
 
         @Override
@@ -86,9 +84,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                                                                      R instance,
                                                                      RosettaModelObject parent,
                                                                      AttributeMeta... metas) {
-            if (scopeType != null && scopeType.isAssignableFrom(rosettaType)) {
-                currentScopePath.set(path);
-            }
+            helper.collectScopePath(path, rosettaType);
+
             if (instance instanceof GlobalKey && instance != null) {
                 GlobalKey globalKey = (GlobalKey) instance;
                 Object value = getValue(instance);
@@ -104,10 +101,10 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                                     .filter(k -> k.getKeyValue() != null)
                                     .forEach(k -> {
                                         String keyValue = k.getKeyValue();
-                                        LOGGER.debug("Collecting object [key={}, type={}, path={}, scope={}]",
-                                                keyValue, valueClass.getName(), path, currentScopePath.get());
-                                        scopeReferences
-                                                .computeIfAbsent(currentScopePath.get(), key -> HashBasedTable.create())
+                                        Path keyPath = PathUtils.toPath(path);
+                                        LOGGER.debug("Collecting object [key={}, type={}, path={}]",
+                                                keyValue, valueClass.getName(), path);
+                                        helper.getDataForModelPath(keyPath)
                                                 .put(valueClass, keyValue, value);
                                     }));
                 }
@@ -131,7 +128,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
         @Override
         public Report report() {
-            return new ReferenceResolverReport(globalReferences, scopeReferences);
+            return null;
         }
     }
 
@@ -140,14 +137,14 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
         private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceResolver.class);
 
         private final Table<Class<?>, String, Object> globalReferences;
-        private final Map<RosettaPath, Table<Class<?>, String, Object>> scopeReferences;
+        private final Map<Path, Table<Class<?>, String, Object>> scopeReferences;
         private final AtomicReference<RosettaPath> currentScopePath = new AtomicReference<>(RosettaPath.valueOf("emptyScope"));
-        private final ReferenceResolverConfig config;
+        private final ReferenceConfig config;
 
         private ReferenceResolver(
-                ReferenceResolverConfig config,
+                ReferenceConfig config,
                 Table<Class<?>, String, Object> globalReferences,
-                Map<RosettaPath, Table<Class<?>, String, Object>> scopeReferences) {
+                Map<Path, Table<Class<?>, String, Object>> scopeReferences) {
             this.config = config;
             this.globalReferences = globalReferences;
             this.scopeReferences = scopeReferences;
@@ -210,61 +207,20 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
 
         @Override
         public Report report() {
-            return new ReferenceResolverReport(globalReferences, scopeReferences);
+            return null;
         }
     }
 
-    static class ReferenceResolverReport implements BuilderProcessor.Report, Processor.Report {
-        private final Table<Class<?>, String, Object> globalReferences;
-        private final Map<RosettaPath, Table<Class<?>, String, Object>> scopeReferences;
+    public static class ReferenceResolverPostProcessorReport<T extends RosettaModelObject> implements PostProcessorReport {
+        private final T instance;
 
-        private ReferenceResolverReport(
-                Table<Class<?>, String, Object> globalReferences,
-                Map<RosettaPath, Table<Class<?>, String, Object>> scopeReferences) {
-            this.globalReferences = globalReferences;
-            this.scopeReferences = scopeReferences;
-        }
-
-        public Table<Class<?>, String, Object> getGlobalReferences() {
-            return globalReferences;
-        }
-
-        public Map<RosettaPath, Table<Class<?>, String, Object>> getScopeReferences() {
-            return scopeReferences;
-        }
-    }
-
-    public static class ReferenceResolverPostProcessorReport implements PostProcessorReport {
-        private final Table<Class<?>, String, Object> globalReferences;
-        private final Map<RosettaPath, Table<Class<?>, String, Object>> scopeReferences;
-        private final RosettaModelObjectBuilder builder;
-
-        private ReferenceResolverPostProcessorReport(Table<Class<?>, String, Object> globalReferences,
-                                                     Map<RosettaPath, Table<Class<?>, String, Object>> scopeReferences,
-                                                     RosettaModelObjectBuilder builder) {
-            this.globalReferences = globalReferences;
-            this.scopeReferences = scopeReferences;
-            this.builder = builder;
-        }
-
-        public Table<Class<?>, String, Object> getGlobalReferences() {
-            return this.globalReferences;
-        }
-
-        public Map<RosettaPath, Table<Class<?>, String, Object>> getScopeReferences() {
-            return scopeReferences;
-        }
-
-        @SuppressWarnings("unchecked")
-        public <T extends RosettaModelObject> Optional<T> getReferencedObject(Class<T> rosettaType,
-                                                                              String globalReference) {
-            return Optional.ofNullable(globalReferences.get(rosettaType, globalReference))
-                    .map(RosettaModelObjectBuilder.class::cast).map(RosettaModelObjectBuilder::build).map(o -> (T) o);
+        private ReferenceResolverPostProcessorReport(T instance) {
+            this.instance = instance;
         }
 
         @Override
-        public RosettaModelObjectBuilder getResultObject() {
-            return this.builder;
+        public T getResultObject() {
+            return this.instance;
         }
     }
 }

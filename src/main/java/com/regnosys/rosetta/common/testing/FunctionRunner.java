@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
-import com.regnosys.rosetta.common.hashing.ReferenceResolverConfig;
+import com.regnosys.rosetta.common.hashing.ReferenceConfig;
 import com.regnosys.rosetta.common.hashing.ReferenceResolverProcessStep;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -117,7 +117,7 @@ public class FunctionRunner {
             return (INPUT) builderList;
         } else if (input instanceof RosettaModelObject) {
             RosettaModelObjectBuilder builder = ((RosettaModelObject) input).toBuilder();
-            ReferenceResolverConfig resolverConfig = instanceLoader.createInstance(ReferenceResolverConfig.class);
+            ReferenceConfig resolverConfig = instanceLoader.createInstance(ReferenceConfig.class);
             new ReferenceResolverProcessStep(resolverConfig).runProcessStep(builder.getType(), builder);
             return (INPUT) builder.build();
         }

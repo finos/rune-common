@@ -2,7 +2,6 @@ package com.regnosys.rosetta.common.testing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.hashing.ReferenceResolverConfig;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import org.junit.jupiter.api.Test;
 

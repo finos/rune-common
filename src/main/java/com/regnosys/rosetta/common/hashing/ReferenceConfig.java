@@ -6,9 +6,10 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Configurable options for ReferenceResolverProcessStep.
+ * Configurable options for ReferenceResolverProcessStep, and post-ingestion key/reference processing.
  *
  * @see com.regnosys.rosetta.common.hashing.ReferenceResolverProcessStep
+ * @see com.regnosys.rosetta.common.hashing.ScopeReferenceHelper
  */
 public class ReferenceConfig {
 

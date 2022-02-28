@@ -6,32 +6,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Configurable options for ReferenceResolverProcessStep.
- *
- * @see com.regnosys.rosetta.common.hashing.ReferenceResolverProcessStep
+ * For backwards compatibility.  Remove once CDM 2.148.0 is not longer used.
  */
-public class ReferenceResolverConfig {
-
-    /**
-     * @return empty config instance with no scope or excluded paths specified
-     */
-    public static ReferenceResolverConfig noScopeOrExcludedPaths() {
-        return new ReferenceResolverConfig(null, Collections.emptyList());
-    }
-
-    private final Class<?> scopeType;
-    private final List<RosettaPath> excludedPaths;
+@Deprecated
+public class ReferenceResolverConfig extends ReferenceConfig {
 
     public ReferenceResolverConfig(Class<?> scopeType, List<RosettaPath> excludedPaths) {
-        this.scopeType = scopeType;
-        this.excludedPaths = excludedPaths;
-    }
-
-    public Class<?> getScopeType() {
-        return scopeType;
-    }
-
-    public List<RosettaPath> getExcludedPaths() {
-        return excludedPaths;
+       super(scopeType, excludedPaths);
     }
 }

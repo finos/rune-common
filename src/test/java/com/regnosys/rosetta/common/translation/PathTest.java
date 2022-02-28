@@ -74,19 +74,19 @@ class PathTest {
 
 	@Test
 	void shouldFullStartMatchWildcard() {
-		Path subPath = Path.valueOf("*").append(Path.parse("partyA.access_conditions"));
+		Path subPath = Path.parse("partyA.access_conditions").prefixWithWildcard();
 		assertTrue(subPath.fullStartMatches(TEST_PATH2, true));
 	}
 
 	@Test
 	void shouldFullMatchWildcardNoAllowed() {
-		Path subPath = Path.valueOf("*").append(Path.parse("partyA.access_conditions"));
+		Path subPath = Path.parse("partyA.access_conditions").prefixWithWildcard();
 		assertFalse(subPath.fullStartMatches(TEST_PATH2, false));
 	}
 
 	@Test
 	void shouldNotFullStartMatchWildcard() {
-		Path subPath = Path.valueOf("*").append(Path.parse("partyA.access_conditions.no_match"));
+		Path subPath = Path.parse("partyA.access_conditions.no_match").prefixWithWildcard();
 		assertFalse(subPath.fullStartMatches(TEST_PATH2, true));
 	}
 

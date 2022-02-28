@@ -67,6 +67,10 @@ public class Path {
         return new Path(list);
     }
 
+    public Path prefixWithWildcard() {
+        return Path.valueOf("*").append(this);
+    }
+
     /**
      * return true if the all the elements of this path are the start of the other path
      * matching only on the name

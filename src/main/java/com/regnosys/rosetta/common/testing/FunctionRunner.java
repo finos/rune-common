@@ -64,9 +64,17 @@ public class FunctionRunner {
             if (expectedOutputFile == null) {
                 return new FunctionRunnerResult(jsonNode, null, actualOutput, jsonActual, null);
             }
-            Object expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), getType(actualOutput));
-            String jsonExpected = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(expectedOutput);
 
+            Object expectedOutput;
+            String jsonExpected;
+            try {
+                expectedOutput = objectMapper.readValue(loadURL(expectedOutputFile), getType(actualOutput));
+                jsonExpected = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(expectedOutput);
+            } catch (Exception e) {
+                LOGGER.error("Error getting expected output " + executionDescriptor.getGroup() + ":" + executionDescriptor.getName(), e);
+                expectedOutput = null;
+                jsonExpected = "";
+            }
             return new FunctionRunnerResult(jsonNode, expectedOutput, actualOutput, jsonActual, jsonExpected);
         } else {
             Class<ExecutableFunction<INPUT, OUTPUT>> functionClass = loadExecutableFunctionClass(executionDescriptor.getExecutableFunctionClass());

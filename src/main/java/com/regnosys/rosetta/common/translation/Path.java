@@ -56,6 +56,8 @@ public class Path {
     }
 
     public PathElement getLastElement() {
+        if (elements.size() < 1)
+            return null;
         return elements.get(elements.size()-1);
     }
 

@@ -334,5 +334,4 @@
             <url>https://regnosys.jfrog.io/regnosys/libs-snapshot-local</url>
         </repository>
     </distributionManagement>
-
 </project>

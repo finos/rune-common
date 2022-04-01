@@ -186,8 +186,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                     clazzToReferencedObjectEntries.stream()
                             .map(Entry::getValue)
                             .forEach(referencedObject -> {
-                                LOGGER.debug("Setting resolved object [key={}, type={}, path={}]",
-                                        keyValue, referenceWithMeta.getValueType().getName(), path);
+                                LOGGER.debug("Setting resolved object [key={}, type={}, path={}, scope={}]",
+                                        keyValue, referenceWithMeta.getValueType().getName(), path, config.getScopeType());
                                 referenceWithMeta.setValue(referencedObject);
                             });
                 }

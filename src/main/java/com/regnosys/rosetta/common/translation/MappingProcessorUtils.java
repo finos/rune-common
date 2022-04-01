@@ -22,8 +22,19 @@ public class MappingProcessorUtils {
 		return mappedValue;
 	}
 
+	public static List<String> getValueListAndUpdateMappings(Path synonymPath, List<Mapping> mappings, RosettaPath rosettaPath) {
+		List<Mapping> mappingsFromSynonymPath = filterListMappings(mappings, synonymPath);
+		List<String> mappedValues = getNonNullMappedValueList(mappingsFromSynonymPath);
+		mappedValues.forEach(value -> mappingsFromSynonymPath.forEach(m -> updateMappingSuccess(m, rosettaPath)));
+		return mappedValues;
+	}
+
 	public static void setValueAndUpdateMappings(Path synonymPath, Consumer<String> setter, List<Mapping> mappings, RosettaPath rosettaPath) {
 		getValueAndUpdateMappings(synonymPath, mappings, rosettaPath).ifPresent(setter::accept);
+	}
+
+	public static void setValueListAndUpdateMappings(Path synonymPath, Consumer<String> setter, List<Mapping> mappings, RosettaPath rosettaPath) {
+		getValueListAndUpdateMappings(synonymPath, mappings, rosettaPath).forEach(setter::accept);
 	}
 
 	public static void setValueAndOptionallyUpdateMappings(Path synonymPath, Function<String, Boolean> func, List<Mapping> mappings, RosettaPath rosettaPath) {
@@ -41,10 +52,35 @@ public class MappingProcessorUtils {
 		});
 	}
 
+	public static List<Mapping> filterListMappings(List<Mapping> mappings, Path synonymPath) {
+		return mappings.stream()
+				.filter(m -> pathListEquals(synonymPath, m.getXmlPath()))
+				.collect(Collectors.toList());
+	}
+
 	public static List<Mapping> filterMappings(List<Mapping> mappings, Path synonymPath) {
 		return mappings.stream()
 				.filter(p -> synonymPath.nameIndexMatches(p.getXmlPath()))
 				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Compare parent path on both name and index, but only compare the leaf on name.
+	 */
+	private static boolean pathListEquals(Path path1, Path path2) {
+		if (path1.getElements().size() != path2.getElements().size()) {
+			return false;
+		}
+		String pathName1 = path1.getLastElement().getPathName();
+		String pathName2 = path2.getLastElement().getPathName();
+
+		if (path1.getElements().size() > 1) {
+			Path parentPath1 = path1.getParent();
+			Path parentPath2 = path2.getParent();
+			return parentPath1.nameIndexMatches(parentPath2) && pathName1.equals(pathName2);
+		} else {
+			return pathName1.equals(pathName2);
+		}
 	}
 
 	public static List<Mapping> filterMappings(List<Mapping> mappings, RosettaPath rosettaPath) {
@@ -79,6 +115,14 @@ public class MappingProcessorUtils {
 				.filter(Objects::nonNull)
 				.map(String::valueOf)
 				.findFirst();
+	}
+
+	public static List<String> getNonNullMappedValueList(List<Mapping> filteredMappings) {
+		return filteredMappings.stream()
+				.map(Mapping::getXmlValue)
+				.filter(Objects::nonNull)
+				.map(String::valueOf)
+				.collect(Collectors.toList());
 	}
 
 	public static Optional<String> getNonNullMappedValue(Path synonymPath, List<Mapping> mappings) {

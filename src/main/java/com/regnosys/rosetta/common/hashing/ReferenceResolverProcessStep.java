@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.of;
@@ -187,7 +188,8 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
                             .map(Entry::getValue)
                             .forEach(referencedObject -> {
                                 LOGGER.debug("Setting resolved object [key={}, type={}, path={}, scope={}]",
-                                        keyValue, referenceWithMeta.getValueType().getName(), path, config.getScopeType());
+                                        keyValue, referenceWithMeta.getValueType().getName(), path,
+                                        Optional.ofNullable(config).map(ReferenceConfig::getScopeType).orElse(null));
                                 referenceWithMeta.setValue(referencedObject);
                             });
                 }

@@ -2,10 +2,15 @@ package com.regnosys.rosetta.common.testing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 
-public class MappingCoverage {
+public class MappingCoverage implements Comparable<MappingCoverage> {
+
+    public static final String ENV = "env";
+    public static final String DOCUMENT_NAME = "document-name";
+    public static final String VERSION = "version";
 
     private final String ingestionEnvironment;
     private final Map<String, String> schema;
@@ -52,5 +57,14 @@ public class MappingCoverage {
                 ", schema=" + schema +
                 ", mappingCoverage=" + mappingCoverage +
                 '}';
+    }
+
+    @Override
+    public int compareTo(MappingCoverage other) {
+        return Comparator.comparing(MappingCoverage::getIngestionEnvironment)
+                .thenComparing(x -> x.getSchema().get(ENV))
+                .thenComparing(x -> x.getSchema().get(DOCUMENT_NAME))
+                .thenComparing(x -> x.getSchema().get(VERSION))
+                .compare(this, other);
     }
 }

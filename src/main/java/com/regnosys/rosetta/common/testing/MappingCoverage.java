@@ -65,6 +65,7 @@ public class MappingCoverage implements Comparable<MappingCoverage> {
                 .thenComparing(x -> x.getSchema().get(ENV))
                 .thenComparing(x -> x.getSchema().get(DOCUMENT_NAME))
                 .thenComparing(x -> x.getSchema().get(VERSION))
+                .thenComparing(MappingCoverage::getMappingCoverage)
                 .compare(this, other);
     }
 }

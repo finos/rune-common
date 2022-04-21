@@ -70,6 +70,7 @@ public class RosettaObjectMapper {
 				.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
 				.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 				.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+				.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
 				//The next three lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
 				//the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
 				.setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))

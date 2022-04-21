@@ -45,15 +45,6 @@ class MappingProcessorStepTest {
             Arrays.asList(BAR_10, BAR_3, BAR_1, BAR_11, BAR_4, BAR_12, BAR_6, FOO_2, BAR_7, FOO_1, BAR_2, BAR_9, BAR_8, BAR_5);
 
     @Test
-    void shouldSortByPathWithCashflowPayoutLast() {
-        List<MappingDelegate> mappingDelegates = new ArrayList<>(MAPPERS);
-        mappingDelegates.sort(MappingProcessorStep.MAPPING_DELEGATE_COMPARATOR);
-        // assert list order
-        assertThat(mappingDelegates,
-                contains(FOO_1, BAR_1, BAR_2, BAR_3, BAR_4, BAR_5, BAR_6, FOO_2, BAR_7, BAR_8, BAR_9, BAR_10, BAR_11, BAR_12));
-    }
-
-    @Test
     void shouldCompleteWithinExpectedTimeout() throws InterruptedException {
         ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
         MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService);

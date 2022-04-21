@@ -121,45 +121,18 @@ public class MappingProcessorStep implements PostProcessStep {
 
 	/**
 	 * Sort by model path so mapping processors are invoked in a consistent logical order.
-	 * If there are payouts, always process the cashflow payout after the other payouts because
-	 * third party cashflow payouts can breaks the Counterparty mappings if processed first.
-	 *
-	 * TODO: move this to the CDM.
 	 */
 	private static class PathComparator implements Comparator<MappingDelegate> {
-
-		private static final String CASHFLOW_PAYOUT_SUB_PATH = ".payout.cashflow";
-
 		@Override
 		public int compare(MappingDelegate o1, MappingDelegate o2) {
 			String path1 = o1.getModelPath().buildPath();
 			String path2 = o2.getModelPath().buildPath();
-
-			if (getPayoutSubPath(path1).equals(getPayoutSubPath(path2))) {
-				if (path1.contains(CASHFLOW_PAYOUT_SUB_PATH)) {
-					if (path2.contains(CASHFLOW_PAYOUT_SUB_PATH)) {
-						return path1.compareToIgnoreCase(path2);
-					}
-					return 1;
-				} else if (path2.contains(CASHFLOW_PAYOUT_SUB_PATH)) {
-					return -1;
-				}
-			}
 			return o1.getModelPath().compareTo(o2.getModelPath());
-		}
-
-		private Optional<String> getPayoutSubPath(String path) {
-			if (path.contains(".tradableProduct.product.contractualProduct.economicTerms.payout.")) {
-				return Optional.of(path.split("\\.payout\\.")[0]);
-			}
-			return Optional.empty();
 		}
 	}
 
 	// Sort by path, then if there's multiple mappers on the same path, sort by mapper name.
 	static final Comparator<MappingDelegate> MAPPING_DELEGATE_COMPARATOR = new PathComparator().thenComparing(p -> p.getClass().getName());
-
-
 
 	/**
 	 * Implements BuilderProcessor and delegates to the given MappingProcessor when the path matches.

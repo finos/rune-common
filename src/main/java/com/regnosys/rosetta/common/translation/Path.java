@@ -51,6 +51,12 @@ public class Path {
         return elements;
     }
 
+    public String[] getPathNames() {
+        return elements.stream()
+                .map(Path.PathElement::getPathName)
+                .toArray(String[]::new);
+    }
+
     public Path getParent() {
         return new Path(elements.subList(0, elements.size() - 1));
     }

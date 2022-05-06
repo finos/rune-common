@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit;
 
 public class RosettaDataValueObjectToString {
 
-    public String toString(Object object) {
+    public static String toValueString(Object object) {
         if (object instanceof ZonedDateTime) {
             ZonedDateTime zonedDateTime = (ZonedDateTime) object;
             return zonedDateTime.truncatedTo(ChronoUnit.SECONDS)

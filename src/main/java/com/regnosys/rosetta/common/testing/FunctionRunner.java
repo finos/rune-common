@@ -186,11 +186,9 @@ public class FunctionRunner {
     private Object[] getMethodArguments(Method method, JsonNode jsonNode) throws IOException, ClassNotFoundException {
         Type[] parameterTypes = method.getGenericParameterTypes();
         // single arg
-        if (!jsonNode.isArray() && parameterTypes.length == 1) {
+        if (!jsonNode.isArray() && parameterTypes.length == 1 && !isList(parameterTypes[0])) {
             Class<?> parameterType = this.classLoader.loadClass(parameterTypes[0].getTypeName());
-            return new Object[]{
-                    resolveReferences(objectMapper.treeToValue(jsonNode, parameterType))
-            };
+            return new Object[]{resolveReferences(objectMapper.treeToValue(jsonNode, parameterType))};
         } else {// multi args as array
             JsonNode[] jsonArrayNodes = Iterables.toArray(jsonNode, JsonNode.class);
             Object[] argsList = new Object[parameterTypes.length];
@@ -207,6 +205,11 @@ public class FunctionRunner {
             }
             return argsList;
         }
+    }
+
+    private boolean isList(Type parameterType) {
+        JavaType javaType =  objectMapper.getTypeFactory().constructType(parameterType);
+        return javaType.getRawClass().isAssignableFrom(List.class);
     }
 
     @SuppressWarnings("unchecked")

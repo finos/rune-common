@@ -19,7 +19,6 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, true);
     }
 
-    @VisibleForTesting
     public JsonReportDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
                                 URI descriptorPath,

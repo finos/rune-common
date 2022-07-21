@@ -18,6 +18,13 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, true);
     }
 
+    public JsonLookupDataLoader(ClassLoader classLoader,
+                                ObjectMapper rosettaObjectMapper,
+                                URI descriptorPath,
+                                List<String> descriptorFileNames, boolean loadInputFromFile) {
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, loadInputFromFile);
+    }
+
     @Override
     protected LookupDataSet loadInputFiles(LookupDataSet descriptor) {
         List<LookupDataItem> loadedData = descriptor.getData().stream()

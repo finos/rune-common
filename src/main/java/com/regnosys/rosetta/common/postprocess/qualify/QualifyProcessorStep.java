@@ -1,28 +1,27 @@
 package com.regnosys.rosetta.common.postprocess.qualify;
 
 import com.google.inject.Inject;
-import com.regnosys.rosetta.common.util.SimpleProcessor;
-import com.rosetta.lib.postprocess.PostProcessorReport;
+import com.regnosys.rosetta.common.util.SimpleBuilderProcessor;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.PostProcessStep;
-import com.rosetta.model.lib.process.Processor.Report;
-import com.rosetta.model.lib.qualify.Qualified;
 import com.rosetta.model.lib.qualify.QualifyFunctionFactory;
 import com.rosetta.model.lib.qualify.QualifyResult;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 public class QualifyProcessorStep implements PostProcessStep {
 	
-	@Inject QualifyFunctionFactory qualifyFunctionFactory;
-	
+	@Inject
+	QualifyFunctionFactory qualifyFunctionFactory;
+
+	@Inject
+	QualificationHandlerProvider qualificationHandlerProvider;
+
 	@Override
 	public Integer getPriority() {
 		return 2;
@@ -34,116 +33,76 @@ public class QualifyProcessorStep implements PostProcessStep {
 	}
 
 	@Override
-	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<? extends T> topClass,
-			T builder) {
+	public <T extends RosettaModelObject> QualificationReport runProcessStep(Class<? extends T> topClass, T instance) {
 		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
-		QualificationProcessReport report = new QualificationProcessReport(builder);
-		QualifiableFinder processor = new QualifiableFinder(report);
+		RosettaModelObjectBuilder builder = (RosettaModelObjectBuilder) instance;
+
+		List<QualificationResult> collectedResults = new ArrayList<>();
+		QualifyThenUpdateResultProcessor processor =
+				new QualifyThenUpdateResultProcessor(qualificationHandlerProvider.getQualificationHandlerMap(), collectedResults);
+		// check the top level object
 		processor.processRosetta(path, topClass, builder, null);
+		// check the rest
 		builder.process(path, processor);
-		return convertReport(report);
-	}
-	
-	private QualificationReport convertReport(QualificationProcessReport report) {
-		RosettaModelObject build = report.getResultObject().build();
-		Collection<QualificationResult> results = report.getResultQualifications();
-		return new QualificationReport(build, results);
+
+		return new QualificationReport(builder.build(), collectedResults);
 	}
 
-	static class QualificationProcessReport implements Report, PostProcessorReport {
+	private class QualifyThenUpdateResultProcessor extends SimpleBuilderProcessor {
 
-		private final List<QualificationResult> qualifications = new ArrayList<>();
-		private final RosettaModelObject resultObject;
+		private final Map<Class<?>, QualificationHandler<?, ?, ?>> handlerMap;
+		private final Set<Class<?>> rootTypes;
+		private final List<QualificationResult> collectedResults;
 
-		public QualificationProcessReport(RosettaModelObject resultObject) {
-			super();
-			this.resultObject = resultObject;
+		QualifyThenUpdateResultProcessor(Map<Class<?>, QualificationHandler<?, ?, ?>> handlerMap, List<QualificationResult> collectedResults) {
+			this.handlerMap = handlerMap;
+			this.rootTypes = handlerMap.keySet();
+			this.collectedResults = collectedResults;
 		}
 
 		@Override
-		public RosettaModelObject getResultObject() {
-			return resultObject;
-		}
-
-		public Collection<QualificationResult> getResultQualifications() {
-			return qualifications;
-		}
-	}
-	
-	class QualifiableFinder extends SimpleProcessor {
-		private final QualificationProcessReport report;
-
-		public QualifiableFinder(QualificationProcessReport report) {
-			this.report = report;
-		}
-
-		@Override
-		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
-				R instance, RosettaModelObject parent, AttributeMeta... metas) {
-			if (instance instanceof Qualified) {
-				Qualified qualified = (Qualified)instance;
-				QualificationFinder finder = new QualificationFinder();
-				finder.processQual(path, rosettaType, instance);
-				instance.process(path, finder);
-				QualificationFinder.QaulificationFinderReport finderReport = (QualificationFinder.QaulificationFinderReport)finder.report();
-				report.qualifications.addAll(finderReport.results);
-				for (QualificationResult result:finderReport.results) {
-					result.getUniqueSuccessQualifyResult().ifPresent(r->qualified.setQualification(r.getName()));
-				}
-			}
-			return true;
-		}
-
-		@Override
-		public Report report() {
-			return report;
-		}
-		
-	}
-	
-	class QualificationFinder extends SimpleProcessor {
-		
-		QaulificationFinderReport report = new QaulificationFinderReport();
-		
-		@Override
-		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
-				R instance, RosettaModelObject parent, AttributeMeta... metas) {
-			if (instance instanceof Qualified || instance==null) {
+		@SuppressWarnings("unchecked")
+		public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path,
+																	 Class<R> rosettaType,
+																	 RosettaModelObjectBuilder builder,
+																	 RosettaModelObjectBuilder parent,
+																	 AttributeMeta... metas) {
+			if (builder == null)
 				return false;
-			}
-			processQual(path, rosettaType, instance);
-			return true;
-		}
 
-		private <R extends RosettaModelObject> void processQual(RosettaPath path, Class<?> type, R builder) {
-			@SuppressWarnings("unchecked")
-			RosettaMetaData<R> metaData = (RosettaMetaData<R>) builder.metaData();
-			List<Function<? super R, QualifyResult>> qualFuncs = metaData.getQualifyFunctions(qualifyFunctionFactory);
-			if (qualFuncs.isEmpty()) return;
-			List<QualifyResult> allQualifyResults = new ArrayList<>();
-			Optional<QualifyResult> uniqueSuccessQualifyResult = null;
-			for (Function<? super R, QualifyResult> func:qualFuncs) {
-				@SuppressWarnings("unchecked")
-				R built = (R) builder.build();
-				QualifyResult qualResult = func.apply(built);
-				allQualifyResults.add(qualResult);
-				if (qualResult.isSuccess()) {
-					if (uniqueSuccessQualifyResult==null) uniqueSuccessQualifyResult = Optional.of(qualResult);
-					else uniqueSuccessQualifyResult = Optional.empty();
-				}
+			if (rootTypes.contains(builder.getType())) {
+				QualificationHandler<RosettaModelObject, R, RosettaModelObjectBuilder> handler =
+						(QualificationHandler<RosettaModelObject, R, RosettaModelObjectBuilder>) handlerMap.get(builder.getType());
+				RosettaModelObject qualifiableObject = handler.getQualifiableObject((R) builder);
+				QualificationResult result = qualify(handler.getQualifiableClass(), qualifiableObject);
+				collectedResults.add(result);
+				result.getUniqueSuccessQualifyResult().ifPresent(r->handler.setQualifier(builder, r.getName()));
 			}
-			if (uniqueSuccessQualifyResult==null) uniqueSuccessQualifyResult = Optional.empty();
-			QualificationResult q = new QualificationResult(Optional.of(path), type, uniqueSuccessQualifyResult , allQualifyResults);
-			report.results.add(q);
+			return true;
 		}
 
 		@Override
 		public Report report() {
-			return report;
+			return null;
 		}
-		
-		class QaulificationFinderReport implements Report {
-			List<QualificationResult> results = new ArrayList<>();
+
+		@SuppressWarnings("unchecked")
+		private <R extends RosettaModelObject> QualificationResult qualify(Class<R> type, R instance) {
+			RosettaMetaData<R> metaData = (RosettaMetaData<R>) instance.metaData();
+			List<Function<? super R, QualifyResult>> qualifyFunctions = metaData.getQualifyFunctions(qualifyFunctionFactory);
+			if (qualifyFunctions.isEmpty())
+				return null;
+
+			List<QualifyResult> allQualifyResults = new ArrayList<>();
+			QualifyResult uniqueSuccessQualifyResult = null;
+			for (Function<? super R, QualifyResult> func:qualifyFunctions) {
+				QualifyResult qualificationResult = func.apply(instance);
+				allQualifyResults.add(qualificationResult);
+				if (qualificationResult.isSuccess()) {
+					uniqueSuccessQualifyResult = qualificationResult;
+				}
+			}
+			return new QualificationResult(null, type, uniqueSuccessQualifyResult, allQualifyResults);
 		}
 	}
 }

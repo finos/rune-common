@@ -16,9 +16,11 @@ import java.util.function.Function;
 
 public class QualifyProcessorStep implements PostProcessStep {
 	
-	@Inject QualifyFunctionFactory qualifyFunctionFactory;
+	@Inject
+	QualifyFunctionFactory qualifyFunctionFactory;
 
-	@Inject QualificationConfigProvider qualificationConfigProvider;
+	@Inject
+	QualificationHandlerProvider qualificationHandlerProvider;
 
 	@Override
 	public Integer getPriority() {
@@ -36,21 +38,25 @@ public class QualifyProcessorStep implements PostProcessStep {
 		RosettaModelObjectBuilder builder = (RosettaModelObjectBuilder) instance;
 
 		List<QualificationResult> collectedResults = new ArrayList<>();
-		QualificationProcessor processor = new QualificationProcessor(qualificationConfigProvider.getQualificationConfig(), collectedResults);
+		QualifyThenUpdateResultProcessor processor =
+				new QualifyThenUpdateResultProcessor(qualificationHandlerProvider.getQualificationHandlerMap(), collectedResults);
+		// check the top level object
+		processor.processRosetta(path, topClass, builder, null);
+		// check the rest
 		builder.process(path, processor);
 
 		return new QualificationReport(builder.build(), collectedResults);
 	}
 
-	private class QualificationProcessor extends SimpleBuilderProcessor {
+	private class QualifyThenUpdateResultProcessor extends SimpleBuilderProcessor {
 
-		private final Map<Class<?>, QualificationConfig<?, ?, ?>> configMap;
-		private final List<QualificationResult> collectedResults;
+		private final Map<Class<?>, QualificationHandler<?, ?, ?>> handlerMap;
 		private final Set<Class<?>> rootTypes;
+		private final List<QualificationResult> collectedResults;
 
-		QualificationProcessor(Map<Class<?>, QualificationConfig<?, ?, ?>> configMap, List<QualificationResult> collectedResults) {
-			this.configMap = configMap;
-			this.rootTypes = configMap.keySet();
+		QualifyThenUpdateResultProcessor(Map<Class<?>, QualificationHandler<?, ?, ?>> handlerMap, List<QualificationResult> collectedResults) {
+			this.handlerMap = handlerMap;
+			this.rootTypes = handlerMap.keySet();
 			this.collectedResults = collectedResults;
 		}
 
@@ -65,12 +71,12 @@ public class QualifyProcessorStep implements PostProcessStep {
 				return false;
 
 			if (rootTypes.contains(builder.getType())) {
-				QualificationConfig<RosettaModelObject, R, RosettaModelObjectBuilder> typeConfig =
-						(QualificationConfig<RosettaModelObject, R, RosettaModelObjectBuilder>) configMap.get(builder.getType());
-				RosettaModelObject qualifiableObject = typeConfig.getQualifiableObject((R) builder);
-				QualificationResult result = qualify(typeConfig.getQualifiableClass(), qualifiableObject);
+				QualificationHandler<RosettaModelObject, R, RosettaModelObjectBuilder> handler =
+						(QualificationHandler<RosettaModelObject, R, RosettaModelObjectBuilder>) handlerMap.get(builder.getType());
+				RosettaModelObject qualifiableObject = handler.getQualifiableObject((R) builder);
+				QualificationResult result = qualify(handler.getQualifiableClass(), qualifiableObject);
 				collectedResults.add(result);
-				result.getUniqueSuccessQualifyResult().ifPresent(r->typeConfig.setQualifier(builder, r.getName()));
+				result.getUniqueSuccessQualifyResult().ifPresent(r->handler.setQualifier(builder, r.getName()));
 			}
 			return true;
 		}

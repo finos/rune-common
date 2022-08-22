@@ -9,14 +9,14 @@ import java.util.stream.Collectors;
 
 public class QualificationResult {
 
-    private final Optional<RosettaPath> path;
+    private final RosettaPath path;
     private final Class<?> qualifiedRosettaObjectType;
-    private final Optional<QualifyResult> uniqueSuccessQualifyResult;
+    private final QualifyResult uniqueSuccessQualifyResult;
     private final List<QualifyResult> allQualifyResults;
 
-    public QualificationResult(Optional<RosettaPath> path,
+    public QualificationResult(RosettaPath path,
                                Class<?> qualifiedRosettaObjectType,
-                               Optional<QualifyResult> uniqueSuccessQualifyResult,
+                               QualifyResult uniqueSuccessQualifyResult,
                                List<QualifyResult> allQualifyResults) {
         this.path = path;
         this.qualifiedRosettaObjectType = qualifiedRosettaObjectType;
@@ -25,11 +25,11 @@ public class QualificationResult {
     }
 
     public Optional<RosettaPath> getPath() {
-        return path;
+        return Optional.ofNullable(path);
     }
 
     public String getBuildPath() {
-        return path.map(p -> p.buildPath()).orElse("");
+        return getPath().map(RosettaPath::buildPath).orElse("");
     }
 
     public Class<?> getQualifiedRosettaObjectType() {
@@ -40,11 +40,11 @@ public class QualificationResult {
      * @return unique successful qualify result if present, otherwise (if unmatched or multiple matches) returns empty.
      */
     public Optional<QualifyResult> getUniqueSuccessQualifyResult() {
-        return uniqueSuccessQualifyResult;
+        return Optional.ofNullable(uniqueSuccessQualifyResult);
     }
 
     public boolean isSuccess() {
-        return uniqueSuccessQualifyResult.isPresent();
+        return getUniqueSuccessQualifyResult().isPresent();
     }
 
     /**
@@ -56,10 +56,10 @@ public class QualificationResult {
 
     @Override
     public String toString() {
-        if(uniqueSuccessQualifyResult.isPresent()) {
+        if(getUniqueSuccessQualifyResult().isPresent()) {
             return String.format("QualificationResult { SUCCESS on [%s:%s] }",
                     qualifiedRosettaObjectType.getSimpleName(),
-                    uniqueSuccessQualifyResult.get().getName());
+                    getUniqueSuccessQualifyResult().get().getName());
         }
         else {
             // Log multiple matches (if there are any)

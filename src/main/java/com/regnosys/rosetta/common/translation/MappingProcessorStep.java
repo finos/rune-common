@@ -158,7 +158,7 @@ public class MappingProcessorStep implements PostProcessStep {
 				RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... meta) {
-			if (matchesProcessorPathForObject(currentPath.toIndexless(), rosettaType, builder)) {
+			if (matchesProcessorPathForObject(currentPath, rosettaType, builder)) {
 				synonymPaths.forEach(p -> delegate.map(p, Optional.ofNullable(builder), parent));
 			}
 			return true;
@@ -211,8 +211,16 @@ public class MappingProcessorStep implements PostProcessStep {
 		private boolean matchesProcessorPathForList(RosettaPath currentPath, Class<?> rosettaType) {
 			return ReferenceWithMeta.class.isAssignableFrom(rosettaType) || FieldWithMeta.class.isAssignableFrom(rosettaType) ?
 					// so the parse handlers match on the list rather than each list item
-					currentPath.equals(modelPath.getParent()) :
+					currentPath.equals(removeLastElementIndex(modelPath.getParent())) :
 					currentPath.equals(modelPath);
+		}
+
+		private RosettaPath removeLastElementIndex(RosettaPath modelPath) {
+			RosettaPath parent = modelPath.getParent();
+			if (parent == null) {
+				return modelPath;
+			}
+			return parent.newSubPath(modelPath.getElement().getPath());
 		}
 	}
 }

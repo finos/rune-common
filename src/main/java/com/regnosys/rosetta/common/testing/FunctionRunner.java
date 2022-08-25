@@ -52,12 +52,17 @@ public class FunctionRunner {
         LOGGER.info("Executing " + executionDescriptor.getGroup() + ":" + executionDescriptor.getName());
 
         String inputFile = executionDescriptor.getInputFile();
+        String inputContent = executionDescriptor.getInputContent();
         String expectedOutputFile = executionDescriptor.getExpectedOutputFile();
         LOGGER.info("Output File:  " + expectedOutputFile);
-
+        JsonNode jsonNode;
         if (executionDescriptor.isNativeFunction()) {
-            JsonNode jsonNode = objectMapper.readTree(loadURL(inputFile));
 
+            jsonNode = objectMapper.readTree(loadURL(inputFile));
+
+            if (null== inputFile && null!= inputContent){
+                jsonNode = objectMapper.readTree(inputContent);
+            }
             Object actualOutput = postProcess(runNativeFunction(jsonNode, executionDescriptor.getExecutableFunctionClass()));
             String jsonActual = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(actualOutput);
 

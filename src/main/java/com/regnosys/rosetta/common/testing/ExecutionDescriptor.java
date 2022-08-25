@@ -15,6 +15,7 @@ public class ExecutionDescriptor {
     private String description;
     private String markDownFile;
     private String inputFile;
+    private String inputContent;
     private String expectedOutputFile;
     private String executableFunctionClass;
     private boolean nativeFunction;
@@ -58,6 +59,9 @@ public class ExecutionDescriptor {
 
     public String getInputFile() {
         return inputFile;
+    }
+    public String getInputContent() {
+        return inputContent;
     }
 
     public String getExpectedOutputFile() {

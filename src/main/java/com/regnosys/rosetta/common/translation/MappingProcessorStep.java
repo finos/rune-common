@@ -14,6 +14,7 @@ import com.rosetta.model.lib.process.PostProcessStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -139,6 +140,8 @@ public class MappingProcessorStep implements PostProcessStep {
 	 */
 	private static class MappingBuilderProcessor implements BuilderProcessor {
 
+		private static List<Class<?>> BASIC_TYPES = Arrays.asList(String.class, Boolean.class, Date.class, Integer.class, BigDecimal.class);
+
 		private final MappingDelegate delegate;
 		private final RosettaPath modelPath;
 		private final List<Path> synonymPaths;
@@ -155,7 +158,7 @@ public class MappingProcessorStep implements PostProcessStep {
 				RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... meta) {
-			if (currentPath.equals(modelPath)) {
+			if (matchesProcessorPathForObject(currentPath, rosettaType, builder)) {
 				synonymPaths.forEach(p -> delegate.map(p, Optional.ofNullable(builder), parent));
 			}
 			return true;
@@ -167,7 +170,7 @@ public class MappingProcessorStep implements PostProcessStep {
 				List<? extends RosettaModelObjectBuilder> builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... meta) {
-			if (matchesProcessorPathForMultipleCardinality(currentPath, rosettaType)) {
+			if (matchesProcessorPathForList(currentPath, rosettaType)) {
 				synonymPaths.forEach(p -> delegate.map(p, Optional.ofNullable(builder).orElse(Collections.emptyList()), parent));
 			}
 			return true;
@@ -192,11 +195,32 @@ public class MappingProcessorStep implements PostProcessStep {
 			return null;
 		}
 
-		private boolean matchesProcessorPathForMultipleCardinality(RosettaPath currentPath, Class<?> rosettaType) {
-			return ReferenceWithMeta.class.isAssignableFrom(rosettaType) || FieldWithMeta.class.isAssignableFrom(rosettaType) ?
-					// so the parse handlers match on the list rather than each list item
+		private boolean matchesProcessorPathForObject(RosettaPath currentPath, Class<?> rosettaType, RosettaModelObjectBuilder builder) {
+			return isFieldWithMetaBasicType(rosettaType, builder) ?
+					// so the mapper is run on the attribute type (e.g. FieldWithMeta) rather than the basic type
 					currentPath.equals(modelPath.getParent()) :
 					currentPath.equals(modelPath);
+		}
+
+		private boolean isFieldWithMetaBasicType(Class<?> rosettaType, RosettaModelObjectBuilder builder) {
+			return builder != null
+					&& FieldWithMeta.class.isAssignableFrom(rosettaType)
+					&& BASIC_TYPES.stream().anyMatch(basicType -> basicType.isAssignableFrom(((FieldWithMeta) builder).getValueType()));
+		}
+
+		private boolean matchesProcessorPathForList(RosettaPath currentPath, Class<?> rosettaType) {
+			return ReferenceWithMeta.class.isAssignableFrom(rosettaType) || FieldWithMeta.class.isAssignableFrom(rosettaType) ?
+					// so the parse handlers match on the list rather than each list item
+					currentPath.equals(removeLastElementIndex(modelPath.getParent())) :
+					currentPath.equals(modelPath);
+		}
+
+		private RosettaPath removeLastElementIndex(RosettaPath modelPath) {
+			RosettaPath parent = modelPath.getParent();
+			if (parent == null) {
+				return modelPath;
+			}
+			return parent.newSubPath(modelPath.getElement().getPath());
 		}
 	}
 }

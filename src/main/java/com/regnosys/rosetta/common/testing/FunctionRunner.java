@@ -58,11 +58,14 @@ public class FunctionRunner {
         JsonNode jsonNode;
         if (executionDescriptor.isNativeFunction()) {
 
-            jsonNode = objectMapper.readTree(loadURL(inputFile));
-
-            if (null== inputFile && null!= inputContent){
+            if (null== inputFile){
                 jsonNode = objectMapper.readTree(inputContent);
             }
+            else {
+                jsonNode = objectMapper.readTree(loadURL(inputFile));
+            }
+
+
             Object actualOutput = postProcess(runNativeFunction(jsonNode, executionDescriptor.getExecutableFunctionClass()));
             String jsonActual = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(actualOutput);
 
@@ -85,7 +88,14 @@ public class FunctionRunner {
             Class<ExecutableFunction<INPUT, OUTPUT>> functionClass = loadExecutableFunctionClass(executionDescriptor.getExecutableFunctionClass());
             ExecutableFunction<INPUT, OUTPUT> instance = instanceLoader.createInstance(functionClass);
 
-            INPUT input = objectMapper.readValue(loadURL(inputFile), instance.getInputType());
+            INPUT input;
+
+            if (null== inputFile){
+                input = objectMapper.readValue(inputContent, instance.getInputType());
+            }
+            else {
+                input = objectMapper.readValue(loadURL(inputFile), instance.getInputType());
+            }
             OUTPUT actualOutput = postProcess(instance.execute(input));
 
             String jsonActual = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(actualOutput);

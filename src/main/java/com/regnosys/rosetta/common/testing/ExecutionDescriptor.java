@@ -17,6 +17,14 @@ public class ExecutionDescriptor {
     private String inputFile;
     private String inputContent;
     private String expectedOutputFile;
+
+    public ExecutionDescriptor(String name, String inputContent, String executableFunctionClass) {
+        this.name = name;
+        this.inputContent = inputContent;
+        this.executableFunctionClass = executableFunctionClass;
+        this.nativeFunction = true;
+    }
+
     private String executableFunctionClass;
     private boolean nativeFunction;
 

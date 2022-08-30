@@ -68,6 +68,7 @@ public class ExecutionDescriptor {
     public String getInputFile() {
         return inputFile;
     }
+
     public String getInputContent() {
         return inputContent;
     }

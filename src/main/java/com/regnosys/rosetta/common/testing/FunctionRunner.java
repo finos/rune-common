@@ -88,14 +88,7 @@ public class FunctionRunner {
             Class<ExecutableFunction<INPUT, OUTPUT>> functionClass = loadExecutableFunctionClass(executionDescriptor.getExecutableFunctionClass());
             ExecutableFunction<INPUT, OUTPUT> instance = instanceLoader.createInstance(functionClass);
 
-            INPUT input;
-
-            if (null== inputFile){
-                input = objectMapper.readValue(inputContent, instance.getInputType());
-            }
-            else {
-                input = objectMapper.readValue(loadURL(inputFile), instance.getInputType());
-            }
+            INPUT input = objectMapper.readValue(loadURL(inputFile), instance.getInputType());
             OUTPUT actualOutput = postProcess(instance.execute(input));
 
             String jsonActual = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(actualOutput);

@@ -23,6 +23,7 @@ import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -115,16 +116,39 @@ public class FunctionRunner {
     }
 
     private <OUTPUT> OUTPUT postProcess(OUTPUT actualOutput) {
+
+        List<Object> parsedOutputItems = new ArrayList<>();
+
         if (actualOutput instanceof RosettaModelObject) {
-            PostProcessor postProcessor = instanceLoader.createInstance(PostProcessor.class);
-            RosettaModelObject funcModelOutput = (RosettaModelObject) actualOutput;
-            RosettaModelObjectBuilder instance = funcModelOutput.toBuilder();
-            instance.prune();
-            RosettaModelObjectBuilder postProcessedBuilder = postProcessor.postProcess(funcModelOutput.getType(), instance);
-            RosettaModelObject postProcessed = postProcessedBuilder.build();
-            return (OUTPUT) postProcessed;
+            RosettaModelObject postProcessed = processedOutput((RosettaModelObject) actualOutput);
+            parsedOutputItems.add(postProcessed);
+            return (OUTPUT) parsedOutputItems;
         }
-        return actualOutput;
+        else if (actualOutput instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Object> functionOutputItems = (List<Object>) actualOutput;
+            for (Object functionOutputItem : functionOutputItems) {
+                if (functionOutputItem instanceof RosettaModelObject) {
+                    RosettaModelObject postProcessed = processedOutput((RosettaModelObject) functionOutputItem);
+                    parsedOutputItems.add(postProcessed);
+                }
+                else{
+                    parsedOutputItems.add(functionOutputItem);
+                }
+            }
+            return (OUTPUT) parsedOutputItems;
+
+        }
+        parsedOutputItems.add(actualOutput);
+        return (OUTPUT) parsedOutputItems;
+    }
+
+    private RosettaModelObject processedOutput(RosettaModelObject funcModelOutput){
+        PostProcessor postProcessor = instanceLoader.createInstance(PostProcessor.class);
+        RosettaModelObjectBuilder instance = funcModelOutput.toBuilder();
+        instance.prune();
+        RosettaModelObjectBuilder postProcessedBuilder = postProcessor.postProcess(funcModelOutput.getType(), instance);
+        return postProcessedBuilder.build();
     }
 
     private <INPUT> INPUT resolveReferences(INPUT input) {

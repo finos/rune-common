@@ -5,8 +5,6 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.meta.FieldWithMeta;
-import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderProcessor;
@@ -14,14 +12,8 @@ import com.rosetta.model.lib.process.PostProcessStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 @SuppressWarnings("unused") // Used in rosetta-translate
 public class MappingProcessorStep implements PostProcessStep {
@@ -90,7 +82,7 @@ public class MappingProcessorStep implements PostProcessStep {
 			this.context.getMappingErrors().add("Timeout running mapping processors");
 		}
 
-		LOGGER.info("Mappers completed in {}", stopwatch.stop().toString());
+		LOGGER.info("Mappers completed in {}", stopwatch.stop());
 
 		LOGGER.debug("Shutdown mapper thread pool");
 		executor.shutdown();
@@ -112,7 +104,7 @@ public class MappingProcessorStep implements PostProcessStep {
 
 	private void awaitCompletion(List<CompletableFuture<?>> invokedTasks) {
 		try {
-			CompletableFuture.allOf(invokedTasks.toArray(new CompletableFuture[invokedTasks.size()])).get();
+			CompletableFuture.allOf(invokedTasks.toArray(new CompletableFuture[0])).get();
 		} catch (InterruptedException e) {
 			LOGGER.debug("Interrupt during mapping invokedTasks", e);
 		} catch (ExecutionException e) {
@@ -140,8 +132,6 @@ public class MappingProcessorStep implements PostProcessStep {
 	 */
 	private static class MappingBuilderProcessor implements BuilderProcessor {
 
-		private static List<Class<?>> BASIC_TYPES = Arrays.asList(String.class, Boolean.class, Date.class, Integer.class, BigDecimal.class);
-
 		private final MappingDelegate delegate;
 		private final RosettaPath modelPath;
 		private final List<Path> synonymPaths;
@@ -158,7 +148,7 @@ public class MappingProcessorStep implements PostProcessStep {
 				RosettaModelObjectBuilder builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... meta) {
-			if (matchesProcessorPathForObject(currentPath, rosettaType, builder)) {
+			if (currentPath.equals(modelPath)) {
 				synonymPaths.forEach(p -> delegate.map(p, Optional.ofNullable(builder), parent));
 			}
 			return true;
@@ -170,7 +160,7 @@ public class MappingProcessorStep implements PostProcessStep {
 				List<? extends RosettaModelObjectBuilder> builder,
 				RosettaModelObjectBuilder parent,
 				AttributeMeta... meta) {
-			if (matchesProcessorPathForList(currentPath, rosettaType)) {
+			if (currentPath.equals(modelPath)) {
 				synonymPaths.forEach(p -> delegate.map(p, Optional.ofNullable(builder).orElse(Collections.emptyList()), parent));
 			}
 			return true;
@@ -193,34 +183,6 @@ public class MappingProcessorStep implements PostProcessStep {
 		@Override
 		public BuilderProcessor.Report report() {
 			return null;
-		}
-
-		private boolean matchesProcessorPathForObject(RosettaPath currentPath, Class<?> rosettaType, RosettaModelObjectBuilder builder) {
-			return isFieldWithMetaBasicType(rosettaType, builder) ?
-					// so the mapper is run on the attribute type (e.g. FieldWithMeta) rather than the basic type
-					currentPath.equals(modelPath.getParent()) :
-					currentPath.equals(modelPath);
-		}
-
-		private boolean isFieldWithMetaBasicType(Class<?> rosettaType, RosettaModelObjectBuilder builder) {
-			return builder != null
-					&& FieldWithMeta.class.isAssignableFrom(rosettaType)
-					&& BASIC_TYPES.stream().anyMatch(basicType -> basicType.isAssignableFrom(((FieldWithMeta) builder).getValueType()));
-		}
-
-		private boolean matchesProcessorPathForList(RosettaPath currentPath, Class<?> rosettaType) {
-			return ReferenceWithMeta.class.isAssignableFrom(rosettaType) || FieldWithMeta.class.isAssignableFrom(rosettaType) ?
-					// so the parse handlers match on the list rather than each list item
-					currentPath.equals(removeLastElementIndex(modelPath.getParent())) :
-					currentPath.equals(modelPath);
-		}
-
-		private RosettaPath removeLastElementIndex(RosettaPath modelPath) {
-			RosettaPath parent = modelPath.getParent();
-			if (parent == null) {
-				return modelPath;
-			}
-			return parent.newSubPath(modelPath.getElement().getPath());
 		}
 	}
 }

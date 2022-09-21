@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.common.util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +70,10 @@ public class ClassPathUtils {
                 .filter(p -> !excludeRegex.isPresent() || !p.getFileName().toString().matches(excludeRegex.get()))
                 .collect(Collectors.toList());
     }
+    
+    public static Stream<Path> loadFromClasspath(String path) {
+        return loadFromClasspath(path, ClassPathUtils.class.getClassLoader());
+    }
 
     public static Stream<Path> loadFromClasspath(String path, ClassLoader classLoader) {
         List<Path> paths = new ArrayList<>();
@@ -88,6 +92,14 @@ public class ClassPathUtils {
             throw new RuntimeException(e);
         }
         return paths.stream();
+    }
+    
+    public static Path loadSingleFromClasspath(String path) {
+        return loadSingleFromClasspath(path, ClassPathUtils.class.getClassLoader());
+    }
+    
+    public static Path loadSingleFromClasspath(String path, ClassLoader classLoader) {
+        return toPath(classLoader.getResource(path));
     }
 
     private static List<Path> pathsExist(List<Path> modelPaths) {

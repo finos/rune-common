@@ -99,7 +99,19 @@ public class ClassPathUtils {
     }
     
     public static Path loadSingleFromClasspath(String path, ClassLoader classLoader) {
-        return toPath(classLoader.getResource(path));
+    	try {
+	    	URL resource = classLoader.getResource(path);
+			if (resource.toURI().getScheme().equals("jar")) {
+	            try {
+	                FileSystems.getFileSystem(resource.toURI());
+	            } catch (FileSystemNotFoundException e) {
+	                FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap());
+	            }
+	        }
+	        return toPath(resource);
+    	} catch (URISyntaxException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static List<Path> pathsExist(List<Path> modelPaths) {

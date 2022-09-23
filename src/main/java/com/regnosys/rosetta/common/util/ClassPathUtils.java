@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
@@ -48,22 +47,6 @@ public class ClassPathUtils {
         return ClassPathUtils.findPathsFromClassPath(ImmutableList.of("model"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader());
     }
 
-    public static Path toPath(URL resource) {
-        try {
-            return Paths.get(resource.toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Error converting resource url to path " + resource);
-        }
-    }
-
-    public static URL toUrl(Path path) {
-        try {
-            return path.toUri().toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Error converting resource path to url " + path);
-        }
-    }
-
     public static List<Path> expandPaths(List<Path> paths, String includeRegex, Optional<String> excludeRegex) {
         return paths.stream().flatMap(ClassPathUtils::listFiles)
                 .filter(p -> p.getFileName().toString().matches(includeRegex))
@@ -86,7 +69,7 @@ public class ClassPathUtils {
                         FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap());
                     }
                 }
-                paths.add(toPath(resource));
+                paths.add(UrlUtils.toPath(resource));
             }
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
@@ -108,7 +91,7 @@ public class ClassPathUtils {
 	                FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap());
 	            }
 	        }
-	        return toPath(resource);
+	        return UrlUtils.toPath(resource);
     	} catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
         }

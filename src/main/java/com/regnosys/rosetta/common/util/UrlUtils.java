@@ -16,7 +16,7 @@ import java.nio.file.Paths;
 import org.apache.commons.io.FilenameUtils;
 
 public class UrlUtils {
-	private static Charset CHARSET = StandardCharsets.UTF_8;
+	private static final Charset CHARSET = StandardCharsets.UTF_8;
 	
 	public static Reader openURL(URL url) throws IOException {
 		Reader reader = new InputStreamReader(url.openStream(), CHARSET);
@@ -41,6 +41,15 @@ public class UrlUtils {
 			return uri.resolve(".").toURL();
 		} catch (MalformedURLException | URISyntaxException e) {
 			throw new RuntimeException("Error calculating parent of URL " + url);
+		}
+		
+	}
+	
+	public static URL resolve(URL url, String child) {
+		try {
+			return new URL(url + "/" + child);
+		} catch (MalformedURLException e) {
+			throw new RuntimeException("Error resolving child " + child + " of URL " + url);
 		}
 		
 	}

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
 
-import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,14 +14,14 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
 
     public JsonReportDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
-                                URI descriptorPath,
+                                URL descriptorPath,
                                 List<String> descriptorFileNames) {
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, true);
     }
 
     public JsonReportDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
-                                URI descriptorPath,
+                                URL descriptorPath,
                                 List<String> descriptorFileNames,
                                 boolean loadInputFromFile) {
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, loadInputFromFile);

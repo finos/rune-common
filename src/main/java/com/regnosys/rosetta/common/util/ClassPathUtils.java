@@ -47,11 +47,19 @@ public class ClassPathUtils {
         return ClassPathUtils.findPathsFromClassPath(ImmutableList.of("model"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader());
     }
 
-    public static List<Path> expandPaths(List<Path> paths, String includeRegex, Optional<String> excludeRegex) {
+    public static List<Path> expandPaths(Collection<Path> paths, String includeRegex, Optional<String> excludeRegex) {
         return paths.stream().flatMap(ClassPathUtils::listFiles)
                 .filter(p -> p.getFileName().toString().matches(includeRegex))
                 .filter(p -> !excludeRegex.isPresent() || !p.getFileName().toString().matches(excludeRegex.get()))
                 .collect(Collectors.toList());
+    }
+    
+    public static URL getResource(Path path) {
+        return getResource(path, ClassPathUtils.class.getClassLoader());
+    }
+    
+    public static URL getResource(Path path, ClassLoader classLoader) {
+        return classLoader.getResource(path.toString().replace("\\", "/"));
     }
     
     public static Stream<Path> loadFromClasspath(String path) {
@@ -107,7 +115,7 @@ public class ClassPathUtils {
 
     private static Stream<Path> listFiles(Path path) {
         try {
-            return Files.walk(path);
+            return Files.walk(path.toAbsolutePath());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

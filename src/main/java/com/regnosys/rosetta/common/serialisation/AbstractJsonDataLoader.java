@@ -1,13 +1,9 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.util.UrlUtils;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
-import java.net.URI;
+import java.io.*;
 import java.net.URL;
 import java.util.Collection;
 import java.util.List;
@@ -18,7 +14,7 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
 
     protected final ClassLoader classLoader;
     protected final ObjectMapper rosettaObjectMapper;
-    protected final URI descriptorPath;
+    protected final URL descriptorPath;
     protected final Class<T> loadType;
 
     private final boolean loadInputFromFile;
@@ -26,7 +22,7 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
 
     protected AbstractJsonDataLoader(ClassLoader classLoader,
                                      ObjectMapper rosettaObjectMapper,
-                                     URI descriptorPath,
+                                     URL descriptorPath,
                                      List<String> descriptorFileNames,
                                      Class<T> loadType, boolean loadInputFromFile) {
         this.classLoader = classLoader;
@@ -41,8 +37,7 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
     public List<T> load() {
         return descriptorFileNames.stream()
                 .map(this::resolve)
-                .map(this::toURL)
-                .map(this::openStream)
+                .map(this::openURL)
                 .filter(Optional::isPresent)
                 .map(descriptorStream -> readTypeList(loadType, rosettaObjectMapper, descriptorStream.get()))
                 .flatMap(Collection::stream)
@@ -50,8 +45,8 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
                 .collect(Collectors.toList());
     }
 
-    public URI resolve(String d) {
-        return URI.create(descriptorPath.toString() + d);
+    public URL resolve(String d) {
+    	return UrlUtils.resolve(descriptorPath, d);
     }
 
     protected abstract T loadInputFiles(T descriptor);
@@ -64,29 +59,21 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
         }
     }
 
-    protected <U> U readType(Class<U> type, ObjectMapper rosettaObjectMapper, URI uri) {
+    protected <U> U readType(Class<U> type, ObjectMapper rosettaObjectMapper, URL url) {
         try {
-            return rosettaObjectMapper.readValue(uri.toURL(), type);
+            return rosettaObjectMapper.readValue(UrlUtils.openURL(url), type);
         } catch (IOException e) {
-            throw new RuntimeException(uri + " cannot be serialised to " + type, e);
+            throw new RuntimeException(url + " cannot be serialised to " + type, e);
         }
     }
 
-    protected Optional<InputStream> openStream(URL descriptorUrl) {
+    protected Optional<Reader> openURL(URL descriptorUrl) {
         try {
-            return Optional.of(descriptorUrl.openStream());
+            return Optional.of(UrlUtils.openURL(descriptorUrl));
         } catch (FileNotFoundException e) {
             return Optional.empty();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        }
-    }
-
-    protected URL toURL(URI uri) {
-        try {
-            return uri.toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -98,11 +85,11 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
         }
     }
 
-    private  <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, InputStream inputStream) {
+    private  <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, Reader input) {
         try {
-            return rosettaObjectMapper.readValue(inputStream, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
+            return rosettaObjectMapper.readValue(input, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
         } catch (IOException e) {
-            throw new RuntimeException(inputStream + " cannot be serialised to list of " + type, e);
+            throw new RuntimeException(input + " cannot be serialised to list of " + type, e);
         }
     }
 

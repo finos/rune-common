@@ -115,7 +115,7 @@ public class ClassPathUtils {
 
     private static Stream<Path> listFiles(Path path) {
         try {
-            return Files.walk(path.toAbsolutePath());
+            return Files.walk(path);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

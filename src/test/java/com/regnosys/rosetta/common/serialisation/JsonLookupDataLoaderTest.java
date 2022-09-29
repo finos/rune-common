@@ -5,6 +5,7 @@ import com.regnosys.rosetta.common.serialisation.lookup.JsonLookupDataLoader;
 import com.regnosys.rosetta.common.serialisation.lookup.LookupDataSet;
 import org.junit.jupiter.api.Test;
 
+import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -17,8 +18,8 @@ class JsonLookupDataLoaderTest {
     private ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
-    void lookupsLoaded() {
-        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/regs/test-reg-lookups").toUri(), DESCRIPTOR_FILE_NAMES).load();
+    void lookupsLoaded() throws MalformedURLException {
+        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/regs/test-reg-lookups").toUri().toURL(), DESCRIPTOR_FILE_NAMES).load();
         assertEquals(lookupDataSets.size(), 2);
         assertEquals(lookupDataSets.get(0).getName(), "IsExecutingEntityInvestmentFirm");
         assertEquals(lookupDataSets.get(0).getData().size(), 1);
@@ -27,14 +28,14 @@ class JsonLookupDataLoaderTest {
     }
 
     @Test
-    void descriptorPathDoesNotExist() {
-        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("not-found").toUri(), DESCRIPTOR_FILE_NAMES).load();
+    void descriptorPathDoesNotExist() throws MalformedURLException {
+        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("not-found").toUri().toURL(), DESCRIPTOR_FILE_NAMES).load();
         assertEquals(lookupDataSets.size(), 0);
     }
 
     @Test
-    void descriptorPathDoesNotDoesNotContainDescriptorFile() {
-        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/test-workspaces").toUri(), DESCRIPTOR_FILE_NAMES).load();
+    void descriptorPathDoesNotDoesNotContainDescriptorFile() throws MalformedURLException {
+        List<LookupDataSet> lookupDataSets = new JsonLookupDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/test-workspaces").toUri().toURL(), DESCRIPTOR_FILE_NAMES).load();
         assertEquals(lookupDataSets.size(), 0);
     }
 

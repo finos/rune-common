@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.regnosys.rosetta.common.serialisation.reportdata.*;
 import org.junit.jupiter.api.Test;
 
+import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -19,9 +20,9 @@ class JsonReportDataLoaderTest {
     private ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
-    void lookupsLoaded() {
+    void lookupsLoaded() throws MalformedURLException {
         List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper,
-                Paths.get("src/test/resources/regs/test-use-case-load").toUri(), DESCRIPTOR_FILE_NAMES).load();
+                Paths.get("src/test/resources/regs/test-use-case-load").toUri().toURL(), DESCRIPTOR_FILE_NAMES).load();
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
 
@@ -39,9 +40,9 @@ class JsonReportDataLoaderTest {
     }
 
     @Test
-    void lookupsLoadedExpected() {
+    void lookupsLoadedExpected() throws MalformedURLException {
         List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper,
-                Paths.get("src/test/resources/regs/test-use-case-load-expected").toUri(), DESCRIPTOR_FILE_NAMES).load();
+                Paths.get("src/test/resources/regs/test-use-case-load-expected").toUri().toURL(), DESCRIPTOR_FILE_NAMES).load();
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
 
@@ -64,14 +65,14 @@ class JsonReportDataLoaderTest {
     }
 
     @Test
-    void descriptorPathDoesNotExist() {
-        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("not-found").toUri(), DESCRIPTOR_FILE_NAMES).load();
+    void descriptorPathDoesNotExist() throws MalformedURLException {
+        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("not-found").toUri().toURL(), DESCRIPTOR_FILE_NAMES).load();
         assertEquals(reportDataSets.size(), 0);
     }
 
     @Test
-    void descriptorPathDoesNotDoesNotContainDescriptorFile() {
-        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/test-workspaces").toUri(), DESCRIPTOR_FILE_NAMES).load();
+    void descriptorPathDoesNotDoesNotContainDescriptorFile() throws MalformedURLException {
+        List<ReportDataSet> reportDataSets = new JsonReportDataLoader(this.getClass().getClassLoader(), rosettaObjectMapper, Paths.get("src/test/resources/test-workspaces").toUri().toURL(), DESCRIPTOR_FILE_NAMES).load();
         assertEquals(reportDataSets.size(), 0);
     }
 

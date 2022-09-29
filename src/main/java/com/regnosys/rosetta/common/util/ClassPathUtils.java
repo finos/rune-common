@@ -1,13 +1,12 @@
 package com.regnosys.rosetta.common.util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
@@ -48,27 +47,23 @@ public class ClassPathUtils {
         return ClassPathUtils.findPathsFromClassPath(ImmutableList.of("model"), ".*\\.rosetta", Optional.empty(), ClassPathUtils.class.getClassLoader());
     }
 
-    public static Path toPath(URL resource) {
-        try {
-            return Paths.get(resource.toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Error converting resource url to path " + resource);
-        }
-    }
-
-    public static URL toUrl(Path path) {
-        try {
-            return path.toUri().toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Error converting resource path to url " + path);
-        }
-    }
-
-    public static List<Path> expandPaths(List<Path> paths, String includeRegex, Optional<String> excludeRegex) {
+    public static List<Path> expandPaths(Collection<Path> paths, String includeRegex, Optional<String> excludeRegex) {
         return paths.stream().flatMap(ClassPathUtils::listFiles)
                 .filter(p -> p.getFileName().toString().matches(includeRegex))
                 .filter(p -> !excludeRegex.isPresent() || !p.getFileName().toString().matches(excludeRegex.get()))
                 .collect(Collectors.toList());
+    }
+    
+    public static URL getResource(Path path) {
+        return getResource(path, ClassPathUtils.class.getClassLoader());
+    }
+    
+    public static URL getResource(Path path, ClassLoader classLoader) {
+        return classLoader.getResource(path.toString().replace("\\", "/"));
+    }
+    
+    public static Stream<Path> loadFromClasspath(String path) {
+        return loadFromClasspath(path, ClassPathUtils.class.getClassLoader());
     }
 
     public static Stream<Path> loadFromClasspath(String path, ClassLoader classLoader) {
@@ -82,12 +77,32 @@ public class ClassPathUtils {
                         FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap());
                     }
                 }
-                paths.add(toPath(resource));
+                paths.add(UrlUtils.toPath(resource));
             }
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
         }
         return paths.stream();
+    }
+    
+    public static Path loadSingleFromClasspath(String path) {
+        return loadSingleFromClasspath(path, ClassPathUtils.class.getClassLoader());
+    }
+    
+    public static Path loadSingleFromClasspath(String path, ClassLoader classLoader) {
+    	try {
+	    	URL resource = classLoader.getResource(path);
+			if (resource.toURI().getScheme().equals("jar")) {
+	            try {
+	                FileSystems.getFileSystem(resource.toURI());
+	            } catch (FileSystemNotFoundException e) {
+	                FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap());
+	            }
+	        }
+	        return UrlUtils.toPath(resource);
+    	} catch (URISyntaxException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static List<Path> pathsExist(List<Path> modelPaths) {

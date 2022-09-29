@@ -3,7 +3,7 @@ package com.regnosys.rosetta.common.serialisation.lookup;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
 
-import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,14 +13,14 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
 
     public JsonLookupDataLoader(ClassLoader classLoader,
                          ObjectMapper rosettaObjectMapper,
-                         URI descriptorPath,
+                         URL descriptorPath,
                          List<String> descriptorFileNames) {
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, true);
     }
 
     public JsonLookupDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
-                                URI descriptorPath,
+                                URL descriptorPath,
                                 List<String> descriptorFileNames, boolean loadInputFromFile) {
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, loadInputFromFile);
     }

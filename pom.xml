@@ -14,7 +14,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.release>8</maven.compiler.release>
 
-        <rosetta.dsl.version>4.44.3</rosetta.dsl.version>
+        <rosetta.dsl.version>4.45.0</rosetta.dsl.version>
 
         <reflections.version>0.10.2</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->
@@ -292,6 +292,7 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M5</version>
             </plugin>

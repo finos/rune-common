@@ -14,15 +14,15 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.release>8</maven.compiler.release>
 
-        <rosetta.dsl.version>4.49.4</rosetta.dsl.version>
+        <rosetta.dsl.version>5.0.0</rosetta.dsl.version>
 
         <reflections.version>0.9.11</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->
-        <jackson.version>2.10.5</jackson.version>
+        <jackson.version>2.14.0</jackson.version>
         <guice.version>5.0.1</guice.version>
         <guava.version>30.0-jre</guava.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
-        <logback.version>1.2.3</logback.version>
+        <logback.version>1.4.4</logback.version>
 
         <!-- duplicated in rosetta-testing -->
         <junit.jupiter.version>5.8.1</junit.jupiter.version>

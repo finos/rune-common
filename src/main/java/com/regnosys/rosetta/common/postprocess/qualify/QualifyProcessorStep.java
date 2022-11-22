@@ -94,15 +94,11 @@ public class QualifyProcessorStep implements PostProcessStep {
 				return null;
 
 			List<QualifyResult> allQualifyResults = new ArrayList<>();
-			QualifyResult uniqueSuccessQualifyResult = null;
 			for (Function<? super R, QualifyResult> func:qualifyFunctions) {
 				QualifyResult qualificationResult = func.apply(instance);
 				allQualifyResults.add(qualificationResult);
-				if (qualificationResult.isSuccess()) {
-					uniqueSuccessQualifyResult = qualificationResult;
-				}
 			}
-			return new QualificationResult(null, type, uniqueSuccessQualifyResult, allQualifyResults);
+			return new QualificationResult(type, allQualifyResults);
 		}
 	}
 }

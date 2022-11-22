@@ -9,28 +9,15 @@ import java.util.stream.Collectors;
 
 public class QualificationResult {
 
-    private final RosettaPath path;
     private final Class<?> qualifiedRosettaObjectType;
-    private final QualifyResult uniqueSuccessQualifyResult;
     private final List<QualifyResult> allQualifyResults;
 
-    public QualificationResult(RosettaPath path,
-                               Class<?> qualifiedRosettaObjectType,
-                               QualifyResult uniqueSuccessQualifyResult,
+    public QualificationResult(Class<?> qualifiedRosettaObjectType,
                                List<QualifyResult> allQualifyResults) {
-        this.path = path;
         this.qualifiedRosettaObjectType = qualifiedRosettaObjectType;
-        this.uniqueSuccessQualifyResult = uniqueSuccessQualifyResult;
         this.allQualifyResults = allQualifyResults;
     }
 
-    public Optional<RosettaPath> getPath() {
-        return Optional.ofNullable(path);
-    }
-
-    public String getBuildPath() {
-        return getPath().map(RosettaPath::buildPath).orElse("");
-    }
 
     public Class<?> getQualifiedRosettaObjectType() {
         return qualifiedRosettaObjectType;
@@ -40,7 +27,8 @@ public class QualificationResult {
      * @return unique successful qualify result if present, otherwise (if unmatched or multiple matches) returns empty.
      */
     public Optional<QualifyResult> getUniqueSuccessQualifyResult() {
-        return Optional.ofNullable(uniqueSuccessQualifyResult);
+        return getSucessQualificationResults().size() == 1 ?
+                Optional.of(getSucessQualificationResults().get(0)) : Optional.empty();
     }
 
     public boolean isSuccess() {
@@ -56,15 +44,14 @@ public class QualificationResult {
 
     @Override
     public String toString() {
-        if(getUniqueSuccessQualifyResult().isPresent()) {
+        if (getUniqueSuccessQualifyResult().isPresent()) {
             return String.format("QualificationResult { SUCCESS on [%s:%s] }",
                     qualifiedRosettaObjectType.getSimpleName(),
                     getUniqueSuccessQualifyResult().get().getName());
-        }
-        else {
+        } else {
             // Log multiple matches (if there are any)
-            List<String> successResults = allQualifyResults.stream()
-                    .filter(QualifyResult::isSuccess)
+            List<String> successResults = getSucessQualificationResults()
+                    .stream()
                     .map(QualifyResult::getName)
                     .collect(Collectors.toList());
             List<String> errors = allQualifyResults.stream()
@@ -80,11 +67,17 @@ public class QualificationResult {
         }
     }
 
+    private List<QualifyResult> getSucessQualificationResults() {
+        return allQualifyResults.stream()
+                .filter(QualifyResult::isSuccess)
+                .collect(Collectors.toList());
+    }
+
     private String getQualifyFunctionErrors(QualifyResult qualifyFunctionResult) {
         List<String> failedFunctionErrors = qualifyFunctionResult.getExpressionDataRuleResults().stream()
                 .filter(e -> !e.isSuccess())
                 .map(QualifyResult.ExpressionDataRuleResult::getError)
                 .collect(Collectors.toList());
-        return String.format("%s%s" , qualifyFunctionResult.getName(), failedFunctionErrors);
+        return String.format("%s%s", qualifyFunctionResult.getName(), failedFunctionErrors);
     }
 }

@@ -1,3 +1,5 @@
+[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/regnosysops/REGnosys%2Frosetta-common%2Frosetta-common?type=cf-1&key=eyJhbGciOiJIUzI1NiJ9.NWE1N2EyYTlmM2JiOTMwMDAxNDRiODMz.ZDeqVUhB-oMlbZGj4tfEiOg0cy6azXaBvoxoeidyL0g)]( https://g.codefresh.io/pipelines/edit/new/builds?id=5b6b15e05904b810db71a6fb&pipeline=rosetta-common&projects=REGnosys%2Frosetta-common&projectId=5cb8367f62c2233700021ecf)
+
 # Rosetta Common
 
 ## Description

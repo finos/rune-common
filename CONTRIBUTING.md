@@ -1,6 +1,6 @@
 # How to contribute #
 
-We'd love for you to contribute to rosetta-code-generators. There are
+We'd love for you to contribute to rosetta-common. There are
 a just a few small guidelines  we would like you to follow:
 
  - [Code of Conduct](#coc)
@@ -20,7 +20,7 @@ We promise to extend courtesy and respect to everyone involved in this project. 
 If any member of the community violates this code of conduct, the maintainers of this may take action, removing issues, comments, and PRs as deemed appropriate.
 
 ## <a name="issue"></a> Found a Bug?
-If you find a bug in the source code, you can [submit an issue](#submit-issue) to our [GitHub Repository][github]. 
+If you find a bug in the source code, you can [submit an issue](#submit-issue) to our [GitHub Repository][github].
 You can get more information about [github issues here].
 Even better, you can [submit a Pull Request](#submit-pr) with a fix.
 
@@ -44,18 +44,18 @@ We want to fix all the issues as soon as possible, but before fixing a bug we ne
 
 A minimal reproduction allows us to quickly confirm a bug (or point out a coding problem) as well as confirm that we are fixing the right problem.
 
-You can file new issues by selecting from our [new issue templates](https://github.com/REGnosys/rosetta-code-generators/issues/new/choose) and filling out the issue template.
+You can file new issues by selecting from our [new issue templates](https://github.com/REGnosys/rosetta-common/issues/new/choose) and filling out the issue template.
 
 ### <a name="submit-pr"></a> Submitting a Pull Request (PR)
 Before you submit your Pull Request (PR) consider the following guidelines:
 
-1. Search [GitHub](https://github.com/REGnosys/rosetta-code-generators/pulls) for an open or closed PR
+1. Search [GitHub](https://github.com/REGnosys/rosetta-common/pulls) for an open or closed PR
   that relates to your submission. You don't want to duplicate effort.
 1. Be sure that an issue describes the problem you're fixing, or documents the design for the feature you'd like to add.
    Discussing the design up front helps to ensure that we're ready to accept your work.
-1. Fork the REGnosys/rosetta-code-generators repo.
+1. Fork the REGnosys/rosetta-common repo.
    [More information about forking]
-1. Setup a new branch for your changes. 
+1. Setup a new branch for your changes.
 
      ```shell
      git checkout -b cool-feature-branch master
@@ -66,10 +66,10 @@ Before you submit your Pull Request (PR) consider the following guidelines:
 1. Run the full build at the *parent* level of the project and ensure that all tests pass.
 
      ```shell
-     ... rosetta-code-generators> mvn clean install
+     ... rosetta-common> mvn clean install
      ```
 
-1. Commit your changes using [well-formed commit messages][]. This provides consistency throughout the project, 
+1. Commit your changes using [well-formed commit messages][]. This provides consistency throughout the project,
     and ensures that commit messages are able to be formatted properly and used by various git tools.
 
      ```shell
@@ -83,7 +83,7 @@ Before you submit your Pull Request (PR) consider the following guidelines:
     git push origin cool-feature-branch
     ```
 
-1. In GitHub, create a [pull request] to `rosetta-code-generators:master` and choose as reviewer 
+1. In GitHub, create a [pull request] to `rosetta-common:master` and choose as reviewer
     a member of the team
 * If we suggest changes then:
   * Make the required updates.
@@ -131,11 +131,11 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 
 * All public API methods **should be documented**.
 * We format the code using a version of the built-in Eclipse java formatter (allows for 120 characters line length), which can be imported in both Eclipse and IntelliJ IDEA and check the build with matching [checkstyle rules]. At the moment this does not fail the build, but only produces warning messages; this can change in future releases.
-  
+
 
 [More information about forking]: https://help.github.com/articles/fork-a-repo
 [well-formed commit messages]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 [pull request]: https://help.github.com/articles/creating-a-pull-request
 [github issues here]:https://guides.github.com/features/issues
-[github]: https://github.com/REGnosys/rosetta-code-generators
-[checkstyle rules]: https://github.com/REGnosys/rosetta-code-generators/tree/master/checkstyle/checkstyle.xml
+[github]: https://github.com/REGnosys/rosetta-common
+[checkstyle rules]: https://github.com/REGnosys/rosetta-common/tree/master/checkstyle/checkstyle.xml

@@ -131,7 +131,7 @@ public class Path {
             String p2 = other.elements.get(i).pathName;
             if (wildcardMatches(allowWildcard, p1, p2))
                 continue;
-            if (!p1.equals(p2) || elements.get(i).index.orElse(0) != other.elements.get(i).index.orElse(0))
+            if (!p1.equals(p2) || elements.get(i).forceGetIndex() != other.elements.get(i).forceGetIndex())
                 return false;
         }
         return true;
@@ -146,7 +146,7 @@ public class Path {
             return false;
         for (int i = 0; i < elements.size(); i++) {
             if (!elements.get(i).pathName.equals(other.elements.get(i).pathName) ||
-                    elements.get(i).index.orElse(0) != other.elements.get(i).index.orElse(0))
+                    elements.get(i).forceGetIndex() != other.elements.get(i).forceGetIndex())
                 return false;
         }
         return true;

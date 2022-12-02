@@ -31,7 +31,7 @@ public class MappingProcessorStep implements PostProcessStep {
 		this.mappingDelegates.sort(MAPPING_DELEGATE_COMPARATOR);
 		this.executor = context.getExecutor();
 		this.invokedTasks = context.getInvokedTasks();
-		this.mappingMaxTimeout = 1500;
+		this.mappingMaxTimeout = 10000;
 	}
 
 	public MappingProcessorStep(Collection<MappingProcessor> mappingProcessors, MappingContext context, int mappingMaxTimeout) {

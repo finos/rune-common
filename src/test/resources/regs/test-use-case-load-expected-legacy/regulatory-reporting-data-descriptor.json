@@ -1,16 +1,16 @@
 [
   {
-    "dataSetName": "Test set 1 expected",
-    "inputType": "com.regnosys.rosetta.common.serialisation.JsonReportDataLoaderTest$EventTestModelObject",
+    "dataSetName": "Test set 1 expected legacy",
+    "inputType": "com.regnosys.rosetta.common.serialisation.reportdata.JsonReportDataLoaderTest$EventTestModelObject",
     "applicableReports": [],
     "data": [
       {
-        "name": "This is the desc of the usecase",
+        "name": "Name 1",
         "input": "test1.json",
-        "expected": "test1-expected.json"
+        "expected": "expected/test1-expected.json"
       },
       {
-        "name": "This is the desc of the another usecase that has inline json rather then a file",
+        "name": "Name 2",
         "input": {
           "eventDate": "2018-02-21",
           "eventQualifier": "TerminatedTrade"

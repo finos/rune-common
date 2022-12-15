@@ -1,10 +1,15 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.util.UrlUtils;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +19,8 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
 
     protected final ClassLoader classLoader;
     protected final ObjectMapper rosettaObjectMapper;
-    protected final URL descriptorPath;
+    protected final URL resourcesPath;
+    protected final RegReportPaths paths;
     protected final Class<T> loadType;
 
     private final boolean loadInputFromFile;
@@ -22,12 +28,15 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
 
     protected AbstractJsonDataLoader(ClassLoader classLoader,
                                      ObjectMapper rosettaObjectMapper,
-                                     URL descriptorPath,
+                                     URL resourcesPath,
+                                     RegReportPaths paths,
                                      List<String> descriptorFileNames,
-                                     Class<T> loadType, boolean loadInputFromFile) {
+                                     Class<T> loadType,
+                                     boolean loadInputFromFile) {
         this.classLoader = classLoader;
         this.rosettaObjectMapper = rosettaObjectMapper;
-        this.descriptorPath = descriptorPath;
+        this.resourcesPath = resourcesPath;
+        this.paths = paths;
         this.descriptorFileNames = descriptorFileNames;
         this.loadType = loadType;
         this.loadInputFromFile = loadInputFromFile;
@@ -36,6 +45,8 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
     @Override
     public List<T> load() {
         return descriptorFileNames.stream()
+                .map(paths::getDescriptorPath)
+                .map(Path::toString)
                 .map(this::resolve)
                 .map(this::openURL)
                 .filter(Optional::isPresent)
@@ -46,7 +57,7 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
     }
 
     public URL resolve(String d) {
-    	return UrlUtils.resolve(descriptorPath, d);
+    	return UrlUtils.resolve(resourcesPath, d);
     }
 
     protected abstract T loadInputFiles(T descriptor);
@@ -85,6 +96,14 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
         }
     }
 
+    protected <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, URL url) {
+        try {
+            return rosettaObjectMapper.readValue(UrlUtils.openURL(url), rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
+        } catch (IOException e) {
+            throw new RuntimeException(url + " cannot be serialised to list of " + type, e);
+        }
+    }
+
     private  <U> List<U> readTypeList(Class<U> type, ObjectMapper rosettaObjectMapper, Reader input) {
         try {
             return rosettaObjectMapper.readValue(input, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, type));
@@ -100,6 +119,4 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T> {
             throw new RuntimeException("Could not load class for type " + type);
         }
     }
-
-
 }

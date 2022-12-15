@@ -25,7 +25,6 @@ public class ReportDataItem {
         return input;
     }
 
-    @Deprecated
     public Object getExpected() {
         return expected;
     }

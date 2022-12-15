@@ -5,11 +5,11 @@
     "applicableReports": [],
     "data": [
       {
-        "name": "This is the desc of the usecase",
+        "name": "Name 1",
         "input": "test1.json"
       },
       {
-        "name": "This is the desc of the another usecase that has inline json rather then a file",
+        "name": "Name 2",
         "input": {
           "eventDate": "2018-02-21",
           "eventQualifier": "TerminatedTrade"

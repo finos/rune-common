@@ -1,9 +1,11 @@
 package com.regnosys.rosetta.common.serialisation.lookup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
 
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,16 +15,26 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
 
     public JsonLookupDataLoader(ClassLoader classLoader,
                          ObjectMapper rosettaObjectMapper,
-                         URL descriptorPath,
+                         URL resourcesPath,
                          List<String> descriptorFileNames) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, true);
+        this(classLoader, rosettaObjectMapper, resourcesPath, descriptorFileNames, true);
     }
 
     public JsonLookupDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
-                                URL descriptorPath,
-                                List<String> descriptorFileNames, boolean loadInputFromFile) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, loadInputFromFile);
+                                URL resourcesPath,
+                                List<String> descriptorFileNames,
+                                boolean loadInputFromFile) {
+        super(classLoader, rosettaObjectMapper, resourcesPath, RegReportPaths.get(resourcesPath), descriptorFileNames, LookupDataSet.class, loadInputFromFile);
+    }
+
+    public JsonLookupDataLoader(ClassLoader classLoader,
+                                ObjectMapper rosettaObjectMapper,
+                                URL resourcesPath,
+                                RegReportPaths paths,
+                                List<String> descriptorFileNames,
+                                boolean loadInputFromFile) {
+        super(classLoader, rosettaObjectMapper, resourcesPath, paths, descriptorFileNames, LookupDataSet.class, loadInputFromFile);
     }
 
     @Override
@@ -38,7 +50,9 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
     private Object getValue(String valueType, LookupDataItem data) {
         Class<?> valueTypeClass = loadClass(valueType, classLoader);
         if (data.getValue() instanceof String) {
-            return readType(valueTypeClass, rosettaObjectMapper, resolve((String) data.getValue()));
+            String inputFileName = (String) data.getValue();
+            Path inputFilePath = paths.getInputPath().resolve(inputFileName);
+            return readType(valueTypeClass, rosettaObjectMapper, resolve(inputFilePath.toString()));
         } else {
             return fromObject(data.getValue(), valueTypeClass, rosettaObjectMapper);
         }
@@ -49,7 +63,8 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
         if (data.getKey().equals("*") || keyTypeClass == String.class) {
             return data.getKey();
         } else if (data.getKey() instanceof String) {
-            return readType(keyTypeClass, rosettaObjectMapper, resolve((String) data.getKey()));
+            String keyPath = (String) data.getKey();
+            return readType(keyTypeClass, rosettaObjectMapper, resolve(keyPath));
         } else {
             return fromObject(data.getKey(), keyTypeClass, rosettaObjectMapper);
         }

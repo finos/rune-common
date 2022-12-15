@@ -1,10 +1,11 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
+import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
 
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,17 +15,26 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
 
     public JsonReportDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
-                                URL descriptorPath,
+                                URL resourcesPath,
                                 List<String> descriptorFileNames) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, true);
+        this(classLoader, rosettaObjectMapper, resourcesPath, descriptorFileNames, true);
     }
 
     public JsonReportDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
-                                URL descriptorPath,
+                                URL resourcesPath,
                                 List<String> descriptorFileNames,
                                 boolean loadInputFromFile) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, loadInputFromFile);
+        this(classLoader, rosettaObjectMapper, resourcesPath, RegReportPaths.get(resourcesPath), descriptorFileNames, loadInputFromFile);
+    }
+
+    public JsonReportDataLoader(ClassLoader classLoader,
+                                ObjectMapper rosettaObjectMapper,
+                                URL resourcesPath,
+                                RegReportPaths paths,
+                                List<String> descriptorFileNames,
+                                boolean loadInputFromFile) {
+        super(classLoader, rosettaObjectMapper, resourcesPath, paths, descriptorFileNames, ReportDataSet.class, loadInputFromFile);
     }
 
     @Override
@@ -33,7 +43,7 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
         for (ReportDataItem data : descriptor.getData()) {
             ReportDataItem reportDataItem = new ReportDataItem(data.getName(),
                     getInput(descriptor.getInputType(), data),
-                    getExpected(descriptor.getExpectedType(), data));
+                    data.getExpected()); // expected is handled by JsonExpectedResultLoader
             loadedData.add(reportDataItem);
         }
 
@@ -43,21 +53,12 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
     private Object getInput(String inputType, ReportDataItem data) {
         Class<?> inputTypeClass = loadClass(inputType, classLoader);
         if (data.getInput() instanceof String) {
-            return readType(inputTypeClass, rosettaObjectMapper, resolve((String) data.getInput()));
+            // by path
+            String inputFileName = (String) data.getInput();
+            Path inputFilePath = paths.getInputPath().resolve(inputFileName);
+            return readType(inputTypeClass, rosettaObjectMapper, resolve(inputFilePath.toString()));
         } else {
             return fromObject(data.getInput(), inputTypeClass, rosettaObjectMapper);
-        }
-    }
-
-    private Object getExpected(String expectedType, ReportDataItem data) {
-        if (data.getExpected() == null){
-            return null;
-        }
-        Class<?> expectedTypeClass = loadClass(expectedType, classLoader);
-        if (data.getExpected() instanceof String) {
-            return readType(expectedTypeClass, rosettaObjectMapper, resolve((String) data.getExpected()));
-        } else {
-            return fromObject(data.getExpected(), expectedTypeClass, rosettaObjectMapper);
         }
     }
 }

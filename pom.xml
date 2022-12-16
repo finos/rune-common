@@ -6,7 +6,7 @@
     <groupId>com.regnosys</groupId>
     <artifactId>rosetta-common</artifactId>
     <packaging>jar</packaging>
-    <version>3.26.4.1</version>
+    <version>0.0.0.master</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

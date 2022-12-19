@@ -1,7 +1,6 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.lookup.JsonLookupDataLoader;
 import com.regnosys.rosetta.common.serialisation.lookup.LookupDataSet;
 import org.junit.jupiter.api.Test;
@@ -18,15 +17,14 @@ class JsonLookupDataLoaderTest {
 
     private static final Path RESOURCES_PATH = Paths.get("src/test/resources");
 
-    private static final List<String> DESCRIPTOR_FILE_NAMES = Collections.singletonList(JsonLookupDataLoader.DEFAULT_DESCRIPTOR_NAME);
-
-    private ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
     void lookupsLoaded() throws MalformedURLException {
-        RegReportPaths paths = RegReportPaths.getLegacy(Paths.get("regs/test-reg-lookups"));
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("regs/test-reg-lookups");
 
-        List<LookupDataSet> lookupDataSets = loadLookupDataSets(paths);
+        List<LookupDataSet> lookupDataSets = loadLookupDataSets(path, path);
 
         assertEquals(lookupDataSets.size(), 2);
         assertEquals(lookupDataSets.get(0).getName(), "IsExecutingEntityInvestmentFirm");
@@ -37,33 +35,33 @@ class JsonLookupDataLoaderTest {
 
     @Test
     void descriptorPathDoesNotExist() throws MalformedURLException {
-        RegReportPaths paths = RegReportPaths.getLegacy(Paths.get("not-found"));
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("not-found");
 
-        List<LookupDataSet> lookupDataSets = loadLookupDataSets(paths);
+        List<LookupDataSet> lookupDataSets = loadLookupDataSets(path, path);
 
         assertEquals(lookupDataSets.size(), 0);
     }
 
     @Test
     void descriptorPathDoesNotDoesNotContainDescriptorFile() throws MalformedURLException {
-        RegReportPaths paths = RegReportPaths.getLegacy(Paths.get("test-workspaces"));
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("test-workspaces");
 
-        List<LookupDataSet> lookupDataSets =
-                loadLookupDataSets(paths);
+        List<LookupDataSet> lookupDataSets = loadLookupDataSets(path, path);
 
         assertEquals(lookupDataSets.size(), 0);
     }
 
-    private List<LookupDataSet> loadLookupDataSets(RegReportPaths paths) throws MalformedURLException {
+    private List<LookupDataSet> loadLookupDataSets(Path lookupDescriptorPath, Path inputPath) throws MalformedURLException {
         return new JsonLookupDataLoader(this.getClass().getClassLoader(),
                 rosettaObjectMapper,
-                RESOURCES_PATH.toUri().toURL(),
-                paths,
-                DESCRIPTOR_FILE_NAMES,
-                true).load();
+                lookupDescriptorPath.toUri().toURL(),
+                Collections.singletonList(JsonLookupDataLoader.DEFAULT_DESCRIPTOR_NAME),
+                inputPath.toUri().toURL()).load();
     }
 
-    @SuppressWarnings("unused") // loaded as runtime
+    @SuppressWarnings("unused") // loaded at runtime
     static class ExecutingEntity {
         public Address addressOfBranch;
         public Address addressOfIncorporation;

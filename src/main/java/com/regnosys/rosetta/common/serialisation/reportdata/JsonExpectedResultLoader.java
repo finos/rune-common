@@ -3,7 +3,8 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.reports.RegReportIdentifier;
 import com.regnosys.rosetta.common.reports.RegReportPaths;
-import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
+import com.regnosys.rosetta.common.serialisation.DataLoader;
+import com.regnosys.rosetta.common.serialisation.InputDataLoader;
 import com.regnosys.rosetta.common.util.UrlUtils;
 
 import java.net.URL;
@@ -14,23 +15,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class JsonExpectedResultLoader extends AbstractJsonDataLoader<ReportIdentifierDataSet> {
+import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
-    public JsonExpectedResultLoader(ClassLoader classLoader, ObjectMapper rosettaObjectMapper, URL resourcesPath) {
-        this(classLoader, rosettaObjectMapper, resourcesPath, RegReportPaths.get(resourcesPath));
-    }
+public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifierDataSet> {
 
-    public JsonExpectedResultLoader(ClassLoader classLoader, ObjectMapper rosettaObjectMapper, URL resourcesPath, RegReportPaths paths) {
-        super(classLoader, rosettaObjectMapper, resourcesPath, paths, null, ReportIdentifierDataSet.class, true);
+    private final ClassLoader classLoader;
+    private final ObjectMapper rosettaObjectMapper;
+    private final URL outputPath;
+
+    public JsonExpectedResultLoader(ClassLoader classLoader, ObjectMapper rosettaObjectMapper, URL outputPath) {
+        this.classLoader = classLoader;
+        this.rosettaObjectMapper = rosettaObjectMapper;
+        this.outputPath = outputPath;
     }
 
     @Override
-    public List<ReportIdentifierDataSet> load() {
-        throw new UnsupportedOperationException("this is intended for use with a pre-existing file");
-    }
-
-    @Override
-    protected ReportIdentifierDataSet loadInputFiles(ReportIdentifierDataSet descriptor) {
+    public ReportIdentifierDataSet loadInputFiles(ReportIdentifierDataSet descriptor) {
         List<ReportDataItem> loadedData = new ArrayList<>();
         ReportDataSet dataSet = descriptor.getDataSet();
         for (ReportDataItem data : dataSet.getData()) {
@@ -48,8 +48,8 @@ public class JsonExpectedResultLoader extends AbstractJsonDataLoader<ReportIdent
         if (data.getInput() instanceof String) {
             // attempt to load per report expectation file
             Path inputFileName = Paths.get(String.valueOf(data.getInput()));
-            Path keyValueExpectationRelativePath = paths.getKeyValueExpectationFilePath(regReportIdentifier, dataSetName, inputFileName);
-            Path keyValueExpectationPath = UrlUtils.toPath(resourcesPath).resolve(keyValueExpectationRelativePath);
+            Path keyValueExpectationPath = RegReportPaths
+                    .getKeyValueExpectationFilePath(UrlUtils.toPath(outputPath), regReportIdentifier, dataSetName, inputFileName);
             if (Files.exists(keyValueExpectationPath)) {
                 URL keyValueExpectationUrl = UrlUtils.toUrl(keyValueExpectationPath);
                 List<ExpectedResultField> resultFields = readTypeList(ExpectedResultField.class, rosettaObjectMapper, keyValueExpectationUrl);
@@ -71,8 +71,8 @@ public class JsonExpectedResultLoader extends AbstractJsonDataLoader<ReportIdent
             if (data.getExpected() instanceof String) {
                 // by path
                 String expectedFileName = (String) data.getExpected();
-                Path expectedFilePath = paths.getOutputPath().resolve(expectedFileName);
-                return readType(expectedTypeClass, rosettaObjectMapper, resolve(expectedFilePath.toString()));
+                URL expectedUrl = UrlUtils.resolve(outputPath, expectedFileName);
+                return readType(expectedTypeClass, rosettaObjectMapper, expectedUrl);
             } else {
                 // by object
                 return fromObject(data.getExpected(), expectedTypeClass, rosettaObjectMapper);

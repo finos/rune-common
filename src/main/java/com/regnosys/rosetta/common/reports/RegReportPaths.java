@@ -1,101 +1,100 @@
 package com.regnosys.rosetta.common.reports;
 
-import com.regnosys.rosetta.common.util.UrlUtils;
-
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class RegReportPaths {
 
-    private static final Path REGULATORY_REPORTING_PATH = Path.of("regulatory-reporting");
-    private static final Path INPUT_PATH = Path.of("input");
-    private static final Path OUTPUT_PATH = Path.of("output");
-    private static final Path CONFIG_PATH = Path.of("config");
+    public static final Path REGULATORY_REPORTING_PATH = Path.of("regulatory-reporting");
+    public static final Path INPUT_PATH = Path.of("input");
+    public static final Path OUTPUT_PATH = Path.of("output");
+    public static final Path CONFIG_PATH = Path.of("config");
+    public static final Path LOOKUP_PATH = Path.of("lookup");
 
     // Legacy folder structure
-    private static final Path LEGACY_DATA_PATH = Path.of("data");
+    public static final Path LEGACY_DATA_PATH = Path.of("data");
 
     public static final String REPORT_EXPECTATIONS_FILE_NAME = "report-expectations.json";
-    private static final String KEY_VALUE_FILE_NAME_SUFFIX = "-key-value.json";
-    private static final String REPORT_FILE_NAME_SUFFIX = "-report.json";
+    public static final String KEY_VALUE_FILE_NAME_SUFFIX = "-key-value.json";
+    public static final String REPORT_FILE_NAME_SUFFIX = "-report.json";
 
-    public static RegReportPaths get(URL resourcesPath) {
-        return Files.exists(UrlUtils.toPath(resourcesPath).resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
+    public static RegReportPaths get(Path resourcesPath) {
+        return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
                 RegReportPaths.getDefault() : RegReportPaths.getLegacy();
     }
 
     public static RegReportPaths getDefault() {
-        return getDefault(REGULATORY_REPORTING_PATH);
-    }
-
-    public static RegReportPaths getDefault(Path rootPath) {
-        return new RegReportPaths(rootPath, rootPath.resolve(INPUT_PATH), rootPath.resolve(OUTPUT_PATH), rootPath.resolve(CONFIG_PATH));
+        Path rootPath = REGULATORY_REPORTING_PATH;
+        return new RegReportPaths(rootPath,
+                rootPath.resolve(INPUT_PATH),
+                rootPath.resolve(OUTPUT_PATH),
+                rootPath.resolve(CONFIG_PATH),
+                rootPath.resolve(LOOKUP_PATH));
     }
 
     public static RegReportPaths getLegacy() {
-        return getLegacy(REGULATORY_REPORTING_PATH.resolve(LEGACY_DATA_PATH));
-    }
-
-    public static RegReportPaths getLegacy(Path rootPath) {
-        return new RegReportPaths(rootPath, rootPath, rootPath, rootPath);
+        Path dataPath = REGULATORY_REPORTING_PATH.resolve(LEGACY_DATA_PATH);
+        Path lookup = REGULATORY_REPORTING_PATH.resolve(LOOKUP_PATH);
+        return new RegReportPaths(dataPath, dataPath, dataPath, dataPath, lookup);
     }
 
     private final Path rootPath;
     private final Path input;
     private final Path output;
     private final Path config;
+    private final Path lookup;
 
-    public RegReportPaths(Path rootPath, Path input, Path output, Path config) {
+    public RegReportPaths(Path rootPath, Path input, Path output, Path config, Path lookup) {
         this.rootPath = rootPath;
         this.config = config;
         this.input = input;
         this.output = output;
+        this.lookup = lookup;
     }
 
-    public Path getRootPath() {
+    public Path getRootRelativePath() {
         return rootPath;
     }
 
-    public Path getConfigPath() {
+    public Path getConfigRelativePath() {
         return config;
     }
 
-    public Path getDescriptorPath(String fileName) {
-        return config.resolve(fileName);
-    }
-
-    public Path getInputPath() {
+    public Path getInputRelativePath() {
         return input;
     }
 
-    public Path getOutputPath() {
+    public Path getOutputRelativePath() {
         return output;
     }
 
-    public Path getReportPath(String reportIdentifierName) {
-        return output.resolve(directoryName(reportIdentifierName));
+    public Path getLookupRelativePath() {
+        return lookup;
     }
 
-    public Path getReportDataSetPath(RegReportIdentifier reportIdentifier, String dataSetName) {
-        return getReportPath(reportIdentifier.getName()).resolve(directoryName(dataSetName));
+    public static Path getReportPath(Path outputPath, String reportIdentifierName) {
+        return outputPath.resolve(directoryName(reportIdentifierName));
     }
 
-    public Path getReportExpectationsFilePath(RegReportIdentifier reportIdentifier, String dataSetName) {
-        return getReportDataSetPath(reportIdentifier, dataSetName).resolve(REPORT_EXPECTATIONS_FILE_NAME);
+    public static Path getReportDataSetPath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName) {
+        return getReportPath(outputPath, reportIdentifier.getName()).resolve(directoryName(dataSetName));
     }
 
-    public Path getKeyValueExpectationFilePath(RegReportIdentifier reportIdentifier, String dataSetName, Path inputPath) {
-        return getReportDataSetPath(reportIdentifier, dataSetName)
+    public static Path getReportExpectationsFilePath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName) {
+        return getReportDataSetPath(outputPath, reportIdentifier, dataSetName).resolve(REPORT_EXPECTATIONS_FILE_NAME);
+    }
+
+    public static Path getKeyValueExpectationFilePath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName, Path inputPath) {
+        return getReportDataSetPath(outputPath, reportIdentifier, dataSetName)
                 .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
     }
 
-    public Path getReportExpectationFilePath(RegReportIdentifier reportIdentifier, String dataSetName, Path inputPath) {
-        return getReportDataSetPath(reportIdentifier, dataSetName)
+    public static Path getReportExpectationFilePath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName, Path inputPath) {
+        return getReportDataSetPath(outputPath, reportIdentifier, dataSetName)
                 .resolve(inputPath.getFileName().toString().replace(".json", REPORT_FILE_NAME_SUFFIX));
     }
 
-    private String directoryName(String name) {
+    private static String directoryName(String name) {
         return name
                 .replace(" ", "-")
                 .replace("_", "-")

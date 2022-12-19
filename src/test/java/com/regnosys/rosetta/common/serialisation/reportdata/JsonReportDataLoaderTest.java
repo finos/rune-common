@@ -1,7 +1,6 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -22,13 +21,14 @@ class JsonReportDataLoaderTest {
 
     private static final List<String> DESCRIPTOR_FILE_NAMES = Collections.singletonList(JsonReportDataLoader.DEFAULT_DESCRIPTOR_NAME);
 
-    private ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
     void lookupsLoaded() throws MalformedURLException {
-        RegReportPaths paths = RegReportPaths.getLegacy(Paths.get("regs/test-use-case-load"));
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("regs/test-use-case-load");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(paths);
+        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
@@ -48,29 +48,30 @@ class JsonReportDataLoaderTest {
 
     @Test
     void descriptorPathDoesNotExist() throws MalformedURLException {
-        RegReportPaths paths = RegReportPaths.getLegacy(Paths.get("not-found"));
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("not-found");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(paths);
+        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 0);
     }
 
     @Test
     void descriptorPathDoesNotDoesNotContainDescriptorFile() throws MalformedURLException {
-        RegReportPaths paths = RegReportPaths.getLegacy(Paths.get("test-workspaces"));
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("test-workspaces");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(paths);
+        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 0);
     }
 
-    private List<ReportDataSet> loadReportDataSets(RegReportPaths paths) throws MalformedURLException {
+    private List<ReportDataSet> loadReportDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {
         return new JsonReportDataLoader(this.getClass().getClassLoader(),
                 rosettaObjectMapper,
-                RESOURCES_PATH.toUri().toURL(),
-                paths,
+                descriptorPath.toUri().toURL(),
                 DESCRIPTOR_FILE_NAMES,
-                true).load();
+                inputPath.toUri().toURL()).load();
     }
 
     static class EventTestModelObject {

@@ -53,10 +53,10 @@ class JsonLookupDataLoaderTest {
         assertEquals(lookupDataSets.size(), 0);
     }
 
-    private List<LookupDataSet> loadLookupDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {
+    private List<LookupDataSet> loadLookupDataSets(Path lookupDescriptorPath, Path inputPath) throws MalformedURLException {
         return new JsonLookupDataLoader(this.getClass().getClassLoader(),
                 rosettaObjectMapper,
-                descriptorPath.toUri().toURL(),
+                lookupDescriptorPath.toUri().toURL(),
                 Collections.singletonList(JsonLookupDataLoader.DEFAULT_DESCRIPTOR_NAME),
                 inputPath.toUri().toURL()).load();
     }

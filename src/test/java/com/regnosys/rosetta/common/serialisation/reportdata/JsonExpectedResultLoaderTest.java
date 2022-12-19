@@ -1,40 +1,41 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.reports.RegReportIdentifier;
-import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
+import static com.regnosys.rosetta.common.reports.RegReportPaths.CONFIG_PATH;
+import static com.regnosys.rosetta.common.reports.RegReportPaths.OUTPUT_PATH;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonExpectedResultLoaderTest {
 
     private static final Path RESOURCES_PATH = Paths.get("src/test/resources");
 
-    private ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
     void shouldLoadExpectedResultForReport1() throws IOException {
-        RegReportPaths paths = RegReportPaths.getDefault(Paths.get("regs/test-use-case-load-expected"));
-
-        JsonExpectedResultLoader jsonExpectedResultLoader = getJsonExpectedResultLoader(paths);
+        Path rootPath = Paths.get("regs/test-use-case-load-expected");
 
         String reportName = "report1";
-        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(paths, reportName);
+        Path descriptorPath = rootPath.resolve(CONFIG_PATH);
+        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(descriptorPath, reportName);
 
+        // test
+        URL outputUrl = RESOURCES_PATH.resolve(rootPath).resolve(OUTPUT_PATH).toUri().toURL();
+        JsonExpectedResultLoader jsonExpectedResultLoader = getJsonExpectedResultLoader(outputUrl);
         ReportIdentifierDataSet enrichedDataSet = jsonExpectedResultLoader.loadInputFiles(inputDataSet);
 
         assertNotNull(enrichedDataSet.getDataSet());
@@ -62,13 +63,14 @@ class JsonExpectedResultLoaderTest {
 
     @Test
     void shouldLoadExpectedResultFromLegacyFolderStructure() throws IOException {
-        RegReportPaths paths = RegReportPaths.getLegacy(Paths.get("regs/test-use-case-load-expected-legacy"));
-
-        JsonExpectedResultLoader jsonExpectedResultLoader = getJsonExpectedResultLoader(paths);
+        Path rootPath = Paths.get("regs/test-use-case-load-expected-legacy");
 
         String reportName = "report1";
-        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(paths, reportName);
+        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(rootPath, reportName);
 
+        // test
+        URL outputUrl = RESOURCES_PATH.resolve(rootPath).toUri().toURL();
+        JsonExpectedResultLoader jsonExpectedResultLoader = getJsonExpectedResultLoader(outputUrl);
         ReportIdentifierDataSet enrichedDataSet = jsonExpectedResultLoader.loadInputFiles(inputDataSet);
 
         // data set
@@ -117,21 +119,19 @@ class JsonExpectedResultLoaderTest {
         assertEquals("TerminatedTrade-expected", expectedResultField2.getValue());
     }
 
-    private JsonExpectedResultLoader getJsonExpectedResultLoader(RegReportPaths paths) throws MalformedURLException {
-        JsonExpectedResultLoader jsonExpectedResultLoader =
-                new JsonExpectedResultLoader(this.getClass().getClassLoader(),
-                        rosettaObjectMapper,
-                        RESOURCES_PATH.toUri().toURL(),
-                        paths);
-        return jsonExpectedResultLoader;
+    private JsonExpectedResultLoader getJsonExpectedResultLoader(URL outputPath) {
+        return new JsonExpectedResultLoader(this.getClass().getClassLoader(),
+                rosettaObjectMapper,
+                outputPath);
     }
 
-    private ReportIdentifierDataSet getReportIdentifierDataSet(RegReportPaths paths, String reportName) throws IOException {
+    private ReportIdentifierDataSet getReportIdentifierDataSet(Path descriptorPath, String reportName) throws IOException {
         RegReportIdentifier reportIdentifier = new RegReportIdentifier(null, null, reportName, null);
 
-        URL url = Resources.getResource(paths.getDescriptorPath("regulatory-reporting-data-descriptor.json").toString());
+        URL url = Resources.getResource(descriptorPath.resolve("regulatory-reporting-data-descriptor.json").toString());
         String json = Resources.toString(url, StandardCharsets.UTF_8);
-        List<ReportDataSet> reportDataSets = rosettaObjectMapper.readValue(json, rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, ReportDataSet.class));
+        CollectionType loadType = rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, ReportDataSet.class);
+        List<ReportDataSet> reportDataSets = rosettaObjectMapper.readValue(json, loadType);
         ReportDataSet reportDataSet = reportDataSets.get(0);
 
         return new ReportIdentifierDataSet(reportIdentifier, reportDataSet);

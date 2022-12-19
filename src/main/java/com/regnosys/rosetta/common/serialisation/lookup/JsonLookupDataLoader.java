@@ -1,44 +1,40 @@
 package com.regnosys.rosetta.common.serialisation.lookup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
+import com.regnosys.rosetta.common.util.UrlUtils;
 
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
 public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> {
 
     public static final String DEFAULT_DESCRIPTOR_NAME = "regulatory-reporting-lookup-descriptor.json";
 
+    private final URL inputPath;
+
     public JsonLookupDataLoader(ClassLoader classLoader,
-                         ObjectMapper rosettaObjectMapper,
-                         URL resourcesPath,
-                         List<String> descriptorFileNames) {
-        this(classLoader, rosettaObjectMapper, resourcesPath, descriptorFileNames, true);
+                                ObjectMapper rosettaObjectMapper,
+                                URL descriptorPath,
+                                List<String> descriptorFileNames) {
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, false);
+        this.inputPath = null;
     }
 
     public JsonLookupDataLoader(ClassLoader classLoader,
                                 ObjectMapper rosettaObjectMapper,
-                                URL resourcesPath,
+                                URL descriptorPath,
                                 List<String> descriptorFileNames,
-                                boolean loadInputFromFile) {
-        super(classLoader, rosettaObjectMapper, resourcesPath, RegReportPaths.get(resourcesPath), descriptorFileNames, LookupDataSet.class, loadInputFromFile);
-    }
-
-    public JsonLookupDataLoader(ClassLoader classLoader,
-                                ObjectMapper rosettaObjectMapper,
-                                URL resourcesPath,
-                                RegReportPaths paths,
-                                List<String> descriptorFileNames,
-                                boolean loadInputFromFile) {
-        super(classLoader, rosettaObjectMapper, resourcesPath, paths, descriptorFileNames, LookupDataSet.class, loadInputFromFile);
+                                URL inputPath) {
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, LookupDataSet.class, true);
+        this.inputPath = inputPath;
     }
 
     @Override
-    protected LookupDataSet loadInputFiles(LookupDataSet descriptor) {
+    public LookupDataSet loadInputFiles(LookupDataSet descriptor) {
         List<LookupDataItem> loadedData = descriptor.getData().stream()
                 .map(data -> new LookupDataItem(
                         getKey(descriptor.getKeyType(), data),
@@ -50,9 +46,8 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
     private Object getValue(String valueType, LookupDataItem data) {
         Class<?> valueTypeClass = loadClass(valueType, classLoader);
         if (data.getValue() instanceof String) {
-            String inputFileName = (String) data.getValue();
-            Path inputFilePath = paths.getInputPath().resolve(inputFileName);
-            return readType(valueTypeClass, rosettaObjectMapper, resolve(inputFilePath.toString()));
+            String valuePath = (String) data.getValue();
+            return readType(valueTypeClass, rosettaObjectMapper, UrlUtils.resolve(inputPath, valuePath));
         } else {
             return fromObject(data.getValue(), valueTypeClass, rosettaObjectMapper);
         }
@@ -64,7 +59,7 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
             return data.getKey();
         } else if (data.getKey() instanceof String) {
             String keyPath = (String) data.getKey();
-            return readType(keyTypeClass, rosettaObjectMapper, resolve(keyPath));
+            return readType(keyTypeClass, rosettaObjectMapper, UrlUtils.resolve(inputPath, keyPath));
         } else {
             return fromObject(data.getKey(), keyTypeClass, rosettaObjectMapper);
         }

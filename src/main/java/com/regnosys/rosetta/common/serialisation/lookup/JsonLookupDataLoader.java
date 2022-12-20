@@ -2,7 +2,6 @@ package com.regnosys.rosetta.common.serialisation.lookup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
-import com.regnosys.rosetta.common.util.UrlUtils;
 
 import java.net.URL;
 import java.util.List;
@@ -47,7 +46,7 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
         Class<?> valueTypeClass = loadClass(valueType, classLoader);
         if (data.getValue() instanceof String) {
             String valuePath = (String) data.getValue();
-            return readType(valueTypeClass, rosettaObjectMapper, UrlUtils.resolve(inputPath, valuePath));
+            return readType(valueTypeClass, rosettaObjectMapper, resolve(inputPath, valuePath));
         } else {
             return fromObject(data.getValue(), valueTypeClass, rosettaObjectMapper);
         }
@@ -59,7 +58,7 @@ public class JsonLookupDataLoader extends AbstractJsonDataLoader<LookupDataSet> 
             return data.getKey();
         } else if (data.getKey() instanceof String) {
             String keyPath = (String) data.getKey();
-            return readType(keyTypeClass, rosettaObjectMapper, UrlUtils.resolve(inputPath, keyPath));
+            return readType(keyTypeClass, rosettaObjectMapper, resolve(inputPath, keyPath));
         } else {
             return fromObject(data.getKey(), keyTypeClass, rosettaObjectMapper);
         }

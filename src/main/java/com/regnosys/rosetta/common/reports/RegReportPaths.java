@@ -94,7 +94,7 @@ public class RegReportPaths {
                 .resolve(inputPath.getFileName().toString().replace(".json", REPORT_FILE_NAME_SUFFIX));
     }
 
-    private static String directoryName(String name) {
+    public static String directoryName(String name) {
         return name
                 .replace(" ", "-")
                 .replace("_", "-")

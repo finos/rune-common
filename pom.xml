@@ -10,11 +10,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.release>8</maven.compiler.release>
 
-        <rosetta.dsl.version>6.0.0</rosetta.dsl.version>
+        <rosetta.dsl.version>6.1.0</rosetta.dsl.version>
 
         <reflections.version>0.9.11</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->
@@ -333,8 +331,6 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
                     <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>

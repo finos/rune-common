@@ -2,17 +2,18 @@ package com.regnosys.rosetta.common.reports;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class RegReportPaths {
 
-    public static final Path REGULATORY_REPORTING_PATH = Path.of("regulatory-reporting");
-    public static final Path INPUT_PATH = Path.of("input");
-    public static final Path OUTPUT_PATH = Path.of("output");
-    public static final Path CONFIG_PATH = Path.of("config");
-    public static final Path LOOKUP_PATH = Path.of("lookup");
+    public static final Path REGULATORY_REPORTING_PATH = Paths.get("regulatory-reporting");
+    public static final Path INPUT_PATH = Paths.get("input");
+    public static final Path OUTPUT_PATH = Paths.get("output");
+    public static final Path CONFIG_PATH = Paths.get("config");
+    public static final Path LOOKUP_PATH = Paths.get("lookup");
 
     // Legacy folder structure
-    public static final Path LEGACY_DATA_PATH = Path.of("data");
+    public static final Path LEGACY_DATA_PATH = Paths.get("data");
 
     public static final String REPORT_EXPECTATIONS_FILE_NAME = "report-expectations.json";
     public static final String KEY_VALUE_FILE_NAME_SUFFIX = "-key-value.json";

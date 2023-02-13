@@ -63,7 +63,7 @@ public class SimpleMerger implements BuilderMerger {
 
 	@Override
 	public <T> void mergeBasic(T o1, T o2, Consumer<T> o1Setter, AttributeMeta... metas) {
-		if (o1 != null && o2 != null) {
+		if (o1 != null && o2 != null && !o1.equals(o2)) {
 			if (!metaContains(metas, AttributeMeta.GLOBAL_KEY)) {
 				throw new IllegalArgumentException(
 						String.format("Attempting to merge 2 different basic values [o1=%s, o2=%s, type=%s]",

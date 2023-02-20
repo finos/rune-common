@@ -59,7 +59,7 @@ public class ClassPathUtils {
     }
     
     public static URL getResource(Path path, ClassLoader classLoader) {
-        return classLoader.getResource(path.toString().replace("\\", "/"));
+        return classLoader.getResource(UrlUtils.toPortableString(path));
     }
     
     public static Stream<Path> loadFromClasspath(String path) {

@@ -47,7 +47,7 @@ class MappingProcessorStepTest {
     @Test
     void shouldCompleteWithinExpectedTimeout() throws InterruptedException {
         ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService, null);
 
         CompletableFuture<Object> completableFuture = CompletableFuture.completedFuture(null);
         mappingContext.getInvokedTasks().add(completableFuture);
@@ -65,7 +65,7 @@ class MappingProcessorStepTest {
     @Test
     void shouldTerminateUncompletedInvokedTasks() throws InterruptedException {
         ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService, null);
         mappingContext.getInvokedTasks().add(new CompletableFuture<>());
 
         MappingProcessorStep mappingProcessorStep = new MappingProcessorStep(Lists.newArrayList(), mappingContext, 10);
@@ -81,7 +81,7 @@ class MappingProcessorStepTest {
     @Test
     void shouldLogErrorFromInvokedTask() throws InterruptedException {
         ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService, null);
 
         CompletableFuture<Object> completableFuture = CompletableFuture.supplyAsync(() -> {
             throw new RuntimeException("Error running task");
@@ -101,7 +101,7 @@ class MappingProcessorStepTest {
     @Test
     void shouldLogErrorWhenThereIsMappingProcessorError() throws InterruptedException {
         ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService);
+        MappingContext mappingContext = new MappingContext(Lists.newArrayList(), Maps.newHashMap(), Collections.emptyMap(), executorService, null);
 
         CompletableFuture<Object> completableFuture = CompletableFuture.completedFuture(null);
         mappingContext.getInvokedTasks().add(completableFuture);

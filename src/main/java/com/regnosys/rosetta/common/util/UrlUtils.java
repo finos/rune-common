@@ -12,6 +12,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -69,4 +71,14 @@ public class UrlUtils {
             throw new RuntimeException("Error converting resource path to url " + path);
         }
     }
+
+	/**
+	 * Path.toString() does not work well on Windows, this method provides toString() that works across platforms
+	 */
+	public static String toPortableString(Path path) {
+		return Optional.ofNullable(path)
+				.map(Objects::toString)
+				.map(s -> s.replace("\\", "/"))
+				.orElse(null);
+	}
 }

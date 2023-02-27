@@ -2,7 +2,6 @@ package com.regnosys.rosetta.common.translation;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Injector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,32 +21,29 @@ public class MappingContext {
     private final SynonymToEnumMap synonymToEnumMap;
     // Execute mapping on separate thread pool
     private final ExecutorService executor;
-    private final Injector injector;
-    // Collect any tasks invoked during mapping, so we can wait until they're complete before continuing
+    // Collect any tasks invoked during mapping so we can wait until they're complete before continuing
     private final List<CompletableFuture<?>> invokedTasks = new ArrayList<>();
 
     private final List<String> mappingErrors = new ArrayList<>();
 
-    public MappingContext(Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap, Injector injector) {
-        this(new ArrayList<>(), new ConcurrentHashMap<>(), synonymToEnumMap, injector);
+    public MappingContext(Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
+        this(new ArrayList<>(), new ConcurrentHashMap<>(), synonymToEnumMap);
     }
 
     // Unit testing
     @VisibleForTesting
-    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap, Injector injector) {
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
         this(mappings,
                 mappingParams,
                 synonymToEnumMap,
-                Executors.newFixedThreadPool(5, new ThreadFactoryBuilder().setNameFormat("mapper-%d").build()),
-                injector);
+                Executors.newFixedThreadPool(5, new ThreadFactoryBuilder().setNameFormat("mapper-%d").build()));
     }
 
-    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap, ExecutorService executor, Injector injector) {
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap, ExecutorService executor) {
         this.mappings = mappings;
         this.mappingParams = mappingParams;
         this.synonymToEnumMap = new SynonymToEnumMap(synonymToEnumMap);
         this.executor = executor;
-        this.injector = injector;
     }
 
     public List<Mapping> getMappings() {
@@ -72,9 +68,5 @@ public class MappingContext {
 
     public SynonymToEnumMap getSynonymToEnumMap() {
         return synonymToEnumMap;
-    }
-
-    public Injector getInjector() {
-        return injector;
     }
 }

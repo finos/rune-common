@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.translation;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class MappingContext {
     }
 
     // Unit testing
+    @VisibleForTesting
     public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
         this(mappings,
                 mappingParams,

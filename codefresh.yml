@@ -91,4 +91,4 @@ steps:
           variableDefined: "${{TAG_REPO}} == false"
           skipNextBuild: "${{SKIP_NEXT_BUILD}} == false"
     commands:
-      - codefresh run REGnosys/rosetta-testing/rosetta-testing --branch master --detach
+      - codefresh run REGnosys/rosetta-testing/rosetta-testing --branch master --trigger REGnosys/rosetta-testing --detach

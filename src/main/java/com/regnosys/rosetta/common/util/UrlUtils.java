@@ -19,7 +19,9 @@ import org.apache.commons.io.FilenameUtils;
 
 public class UrlUtils {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
-	
+
+	public static final String PORTABLE_FILE_SEPARATOR = "/";
+
 	public static Reader openURL(URL url) throws IOException {
 		Reader reader = new InputStreamReader(url.openStream(), CHARSET);
 		return new BufferedReader(reader);
@@ -78,7 +80,7 @@ public class UrlUtils {
 	public static String toPortableString(Path path) {
 		return Optional.ofNullable(path)
 				.map(Objects::toString)
-				.map(s -> s.replace("\\", "/"))
+				.map(s -> s.replace("\\", PORTABLE_FILE_SEPARATOR))
 				.orElse(null);
 	}
 }

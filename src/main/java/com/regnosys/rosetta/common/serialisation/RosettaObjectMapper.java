@@ -1,6 +1,5 @@
 package com.regnosys.rosetta.common.serialisation;
 
-import ch.qos.logback.core.joran.util.beans.BeanUtil;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonGenerator;

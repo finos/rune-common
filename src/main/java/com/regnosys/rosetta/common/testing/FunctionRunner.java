@@ -144,7 +144,7 @@ public class FunctionRunner {
             throw new IllegalArgumentException(String.format("Function %s cannot be created.", functionClassName));
         }
 
-        Optional<Method> executeMethod = getEvaluateMethod(rosettaFunction);
+        Optional<Method> executeMethod = getEvaluateMethod(functionClass);
 
         if (!executeMethod.isPresent()) {
             throw new IllegalArgumentException(String.format("Function %s is not executable.", functionClassName));
@@ -152,13 +152,12 @@ public class FunctionRunner {
 
         Method method = executeMethod.get();
         Object[] argsList = getMethodArguments(method, jsonNode);
-        Object funcOutput = method.invoke(rosettaFunction, argsList);
-        return funcOutput;
+        return method.invoke(rosettaFunction, argsList);
     }
 
-    private Optional<Method> getEvaluateMethod(Object rosettaFunction) {
+    private Optional<Method> getEvaluateMethod(Class<?> rosettaClass) {
 
-        List<Method> methods = Arrays.stream(rosettaFunction.getClass().getMethods())
+        List<Method> methods = Arrays.stream(rosettaClass.getMethods())
                 .filter(x -> Modifier.isPublic(x.getModifiers()))
                 .filter(x -> x.getName().equals(ROSETTA_FUNC_EVAL_METHOD_NAME))
                 .collect(Collectors.toList());
@@ -167,7 +166,7 @@ public class FunctionRunner {
             return Optional.of(methods.get(0));
         }
 
-        if (methods.size() == 0) {
+        if (methods.isEmpty()) {
             return Optional.empty();
         }
 
@@ -176,7 +175,7 @@ public class FunctionRunner {
         }
 
         throw new RuntimeException("Unable to find the evaluate function as multiple implementations found. "
-                + methods.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+                + methods.stream().map(Method::toString).collect(Collectors.joining(", ")));
     }
 
     private boolean checkFunctionIsRosettaFunction(Class<?> functionClass) {

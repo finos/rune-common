@@ -17,6 +17,7 @@ public class RegReportUseCase {
 	private final String useCaseReportJavaClassName;
 	private final ExpectedResult expectedResults;
 	private final RosettaModelObject input;
+	private final String error;
 
 	@JsonCreator
 	public RegReportUseCase(@JsonProperty("useCase") String useCase,
@@ -25,7 +26,8 @@ public class RegReportUseCase {
 							@JsonProperty("useCaseReport") RosettaModelObject useCaseReport,
 							@JsonProperty("useCaseReportJavaClassName") String useCaseReportJavaClassName,
 							@JsonProperty("expectedResults") ExpectedResult expectedResults,
-							@JsonProperty("input") RosettaModelObject input) {
+							@JsonProperty("input") RosettaModelObject input,
+							@JsonProperty("error") String error) {
 		this.useCase = useCase;
 		this.dataSetName = dataSetName;
 		this.results = results;
@@ -33,6 +35,7 @@ public class RegReportUseCase {
 		this.useCaseReportJavaClassName = useCaseReportJavaClassName;
 		this.expectedResults = expectedResults;
 		this.input = input;
+		this.error = error;
 	}
 
 	public RegReportUseCase(RegReportUseCase other) {
@@ -43,6 +46,7 @@ public class RegReportUseCase {
 		this.useCaseReportJavaClassName = other.useCaseReportJavaClassName;
 		this.expectedResults = other.expectedResults;
 		this.input = other.input;
+		this.error = other.error;
 	}
 
 	public String getUseCase() {
@@ -73,17 +77,24 @@ public class RegReportUseCase {
 		return input;
 	}
 
+	public String getError(){ return error; }
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		RegReportUseCase that = (RegReportUseCase) o;
-		return Objects.equals(getUseCase(), that.getUseCase()) && Objects.equals(getDataSetName(), that.getDataSetName()) && Objects.equals(getResults(), that.getResults()) && Objects.equals(getUseCaseReport(), that.getUseCaseReport()) && Objects.equals(getUseCaseReportJavaClassName(), that.getUseCaseReportJavaClassName()) && Objects.equals(getExpectedResults(), that.getExpectedResults()) && Objects.equals(getInput(), that.getInput());
+		return Objects.equals(getUseCase(), that.getUseCase()) && Objects.equals(getDataSetName(), that.getDataSetName())
+				&& Objects.equals(getResults(), that.getResults()) && Objects.equals(getUseCaseReport(), that.getUseCaseReport())
+				&& Objects.equals(getUseCaseReportJavaClassName(), that.getUseCaseReportJavaClassName())
+				&& Objects.equals(getExpectedResults(), that.getExpectedResults())
+				&& Objects.equals(getInput(), that.getInput())
+				&& Objects.equals(getError(), that.getError());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getUseCase(), getDataSetName(), getResults(), getUseCaseReport(), getUseCaseReportJavaClassName(), getExpectedResults(), getInput());
+		return Objects.hash(getUseCase(), getDataSetName(), getResults(), getUseCaseReport(), getUseCaseReportJavaClassName(), getExpectedResults(), getInput(), getError());
 	}
 
 	@Override
@@ -96,6 +107,7 @@ public class RegReportUseCase {
 				.add("useCaseReportJavaClassName='" + useCaseReportJavaClassName + "'")
 				.add("expectedResults=" + expectedResults)
 				.add("input=" + input)
+				.add("error=" + error)
 				.toString();
 	}
 }

@@ -1,5 +1,8 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.eclipse.xtext.xbase.lib.Exceptions;
+
 import java.util.*;
 
 public class ReportDataItem {
@@ -7,14 +10,21 @@ public class ReportDataItem {
     private String name;
     private Object input;
     private Object expected;
+    @JsonIgnore
+    private Exception error;
+
 
     public ReportDataItem() {
     }
 
     public ReportDataItem(String name, Object input, Object expected) {
+        this(name, input, expected, null);
+    }
+    public ReportDataItem(String name, Object input, Object expected, Exception error) {
         this.name = name;
         this.input = input;
         this.expected = expected;
+        this.error = error;
     }
 
     public String getName() {
@@ -22,11 +32,21 @@ public class ReportDataItem {
     }
 
     public Object getInput() {
+        if(error != null){
+            Exceptions.sneakyThrow(error);
+        }
         return input;
     }
 
     public Object getExpected() {
         return expected;
+    }
+
+    public String getError() {
+        if(error != null)
+            return error.getLocalizedMessage();
+        else
+            return null;
     }
 
     @Override

@@ -10,6 +10,7 @@ public class ReportDataItem {
     private String name;
     private Object input;
     private Object expected;
+
     @JsonIgnore
     private Exception error;
 
@@ -42,9 +43,10 @@ public class ReportDataItem {
         return expected;
     }
 
+    @JsonIgnore
     public String getError() {
         if(error != null)
-            return error.getLocalizedMessage();
+            return (error).getLocalizedMessage();
         else
             return null;
     }

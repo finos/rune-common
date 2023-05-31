@@ -11,7 +11,7 @@
       {
         "name": "This is the desc of the another usecase that has inline json rather then a file",
         "input": {
-          "eventDate": "invalid",
+          "eventDate": "error",
           "eventQualifier": "TerminatedTrade"
         }
       }

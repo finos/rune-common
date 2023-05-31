@@ -67,7 +67,7 @@ class JsonReportDataLoaderTest {
     }
 
     @Test
-    void lookupsLoadedWithError() throws MalformedURLException {
+    void lookupsLoadedWithAllErrors() throws MalformedURLException {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("regs/test-use-case-load-error");
 
@@ -76,20 +76,33 @@ class JsonReportDataLoaderTest {
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
 
+        assertNotNull(reportDataSets.get(0).getData().get(0).getError());
+        assertNotNull(reportDataSets.get(0).getData().get(1).getError());
+
+        assertThrows(RuntimeException.class, () -> reportDataSets.get(0).getData().get(0).getInput());
+        assertThrows(RuntimeException.class, () -> reportDataSets.get(0).getData().get(1).getInput());
+    }
+    @Test
+    void lookupsLoadedWithOneError() throws MalformedURLException {
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("regs/test-use-case-load-one-error");
+
+        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
+
+        assertEquals(reportDataSets.size(), 1);
+        assertEquals(reportDataSets.get(0).getData().size(), 2);
+
         assertNull(reportDataSets.get(0).getData().get(0).getError());
-        assertNull(reportDataSets.get(0).getData().get(1).getError());
+        assertNotNull(reportDataSets.get(0).getData().get(1).getError());
+
+        assertThrows(RuntimeException.class, () -> reportDataSets.get(0).getData().get(1).getInput());
 
         assertTrue(reportDataSets.get(0).getData().get(0).getInput() instanceof EventTestModelObject);
-        assertTrue(reportDataSets.get(0).getData().get(1).getInput() instanceof EventTestModelObject);
-
         assertEquals(new ReportDataItem("This is the desc of the usecase",
                         new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
                         null),
                 reportDataSets.get(0).getData().get(0));
-        assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
-                        new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
-                        null),
-                reportDataSets.get(0).getData().get(1));
+
     }
 
     private List<ReportDataSet> loadReportDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {

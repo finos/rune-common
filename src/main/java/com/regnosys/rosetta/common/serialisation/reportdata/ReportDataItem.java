@@ -44,11 +44,8 @@ public class ReportDataItem {
     }
 
     @JsonIgnore
-    public String getError() {
-        if(error != null)
-            return error.getMessage();
-        else
-            return null;
+    public Exception getError() {
+        return error;
     }
 
     @Override

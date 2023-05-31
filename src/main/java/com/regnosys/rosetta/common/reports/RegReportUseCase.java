@@ -17,7 +17,7 @@ public class RegReportUseCase {
 	private final String useCaseReportJavaClassName;
 	private final ExpectedResult expectedResults;
 	private final RosettaModelObject input;
-	private final String error;
+	private final Exception error;
 
 	@JsonCreator
 	public RegReportUseCase(@JsonProperty("useCase") String useCase,
@@ -27,7 +27,7 @@ public class RegReportUseCase {
 							@JsonProperty("useCaseReportJavaClassName") String useCaseReportJavaClassName,
 							@JsonProperty("expectedResults") ExpectedResult expectedResults,
 							@JsonProperty("input") RosettaModelObject input,
-							@JsonProperty("error") String error) {
+							@JsonProperty("error") Exception error) {
 		this.useCase = useCase;
 		this.dataSetName = dataSetName;
 		this.results = results;
@@ -77,7 +77,7 @@ public class RegReportUseCase {
 		return input;
 	}
 
-	public String getError(){ return error; }
+	public Exception getError(){ return error; }
 
 	@Override
 	public boolean equals(Object o) {

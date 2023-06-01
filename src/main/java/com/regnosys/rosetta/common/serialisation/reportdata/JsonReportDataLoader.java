@@ -37,12 +37,15 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
     public ReportDataSet loadInputFiles(ReportDataSet descriptor) {
         List<ReportDataItem> loadedData = new ArrayList<>();
         for (ReportDataItem data : descriptor.getData()) {
-            ReportDataItem reportDataItem = new ReportDataItem(data.getName(),
-                    getInput(descriptor.getInputType(), data),
-                    data.getExpected()); // expected is handled by JsonExpectedResultLoader
+            ReportDataItem reportDataItem;
+            try {
+                reportDataItem = new ReportDataItem(data.getName(), getInput(descriptor.getInputType(), data),
+                        data.getExpected()); // expected is handled by JsonExpectedResultLoader
+            } catch (RuntimeException e) {
+                reportDataItem = new ReportDataItem(data.getName(), data.getInput(), data.getExpected(), e);
+            }
             loadedData.add(reportDataItem);
         }
-
         return new ReportDataSet(descriptor.getDataSetName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
     }
 

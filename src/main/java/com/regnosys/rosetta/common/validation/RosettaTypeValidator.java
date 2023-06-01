@@ -50,6 +50,7 @@ public class RosettaTypeValidator implements PostProcessStep {
 			metaData.dataRules(validatorFactory).forEach(dr->validationResults.add(dr.validate(path, instance)));
 			metaData.choiceRuleValidators().forEach(dr->validationResults.add(dr.validate(path, instance)));
 			if (metaData.validator()!=null) validationResults.add(metaData.validator().validate(path, instance));
+            if (metaData.typeFormatValidator()!=null) validationResults.add(metaData.typeFormatValidator().validate(path, instance));
 			return true;
 		}
 

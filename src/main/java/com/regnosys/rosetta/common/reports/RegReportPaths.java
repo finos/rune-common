@@ -20,8 +20,9 @@ public class RegReportPaths {
     public static final String REPORT_FILE_NAME_SUFFIX = "-report.json";
 
     public static RegReportPaths get(Path resourcesPath) {
-        return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(CONFIG_PATH)) ?
-                RegReportPaths.getDefault() : RegReportPaths.getLegacy();
+        return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
+                        RegReportPaths.getDefault() : Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(CONFIG_PATH)) ?
+                RegReportPaths.getConfig() : RegReportPaths.getLegacy();
     }
 
     public static RegReportPaths getDefault() {
@@ -33,6 +34,12 @@ public class RegReportPaths {
                 rootPath.resolve(LOOKUP_PATH));
     }
 
+    public static RegReportPaths getConfig() {
+        Path rootPath = REGULATORY_REPORTING_PATH;
+        Path configPath = REGULATORY_REPORTING_PATH.resolve(CONFIG_PATH);
+        Path lookup = REGULATORY_REPORTING_PATH.resolve(LOOKUP_PATH);
+        return new RegReportPaths(rootPath, configPath, configPath, configPath, lookup);
+    }
     public static RegReportPaths getLegacy() {
         Path dataPath = REGULATORY_REPORTING_PATH.resolve(LEGACY_DATA_PATH);
         Path lookup = REGULATORY_REPORTING_PATH.resolve(LOOKUP_PATH);

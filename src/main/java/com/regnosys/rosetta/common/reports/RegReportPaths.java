@@ -20,7 +20,7 @@ public class RegReportPaths {
     public static final String REPORT_FILE_NAME_SUFFIX = "-report.json";
 
     public static RegReportPaths get(Path resourcesPath) {
-        return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
+        return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(CONFIG_PATH)) ?
                 RegReportPaths.getDefault() : RegReportPaths.getLegacy();
     }
 

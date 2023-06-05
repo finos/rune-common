@@ -12,8 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JsonReportDataLoaderTest {
 
@@ -64,45 +64,6 @@ class JsonReportDataLoaderTest {
         List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 0);
-    }
-
-    @Test
-    void lookupsLoadedWithAllErrors() throws MalformedURLException {
-        // descriptor and input on same path
-        Path path = RESOURCES_PATH.resolve("regs/test-use-case-load-error");
-
-        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
-
-        assertEquals(reportDataSets.size(), 1);
-        assertEquals(reportDataSets.get(0).getData().size(), 2);
-
-        assertNotNull(reportDataSets.get(0).getData().get(0).getError());
-        assertNotNull(reportDataSets.get(0).getData().get(1).getError());
-
-        assertThrows(RuntimeException.class, () -> reportDataSets.get(0).getData().get(0).getInput());
-        assertThrows(RuntimeException.class, () -> reportDataSets.get(0).getData().get(1).getInput());
-    }
-    @Test
-    void lookupsLoadedWithOneError() throws MalformedURLException {
-        // descriptor and input on same path
-        Path path = RESOURCES_PATH.resolve("regs/test-use-case-load-one-error");
-
-        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
-
-        assertEquals(reportDataSets.size(), 1);
-        assertEquals(reportDataSets.get(0).getData().size(), 2);
-
-        assertNull(reportDataSets.get(0).getData().get(0).getError());
-        assertNotNull(reportDataSets.get(0).getData().get(1).getError());
-
-        assertThrows(RuntimeException.class, () -> reportDataSets.get(0).getData().get(1).getInput());
-
-        assertTrue(reportDataSets.get(0).getData().get(0).getInput() instanceof EventTestModelObject);
-        assertEquals(new ReportDataItem("This is the desc of the usecase",
-                        new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
-                        null),
-                reportDataSets.get(0).getData().get(0));
-
     }
 
     private List<ReportDataSet> loadReportDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {

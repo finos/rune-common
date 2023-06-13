@@ -12,7 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>8</maven.compiler.release>
 
-        <rosetta.dsl.version>7.9.0</rosetta.dsl.version>
+        <rosetta.dsl.version>7.9.2</rosetta.dsl.version>
 
         <reflections.version>0.9.11</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->

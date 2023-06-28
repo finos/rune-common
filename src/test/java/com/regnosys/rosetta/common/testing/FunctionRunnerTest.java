@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +35,7 @@ class FunctionRunnerTest {
         FunctionRunner functionRunner = new FunctionRunner(executionDescriptor.get(),
                 this::getInstance,
                 this.getClass().getClassLoader(),
-                objectMapper);
+                objectMapper, Paths.get(""));
         FunctionRunner.FunctionRunnerResult<Object, Object> run = functionRunner.run();
 
 

@@ -224,8 +224,7 @@ public class FunctionRunner {
 
     private URL loadURL(String inputFile) throws MalformedURLException {
         final Path resolvedSCCacheLocation = Paths.get(scCacheLocation.toString(), inputFile);
-        if (!Files.exists(Paths.get(inputFile)) && inputFile.contains("cdm-sample-files")
-                && Files.exists(resolvedSCCacheLocation)) {
+        if (!Files.exists(Paths.get(inputFile)) && Files.exists(resolvedSCCacheLocation)) {
             return resolvedSCCacheLocation.toUri().toURL();
         }
         Optional<Path> inputPath = ClassPathUtils.loadFromClasspath(inputFile, this.classLoader).findFirst();

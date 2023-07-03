@@ -8,6 +8,7 @@ import com.google.common.collect.Iterables;
 import com.regnosys.rosetta.common.hashing.ReferenceConfig;
 import com.regnosys.rosetta.common.hashing.ReferenceResolverProcessStep;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
+import com.regnosys.rosetta.common.util.PathUtils;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.functions.RosettaFunction;
@@ -22,7 +23,9 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -37,15 +40,18 @@ public class FunctionRunner {
     private final InstanceLoader instanceLoader;
     private final ClassLoader classLoader;
     private final ObjectMapper objectMapper;
+    private final Path scCacheLocation;
 
     public FunctionRunner(ExecutionDescriptor executionDescriptor,
                           InstanceLoader instanceLoader,
                           ClassLoader classLoader,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          Path scCacheLocation) {
         this.executionDescriptor = executionDescriptor;
         this.instanceLoader = instanceLoader;
         this.classLoader = classLoader;
         this.objectMapper = objectMapper;
+        this.scCacheLocation = scCacheLocation;
     }
 
     public <INPUT, OUTPUT> FunctionRunnerResult<INPUT, OUTPUT> run() throws ClassNotFoundException, IOException, InvocationTargetException, IllegalAccessException {
@@ -217,10 +223,13 @@ public class FunctionRunner {
     }
 
     private URL loadURL(String inputFile) throws MalformedURLException {
+        final Path resolvedSCCacheLocation = scCacheLocation.resolve(inputFile);
+        if (!Files.exists(Paths.get(inputFile)) && Files.exists(resolvedSCCacheLocation)) {
+            return resolvedSCCacheLocation.toUri().toURL();
+        }
         Optional<Path> inputPath = ClassPathUtils.loadFromClasspath(inputFile, this.classLoader).findFirst();
         if (!inputPath.isPresent()) {
             throw new IllegalArgumentException("Could not load " + inputFile);
-
         }
         return inputPath.get().toUri().toURL();
     }

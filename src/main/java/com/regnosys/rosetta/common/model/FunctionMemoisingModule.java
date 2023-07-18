@@ -1,7 +1,6 @@
 package com.regnosys.rosetta.common.model;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.inject.AbstractModule;
 import com.google.inject.matcher.AbstractMatcher;
@@ -9,17 +8,10 @@ import com.google.inject.matcher.Matcher;
 import com.google.inject.matcher.Matchers;
 import com.rosetta.model.lib.functions.IQualifyFunctionExtension;
 import com.rosetta.model.lib.functions.RosettaFunction;
-import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.google.inject.matcher.Matchers.not;

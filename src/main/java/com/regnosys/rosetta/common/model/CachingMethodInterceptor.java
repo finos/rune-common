@@ -54,23 +54,24 @@ public class CachingMethodInterceptor implements MethodInterceptor {
         return ifPresent;
     }
 
-    public Object invoke1(MethodInvocation invocation) throws Throwable {
-        MemoiseCacheKey key = MemoiseCacheKey.create(invocation.getMethod().toString(), invocation.getArguments());
-        boolean debugLoggingEnabled = isDebugLoggingEnabled(invocation);
-
-        Object ifPresent = memoiseCache.getIfPresent(key);
-        if (ifPresent == null) {
-            Object functionResult = Optional.ofNullable(invocation.proceed()).orElse(NULL);
-            log(debugLoggingEnabled, "Executed function", invocation, functionResult);
-            memoiseCache.put(key, functionResult);
-            return functionResult;
-        }
-        log(debugLoggingEnabled, "Cached function", invocation, ifPresent);
-        if (ifPresent == NULL) {
-            return null;
-        }
-        return ifPresent;
-    }
+//    /* This method has slightly different null handling - experimental */
+//    public Object invoke(MethodInvocation invocation) throws Throwable {
+//        MemoiseCacheKey key = MemoiseCacheKey.create(invocation.getMethod().toString(), invocation.getArguments());
+//        boolean debugLoggingEnabled = isDebugLoggingEnabled(invocation);
+//
+//        Object ifPresent = memoiseCache.getIfPresent(key);
+//        if (ifPresent == null) {
+//            Object functionResult = Optional.ofNullable(invocation.proceed()).orElse(NULL);
+//            log(debugLoggingEnabled, "Executed function", invocation, functionResult);
+//            memoiseCache.put(key, functionResult);
+//            return functionResult;
+//        }
+//        log(debugLoggingEnabled, "Cached function", invocation, ifPresent);
+//        if (ifPresent == NULL) {
+//            return null;
+//        }
+//        return ifPresent;
+//    }
 
     private boolean isDebugLoggingEnabled(MethodInvocation invocation) {
         return debugFunctions.contains(invocation.getMethod().getDeclaringClass().getSimpleName().toUpperCase());

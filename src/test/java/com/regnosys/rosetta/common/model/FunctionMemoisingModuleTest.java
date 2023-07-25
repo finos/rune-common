@@ -81,12 +81,13 @@ class FunctionMemoisingModuleTest {
         assertThat(counter.count(), is(3));
     }
 
-    private Injector createInjector(String packageName, Class<? extends RosettaFunction>... debug) {
-        Injector injector = Guice.createInjector(createModule(packageName, debug));
-        return injector;
+    @SafeVarargs
+    private final Injector createInjector(String packageName, Class<? extends RosettaFunction>... debug) {
+        return Guice.createInjector(createModule(packageName, debug));
     }
 
-    private AbstractModule createModule(String packageName, Class<? extends RosettaFunction>... debug) {
+    @SafeVarargs
+    private final AbstractModule createModule(String packageName, Class<? extends RosettaFunction>... debug) {
         return new AbstractModule() {
             @Override
             protected void configure() {
@@ -120,26 +121,18 @@ class FunctionMemoisingModuleTest {
     @ImplementedBy(Foo.FooDefault.class)
     static abstract class Foo implements RosettaFunction {
 
-        public Foo() {
+        public void evaluate(String arg) {
+            this.doEvaluate(arg);
         }
 
-        public String evaluate(String arg) {
-            String result = this.doEvaluate(arg);
-            return result;
-        }
-
-        protected abstract String doEvaluate(String var1);
+        protected abstract void doEvaluate(String var1);
 
         public static class FooDefault extends Foo {
             @Inject
             Counter counter;
 
-            public FooDefault() {
-            }
-
-            protected String doEvaluate(String arg) {
+            protected void doEvaluate(String arg) {
                 counter.incr();
-                return "Foo.FooDefault value";
             }
         }
     }
@@ -147,33 +140,25 @@ class FunctionMemoisingModuleTest {
     @ImplementedBy(Bar.BarDefault.class)
     static abstract class Bar implements RosettaFunction {
 
-        public Bar() {
+        public void evaluate(BigDecimal arg) {
+            this.doEvaluate(arg);
         }
 
-        public String evaluate(BigDecimal arg) {
-            String result = this.doEvaluate(arg);
-            return result;
-        }
-
-        protected abstract String doEvaluate(BigDecimal var1);
+        protected abstract void doEvaluate(BigDecimal var1);
 
         public static class BarDefault extends Bar {
             @Inject
             Counter counter;
 
-            public BarDefault() {
-            }
-
-            protected String doEvaluate(BigDecimal arg) {
+            protected void doEvaluate(BigDecimal arg) {
                 counter.incr();
-                return "Bar.BarDefault value";
             }
         }
     }
 
     static class FooImpl extends Foo.FooDefault {
-        public String evaluate(String arg) {
-            return doEvaluate(arg);
+        public void evaluate(String arg) {
+            doEvaluate(arg);
         }
     }
 }

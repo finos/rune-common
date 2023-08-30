@@ -6,7 +6,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.matcher.Matcher;
 import com.google.inject.matcher.Matchers;
-import com.rosetta.model.lib.functions.IQualifyFunctionExtension;
 import com.rosetta.model.lib.functions.RosettaFunction;
 
 import java.lang.reflect.Method;
@@ -14,7 +13,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
-import static com.google.inject.matcher.Matchers.not;
 import static com.google.inject.matcher.Matchers.subclassesOf;
 
 public class FunctionMemoisingModule extends AbstractModule {
@@ -50,8 +48,7 @@ public class FunctionMemoisingModule extends AbstractModule {
     @SuppressWarnings("rawtypes")
     private Matcher<Class> createClassMatcher() {
         Matcher<Class> classMatcher = subclassesOf(RosettaFunction.class)
-                .and(isDefaultImpl())
-                .and(not(subclassesOf(IQualifyFunctionExtension.class)));
+                .and(isDefaultImpl());
 
         for (String aPackage : packages) {
             classMatcher = classMatcher.and(Matchers.inSubpackage(aPackage));
@@ -64,7 +61,7 @@ public class FunctionMemoisingModule extends AbstractModule {
         return new AbstractMatcher<Method>() {
             @Override
             public boolean matches(Method method) {
-                return method.getName().equals(EVALUATE_METHOD_NAME);
+                return method.getName().equals(EVALUATE_METHOD_NAME) && !method.isSynthetic();
             }
         };
     }

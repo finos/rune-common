@@ -24,7 +24,7 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.Sets;
 import com.regnosys.rosetta.common.util.StringExtensions;
@@ -85,7 +85,7 @@ public class RosettaObjectMapper {
 	 */
 	public static ObjectMapper getNewRosettaObjectMapper() {
 		return getNewMinimalRosettaObjectMapper()
-								.registerModule(new AfterburnerModule());
+								.registerModule(new BlackbirdModule());
 
 	}
 

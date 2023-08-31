@@ -6,7 +6,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.matcher.Matcher;
 import com.google.inject.matcher.Matchers;
-import com.rosetta.model.lib.functions.IQualifyFunctionExtension;
 import com.rosetta.model.lib.functions.RosettaFunction;
 
 import java.lang.reflect.Method;
@@ -14,7 +13,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
-import static com.google.inject.matcher.Matchers.not;
 import static com.google.inject.matcher.Matchers.subclassesOf;
 
 public class FunctionMemoisingModule extends AbstractModule {

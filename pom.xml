@@ -13,7 +13,7 @@
         <java.enforced.version>[11,12)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
 
-        <rosetta.dsl.version>8.3.5</rosetta.dsl.version>
+        <rosetta.dsl.version>0.0.0.master</rosetta.dsl.version>
 
         <reflections.version>0.9.11</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->
@@ -22,6 +22,7 @@
         <guava.version>32.0.1-jre</guava.version>
         <slf4j-api.version>2.0.7</slf4j-api.version>
         <commons.io.version>2.11.0</commons.io.version>
+        <xtext.version>2.27.0</xtext.version>
 
         <!-- test -->
         <junit.version>5.9.1</junit.version>
@@ -123,6 +124,14 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j-api.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.eclipse.xtext</groupId>
+                <artifactId>xtext-dev-bom</artifactId>
+                <version>${xtext.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- test -->
             <dependency>
                 <groupId>org.hamcrest</groupId>
@@ -252,6 +261,13 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.regnosys.rosetta</groupId>
+            <artifactId>com.regnosys.rosetta.tests</artifactId>
+            <version>0.0.0.master</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

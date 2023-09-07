@@ -26,21 +26,17 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.google.common.collect.Sets;
-import com.regnosys.rosetta.common.util.StringExtensions;
-import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.GlobalKeyFields;
-import com.rosetta.model.lib.meta.Key;
-import com.rosetta.model.lib.meta.Reference;
+import com.rosetta.model.lib.annotations.RosettaAttribute;
+import com.rosetta.model.lib.annotations.RosettaClass;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -70,13 +66,10 @@ public class RosettaObjectMapper {
 				.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 				.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
 				.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
-				//The next three lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
+				//The next two lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
 				//the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
 				.setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))
-				.addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
-				.addMixIn(GlobalKeyFields.class, GlobalKeyFieldsMixIn.class)
-				.addMixIn(Key.class, KeyMixIn.class)
-				.addMixIn(Reference.class, ReferenceMixIn.class)
+				.addMixIn(ReferenceWithMeta.class, RosettaObjectMapper.ReferenceWithMetaMixIn.class)
 				.setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
 	}
 
@@ -85,7 +78,7 @@ public class RosettaObjectMapper {
 	 */
 	public static ObjectMapper getNewRosettaObjectMapper() {
 		return getNewMinimalRosettaObjectMapper()
-								.registerModule(new AfterburnerModule());
+				.registerModule(new AfterburnerModule());
 
 	}
 
@@ -128,47 +121,24 @@ public class RosettaObjectMapper {
 
 		@Override
 		public Class<?> findPOJOBuilder(AnnotatedClass ac) {
-			JavaType type = ac.getType();
-			// [Ljava.lang.String  type is null!
-			if (null != type) {
-				Class<?> rawClass = type.getRawClass();
-
-				if (RosettaModelObject.class.isAssignableFrom(rawClass)) {
-					try {
-						String builderName = null;
-						if (rawClass.getName().endsWith("BuilderImpl")) builderName = rawClass.getName();
-						else if (rawClass.getName().endsWith("Builder")) builderName = rawClass.getName()+"Impl";
-						else if (rawClass.getName().endsWith("Impl")) builderName = rawClass.getName().replaceAll("Impl$", "BuilderImpl");
-						else builderName = rawClass.getTypeName() + "$" + rawClass.getSimpleName() + "BuilderImpl";
-						
-						return Class.forName(builderName,
-								true, rawClass.getClassLoader());
-
-					} catch (ClassNotFoundException e) {
-						throw new RosettaSerialiserException("Could not find the builder class for " + rawClass, e);
-					}
-				}
+			if (ac.hasAnnotation(RosettaClass.class)) {
+				return ac.getAnnotation(RosettaClass.class).builder();
 			}
 			return super.findPOJOBuilder(ac);
 		}
 
 		@Override
-		public PropertyName findNameForDeserialization(Annotated a)
-		{
-			if (a instanceof AnnotatedMethod) {
-				AnnotatedMethod am = (AnnotatedMethod)a;
-				if (am.getParameterCount()==1) {
-					if (am.getName().startsWith("set") && RosettaModelObject.class.isAssignableFrom(am.getDeclaringClass())) {
-						String firstLower = StringExtensions.toFirstLower(am.getName().substring(3));
-						if (firstLower .equals("key") && GlobalKeyFields.class.isAssignableFrom(am.getDeclaringClass())) {
-							firstLower = "location";
-						}
-						if (firstLower.equals("reference") && ReferenceWithMeta.class.isAssignableFrom(am.getDeclaringClass())) {
-							firstLower = "address";
-						}
-						return new PropertyName(firstLower);
-					}
-				}
+		public PropertyName findNameForSerialization(Annotated a) {
+			if (a.hasAnnotation(RosettaAttribute.class)) {
+				return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
+			}
+			return super.findNameForSerialization(a);
+		}
+
+		@Override
+		public PropertyName findNameForDeserialization(Annotated a) {
+			if (a.hasAnnotation(RosettaAttribute.class)) {
+				return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
 			}
 			return super.findNameForDeserialization(a);
 		}
@@ -180,44 +150,28 @@ public class RosettaObjectMapper {
 
 		@Deprecated
 		@Override
-		public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac)
-		{
-			if (ac instanceof AnnotatedClass) {
+		public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
+			if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaClass.class)) {
 				AnnotatedClass acc = (AnnotatedClass) ac;
-				Set<String> names = null;
-				if (RosettaModelObject.class.isAssignableFrom(ac.getRawType())) {
-				 names= StreamSupport.stream(acc.memberMethods().spliterator(), false)
-					.map(m->BeanUtil.getPropertyName(m.getAnnotated()))
-					.filter(Objects::nonNull)
-					.filter(n->n.startsWith("orCreate") || n.startsWith("type")|| n.startsWith("valueType"))
-					.collect(Collectors.toSet());
-				}
-				else {
-					names = Sets.newHashSet();
-				}
-				return JsonIgnoreProperties.Value.forIgnoredProperties(names).withAllowSetters();
-			}
-			if (ac instanceof AnnotatedMethod) {
-				AnnotatedMethod am = (AnnotatedMethod) ac;
-				String propertyName = BeanUtil.getPropertyName(am.getAnnotated());
-				if (propertyName!=null && propertyName.startsWith("orCreate")) {
-					return JsonIgnoreProperties.Value.forIgnoredProperties(propertyName).withAllowSetters();
-				}
+				Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
+				Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+				ignored.removeAll(includes);
+				return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
 			}
 			return JsonIgnoreProperties.Value.empty();
+		}
+
+		private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
+			return StreamSupport.stream(acc.memberMethods().spliterator(), false)
+					.filter(filter)
+					.map(m -> BeanUtil.getPropertyName(m.getAnnotated()))
+					.filter(Objects::nonNull)
+					.collect(Collectors.toSet());
 		}
 
 		@Override
 		public Version version() {
 			return Version.unknownVersion();
-		}
-	}
-
-	protected static class RosettaSerialiserException extends RuntimeException {
-		private static final long serialVersionUID = 1L;
-
-		RosettaSerialiserException(String message, Throwable cause) {
-			super(message, cause);
 		}
 	}
 
@@ -249,14 +203,14 @@ public class RosettaObjectMapper {
 			super(LocalDate.parse(date));
 		}
 	}
-	
+
 	//This class serves to ensure that the value of a reference doesn't get serialized if the
 	//reference or global key field is populated
 	public static class ReferenceFilter extends SimpleBeanPropertyFilter {
 
 		@Override
 		public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider,
-				PropertyWriter writer) throws Exception {
+									 PropertyWriter writer) throws Exception {
 			if (!filterOut(pojo, writer.getName())) {
 				writer.serializeAsField(pojo, jgen, provider);
 			}
@@ -264,7 +218,7 @@ public class RosettaObjectMapper {
 
 		@Override
 		public void serializeAsField(Object bean, JsonGenerator jgen, SerializerProvider provider,
-				BeanPropertyWriter writer) throws Exception {
+									 BeanPropertyWriter writer) throws Exception {
 			if (!filterOut(bean, writer.getName())) {
 				writer.serializeAsField(bean, jgen, provider);
 			}
@@ -273,39 +227,17 @@ public class RosettaObjectMapper {
 		private boolean filterOut(Object pojo, String name) {
 			if (!name.equals("value")) return false;
 			if (pojo instanceof ReferenceWithMeta) {
-				return hasReference((ReferenceWithMeta<?>)pojo);
+				return hasReference((ReferenceWithMeta<?>) pojo);
 			}
 			return false;
 		}
 
 		private boolean hasReference(ReferenceWithMeta<?> pojo) {
-			return pojo.getGlobalReference()!=null || (pojo.getReference()!=null && pojo.getReference().getReference()!=null);
+			return pojo.getGlobalReference() != null || (pojo.getReference() != null && pojo.getReference().getReference() != null);
 		}
-	}
-
-	protected interface GlobalKeyFieldsMixIn {
-		@JsonProperty("location")
-		List<Key> getKey();
-	}
-
-	protected interface KeyMixIn {
-		@JsonProperty("value")
-		String getKeyValue();
-		
-		@JsonIgnore
-		Class<? extends RosettaModelObject> getType();
 	}
 
 	@JsonFilter("ReferenceFilter")
 	protected interface ReferenceWithMetaMixIn {
-		@JsonProperty("address")
-		Reference getReference();
-		@JsonIgnore
-		Object getOrCreateValue();
-	}
-
-	protected interface ReferenceMixIn {
-		@JsonProperty("value")
-		String getReference();
 	}
 }

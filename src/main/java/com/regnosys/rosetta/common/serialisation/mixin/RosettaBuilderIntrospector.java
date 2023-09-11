@@ -12,7 +12,7 @@ import com.regnosys.rosetta.common.serialisation.BackwardsCompatibleAnnotationIn
 import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
-import com.rosetta.model.lib.annotations.RosettaClass;
+import com.rosetta.model.lib.annotations.RosettaDataType;
 
 import java.util.Objects;
 import java.util.Set;
@@ -28,8 +28,8 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
 
     @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {
-        if (ac.hasAnnotation(RosettaClass.class)) {
-            return ac.getAnnotation(RosettaClass.class).builder();
+        if (ac.hasAnnotation(RosettaDataType.class)) {
+            return ac.getAnnotation(RosettaDataType.class).builder();
         }
         return legacyRosettaBuilderIntrospector.findPOJOBuilder(ac)
                 .orElse(super.findPOJOBuilder(ac));
@@ -60,7 +60,7 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
     @Deprecated
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
-        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaClass.class)) {
+        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
             AnnotatedClass acc = (AnnotatedClass) ac;
             Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
             Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));

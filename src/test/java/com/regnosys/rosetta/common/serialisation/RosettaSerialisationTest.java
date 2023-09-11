@@ -6,7 +6,7 @@ import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaClass;
+import com.rosetta.model.lib.annotations.RosettaDataType;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,7 +131,7 @@ public class RosettaSerialisationTest {
         assertEquals(expectedJson, actualJson);
 
         // We need to check to see that the builder class also serialises to the same value
-        Class<? extends RosettaModelObjectBuilder> builderClass = compilesClass.getAnnotation(RosettaClass.class).builder();
+        Class<? extends RosettaModelObjectBuilder> builderClass = compilesClass.getAnnotation(RosettaDataType.class).builder();
         RosettaModelObject builderValue = mapper.readValue(inputJson, builderClass);
         String actualBuilderJson = mapper.writeValueAsString(builderValue.toBuilder());
         assertEquals(expectedJson, actualBuilderJson);

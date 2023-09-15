@@ -58,6 +58,7 @@ public class AnnotationBasedObjectMapperCreator implements ObjectMapperCreator {
                 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
                 .setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))
                 .addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
+                .addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
                 //These are needed to support POJOs that were created before the RosettaAttribute annotations were created.
                 .addMixIn(GlobalKeyFields.class, LegacyGlobalKeyFieldsMixIn.class)
                 .addMixIn(Key.class, LegacyKeyMixIn.class)

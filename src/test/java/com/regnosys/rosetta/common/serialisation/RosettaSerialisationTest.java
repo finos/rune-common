@@ -9,13 +9,13 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaDataType;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,45 +26,79 @@ public class RosettaSerialisationTest {
     @Inject
     CodeGeneratorTestHelper codeGeneratorTestHelper;
 
-    private ObjectMapper mapper;
-
-    @BeforeEach
-    void setUp() {
-        mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
-    }
-
     @Test
     void testBasicSerialisation() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+
         String rosetta = "type A:\n" +
                 "        attr1 string (0..1)\n" +
                 "        attr2 string (0..1)\n";
 
         String expectedJson = "{\"attr1\":\"foo\",\"attr2\":\"bar\"}";
-        assertJsonSerialisation(rosetta, expectedJson, "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper,  rosetta, expectedJson, "com.rosetta.test.model.A");
     }
 
     @Test
     void testBasicSerialisationMultiCard() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta = "type A:\n" +
                 "        attr1 string (0..*)\n" +
                 "        attr2 string (0..*)\n";
 
         String expectedJson = "{\"attr1\":[\"foo1\",\"foo2\"],\"attr2\":[\"bar\"]}";
-        assertJsonSerialisation(rosetta, expectedJson, "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper, rosetta, expectedJson, "com.rosetta.test.model.A");
+    }
+
+    @Test
+    void testBasicEnumWithNativeEnumSupport() throws JsonProcessingException {
+        ObjectMapper mapper = new AnnotationBasedObjectMapperCreator(true).create();
+
+        String rosetta = "type Top:\n" +
+                "          aSingle A (0..1)\n" +
+                "          aMulti A (0..*)\n" +
+                "                enum A:\n" +
+                "          a1\n" +
+                "          A2\n" +
+                "          a_3\n";
+
+        String legacyJson =   "{\"aSingle\":\"A_1\",\"aMulti\":[\"A_1\",\"A2\",\"A_3\"]}";
+        String expectedJson = "{\"aSingle\":\"a1\",\"aMulti\":[\"a1\",\"A2\",\"a_3\"]}";
+
+        assertJsonSerialisation(mapper, rosetta, legacyJson, expectedJson, "com.rosetta.test.model.Top");
+
+        assertJsonSerialisation(mapper, rosetta, expectedJson, "com.rosetta.test.model.Top");
+    }
+
+    @Test
+    void testBasicEnumWithJavaEnumSupport() throws JsonProcessingException {
+        ObjectMapper mapper = new AnnotationBasedObjectMapperCreator(false).create();
+
+        String rosetta = "type Top:\n" +
+                "          aSingle A (0..1)\n" +
+                "          aMulti A (0..*)\n" +
+                "                enum A:\n" +
+                "          a1\n" +
+                "          A2\n" +
+                "          a_3\n";
+
+        String expectedJson =   "{\"aSingle\":\"A_1\",\"aMulti\":[\"A_1\",\"A2\",\"A_3\"]}";
+        assertJsonSerialisation(mapper, rosetta, expectedJson, "com.rosetta.test.model.Top");
     }
 
     @Test
     void testSerialisationWithUpperCaseAttribute() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta = "type A:\n" +
                 "        attr1 string (0..1)\n" +
                 "        Attr2 string (0..1)\n";
 
         String expectedJson = "{\"attr1\":\"foo\",\"Attr2\":\"bar\"}";
-        assertJsonSerialisation(rosetta, expectedJson, "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper, rosetta, expectedJson, "com.rosetta.test.model.A");
     }
 
     @Test
     void testSerialisationWithIdReference() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =
                 "         type A:\n" +
                         "        a1 string (0..1)\n" +
@@ -73,12 +107,13 @@ public class RosettaSerialisationTest {
                         "        b1 A (0..1)\n" +
                         "        b2 string (0..1)\n";
 
-        assertJsonSerialisation(rosetta, "{\"a1\":\"foo\",\"a2\":{\"globalReference\":\"XXXXXXXX\"}}", "com.rosetta.test.model.A");
-        assertJsonSerialisation(rosetta, "{\"b1\":{\"a1\":\"foo\",\"a2\":{\"globalReference\":\"XXXXXXXX\"}},\"b2\":\"bar\"}", "com.rosetta.test.model.B");
+        assertJsonSerialisation(mapper, rosetta, "{\"a1\":\"foo\",\"a2\":{\"globalReference\":\"XXXXXXXX\"}}", "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper, rosetta, "{\"b1\":{\"a1\":\"foo\",\"a2\":{\"globalReference\":\"XXXXXXXX\"}},\"b2\":\"bar\"}", "com.rosetta.test.model.B");
     }
 
     @Test
     void testReferenceRemoval() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =
                 "         type Top:\n" +
                         "        party Party (1..1)\n" +
@@ -89,15 +124,16 @@ public class RosettaSerialisationTest {
                         " type Party: [metadata key]" +
                         "        partyName string (1..1)\n";
 
-        assertJsonSerialisation(rosetta, "{\"party\":{\"meta\":{\"externalKey\":\"EXT\",\"globalKey\":\"GREF\"},\"partyName\":\"foo\"},\"partyRole\":{\"partyReference\":{\"externalReference\":\"EXT\",\"globalReference\":\"GREF\"},\"role\":\"bar\"}}", "com.rosetta.test.model.Top");
+        assertJsonSerialisation(mapper, rosetta, "{\"party\":{\"meta\":{\"externalKey\":\"EXT\",\"globalKey\":\"GREF\"},\"partyName\":\"foo\"},\"partyRole\":{\"partyReference\":{\"externalReference\":\"EXT\",\"globalReference\":\"GREF\"},\"role\":\"bar\"}}", "com.rosetta.test.model.Top");
         String inputJson = "{\"party\":{\"meta\":{\"externalKey\":\"EXT\",\"globalKey\":\"GREF\"},\"partyName\":\"foo\"},\"partyRole\":{\"partyReference\":{\"externalReference\":\"EXT\",\"globalReference\":\"GREF\",\"value\":{\"meta\":{\"externalKey\":\"EXT\",\"globalKey\":\"GREF\"},\"partyName\":\"foo\"}},\"role\":\"bar\"}}";
         String expectedJson = "{\"party\":{\"meta\":{\"externalKey\":\"EXT\",\"globalKey\":\"GREF\"},\"partyName\":\"foo\"},\"partyRole\":{\"partyReference\":{\"externalReference\":\"EXT\",\"globalReference\":\"GREF\"},\"role\":\"bar\"}}";
-        assertJsonSerialisation(rosetta, inputJson, expectedJson,
+        assertJsonSerialisation(mapper, rosetta, inputJson, expectedJson,
                 "com.rosetta.test.model.Top");
     }
 
     @Test
     void testSerialisationWithAddressLocation() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =
                 "         type ResolvablePriceQuantity:\n" +
                         "        resolvedPrice Price (0..1)  [metadata address \"pointsTo\"=PriceQuantity->price]\n" +
@@ -106,17 +142,17 @@ public class RosettaSerialisationTest {
                         " type Price:" +
                         "        rate number (0..1)\n";
 
-        assertJsonSerialisation(rosetta, "{\"resolvedPrice\":{\"address\":{\"scope\":\"DOC\",\"value\":\"price-1\"}}}", "com.rosetta.test.model.ResolvablePriceQuantity");
-        assertJsonSerialisation(rosetta,
+        assertJsonSerialisation(mapper, rosetta, "{\"resolvedPrice\":{\"address\":{\"scope\":\"DOC\",\"value\":\"price-1\"}}}", "com.rosetta.test.model.ResolvablePriceQuantity");
+        assertJsonSerialisation(mapper, rosetta,
                 "{\"price\":{\"meta\":{\"location\":[{\"scope\":\"DOC\",\"value\":\"price-1\"}]},\"value\":{\"rate\":999}}}",
                 "com.rosetta.test.model.PriceQuantity");
     }
 
-    private void assertJsonSerialisation(String rosetta, String expectedJson, String fqClassName) throws JsonProcessingException {
-        assertJsonSerialisation(rosetta, expectedJson, expectedJson, fqClassName);
+    private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String expectedJson, String fqClassName) throws JsonProcessingException {
+        assertJsonSerialisation(mapper, rosetta, expectedJson, expectedJson, fqClassName);
     }
 
-    private void assertJsonSerialisation(String rosetta, String inputJson, String expectedJson, String fqClassName) throws JsonProcessingException {
+    private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String inputJson, String expectedJson, String fqClassName) throws JsonProcessingException {
         HashMap<String, String> generatedCodeMap = codeGeneratorTestHelper.generateCode(rosetta);
 
         codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[2].getMethodName());
@@ -128,13 +164,20 @@ public class RosettaSerialisationTest {
 
         RosettaModelObject value = mapper.readValue(inputJson, compilesClass);
         String actualJson = mapper.writeValueAsString(value);
-        assertEquals(expectedJson, actualJson);
+        assertJsonEquals(expectedJson, actualJson);
 
         // We need to check to see that the builder class also serialises to the same value
         Class<? extends RosettaModelObjectBuilder> builderClass = compilesClass.getAnnotation(RosettaDataType.class).builder();
         RosettaModelObject builderValue = mapper.readValue(inputJson, builderClass);
         String actualBuilderJson = mapper.writeValueAsString(builderValue.toBuilder());
-        assertEquals(expectedJson, actualBuilderJson);
+        assertJsonEquals(expectedJson, actualBuilderJson);
+    }
+
+    private void assertJsonEquals(String expectedJson, String actualJson) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        TreeMap<String, ?> expectedJsonMap = mapper.readValue(expectedJson, TreeMap.class);
+        TreeMap<String, ?> actualJsonMap = mapper.readValue(actualJson, TreeMap.class);
+        assertEquals(expectedJsonMap, actualJsonMap);
     }
 
 }

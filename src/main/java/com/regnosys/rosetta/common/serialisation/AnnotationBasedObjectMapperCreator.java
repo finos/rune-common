@@ -28,21 +28,29 @@ import com.rosetta.model.lib.meta.ReferenceWithMeta;
  */
 public class AnnotationBasedObjectMapperCreator implements ObjectMapperCreator {
 
+    private final boolean supportNativeEnumValue;
+
+    /**
+     * If the supportNativeEnumValue is set to true, then the Logical Model enumerations will be used to
+     * read and write the enums rather than the Java enum names which are upper case by convention.
+     */
+    public AnnotationBasedObjectMapperCreator(boolean supportNativeEnumValue) {
+        this.supportNativeEnumValue = supportNativeEnumValue;
+    }
+
     @Override
     public ObjectMapper create() {
-        return new ObjectMapper()
+        ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new GuavaModule())
                 .registerModule(new JodaModule())
                 .registerModule(new ParameterNamesModule())
                 .registerModule(new Jdk8Module())
                 .registerModule(new JavaTimeModule())
-                .registerModule(new RosettaModule())
+                .registerModule(new RosettaModule(supportNativeEnumValue))
                 .registerModule(new RosettaDateModule())
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                .configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true)
-                .configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
@@ -56,5 +64,11 @@ public class AnnotationBasedObjectMapperCreator implements ObjectMapperCreator {
                 .addMixIn(Reference.class, LegacyReferenceMixIn.class)
 
                 .setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
+
+        if (supportNativeEnumValue) {
+            mapper.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true);
+            mapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+        }
+        return mapper;
     }
 }

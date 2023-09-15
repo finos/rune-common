@@ -2,7 +2,6 @@ package com.regnosys.rosetta.common.serialisation.mixin;
 
 import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.regnosys.rosetta.common.serialisation.mixin.RosettaBuilderIntrospector;
 
 /**
  * Using a module class to append our annotation introspector with a minimal fuss
@@ -10,15 +9,17 @@ import com.regnosys.rosetta.common.serialisation.mixin.RosettaBuilderIntrospecto
 public class RosettaModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
+    private final boolean supportNativeEnumValue;
 
-    public RosettaModule() {
+    public RosettaModule(boolean supportNativeEnumValue) {
         super(PackageVersion.VERSION);
+        this.supportNativeEnumValue = supportNativeEnumValue;
     }
 
     @Override
     public void setupModule(SetupContext context) {
         super.setupModule(context);
-        context.insertAnnotationIntrospector(new RosettaBuilderIntrospector());
+        context.insertAnnotationIntrospector(new RosettaBuilderIntrospector(supportNativeEnumValue));
     }
 
     @Override

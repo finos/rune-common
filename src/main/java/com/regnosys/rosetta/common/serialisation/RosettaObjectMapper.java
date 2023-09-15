@@ -13,7 +13,7 @@ public class RosettaObjectMapper {
     }
 
     public static ObjectMapper getNewMinimalRosettaObjectMapper() {
-        return new AnnotationBasedObjectMapperCreator().create()
+        return new AnnotationBasedObjectMapperCreator(false).create()
                 //This call is scans the classpath and can be slow. Use the AnnotationBasedObjectMapperCreator directly if you don't need it.
                 .findAndRegisterModules();
     }

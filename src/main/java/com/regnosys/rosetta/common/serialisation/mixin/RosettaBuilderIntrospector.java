@@ -24,7 +24,19 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
 
     private static final long serialVersionUID = 1L;
 
-    private final LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector = new LegacyRosettaBuilderIntrospector();
+    private final LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector;
+    private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
+    private final boolean supportNativeEnumValue;
+
+    public RosettaBuilderIntrospector(boolean supportNativeEnumValue) {
+        this(supportNativeEnumValue, new LegacyRosettaBuilderIntrospector(), new RosettaEnumBuilderIntrospector());
+    }
+
+    public RosettaBuilderIntrospector(boolean supportNativeEnumValue, LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+        this.legacyRosettaBuilderIntrospector = legacyRosettaBuilderIntrospector;
+        this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
+        this.supportNativeEnumValue = supportNativeEnumValue;
+    }
 
     @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {
@@ -53,6 +65,25 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
     }
 
     @Override
+    public String[] findEnumValues(Class<?> enumType, Enum<?>[] enumValues, String[] names) {
+        if (supportNativeEnumValue && rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
+            rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
+        } else {
+            super.findEnumValues(enumType, enumValues, names);
+        }
+        return names;
+    }
+
+    @Override
+    public void findEnumAliases(Class<?> enumType, Enum<?>[] enumValues, String[][] aliasList) {
+        if (supportNativeEnumValue && rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
+            rosettaEnumBuilderIntrospector.findEnumAliases(enumType, enumValues, aliasList);
+        } else {
+            super.findEnumAliases(enumType, enumValues, aliasList);
+        }
+    }
+
+    @Override
     public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ann) {
         return findPropertyIgnorals(ann);
     }
@@ -70,7 +101,6 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
 
         return legacyRosettaBuilderIntrospector.findPropertyIgnorals(ac)
                 .orElse(JsonIgnoreProperties.Value.empty());
-
     }
 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

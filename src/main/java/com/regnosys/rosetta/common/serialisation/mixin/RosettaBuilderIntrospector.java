@@ -26,16 +26,14 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
 
     private final LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector;
     private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
-    private final boolean supportNativeEnumValue;
 
     public RosettaBuilderIntrospector(boolean supportNativeEnumValue) {
-        this(supportNativeEnumValue, new LegacyRosettaBuilderIntrospector(), new RosettaEnumBuilderIntrospector());
+        this(new LegacyRosettaBuilderIntrospector(), new RosettaEnumBuilderIntrospector(supportNativeEnumValue));
     }
 
-    public RosettaBuilderIntrospector(boolean supportNativeEnumValue, LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+    public RosettaBuilderIntrospector(LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
         this.legacyRosettaBuilderIntrospector = legacyRosettaBuilderIntrospector;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
-        this.supportNativeEnumValue = supportNativeEnumValue;
     }
 
     @Override
@@ -66,7 +64,7 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
 
     @Override
     public String[] findEnumValues(Class<?> enumType, Enum<?>[] enumValues, String[] names) {
-        if (supportNativeEnumValue && rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
+        if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
         } else {
             super.findEnumValues(enumType, enumValues, names);
@@ -76,7 +74,7 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
 
     @Override
     public void findEnumAliases(Class<?> enumType, Enum<?>[] enumValues, String[][] aliasList) {
-        if (supportNativeEnumValue && rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
+        if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumAliases(enumType, enumValues, aliasList);
         } else {
             super.findEnumAliases(enumType, enumValues, aliasList);

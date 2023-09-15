@@ -56,13 +56,14 @@ public class RosettaSerialisationTest {
         String rosetta = "type Top:\n" +
                 "          aSingle A (0..1)\n" +
                 "          aMulti A (0..*)\n" +
-                "                enum A:\n" +
+                "         enum A:\n" +
                 "          a1\n" +
                 "          A2\n" +
-                "          a_3\n";
+                "          a_3\n" +
+                "          A4 displayName \"---A---4---\"";
 
-        String legacyJson =   "{\"aSingle\":\"A_1\",\"aMulti\":[\"A_1\",\"A2\",\"A_3\"]}";
-        String expectedJson = "{\"aSingle\":\"a1\",\"aMulti\":[\"a1\",\"A2\",\"a_3\"]}";
+        String legacyJson =   "{\"aSingle\":\"A_1\",\"aMulti\":[\"A_1\",\"A2\",\"A_3\",\"---A---4---\"]}";
+        String expectedJson = "{\"aSingle\":\"a1\",\"aMulti\":[\"a1\",\"A2\",\"a_3\",\"---A---4---\"]}";
 
         assertJsonSerialisation(mapper, rosetta, legacyJson, expectedJson, "com.rosetta.test.model.Top");
 
@@ -71,17 +72,18 @@ public class RosettaSerialisationTest {
 
     @Test
     void testBasicEnumWithJavaEnumSupport() throws JsonProcessingException {
-        ObjectMapper mapper = new AnnotationBasedObjectMapperCreator(false).create();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
         String rosetta = "type Top:\n" +
                 "          aSingle A (0..1)\n" +
                 "          aMulti A (0..*)\n" +
-                "                enum A:\n" +
+                "         enum A:\n" +
                 "          a1\n" +
                 "          A2\n" +
-                "          a_3\n";
+                "          a_3\n" +
+                "          A4 displayName \"A-4\"";
 
-        String expectedJson =   "{\"aSingle\":\"A_1\",\"aMulti\":[\"A_1\",\"A2\",\"A_3\"]}";
+        String expectedJson =   "{\"aSingle\":\"A_1\",\"aMulti\":[\"A_1\",\"A2\",\"A_3\",\"A-4\"]}";
         assertJsonSerialisation(mapper, rosetta, expectedJson, "com.rosetta.test.model.Top");
     }
 

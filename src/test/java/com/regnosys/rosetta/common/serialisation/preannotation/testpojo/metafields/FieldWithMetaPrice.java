@@ -4,8 +4,7 @@ import com.regnosys.rosetta.common.serialisation.preannotation.testpojo.Price;
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaAttribute;
-import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RosettaClass;
 import com.rosetta.model.lib.meta.BasicRosettaMetaData;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.RosettaMetaData;
@@ -20,7 +19,7 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 1
  */
-@RosettaDataType(value="FieldWithMetaPrice", builder=FieldWithMetaPrice.FieldWithMetaPriceBuilderImpl.class, version="0.0.0")
+@RosettaClass
 public interface FieldWithMetaPrice extends RosettaModelObject, FieldWithMeta<Price>, GlobalKey {
 
 	FieldWithMetaPriceMeta metaData = new FieldWithMetaPriceMeta();
@@ -94,13 +93,11 @@ public interface FieldWithMetaPrice extends RosettaModelObject, FieldWithMeta<Pr
 		}
 		
 		@Override
-		@RosettaAttribute("meta")
 		public MetaFields getMeta() {
 			return meta;
 		}
 		
 		@Override
-		@RosettaAttribute("value")
 		public Price getValue() {
 			return value;
 		}
@@ -161,7 +158,6 @@ public interface FieldWithMetaPrice extends RosettaModelObject, FieldWithMeta<Pr
 		}
 	
 		@Override
-		@RosettaAttribute("meta")
 		public MetaFields.MetaFieldsBuilder getMeta() {
 			return meta;
 		}
@@ -179,7 +175,6 @@ public interface FieldWithMetaPrice extends RosettaModelObject, FieldWithMeta<Pr
 			return result;
 		}
 		@Override
-		@RosettaAttribute("value")
 		public Price.PriceBuilder getValue() {
 			return value;
 		}
@@ -198,13 +193,11 @@ public interface FieldWithMetaPrice extends RosettaModelObject, FieldWithMeta<Pr
 		}
 	
 		@Override
-		@RosettaAttribute("meta")
 		public FieldWithMetaPriceBuilder setMeta(MetaFields meta) {
 			this.meta = meta==null?null:meta.toBuilder();
 			return this;
 		}
 		@Override
-		@RosettaAttribute("value")
 		public FieldWithMetaPriceBuilder setValue(Price value) {
 			this.value = value==null?null:value.toBuilder();
 			return this;

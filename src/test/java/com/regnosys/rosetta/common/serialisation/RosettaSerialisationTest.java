@@ -158,8 +158,8 @@ public class RosettaSerialisationTest {
     private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String inputJson, String expectedJson, String fqClassName) throws JsonProcessingException {
         HashMap<String, String> generatedCodeMap = codeGeneratorTestHelper.generateCode(rosetta);
 
-        // Un comment so see the generated code in target/<test-name>
-        codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[3].getMethodName());
+        // Uncomment so see the generated code in target/<test-name>
+        //codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[3].getMethodName());
 
         Map<String, Class<?>> compiledCode = codeGeneratorTestHelper.compileToClasses(generatedCodeMap);
 
@@ -183,5 +183,4 @@ public class RosettaSerialisationTest {
         TreeMap<String, ?> actualJsonMap = mapper.readValue(actualJson, TreeMap.class);
         assertEquals(expectedJsonMap, actualJsonMap);
     }
-
 }

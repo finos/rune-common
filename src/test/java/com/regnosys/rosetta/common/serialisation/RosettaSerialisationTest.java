@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
@@ -157,7 +158,8 @@ public class RosettaSerialisationTest {
     private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String inputJson, String expectedJson, String fqClassName) throws JsonProcessingException {
         HashMap<String, String> generatedCodeMap = codeGeneratorTestHelper.generateCode(rosetta);
 
-        codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[2].getMethodName());
+        // Uncomment so see the generated code in target/<test-name>
+        //codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[3].getMethodName());
 
         Map<String, Class<?>> compiledCode = codeGeneratorTestHelper.compileToClasses(generatedCodeMap);
 
@@ -181,5 +183,4 @@ public class RosettaSerialisationTest {
         TreeMap<String, ?> actualJsonMap = mapper.readValue(actualJson, TreeMap.class);
         assertEquals(expectedJsonMap, actualJsonMap);
     }
-
 }

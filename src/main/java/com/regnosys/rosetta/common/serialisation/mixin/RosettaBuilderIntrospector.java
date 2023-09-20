@@ -25,15 +25,18 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
     private static final long serialVersionUID = 1L;
 
     private final LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector;
+    private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
+
     private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
 
     public RosettaBuilderIntrospector(boolean supportNativeEnumValue) {
-        this(new LegacyRosettaBuilderIntrospector(), new RosettaEnumBuilderIntrospector(supportNativeEnumValue));
+        this(new LegacyRosettaBuilderIntrospector(), new EnumAsStringBuilderIntrospector(), new RosettaEnumBuilderIntrospector(supportNativeEnumValue));
     }
 
-    public RosettaBuilderIntrospector(LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+    public RosettaBuilderIntrospector(LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
         this.legacyRosettaBuilderIntrospector = legacyRosettaBuilderIntrospector;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
+        this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
 
     @Override
@@ -67,7 +70,7 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
         } else {
-            super.findEnumValues(enumType, enumValues, names);
+            enumAsStringBuilderIntrospector.findEnumValues(enumType, enumValues, names);
         }
         return names;
     }

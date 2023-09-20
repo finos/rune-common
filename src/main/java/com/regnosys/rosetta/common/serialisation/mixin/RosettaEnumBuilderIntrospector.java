@@ -11,8 +11,10 @@ public class RosettaEnumBuilderIntrospector {
 
     private final EnumNameFunc enumNameFunc;
     private final EnumAliasFunc enumAliasFunc;
+    private final boolean supportNativeEnumValue;
 
     public RosettaEnumBuilderIntrospector(boolean supportNativeEnumValue) {
+        this.supportNativeEnumValue = supportNativeEnumValue;
         if (supportNativeEnumValue) {
             this.enumNameFunc = (annotation, javaEnumName) -> annotation.value();
         } else {
@@ -37,7 +39,6 @@ public class RosettaEnumBuilderIntrospector {
                     for (int i = 0, end = enumValues.length; i < end; ++i) {
                         if (name.equals(enumValues[i].name())) {
                             names[i] = enumNameFunc.apply(annotation, name);
-                            ;
                         }
                     }
                 });

@@ -159,7 +159,7 @@ public class RosettaSerialisationTest {
         HashMap<String, String> generatedCodeMap = codeGeneratorTestHelper.generateCode(rosetta);
 
         // Un comment so see the generated code in target/<test-name>
-        //codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[3].getMethodName());
+        codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[3].getMethodName());
 
         Map<String, Class<?>> compiledCode = codeGeneratorTestHelper.compileToClasses(generatedCodeMap);
 

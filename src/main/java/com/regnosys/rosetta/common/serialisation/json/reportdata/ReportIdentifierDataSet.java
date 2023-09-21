@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.reportdata;
+package com.regnosys.rosetta.common.serialisation.json.reportdata;
 
 import com.regnosys.rosetta.common.reports.RegReportIdentifier;
 

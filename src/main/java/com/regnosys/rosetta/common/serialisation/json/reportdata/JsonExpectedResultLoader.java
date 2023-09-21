@@ -1,9 +1,8 @@
-package com.regnosys.rosetta.common.serialisation.reportdata;
+package com.regnosys.rosetta.common.serialisation.json.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.reports.RegReportIdentifier;
 import com.regnosys.rosetta.common.reports.RegReportPaths;
-import com.regnosys.rosetta.common.serialisation.DataLoader;
 import com.regnosys.rosetta.common.serialisation.InputDataLoader;
 import com.regnosys.rosetta.common.util.UrlUtils;
 

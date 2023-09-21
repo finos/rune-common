@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.reportdata;
+package com.regnosys.rosetta.common.serialisation.json.reportdata;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.xtext.xbase.lib.Exceptions;

@@ -1,8 +1,10 @@
-package com.regnosys.rosetta.common.serialisation.preannotation;
+package com.regnosys.rosetta.common.serialisation.json.preannotation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
+import com.regnosys.rosetta.common.serialisation.preannotation.testpojo.PriceQuantity;
+import com.regnosys.rosetta.common.serialisation.preannotation.testpojo.ResolvablePriceQuantity;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.*;
@@ -11,7 +13,6 @@ import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -24,6 +25,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PreAnnotatedPojoSerialisationTest {
 
+
+    @Test
+    void testSerialisationWithAddressLocation() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+
+        String expectedResolvablePriceQuantityJson = "{\"resolvedPrice\":{\"address\":{\"scope\":\"DOC\",\"value\":\"price-1\"}}}";
+        ResolvablePriceQuantity actualResolvablePriceQuantity = mapper.readValue(expectedResolvablePriceQuantityJson, ResolvablePriceQuantity.class);
+        String actualResolvablePriceQuantityJson = mapper.writeValueAsString(actualResolvablePriceQuantity);
+
+        assertEquals(expectedResolvablePriceQuantityJson, actualResolvablePriceQuantityJson);
+
+        String expectedPriceQuantityJson = "{\"price\":{\"meta\":{\"location\":[{\"scope\":\"DOC\",\"value\":\"price-1\"}]},\"value\":{\"rate\":999}}}";
+        PriceQuantity actualPriceQuantity = mapper.readValue(expectedPriceQuantityJson, PriceQuantity.class);
+        String actualPriceQuantityJson = mapper.writeValueAsString(actualPriceQuantity);
+
+        assertEquals(expectedPriceQuantityJson, actualPriceQuantityJson);
+    }
 
     @Test
     void testLegacyAnnotatedPojo() throws JsonProcessingException {

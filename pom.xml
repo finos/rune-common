@@ -404,6 +404,36 @@
                     </dependency>
                 </dependencies>
             </plugin>
+            <plugin>
+                <groupId>com.regnosys.rosetta</groupId>
+                <artifactId>rosetta-maven-plugin</artifactId>
+                <version>${rosetta.dsl.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-xsd-based-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>testGenerate</goal>
+                        </goals>
+                        <configuration>
+                            <sourceRoots>
+                                <sourceRoot>${project.build.testOutputDirectory}/xml-serialisation/rosetta</sourceRoot>
+                            </sourceRoots>
+                            <classPathLookupFilter>.*com\.regnosys\.rosetta.*</classPathLookupFilter>
+                            <languages>
+                                <language>
+                                    <setup>com.regnosys.rosetta.RosettaStandaloneSetup</setup>
+                                    <outputConfigurations>
+                                        <outputConfiguration>
+                                            <outputDirectory>${project.build.testOutputDirectory}/xml-serialisation/java</outputDirectory>
+                                        </outputConfiguration>
+                                    </outputConfigurations>
+                                </language>
+                            </languages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

@@ -1,0 +1,4 @@
+<TopLevel xmlns:xsi="file://../schema/schema.xsd"
+          xsi:type="Document">
+    <Attr>Hello world!</Attr>
+</TopLevel>

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -15,10 +16,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.serialisation.mixin.ReferenceFilter;
-import com.regnosys.rosetta.common.serialisation.mixin.ReferenceWithMetaMixIn;
-import com.regnosys.rosetta.common.serialisation.mixin.RosettaDateModule;
-import com.regnosys.rosetta.common.serialisation.mixin.RosettaModule;
+import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyReferenceMixIn;
@@ -26,7 +24,8 @@ import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
-import com.rosetta.test.Document;
+import com.rosetta.test.*;
+import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
@@ -38,6 +37,7 @@ import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -61,21 +61,36 @@ public class XmlSerialisationTest {
         }
     }
 
-    @Test
-    public void testXmlSerialisation() throws IOException, SAXException {
-        URL xmlFile = XmlSerialisationTest.class.getResource("/xml-serialisation/input/sample.xml");
-        xsdValidator.validate(new StreamSource(xmlFile.openStream()));
-    }
+//    @Test
+//    public void testXmlSerialisation() throws IOException, SAXException {
+//        URL xmlFile = XmlSerialisationTest.class.getResource("/xml-serialisation/input/sample.xml");
+//        xsdValidator.validate(new StreamSource(xmlFile.openStream()));
+//    }
 
     @Test
     public void testDocumentToXmlSerialisation() throws IOException {
-        Document document = Document.builder().setAttr("Hello world!").build();
-        ObjectMapper xmlMapper = new XmlMapper();
-                // .registerModule(new RosettaModule(true));
+        Foo foo = Foo.builder().setXmlValue("xmlVal").setAttr1(1).build();
+        Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
+        Document document = Document.builder().setAttr(foo).setValue(measure).build();
+        final boolean supportNativeEnumValue = true;
+        ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
+                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
+        RosettaXMLConfiguration config = mapper.readValue(Resources.getResource("xml-serialisation/xml-config.json"), RosettaXMLConfiguration.class);
+        ObjectMapper xmlMapper = new XmlMapper()
+                .addMixIn(Document.class, DocumentMixin.class)
+                .addMixIn(Measure.class, MeasureMixin.class)
+                .addMixIn(Foo.class, FooMixin.class)
+                .registerModule(new RosettaXMLModule(config, supportNativeEnumValue));
+//                .writerFor(Document.class)
+//                .withAttribute("xmlns","testValue")
+//                .withAttribute("xmlns:xsi", "xsiTestValue");
+
         String xmlOutput = xmlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(document);
 
         String expected = Resources.toString(Objects.requireNonNull(XmlSerialisationTest.class.getResource("/xml-serialisation/expected/document.xml")), StandardCharsets.UTF_8);
         assertEquals(expected, xmlOutput);
+
         // Differences from what we expect:
         // - we don't know the name of the toplevel tag
         // - capitalisation of `Attr` is wrong

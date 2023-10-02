@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+@Deprecated
 public class RegReport {
 	private final RegReportIdentifier identifier;
 	private final List<RegReportUseCase> useCases;

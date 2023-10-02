@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.common.reports;
 
+import com.rosetta.model.lib.ModelReportId;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -73,30 +75,36 @@ public class RegReportPaths {
         return lookup;
     }
 
-    public static Path getReportPath(Path outputPath, String reportIdentifierName) {
-        return outputPath.resolve(directoryName(reportIdentifierName));
+    public static Path getReportPath(Path outputPath, ModelReportId reportIdentifier) {
+        return outputPath.resolve(directoryName(reportIdentifier));
     }
 
-    public static Path getReportDataSetPath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName) {
-        return getReportPath(outputPath, reportIdentifier.getName()).resolve(directoryName(dataSetName));
+    public static Path getReportDataSetPath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
+        return getReportPath(outputPath, reportIdentifier).resolve(directoryNameOfDataset(dataSetName));
     }
 
-    public static Path getReportExpectationsFilePath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName) {
+    public static Path getReportExpectationsFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
         return getReportDataSetPath(outputPath, reportIdentifier, dataSetName).resolve(REPORT_EXPECTATIONS_FILE_NAME);
     }
 
-    public static Path getKeyValueExpectationFilePath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName, Path inputPath) {
+    public static Path getKeyValueExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
         return getReportDataSetPath(outputPath, reportIdentifier, dataSetName)
                 .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
     }
 
-    public static Path getReportExpectationFilePath(Path outputPath, RegReportIdentifier reportIdentifier, String dataSetName, Path inputPath) {
+    public static Path getReportExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
         return getReportDataSetPath(outputPath, reportIdentifier, dataSetName)
                 .resolve(inputPath.getFileName().toString().replace(".json", REPORT_FILE_NAME_SUFFIX));
     }
 
-    public static String directoryName(String name) {
-        return name
+    public static String directoryName(ModelReportId id) {
+        return id.joinRegulatoryReference("-")
+                .replace("_", "-")
+                .toLowerCase();
+    }
+
+    public static String directoryNameOfDataset(String datasetName) {
+        return datasetName
                 .replace(" ", "-")
                 .replace("_", "-")
                 .trim().toLowerCase();

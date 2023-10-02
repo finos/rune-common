@@ -3,8 +3,8 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.reports.RegReportIdentifier;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
+import com.rosetta.model.lib.ModelReportId;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,9 +29,9 @@ class JsonExpectedResultLoaderTest {
     void shouldLoadExpectedResultForReport1() throws IOException {
         Path rootPath = Paths.get("regs/test-use-case-load-expected");
 
-        String reportName = "report1";
+        ModelReportId reportId = ModelReportId.fromNamespaceAndRegulatoryReferenceString("test.reg.<Body Corpus1>");
         Path descriptorPath = rootPath.resolve(CONFIG_PATH);
-        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(descriptorPath, reportName);
+        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(descriptorPath, reportId);
 
         // test
         URL outputUrl = RESOURCES_PATH.resolve(rootPath).resolve(OUTPUT_PATH).toUri().toURL();
@@ -47,7 +47,7 @@ class JsonExpectedResultLoaderTest {
         assertEquals("test1.json", reportDataItem1.getInput());
 
         ExpectedResult expectedResult = (ExpectedResult) reportDataItem1.getExpected();
-        List<ExpectedResultField> keyValueResults = expectedResult.getExpectationsPerReport().get(reportName);
+        List<ExpectedResultField> keyValueResults = expectedResult.getExpectationsPerReport().get(reportId);
         assertNotNull(keyValueResults);
         assertEquals(1, keyValueResults.size());
 
@@ -65,8 +65,10 @@ class JsonExpectedResultLoaderTest {
     void shouldLoadExpectedResultFromLegacyFolderStructure() throws IOException {
         Path rootPath = Paths.get("regs/test-use-case-load-expected-legacy");
 
-        String reportName = "report1";
-        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(rootPath, reportName);
+        ModelReportId reportId1 = ModelReportId.fromNamespaceAndRegulatoryReferenceString("test.reg.<Body Corpus1>");
+        ReportIdentifierDataSet inputDataSet = getReportIdentifierDataSet(rootPath, reportId1);
+
+        ModelReportId reportId2 = ModelReportId.fromNamespaceAndRegulatoryReferenceString("test.reg.<Body Corpus2>");
 
         // test
         URL outputUrl = RESOURCES_PATH.resolve(rootPath).toUri().toURL();
@@ -85,9 +87,9 @@ class JsonExpectedResultLoaderTest {
 
         // data item 1 - expected results for report 1
         ExpectedResult expectedResult = (ExpectedResult) reportDataItem1.getExpected();
-        Map<String, List<ExpectedResultField>> expectationsMap1 = expectedResult.getExpectationsPerReport();
+        Map<ModelReportId, List<ExpectedResultField>> expectationsMap1 = expectedResult.getExpectationsPerReport();
 
-        List<ExpectedResultField> keyValueResultsReport1 = expectationsMap1.get("report1");
+        List<ExpectedResultField> keyValueResultsReport1 = expectationsMap1.get(reportId1);
         assertNotNull(keyValueResultsReport1);
         assertEquals(1, keyValueResultsReport1.size());
 
@@ -95,7 +97,7 @@ class JsonExpectedResultLoaderTest {
         assertEquals("column 1", expectedResultField.getName());
         assertEquals("NewTrade-expected", expectedResultField.getValue());
 
-        List<ExpectedResultField> keyValueResults1Report2 = expectationsMap1.get("report2");
+        List<ExpectedResultField> keyValueResults1Report2 = expectationsMap1.get(reportId2);
         assertNull(keyValueResults1Report2);
 
         // data item 2
@@ -105,12 +107,12 @@ class JsonExpectedResultLoaderTest {
 
         // data item 2 - expected results for report 1
         ExpectedResult expectedResult2 = (ExpectedResult) reportDataItem2.getExpected();
-        Map<String, List<ExpectedResultField>> expectationsMap2 = expectedResult2.getExpectationsPerReport();
+        Map<ModelReportId, List<ExpectedResultField>> expectationsMap2 = expectedResult2.getExpectationsPerReport();
 
-        List<ExpectedResultField> keyValueResults2Report1 = expectationsMap2.get("report1");
+        List<ExpectedResultField> keyValueResults2Report1 = expectationsMap2.get(reportId1);
         assertNull(keyValueResults2Report1);
 
-        List<ExpectedResultField> keyValueResults2Report2 = expectationsMap2.get("report2");
+        List<ExpectedResultField> keyValueResults2Report2 = expectationsMap2.get(reportId2);
         assertNotNull(keyValueResults2Report2);
         assertEquals(1, keyValueResults2Report2.size());
 
@@ -125,15 +127,13 @@ class JsonExpectedResultLoaderTest {
                 outputPath);
     }
 
-    private ReportIdentifierDataSet getReportIdentifierDataSet(Path descriptorPath, String reportName) throws IOException {
-        RegReportIdentifier reportIdentifier = new RegReportIdentifier(null, null, reportName, null);
-
+    private ReportIdentifierDataSet getReportIdentifierDataSet(Path descriptorPath, ModelReportId reportId) throws IOException {
         URL url = Resources.getResource(descriptorPath.resolve("regulatory-reporting-data-descriptor.json").toString());
         String json = Resources.toString(url, StandardCharsets.UTF_8);
         CollectionType loadType = rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, ReportDataSet.class);
         List<ReportDataSet> reportDataSets = rosettaObjectMapper.readValue(json, loadType);
         ReportDataSet reportDataSet = reportDataSets.get(0);
 
-        return new ReportIdentifierDataSet(reportIdentifier, reportDataSet);
+        return new ReportIdentifierDataSet(reportId, reportDataSet);
     }
 }

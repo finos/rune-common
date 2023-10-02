@@ -16,7 +16,7 @@
           "eventQualifier": "TerminatedTrade"
         },
         "expected": {
-          "report2": [
+          "test.reg.<Body Corpus2>": [
             {
               "name": "column 2",
               "value": "TerminatedTrade-expected"

@@ -1,11 +1,10 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.reports.RegReportIdentifier;
 import com.regnosys.rosetta.common.reports.RegReportPaths;
-import com.regnosys.rosetta.common.serialisation.DataLoader;
 import com.regnosys.rosetta.common.serialisation.InputDataLoader;
 import com.regnosys.rosetta.common.util.UrlUtils;
+import com.rosetta.model.lib.ModelReportId;
 
 import java.net.URL;
 import java.nio.file.Files;
@@ -44,12 +43,12 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
                 new ReportDataSet(dataSet.getDataSetName(), dataSet.getInputType(), dataSet.getApplicableReports(), loadedData));
     }
 
-    private Object getExpected(RegReportIdentifier regReportIdentifier, String dataSetName, String expectedType, ReportDataItem data) {
+    private Object getExpected(ModelReportId reportIdentifier, String dataSetName, String expectedType, ReportDataItem data) {
         if (data.getInput() instanceof String) {
             // attempt to load per report expectation file
             Path inputFileName = Paths.get(String.valueOf(data.getInput()));
             Path keyValueExpectationPath = RegReportPaths
-                    .getKeyValueExpectationFilePath(UrlUtils.toPath(outputPath), regReportIdentifier, dataSetName, inputFileName);
+                    .getKeyValueExpectationFilePath(UrlUtils.toPath(outputPath), reportIdentifier, dataSetName, inputFileName);
             if (Files.exists(keyValueExpectationPath)) {
                 URL keyValueExpectationUrl = UrlUtils.toUrl(keyValueExpectationPath);
                 List<ExpectedResultField> resultFields = readTypeList(ExpectedResultField.class, rosettaObjectMapper, keyValueExpectationUrl);
@@ -57,7 +56,7 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
                         data.getExpected() == null ?
                                 new ExpectedResult(new HashMap<>()) :
                                 fromObject(data.getExpected(), ExpectedResult.class, rosettaObjectMapper);
-                expectedResult.getExpectationsPerReport().put(regReportIdentifier.getName(), resultFields);
+                expectedResult.getExpectationsPerReport().put(reportIdentifier, resultFields);
                 return expectedResult;
             }
         }

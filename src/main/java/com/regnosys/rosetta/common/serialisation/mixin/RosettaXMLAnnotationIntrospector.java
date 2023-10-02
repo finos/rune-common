@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.serialisation.mixin;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyName;
@@ -59,23 +60,9 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     }
 
-    private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(Annotated a) {
-       return Optional.of(a)
-               .filter(annotated ->  annotated instanceof AnnotatedMember)
-               .map(annotated -> (AnnotatedMember) annotated)
-               .flatMap(annotatedMember ->
-                   Optional.ofNullable(annotatedMember.getAnnotation(RosettaAttribute.class))
-                           .flatMap(rosettaAttributeAnnotation ->
-                                getTypeXMLConfiguration(getEnclosingClass(annotatedMember))
-                                        .flatMap(TypeXMLConfiguration::getAttributes)
-                                        .map(attributeMap -> attributeMap.get(rosettaAttributeAnnotation.value())))
-               );
 
-    }
 
-    private AnnotatedClass getEnclosingClass (AnnotatedMember member) {
-        return (AnnotatedClass) member.getTypeContext(); //TODO: get rid of use of deprecated API
-    }
+
 
 
     @Override
@@ -114,7 +101,19 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return getAttributeXMLConfiguration(ann)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                 .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.ATTRIBUTE)
-                .orElseGet(() -> super.isOutputAsAttribute(config,ann));
+                .orElseGet(() -> super.isOutputAsAttribute(config, ann));
+    }
+
+    @Override
+    protected boolean _isIgnorable(Annotated a) {
+        boolean isIgnorable= super._isIgnorable(a);
+        if(isIgnorable){
+            return true;
+//        } else if (a.hasAnnotation(RosettaAttribute.class) || ((AnnotatedMember) a).getTypeContext()  instanceof  AnnotatedClass && getEnclosingClass((AnnotatedMember) a).getRawType().getSimpleName().startsWith("Measure") && a instanceof AnnotatedField) {
+        } else if (a.hasAnnotation(RosettaAttribute.class) ) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -122,7 +121,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return getAttributeXMLConfiguration(ann)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                 .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
-                .orElseGet(() -> super.isOutputAsText(config,ann));
+                .orElseGet(() -> super.isOutputAsText(config, ann));
     }
 
     @Override
@@ -143,6 +142,23 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             super.findEnumAliases(enumType, enumValues, aliasList);
         }
     }
+    private AnnotatedClass getEnclosingClass(AnnotatedMember member) {
+        return (AnnotatedClass) member.getTypeContext(); //TODO: get rid of use of deprecated API
+    }
+
+    private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(Annotated a) {
+        return Optional.of(a)
+                .filter(annotated -> annotated instanceof AnnotatedMember)
+                .map(annotated -> (AnnotatedMember) annotated)
+                .flatMap(annotatedMember ->
+                        Optional.ofNullable(annotatedMember.getAnnotation(RosettaAttribute.class))
+                                .flatMap(rosettaAttributeAnnotation ->
+                                        getTypeXMLConfiguration(getEnclosingClass(annotatedMember))
+                                                .flatMap(TypeXMLConfiguration::getAttributes)
+                                                .map(attributeMap -> attributeMap.get(rosettaAttributeAnnotation.value())))
+                );
+
+    }
 
     private Optional<TypeXMLConfiguration> getTypeXMLConfiguration(AnnotatedClass ac) {
         return Optional.ofNullable(ac.getAnnotation(RosettaDataType.class)).flatMap(rosettaDataTypeAnnotation -> {
@@ -153,4 +169,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             return rosettaXMLConfiguration.getConfigurationForType(modelSymbolId);
         });
     }
+
+
 }

@@ -16,6 +16,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.io.Resources;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
@@ -72,20 +73,7 @@ public class XmlSerialisationTest {
         Foo foo = Foo.builder().setXmlValue("xmlVal").setAttr1(1).build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
         Document document = Document.builder().setAttr(foo).setValue(measure).build();
-        final boolean supportNativeEnumValue = true;
-        ObjectMapper mapper = new ObjectMapper()
-                .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
-        RosettaXMLConfiguration config = mapper.readValue(Resources.getResource("xml-serialisation/xml-config.json"), RosettaXMLConfiguration.class);
-        ObjectMapper xmlMapper = new XmlMapper()
-                .addMixIn(Document.class, DocumentMixin.class)
-                .addMixIn(Measure.class, MeasureMixin.class)
-                .addMixIn(Foo.class, FooMixin.class)
-                .registerModule(new RosettaXMLModule(config, supportNativeEnumValue));
-//                .writerFor(Document.class)
-//                .withAttribute("xmlns","testValue")
-//                .withAttribute("xmlns:xsi", "xsiTestValue");
-
+        ObjectMapper xmlMapper = RosettaObjectMapper.getRosettaXMLMapper(Resources.getResource("xml-serialisation/xml-config.json").openStream());
         String xmlOutput = xmlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(document);
 
         String expected = Resources.toString(Objects.requireNonNull(XmlSerialisationTest.class.getResource("/xml-serialisation/expected/document.xml")), StandardCharsets.UTF_8);

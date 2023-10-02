@@ -27,6 +27,7 @@ import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.test.*;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
+import org.eclipse.xtext.util.StringInputStream;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
@@ -69,7 +70,7 @@ public class XmlSerialisationTest {
 //    }
 
     @Test
-    public void testDocumentToXmlSerialisation() throws IOException {
+    public void testDocumentToXmlSerialisation() throws IOException, SAXException {
         Foo foo = Foo.builder().setXmlValue("xmlVal").setAttr1(1).build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
         Document document = Document.builder().setAttr(foo).setValue(measure).build();
@@ -78,6 +79,11 @@ public class XmlSerialisationTest {
 
         String expected = Resources.toString(Objects.requireNonNull(XmlSerialisationTest.class.getResource("/xml-serialisation/expected/document.xml")), StandardCharsets.UTF_8);
         assertEquals(expected, xmlOutput);
+
+        xsdValidator.validate(new StreamSource(new StringInputStream(xmlOutput)));
+
+        Document actual = xmlMapper.readValue(xmlOutput, Document.DocumentBuilderImpl.class);
+        assertEquals(document, actual);
 
         // Differences from what we expect:
         // - we don't know the name of the toplevel tag

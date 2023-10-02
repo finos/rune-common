@@ -60,10 +60,19 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     }
 
-
-
-
-
+    @Override
+    public PropertyName findNameForSerialization(Annotated a) {
+        PropertyName name = super.findNameForSerialization(a);
+        if (name == null) {
+            if (getAttributeXMLConfiguration(a)
+                    .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
+                    .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
+                    .orElse(false)) {
+                return PropertyName.USE_DEFAULT;
+            }
+        }
+        return name;
+    }
 
     @Override
     public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass ac, List<BeanPropertyWriter> properties) {

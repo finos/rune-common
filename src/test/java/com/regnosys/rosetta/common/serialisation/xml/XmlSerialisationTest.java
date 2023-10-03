@@ -26,16 +26,12 @@ public class XmlSerialisationTest {
 
     private final Validator xsdValidator;
 
-    public XmlSerialisationTest() {
+    public XmlSerialisationTest() throws SAXException {
         URL schemaFile = XmlSerialisationTest.class.getResource(XSD_SCHEMA);
         SchemaFactory schemaFactory = SchemaFactory
                 .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-        try {
-            Schema schema = schemaFactory.newSchema(schemaFile);
-            xsdValidator = schema.newValidator();
-        } catch (SAXException e) {
-            throw new RuntimeException(e);
-        }
+        Schema schema = schemaFactory.newSchema(schemaFile);
+        xsdValidator = schema.newValidator();
     }
 
     @Test

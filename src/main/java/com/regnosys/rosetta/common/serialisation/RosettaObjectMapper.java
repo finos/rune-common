@@ -1,12 +1,19 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.serialisation.mixin.RosettaXMLModule;
+import com.regnosys.rosetta.common.serialisation.mixin.*;
+import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
 import java.io.IOException;
@@ -41,10 +48,10 @@ public class RosettaObjectMapper {
     }
 
     public static ObjectMapper getRosettaXMLMapper(InputStream configInputStream) throws IOException {
-        ObjectMapper mapper = new ObjectMapper()
+        ObjectMapper xmlConfigurationMapper = new ObjectMapper()
                 .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
-        RosettaXMLConfiguration config = mapper.readValue(configInputStream, RosettaXMLConfiguration.class);
+        RosettaXMLConfiguration config = xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
         return getRosettaXMLMapper(config);
     }
 }

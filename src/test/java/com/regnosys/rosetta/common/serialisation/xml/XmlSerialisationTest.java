@@ -1,33 +1,9 @@
 package com.regnosys.rosetta.common.serialisation.xml;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
-import com.regnosys.rosetta.common.serialisation.mixin.*;
-import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
-import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
-import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyReferenceMixIn;
-import com.rosetta.model.lib.meta.GlobalKeyFields;
-import com.rosetta.model.lib.meta.Key;
-import com.rosetta.model.lib.meta.Reference;
-import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.test.*;
-import com.rosetta.util.serialisation.RosettaXMLConfiguration;
-import org.eclipse.xtext.util.StringInputStream;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
@@ -36,9 +12,8 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class XmlSerialisationTest {
     private static final String XSD_SCHEMA = "/xml-serialisation/schema/schema.xsd";
 
-    private Validator xsdValidator;
+    private final Validator xsdValidator;
 
     public XmlSerialisationTest() {
         URL schemaFile = XmlSerialisationTest.class.getResource(XSD_SCHEMA);
@@ -63,34 +38,27 @@ public class XmlSerialisationTest {
         }
     }
 
-//    @Test
-//    public void testXmlSerialisation() throws IOException, SAXException {
-//        URL xmlFile = XmlSerialisationTest.class.getResource("/xml-serialisation/input/sample.xml");
-//        xsdValidator.validate(new StreamSource(xmlFile.openStream()));
-//    }
-
     @Test
     public void testDocumentToXmlSerialisation() throws IOException, SAXException {
+        // Construct a Document object
         Foo foo = Foo.builder().setXmlValue("xmlVal").setAttr1(1).build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
         Document document = Document.builder().setAttr(foo).setValue(measure).build();
-        ObjectMapper xmlMapper = RosettaObjectMapper.getRosettaXMLMapper(Resources.getResource("xml-serialisation/xml-config.json").openStream());
-        String xmlOutput = xmlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(document);
 
-        String expected = Resources.toString(Objects.requireNonNull(XmlSerialisationTest.class.getResource("/xml-serialisation/expected/document.xml")), StandardCharsets.UTF_8);
-        assertEquals(expected, xmlOutput);
+        // Create an XML mapper with the generated XML configuration based on the XSD schema
+        ObjectMapper xmlMapper = RosettaObjectMapper.getRosettaXMLMapper(
+                Resources.getResource("xml-serialisation/xml-config.json").openStream());
 
-        xsdValidator.validate(new StreamSource(new StringInputStream(xmlOutput)));
+        // Test serialisation
+        String actualXML = xmlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(document);
+        String expectedXML = Resources.toString(Objects.requireNonNull(XmlSerialisationTest.class.getResource("/xml-serialisation/expected/document.xml")), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
 
-        Document actual = xmlMapper.readValue(xmlOutput, Document.DocumentBuilderImpl.class);
+        // Test serialised document matches the XSD schema
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
+
+        // Test deserialisaton
+        Document actual = xmlMapper.readValue(actualXML, Document.class);
         assertEquals(document, actual);
-
-        // Differences from what we expect:
-        // - we don't know the name of the toplevel tag
-        // - capitalisation of `Attr` is wrong
-        // - additional element called `type`, which shouldn't be there.
-        // - add `xmlns:xsi="<xsd schema>"` to the toplevel tag?
-        // - xsi:type="Document"?
-        // - ask
     }
 }

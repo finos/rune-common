@@ -17,7 +17,7 @@ class FunctionRunnerTest {
     @Test
     void runTestFunc1UsingRunner() throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException {
 
-        ObjectMapper objectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+        ObjectMapper objectMapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
 
         Optional<ExecutionDescriptor> executionDescriptor = ExecutionDescriptor.loadExecutionDescriptor(objectMapper,
                 Resources.getResource("function-runner-test/execution-descriptor-1.json")).stream()

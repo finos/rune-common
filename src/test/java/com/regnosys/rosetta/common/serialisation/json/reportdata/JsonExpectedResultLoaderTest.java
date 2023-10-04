@@ -23,7 +23,7 @@ class JsonExpectedResultLoaderTest {
 
     private static final Path RESOURCES_PATH = Paths.get("src/test/resources");
 
-    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
 
     @Test
     void shouldLoadExpectedResultForReport1() throws IOException {

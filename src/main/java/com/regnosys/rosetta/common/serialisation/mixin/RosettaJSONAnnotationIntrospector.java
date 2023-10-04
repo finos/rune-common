@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector implements BackwardsCompatibleAnnotationIntrospector {
+public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector implements BackwardsCompatibleAnnotationIntrospector {
 
     private static final long serialVersionUID = 1L;
 
@@ -29,11 +29,11 @@ public class RosettaBuilderIntrospector extends JacksonAnnotationIntrospector im
 
     private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
 
-    public RosettaBuilderIntrospector(boolean supportNativeEnumValue) {
+    public RosettaJSONAnnotationIntrospector(boolean supportNativeEnumValue) {
         this(new LegacyRosettaBuilderIntrospector(), new EnumAsStringBuilderIntrospector(), new RosettaEnumBuilderIntrospector(supportNativeEnumValue));
     }
 
-    public RosettaBuilderIntrospector(LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+    public RosettaJSONAnnotationIntrospector(LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
         this.legacyRosettaBuilderIntrospector = legacyRosettaBuilderIntrospector;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;

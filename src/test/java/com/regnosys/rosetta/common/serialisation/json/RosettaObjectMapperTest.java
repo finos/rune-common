@@ -13,7 +13,7 @@ public class RosettaObjectMapperTest {
 
 	@Test
 	void testSerialiseBuilder() throws IOException {
-		ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+		ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
 		
 		Key.KeyBuilder k= Key.builder().setScope("TestScope").setKeyValue("KEY");
 		
@@ -27,7 +27,7 @@ public class RosettaObjectMapperTest {
 	
 	@Test
 	void testSerialiseBuilder2() throws IOException {
-		ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+		ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
 		
 		Key.KeyBuilder k= Key.builder().setScope("TestScope").setKeyValue("KEY");
 		
@@ -41,7 +41,7 @@ public class RosettaObjectMapperTest {
 	
 	@Test
 	void testSerialiseBuilt() throws IOException {
-		ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+		ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
 		
 		Key k= Key.builder().setScope("TestScope").setKeyValue("KEY").build();
 		

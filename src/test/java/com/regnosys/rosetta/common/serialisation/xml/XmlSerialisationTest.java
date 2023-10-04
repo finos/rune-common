@@ -53,7 +53,7 @@ public class XmlSerialisationTest {
                 .writerWithDefaultPrettyPrinter()
                 .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
         String actualXML = xmlWriter.writeValueAsString(document);
-        String expectedXML = Resources.toString(Objects.requireNonNull(XmlSerialisationTest.class.getResource("/xml-serialisation/expected/document.xml")), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/document.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test serialised document matches the XSD schema

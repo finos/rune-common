@@ -9,47 +9,69 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.regnosys.rosetta.common.serialisation.mixin.ReferenceFilter;
-import com.regnosys.rosetta.common.serialisation.mixin.ReferenceWithMetaMixIn;
-import com.regnosys.rosetta.common.serialisation.mixin.RosettaDateModule;
+import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyReferenceMixIn;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLModule;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
+import com.rosetta.util.serialisation.RosettaXMLConfiguration;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
 
 /**
  * A lazy-loading holder that returns a pre-configured {@link ObjectMapper} that serves as the default when
  * serialising/deserializing Rosetta Model Objects.
  */
-public class AbstractRosettaObjectMapperCreator implements ObjectMapperCreator {
+public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
     private final boolean supportNativeEnumValue;
     private final Module rosettaModule;
+    private final ObjectMapper baseMapper;
 
     /**
      * If the supportNativeEnumValue is set to true, then the Logical Model enumerations will be used to
      * read and write the enums rather than the Java enum names which are upper case by convention.
      */
-    public AbstractRosettaObjectMapperCreator(boolean supportNativeEnumValue, Module rosettaModule) {
+    public RosettaObjectMapperCreator(boolean supportNativeEnumValue, Module rosettaModule, ObjectMapper baseMapper) {
         this.supportNativeEnumValue = supportNativeEnumValue;
         this.rosettaModule = rosettaModule;
+        this.baseMapper = baseMapper;
     }
 
-    protected ObjectMapper createBaseObjectMapper() {
-        return new ObjectMapper();
+    public static RosettaObjectMapperCreator forJSON() {
+        boolean supportNativeEnumValue = false; // for backwards compatibility
+        return new RosettaObjectMapperCreator(supportNativeEnumValue, new RosettaJSONModule(supportNativeEnumValue), new ObjectMapper());
+    }
+    public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
+        boolean supportNativeEnumValue = true;
+        return new RosettaObjectMapperCreator(supportNativeEnumValue, new RosettaXMLModule(config, supportNativeEnumValue), new XmlMapper());
+    }
+    public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {
+        ObjectMapper xmlConfigurationMapper = new ObjectMapper()
+                .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
+                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
+        RosettaXMLConfiguration config = xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
+        return forXML(config);
+    }
+    public static RosettaObjectMapperCreator forXML() {
+        return forXML(new RosettaXMLConfiguration(Collections.emptyMap()));
     }
 
     @Override
     public ObjectMapper create() {
-        ObjectMapper mapper = createBaseObjectMapper()
+        ObjectMapper mapper = baseMapper
                 .registerModule(new GuavaModule())
                 .registerModule(new JodaModule())
                 .registerModule(new ParameterNamesModule())
@@ -75,8 +97,8 @@ public class AbstractRosettaObjectMapperCreator implements ObjectMapperCreator {
                 .setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
 
         if (supportNativeEnumValue) {
-            mapper.configure(DeserializationFeature.READ_ENUMS_USING_TO_STRING, true);
-            mapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+            mapper.enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING);
+            mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
         }
         return mapper;
     }

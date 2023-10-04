@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.mixin;
+package com.regnosys.rosetta.common.serialisation.xml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.ser.impl.AttributePropertyWriter;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
+import com.regnosys.rosetta.common.serialisation.ConstantAttributePropertyWriter;
+import com.regnosys.rosetta.common.serialisation.mixin.EnumAsStringBuilderIntrospector;
+import com.regnosys.rosetta.common.serialisation.mixin.RosettaEnumBuilderIntrospector;
 import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
@@ -30,6 +33,12 @@ import java.util.Set;
 public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntrospector {
 
     private static final long serialVersionUID = 1L;
+
+    private static final String ROSETTA_BUILD_METHOD_NAME = "build";
+    private static final String ROSETTA_BUILDER_SETTER_PREFIX = "set";
+
+    public static final String SCHEMA_LOCATION_ATTRIBUTE_NAME = "schemaLocation";
+    private static final String SCHEMA_LOCATION_ATTRIBUTE_PREFIXED_NAME = "xsi:" + SCHEMA_LOCATION_ATTRIBUTE_NAME;
 
     private final RosettaXMLConfiguration rosettaXMLConfiguration;
 
@@ -61,7 +70,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     {
         if (ac.hasAnnotation(RosettaDataType.class)) {
             // Our generated code uses 'build' for the build method, 'set' as setter prefix
-            return new JsonPOJOBuilder.Value("build", "set");
+            return new JsonPOJOBuilder.Value(ROSETTA_BUILD_METHOD_NAME, ROSETTA_BUILDER_SETTER_PREFIX);
         }
         return super.findPOJOBuilderConfig(ac);
     }
@@ -85,15 +94,18 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     protected PropertyName _findXmlName(Annotated a) {
         if (this.shouldUseDefaultPropertyName(a)) {
             // This is an edge case to conform to the same behaviour as the @JacksonXmlText annotation
-            // in case where the attribute should be rendered as a XML value.
+            // in case where the attribute should be rendered as an XML value.
             return PropertyName.USE_DEFAULT;
         }
         // If the XML name is specified in the XML configuration, use that.
         return this.getAttributeXMLConfiguration(a)
                 .flatMap(AttributeXMLConfiguration::getXmlName)
                 .map(PropertyName::construct)
-                .orElseGet(() -> super._findXmlName(a));
-
+                .orElseGet(
+                        () -> Optional.ofNullable(a.getAnnotation(RosettaAttribute.class))
+                                .map(rosettaAttrAnn -> PropertyName.construct(rosettaAttrAnn.value()))
+                                .orElseGet(() -> super._findXmlName(a))
+                );
     }
 
     private boolean shouldUseDefaultPropertyName(Annotated a) {
@@ -134,10 +146,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return new ConstantAttributePropertyWriter(xmlAttributeName, xmlPropertyDefinition, ac.getAnnotations(), type, xmlAttributeValue);
     }
     private BeanPropertyWriter constructVirtualSchemaLocationAttribute(MapperConfig<?> config, AnnotatedClass ac, JavaType type) {
-        PropertyName propertyName = PropertyName.construct("xsi:schemaLocation");
-        AnnotatedMember member = new VirtualXMLAttribute(ac, ac.getRawType(), "schemaLocation", type);
+        PropertyName propertyName = PropertyName.construct(SCHEMA_LOCATION_ATTRIBUTE_PREFIXED_NAME);
+        AnnotatedMember member = new VirtualXMLAttribute(ac, ac.getRawType(), SCHEMA_LOCATION_ATTRIBUTE_NAME, type);
         SimpleBeanPropertyDefinition xmlPropertyDefinition = SimpleBeanPropertyDefinition.construct(config, member, propertyName, PropertyMetadata.STD_OPTIONAL, JsonInclude.Include.NON_NULL);
-        return AttributePropertyWriter.construct(member.getName(), xmlPropertyDefinition, ac.getAnnotations(), type);
+        return AttributePropertyWriter.construct(SCHEMA_LOCATION_ATTRIBUTE_NAME, xmlPropertyDefinition, ac.getAnnotations(), type);
     }
 
     @Override
@@ -184,7 +196,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 .flatMap(TypeXMLConfiguration::getXmlRootElementName)
                 .map(rootElementName -> {
                     Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
-                    ignoredNames.add("schemaLocation");
+                    ignoredNames.add(SCHEMA_LOCATION_ATTRIBUTE_NAME);
                     return JsonIgnoreProperties.Value.construct(
                             ignoredNames,
                             ignoreProps.getIgnoreUnknown(),

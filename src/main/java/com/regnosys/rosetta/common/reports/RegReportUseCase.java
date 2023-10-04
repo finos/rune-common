@@ -2,7 +2,7 @@ package com.regnosys.rosetta.common.reports;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regnosys.rosetta.common.serialisation.json.reportdata.ExpectedResult;
+import com.regnosys.rosetta.common.serialisation.reportdata.ExpectedResult;
 import com.rosetta.model.lib.RosettaModelObject;
 
 import java.util.List;

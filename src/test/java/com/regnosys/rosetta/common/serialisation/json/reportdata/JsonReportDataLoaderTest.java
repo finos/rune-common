@@ -2,6 +2,9 @@ package com.regnosys.rosetta.common.serialisation.json.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
+import com.regnosys.rosetta.common.serialisation.reportdata.JsonReportDataLoader;
+import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
+import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
 import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
@@ -21,7 +24,7 @@ class JsonReportDataLoaderTest {
 
     private static final List<String> DESCRIPTOR_FILE_NAMES = Collections.singletonList(JsonReportDataLoader.DEFAULT_DESCRIPTOR_NAME);
 
-    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
     void lookupsLoaded() throws MalformedURLException {

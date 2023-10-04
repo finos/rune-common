@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.json.reportdata;
+package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

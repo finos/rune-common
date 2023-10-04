@@ -2,8 +2,9 @@ package com.regnosys.rosetta.common.serialisation.json;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.regnosys.rosetta.common.serialisation.RosettaJSONObjectMapperCreator;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.regnosys.rosetta.common.serialisation.mixin.RosettaJSONModule;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -30,7 +31,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testBasicSerialisation() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
         String rosetta = "type A:\n" +
                 "        attr1 string (0..1)\n" +
@@ -42,7 +43,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testBasicSerialisationMultiCard() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta = "type A:\n" +
                 "        attr1 string (0..*)\n" +
                 "        attr2 string (0..*)\n";
@@ -53,7 +54,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testBasicEnumWithNativeEnumSupport() throws JsonProcessingException {
-        ObjectMapper mapper = new RosettaJSONObjectMapperCreator(true).create();
+        ObjectMapper mapper = new RosettaObjectMapperCreator(true, new RosettaJSONModule(true), new ObjectMapper()).create();
 
         String rosetta = "type Top:\n" +
                 "          aSingle A (0..1)\n" +
@@ -74,7 +75,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testBasicEnumWithJavaEnumSupport() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
         String rosetta = "type Top:\n" +
                 "          aSingle A (0..1)\n" +
@@ -91,7 +92,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testSerialisationWithUpperCaseAttribute() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta = "type A:\n" +
                 "        attr1 string (0..1)\n" +
                 "        Attr2 string (0..1)\n";
@@ -102,7 +103,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testSerialisationWithIdReference() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =
                 "         type A:\n" +
                         "        a1 string (0..1)\n" +
@@ -117,7 +118,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testReferenceRemoval() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =
                 "         type Top:\n" +
                         "        party Party (1..1)\n" +
@@ -137,7 +138,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testSerialisationWithAddressLocation() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =
                 "         type ResolvablePriceQuantity:\n" +
                         "        resolvedPrice Price (0..1)  [metadata address \"pointsTo\"=PriceQuantity->price]\n" +

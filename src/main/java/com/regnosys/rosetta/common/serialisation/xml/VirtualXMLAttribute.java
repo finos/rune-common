@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.mixin;
+package com.regnosys.rosetta.common.serialisation.xml;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.introspect.TypeResolutionContext;

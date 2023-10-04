@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.reports.RegReportIdentifier;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
+import com.regnosys.rosetta.common.serialisation.reportdata.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -23,7 +24,7 @@ class JsonExpectedResultLoaderTest {
 
     private static final Path RESOURCES_PATH = Paths.get("src/test/resources");
 
-    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
     void shouldLoadExpectedResultForReport1() throws IOException {

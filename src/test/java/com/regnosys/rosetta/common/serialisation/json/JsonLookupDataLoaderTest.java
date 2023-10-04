@@ -18,7 +18,7 @@ class JsonLookupDataLoaderTest {
 
     private static final Path RESOURCES_PATH = Paths.get("src/test/resources");
 
-    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+    private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
     @Test
     void lookupsLoaded() throws MalformedURLException {

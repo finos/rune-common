@@ -28,7 +28,7 @@ public class PreAnnotatedPojoSerialisationTest {
 
     @Test
     void testSerialisationWithAddressLocation() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
         String expectedResolvablePriceQuantityJson = "{\"resolvedPrice\":{\"address\":{\"scope\":\"DOC\",\"value\":\"price-1\"}}}";
         ResolvablePriceQuantity actualResolvablePriceQuantity = mapper.readValue(expectedResolvablePriceQuantityJson, ResolvablePriceQuantity.class);
@@ -45,7 +45,7 @@ public class PreAnnotatedPojoSerialisationTest {
 
     @Test
     void testLegacyAnnotatedPojo() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getOptimizedRosettaJSONMapper();
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 
         String expectedJson =   "{\"a\":\"A/1\"}";
 

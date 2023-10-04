@@ -13,7 +13,7 @@
         <java.enforced.version>[17,18)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
 
-        <rosetta.dsl.version>0.0.0.master</rosetta.dsl.version>
+        <rosetta.dsl.version>8.8.1</rosetta.dsl.version>
 
         <reflections.version>0.9.11</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->
@@ -361,13 +361,10 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>${exec-maven-plugin.version}</version>
-                <configuration>
-                    <includePluginDependencies>true</includePluginDependencies>
-                </configuration>
                 <executions>
                     <execution>
                         <id>import-test-xsd-schema</id>
-                        <phase>initialize</phase>
+                        <phase>generate-test-sources</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>
@@ -384,6 +381,7 @@
                                 <argument>-xml-config-output-path</argument>
                                 <argument>${project.build.testOutputDirectory}/xml-serialisation/xml-config.json</argument>
                             </arguments>
+                            <includePluginDependencies>true</includePluginDependencies>
                         </configuration>
                     </execution>
                 </executions>
@@ -418,6 +416,7 @@
                             <goal>testGenerate</goal>
                         </goals>
                         <configuration>
+                            <addOutputDirectoriesToCompileSourceRoots>false</addOutputDirectoriesToCompileSourceRoots>
                             <sourceRoots>
                                 <sourceRoot>${project.build.testOutputDirectory}/xml-serialisation/rosetta</sourceRoot>
                             </sourceRoots>
@@ -432,6 +431,24 @@
                                     </outputConfigurations>
                                 </language>
                             </languages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-generated-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.testOutputDirectory}/xml-serialisation/java</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>

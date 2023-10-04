@@ -41,7 +41,7 @@ public class RosettaDateModule extends SimpleModule {
         addSerializer(LocalTime.class, new StdSerializer<LocalTime>(LocalTime.class) {
             @Override
             public void serialize(LocalTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-                gen.writeString(DateTimeFormatter.ISO_OFFSET_TIME.format(OffsetTime.of(value, ZoneOffset.UTC)));
+                gen.writeString(DateTimeFormatter.ISO_TIME.format(OffsetTime.of(value, ZoneOffset.UTC)));
             }
         });
     }

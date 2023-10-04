@@ -8,6 +8,9 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.OffsetTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.rosetta.model.lib.records.Date;
 
 import java.io.IOException;
@@ -32,12 +35,7 @@ public class RosettaDateModule extends SimpleModule {
                 gen.writeString(value.toString());
             }
         });
-        addDeserializer(LocalTime.class, new StdDeserializer<LocalTime>(LocalTime.class) {
-            @Override
-            public LocalTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-                return p.readValueAs(OffsetTime.class).toLocalTime();
-            }
-        });
+        addDeserializer(LocalTime.class, new LocalTimeDeserializer(DateTimeFormatter.ISO_TIME));
         addSerializer(LocalTime.class, new StdSerializer<LocalTime>(LocalTime.class) {
             @Override
             public void serialize(LocalTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {

@@ -271,18 +271,6 @@
             <version>${rosetta.dsl.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.tools</artifactId>
-            <version>${rosetta.dsl.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.regnosys.rosetta</groupId>
-                    <artifactId>com.regnosys.rosetta.ide</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
 
     <build>

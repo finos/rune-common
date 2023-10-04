@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.serialisation.mixin;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyMetadata;
@@ -8,8 +9,10 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
+import com.fasterxml.jackson.databind.ser.impl.AttributePropertyWriter;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlAnnotationIntrospector;
+import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
 import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
@@ -19,12 +22,15 @@ import com.rosetta.util.serialisation.AttributeXMLRepresentation;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 import com.rosetta.util.serialisation.TypeXMLConfiguration;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntrospector {
 
     private static final long serialVersionUID = 1L;
+
     private final RosettaXMLConfiguration rosettaXMLConfiguration;
 
     private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
@@ -64,13 +70,18 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return getTypeXMLConfiguration(ac)
                 .flatMap(TypeXMLConfiguration::getXmlRootElementName)
                 .map(PropertyName::construct)
-                .orElseGet(() -> super.findRootName(ac));
+                .orElseGet(() ->
+                        Optional.ofNullable(ac.getAnnotation(RosettaDataType.class))
+                                .map(rosettaDataTypeAnn -> PropertyName.construct(rosettaDataTypeAnn.value()))
+                                .orElseGet(() -> super.findRootName(ac))
+                );
     }
 
     @Override
     protected PropertyName _findXmlName(Annotated a) {
-
-        return getAttributeXMLConfiguration(a)
+        return Optional.of(a)
+                .filter(ann -> !this.shouldUseDefaultPropertyName(ann))
+                .flatMap(this::getAttributeXMLConfiguration)
                 .flatMap(AttributeXMLConfiguration::getXmlName)
                 .map(PropertyName::construct)
                 .orElseGet(() -> super._findXmlName(a));
@@ -81,10 +92,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     public PropertyName findNameForSerialization(Annotated a) {
         PropertyName name = super.findNameForSerialization(a);
         if (name == null) {
-            if (getAttributeXMLConfiguration(a)
-                    .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
-                    .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
-                    .orElse(false)) {
+            if (shouldUseDefaultPropertyName(a)) {
                 return PropertyName.USE_DEFAULT;
             }
         }
@@ -95,25 +103,35 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     public PropertyName findNameForDeserialization(Annotated a) {
         PropertyName name = super.findNameForDeserialization(a);
         if (name == null) {
-            if (getAttributeXMLConfiguration(a)
-                    .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
-                    .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
-                    .orElse(false)) {
+            if (shouldUseDefaultPropertyName(a)) {
                 return PropertyName.USE_DEFAULT;
             }
         }
         return name;
     }
 
+    private boolean shouldUseDefaultPropertyName(Annotated a) {
+        return getAttributeXMLConfiguration(a)
+                .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
+                .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
+                .orElse(false);
+    }
+
     @Override
     public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass ac, List<BeanPropertyWriter> properties) {
         getTypeXMLConfiguration(ac)
-                .flatMap(TypeXMLConfiguration::getXmlAttributes)
-                .ifPresent(xmlAttributes -> {
-                    for (final String xmlAttributeName : xmlAttributes.keySet()) {
-                        final String xmlAttributeValue = xmlAttributes.get(xmlAttributeName);
-                        JavaType propType = config.constructType(Object.class);
-                        final BeanPropertyWriter bpw = constructVirtualProperty(xmlAttributeName, xmlAttributeValue, config, ac, propType);
+                .ifPresent(typeXMLConfiguration -> {
+                    typeXMLConfiguration.getXmlAttributes().ifPresent(xmlAttributes -> {
+                        for (String xmlAttributeName : xmlAttributes.keySet()) {
+                            String xmlAttributeValue = xmlAttributes.get(xmlAttributeName);
+                            JavaType propType = config.constructType(String.class);
+                            BeanPropertyWriter bpw = constructVirtualProperty(xmlAttributeName, xmlAttributeValue, config, ac, propType);
+                            properties.add(bpw);
+                        }
+                    });
+                    if (typeXMLConfiguration.getXmlRootElementName().isPresent()) {
+                        JavaType propType = config.constructType(String.class);
+                        BeanPropertyWriter bpw = constructSchemaLocationProperty(config, ac, propType);
                         properties.add(bpw);
                     }
                 });
@@ -125,6 +143,12 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         AnnotatedMember member = new VirtualXMLAttribute(ac, ac.getRawType(), xmlAttributeName, type);
         SimpleBeanPropertyDefinition xmlPropertyDefinition = SimpleBeanPropertyDefinition.construct(config, member, propertyName, PropertyMetadata.STD_REQUIRED, JsonInclude.Include.NON_NULL);
         return new ConstantAttributePropertyWriter(xmlAttributeName, xmlPropertyDefinition, ac.getAnnotations(), type, xmlAttributeValue);
+    }
+    private BeanPropertyWriter constructSchemaLocationProperty(MapperConfig<?> config, AnnotatedClass ac, JavaType type) {
+        PropertyName propertyName = PropertyName.construct("xsi:schemaLocation");
+        AnnotatedMember member = new VirtualXMLAttribute(ac, ac.getRawType(), "schemaLocation", type);
+        SimpleBeanPropertyDefinition xmlPropertyDefinition = SimpleBeanPropertyDefinition.construct(config, member, propertyName, PropertyMetadata.STD_OPTIONAL, JsonInclude.Include.NON_NULL);
+        return AttributePropertyWriter.construct(member.getName(), xmlPropertyDefinition, ac.getAnnotations(), type);
     }
 
     @Override
@@ -148,11 +172,53 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     @Override
+    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
+        JsonIgnoreProperties.Value ignoreProps = super.findPropertyIgnoralByName(config, a);
+        return Optional.of(a)
+                .filter(ann -> ann instanceof AnnotatedClass)
+                .map(ann -> (AnnotatedClass) ann)
+                .flatMap(this::getTypeXMLConfiguration)
+                .flatMap(TypeXMLConfiguration::getXmlRootElementName)
+                .map(_rootElementName -> {
+                    Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
+                    ignoredNames.add("schemaLocation");
+                    return JsonIgnoreProperties.Value.construct(
+                            ignoredNames,
+                            ignoreProps.getIgnoreUnknown(),
+                            ignoreProps.getAllowGetters(),
+                            ignoreProps.getAllowSetters(),
+                            ignoreProps.getMerge());
+                }).orElse(ignoreProps);
+    }
+
+    @Override
     public Boolean isOutputAsText(MapperConfig<?> config, Annotated ann) {
         return getAttributeXMLConfiguration(ann)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                 .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
                 .orElseGet(() -> super.isOutputAsText(config, ann));
+    }
+
+    @Override
+    public PropertyName findWrapperName(Annotated ann) {
+        if (ann.hasAnnotation(RosettaAttribute.class) && hasCollectionType(ann)) {
+            return PropertyName.NO_NAME;
+        }
+        return super.findWrapperName(ann);
+    }
+
+    private boolean hasCollectionType(Annotated ann) {
+        if (ann instanceof AnnotatedMethod) {
+            AnnotatedMethod method = (AnnotatedMethod) ann;
+            JavaType attributeType;
+            if (method.getParameterCount() == 1) {
+                attributeType = method.getParameterType(0);
+            } else {
+                attributeType = method.getType();
+            }
+            return TypeUtil.isIndexedType(attributeType);
+        }
+        return false;
     }
 
     @Override

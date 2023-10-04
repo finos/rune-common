@@ -1,17 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns="urn:my.schema" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="urn:my.schema">
+<xs:schema
+        xmlns="urn:my.schema"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        elementFormDefault="qualified"
+        targetNamespace="urn:my.schema"
+>
     <xs:element name="TopLevel" type="Document">
     </xs:element>
     <xs:complexType name="Document">
         <xs:sequence>
-            <xs:element name="Attr" type="Foo" />
+            <xs:element name="Attr" type="Foo" minOccurs="0" maxOccurs="unbounded" />
             <xs:element name="Value" type="Measure" />
         </xs:sequence>
     </xs:complexType>
     <xs:complexType name="Foo">
         <xs:sequence>
-            <xs:element name="Attr1" type="xs:int" />
-            <xs:element name="XMLValue" type="xs:string" />
+            <xs:element name="XMLTime" type="xs:time" />
+            <xs:element name="Attr1" type="xs:int" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
     </xs:complexType>
     <xs:simpleType name="UnitEnum">

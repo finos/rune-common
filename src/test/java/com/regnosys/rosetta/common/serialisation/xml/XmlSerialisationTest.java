@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.serialisation.xml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.rosetta.test.*;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalTime;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,24 +39,28 @@ public class XmlSerialisationTest {
     @Test
     public void testDocumentToXmlSerialisation() throws IOException, SAXException {
         // Construct a Document object
-        Foo foo = Foo.builder().setXmlValue("xmlVal").setAttr1(1).build();
+        Foo foo1 = Foo.builder().setXmlTime(LocalTime.of(1, 23, 45)).addAttr1(1).addAttr1(2).build();
+        Foo foo2 = Foo.builder().setXmlTime(LocalTime.of(23, 45, 59)).addAttr1(3).build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
-        Document document = Document.builder().setAttr(foo).setValue(measure).build();
+        Document document = Document.builder().addAttr(foo1).addAttr(foo2).setValue(measure).build();
 
         // Create an XML mapper with the generated XML configuration based on the XSD schema
         ObjectMapper xmlMapper = RosettaObjectMapper.getRosettaXMLMapper(
                 Resources.getResource("xml-serialisation/xml-config.json").openStream());
 
         // Test serialisation
-        String actualXML = xmlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(document);
+        ObjectWriter xmlWriter = xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
+        String actualXML = xmlWriter.writeValueAsString(document);
         String expectedXML = Resources.toString(Objects.requireNonNull(XmlSerialisationTest.class.getResource("/xml-serialisation/expected/document.xml")), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test serialised document matches the XSD schema
-        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
+         xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
 
         // Test deserialisaton
-        Document actual = xmlMapper.readValue(actualXML, Document.class);
+        Document actual = xmlMapper.readValue(expectedXML, Document.class);
         assertEquals(document, actual);
     }
 }

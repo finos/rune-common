@@ -1,6 +1,5 @@
 package com.regnosys.rosetta.common.serialisation.mixin;
 
-import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
@@ -17,24 +16,14 @@ public class RosettaXMLModule extends SimpleModule {
 
 
     public RosettaXMLModule(final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
-        super(PackageVersion.VERSION);
+        super(RosettaXMLModule.class.getSimpleName());
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.supportNativeEnumValue = supportNativeEnumValue;
     }
 
     @Override
     public void setupModule(SetupContext context) {
-        super.setupModule(context);
         context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(rosettaXMLConfiguration,supportNativeEnumValue));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return this == o;
+        super.setupModule(context);
     }
 }

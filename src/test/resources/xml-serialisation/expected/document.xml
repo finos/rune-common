@@ -1,7 +1,12 @@
-<TopLevel xmlns="urn:my.schema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<TopLevel xmlns="urn:my.schema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:my.schema ../schema/schema.xsd">
   <Attr>
+    <XMLTime>01:23:45Z</XMLTime>
     <Attr1>1</Attr1>
-    <XMLValue>xmlVal</XMLValue>
+    <Attr1>2</Attr1>
+  </Attr>
+  <Attr>
+    <XMLTime>23:45:59Z</XMLTime>
+    <Attr1>3</Attr1>
   </Attr>
   <Value Unit="Meter">1</Value>
 </TopLevel>

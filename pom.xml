@@ -13,7 +13,7 @@
         <java.enforced.version>[17,18)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
 
-        <rosetta.dsl.version>8.8.0</rosetta.dsl.version>
+        <rosetta.dsl.version>8.8.0.1</rosetta.dsl.version>
 
         <reflections.version>0.9.11</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->

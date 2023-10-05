@@ -44,7 +44,7 @@ public class XmlSerialisationTest {
     @Test
     public void testDocumentSerialisation() throws SAXException, IOException {
         // Construct a Document object
-        Foo foo = Foo.builder().setXmlValue("xmlValue").addAttr1(1).addAttr1(2).build();
+        Foo foo = Foo.builder().setXmlValue("My value").addAttr1(1).addAttr1(2).build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
         Document document = Document.builder().setAttr(foo).setValue(measure).build();
 

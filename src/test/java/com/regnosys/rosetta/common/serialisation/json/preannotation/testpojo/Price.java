@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.preannotation.testpojo;
+package com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;

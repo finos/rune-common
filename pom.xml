@@ -31,10 +31,12 @@
         <logback.version>1.4.7</logback.version>
 
         <!-- plugins -->
+        <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
         <maven-enforcer-plugin.version>3.2.1</maven-enforcer-plugin.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+        <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -343,6 +345,103 @@
                 <configuration>
                     <release>${maven.compiler.release}</release>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>import-test-xsd-schema</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.regnosys.rosetta.tools.modelimport.XsdImportMain</mainClass>
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <arguments>
+                                <argument>-xsd-path</argument>
+                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/schema.xsd</argument>
+                                <argument>-properties-path</argument>
+                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/import-schema.properties</argument>
+                                <argument>-rosetta-output-path</argument>
+                                <argument>${project.build.testOutputDirectory}/xml-serialisation/rosetta</argument>
+                                <argument>-xml-config-output-path</argument>
+                                <argument>${project.build.testOutputDirectory}/xml-serialisation/xml-config.json</argument>
+                            </arguments>
+                            <includePluginDependencies>true</includePluginDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.regnosys.rosetta</groupId>
+                        <artifactId>com.regnosys.rosetta.tools</artifactId>
+                        <version>${rosetta.dsl.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>com.regnosys.rosetta</groupId>
+                                <artifactId>com.regnosys.rosetta.ide</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.regnosys.rosetta</groupId>
+                        <artifactId>com.regnosys.rosetta.xcore</artifactId>
+                        <version>${rosetta.dsl.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>com.regnosys.rosetta</groupId>
+                <artifactId>rosetta-maven-plugin</artifactId>
+                <version>${rosetta.dsl.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-xsd-based-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>testGenerate</goal>
+                        </goals>
+                        <configuration>
+                            <addOutputDirectoriesToCompileSourceRoots>false</addOutputDirectoriesToCompileSourceRoots>
+                            <sourceRoots>
+                                <sourceRoot>${project.build.testOutputDirectory}/xml-serialisation/rosetta</sourceRoot>
+                            </sourceRoots>
+                            <classPathLookupFilter>.*com\.regnosys\.rosetta.*</classPathLookupFilter>
+                            <languages>
+                                <language>
+                                    <setup>com.regnosys.rosetta.RosettaStandaloneSetup</setup>
+                                    <outputConfigurations>
+                                        <outputConfiguration>
+                                            <outputDirectory>${project.build.testOutputDirectory}/xml-serialisation/java</outputDirectory>
+                                        </outputConfiguration>
+                                    </outputConfigurations>
+                                </language>
+                            </languages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-generated-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.testOutputDirectory}/xml-serialisation/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

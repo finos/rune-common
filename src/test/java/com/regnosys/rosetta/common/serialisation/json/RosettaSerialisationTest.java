@@ -1,8 +1,10 @@
-package com.regnosys.rosetta.common.serialisation;
+package com.regnosys.rosetta.common.serialisation.json;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.regnosys.rosetta.common.serialisation.mixin.RosettaJSONModule;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -52,7 +54,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testBasicEnumWithNativeEnumSupport() throws JsonProcessingException {
-        ObjectMapper mapper = new AnnotationBasedObjectMapperCreator(true).create();
+        ObjectMapper mapper = new RosettaObjectMapperCreator(true, new RosettaJSONModule(true), new ObjectMapper()).create();
 
         String rosetta = "type Top:\n" +
                 "          aSingle A (0..1)\n" +

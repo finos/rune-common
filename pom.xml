@@ -31,6 +31,7 @@
         <logback.version>1.4.7</logback.version>
 
         <!-- plugins -->
+        <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
         <maven-enforcer-plugin.version>3.2.1</maven-enforcer-plugin.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
@@ -426,6 +427,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build-helper-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>add-generated-test-sources</id>

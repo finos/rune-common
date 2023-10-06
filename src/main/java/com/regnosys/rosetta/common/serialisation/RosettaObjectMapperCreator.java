@@ -34,7 +34,7 @@ import java.util.Collections;
  */
 public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
-    private final boolean supportNativeEnumValue;
+    private final boolean supportRosettaEnumValue;
     private final Module rosettaModule;
     private final ObjectMapper baseMapper;
 
@@ -42,8 +42,8 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
      * If the supportNativeEnumValue is set to true, then the Logical Model enumerations will be used to
      * read and write the enums rather than the Java enum names which are upper case by convention.
      */
-    public RosettaObjectMapperCreator(boolean supportNativeEnumValue, Module rosettaModule, ObjectMapper baseMapper) {
-        this.supportNativeEnumValue = supportNativeEnumValue;
+    public RosettaObjectMapperCreator(boolean supportRosettaEnumValue, Module rosettaModule, ObjectMapper baseMapper) {
+        this.supportRosettaEnumValue = supportRosettaEnumValue;
         this.rosettaModule = rosettaModule;
         this.baseMapper = baseMapper;
     }
@@ -96,7 +96,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
                 .setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
 
-        if (supportNativeEnumValue) {
+        if (supportRosettaEnumValue) {
             mapper.enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING);
             mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
         }

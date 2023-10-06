@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -35,7 +34,7 @@ import java.util.Collections;
  */
 public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
-    private final boolean supportNativeEnumValue;
+    private final boolean supportRosettaEnumValue;
     private final Module rosettaModule;
     private final ObjectMapper baseMapper;
 
@@ -43,23 +42,21 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
      * If the supportNativeEnumValue is set to true, then the Logical Model enumerations will be used to
      * read and write the enums rather than the Java enum names which are upper case by convention.
      */
-    public RosettaObjectMapperCreator(boolean supportNativeEnumValue, Module rosettaModule, ObjectMapper baseMapper) {
-        this.supportNativeEnumValue = supportNativeEnumValue;
+    public RosettaObjectMapperCreator(boolean supportRosettaEnumValue, Module rosettaModule, ObjectMapper baseMapper) {
+        this.supportRosettaEnumValue = supportRosettaEnumValue;
         this.rosettaModule = rosettaModule;
         this.baseMapper = baseMapper;
     }
 
     public static RosettaObjectMapperCreator forJSON() {
-        boolean supportNativeEnumValue = false; // for backwards compatibility
-        ObjectMapper base = JsonMapper.builder()
-                .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
-                .build();
-        return new RosettaObjectMapperCreator(supportNativeEnumValue, new RosettaJSONModule(supportNativeEnumValue), base);
+        boolean supportRosettaEnumValue = true;
+        ObjectMapper base = new ObjectMapper();
+        return new RosettaObjectMapperCreator(supportRosettaEnumValue, new RosettaJSONModule(supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
-        boolean supportNativeEnumValue = true;
+        boolean supportRosettaEnumValue = true;
         ObjectMapper base = new XmlMapper();
-        return new RosettaObjectMapperCreator(supportNativeEnumValue, new RosettaXMLModule(config, supportNativeEnumValue), base);
+        return new RosettaObjectMapperCreator(supportRosettaEnumValue, new RosettaXMLModule(config, supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {
         ObjectMapper xmlConfigurationMapper = new ObjectMapper()
@@ -99,7 +96,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
                 .setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
 
-        if (supportNativeEnumValue) {
+        if (supportRosettaEnumValue) {
             mapper.enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING);
             mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
         }

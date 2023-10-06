@@ -75,7 +75,7 @@ public class RosettaSerialisationTest {
 
     @Test
     void testBasicEnumWithJavaEnumSupport() throws JsonProcessingException {
-        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+        ObjectMapper mapper = new RosettaObjectMapperCreator(false, new RosettaJSONModule(false), new ObjectMapper()).create();
 
         String rosetta = "type Top:\n" +
                 "          aSingle A (0..1)\n" +

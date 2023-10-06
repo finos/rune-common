@@ -249,7 +249,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     private AnnotatedClass getEnclosingAnnotatedClass(AnnotatedMember member) {
-        return (AnnotatedClass) member.getTypeContext(); //TODO: get rid of use of deprecated API
+        // TODO: get rid of use of deprecated API, see issue https://github.com/FasterXML/jackson-databind/issues/4141
+        return (AnnotatedClass) member.getTypeContext();
     }
 
     private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(Annotated a) {

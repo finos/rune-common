@@ -4,18 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.introspect.*;
 import com.regnosys.rosetta.common.serialisation.BackwardsCompatibleAnnotationIntrospector;
 import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
 
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -29,8 +25,8 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
 
     private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
 
-    public RosettaJSONAnnotationIntrospector(boolean supportNativeEnumValue) {
-        this(new LegacyRosettaBuilderIntrospector(), new EnumAsStringBuilderIntrospector(), new RosettaEnumBuilderIntrospector(supportNativeEnumValue));
+    public RosettaJSONAnnotationIntrospector(boolean supportRosettaEnumValue) {
+        this(new LegacyRosettaBuilderIntrospector(), new EnumAsStringBuilderIntrospector(), new RosettaEnumBuilderIntrospector(supportRosettaEnumValue));
     }
 
     public RosettaJSONAnnotationIntrospector(LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {

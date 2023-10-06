@@ -9,17 +9,17 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 public class RosettaJSONModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
-    private final boolean supportNativeEnumValue;
+    private final boolean supportRosettaEnumValue;
 
-    public RosettaJSONModule(boolean supportNativeEnumValue) {
+    public RosettaJSONModule(boolean supportRosettaEnumValue) {
         super(PackageVersion.VERSION);
-        this.supportNativeEnumValue = supportNativeEnumValue;
+        this.supportRosettaEnumValue = supportRosettaEnumValue;
     }
 
     @Override
     public void setupModule(SetupContext context) {
         super.setupModule(context);
-        context.insertAnnotationIntrospector(new RosettaJSONAnnotationIntrospector(supportNativeEnumValue));
+        context.insertAnnotationIntrospector(new RosettaJSONAnnotationIntrospector(supportRosettaEnumValue));
     }
 
     @Override

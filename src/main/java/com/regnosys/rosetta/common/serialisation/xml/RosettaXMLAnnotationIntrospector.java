@@ -97,6 +97,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             // in case where the attribute should be rendered as an XML value.
             return PropertyName.USE_DEFAULT;
         }
+
         // If the XML name is specified in the XML configuration, use that.
         return this.getAttributeXMLConfiguration(a)
                 .flatMap(AttributeXMLConfiguration::getXmlName)
@@ -249,7 +250,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     private AnnotatedClass getEnclosingAnnotatedClass(AnnotatedMember member) {
-        return (AnnotatedClass) member.getTypeContext(); //TODO: get rid of use of deprecated API
+        // TODO: get rid of use of deprecated API, see issue https://github.com/FasterXML/jackson-databind/issues/4141
+        return (AnnotatedClass) member.getTypeContext();
     }
 
     private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(Annotated a) {

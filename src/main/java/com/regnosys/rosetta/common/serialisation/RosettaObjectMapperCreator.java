@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -50,16 +49,14 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     }
 
     public static RosettaObjectMapperCreator forJSON() {
-        boolean supportNativeEnumValue = false; // for backwards compatibility
-        ObjectMapper base = JsonMapper.builder()
-                .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
-                .build();
-        return new RosettaObjectMapperCreator(supportNativeEnumValue, new RosettaJSONModule(supportNativeEnumValue), base);
+        boolean supportRosettaEnumValue = true;
+        ObjectMapper base = new ObjectMapper();
+        return new RosettaObjectMapperCreator(supportRosettaEnumValue, new RosettaJSONModule(supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
-        boolean supportNativeEnumValue = true;
+        boolean supportRosettaEnumValue = true;
         ObjectMapper base = new XmlMapper();
-        return new RosettaObjectMapperCreator(supportNativeEnumValue, new RosettaXMLModule(config, supportNativeEnumValue), base);
+        return new RosettaObjectMapperCreator(supportRosettaEnumValue, new RosettaXMLModule(config, supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {
         ObjectMapper xmlConfigurationMapper = new ObjectMapper()

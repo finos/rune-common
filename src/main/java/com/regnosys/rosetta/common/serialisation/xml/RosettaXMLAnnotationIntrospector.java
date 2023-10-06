@@ -97,7 +97,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             // in case where the attribute should be rendered as an XML value.
             return PropertyName.USE_DEFAULT;
         }
-
         // If the XML name is specified in the XML configuration, use that.
         return this.getAttributeXMLConfiguration(a)
                 .flatMap(AttributeXMLConfiguration::getXmlName)

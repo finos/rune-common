@@ -1,10 +1,10 @@
-package com.regnosys.rosetta.common.serialisation.preannotation;
+package com.regnosys.rosetta.common.serialisation.json.preannotation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
-import com.regnosys.rosetta.common.serialisation.preannotation.testpojo.PriceQuantity;
-import com.regnosys.rosetta.common.serialisation.preannotation.testpojo.ResolvablePriceQuantity;
+import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.PriceQuantity;
+import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.ResolvablePriceQuantity;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.*;
@@ -13,7 +13,6 @@ import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

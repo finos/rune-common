@@ -3,6 +3,7 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.io.Resources;
+import com.regnosys.rosetta.common.reports.RegReportIdentifier;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.rosetta.model.lib.ModelReportId;
 import org.junit.jupiter.api.Test;

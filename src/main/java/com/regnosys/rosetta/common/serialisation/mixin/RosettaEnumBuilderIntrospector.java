@@ -11,11 +11,9 @@ public class RosettaEnumBuilderIntrospector {
 
     private final EnumNameFunc enumNameFunc;
     private final EnumAliasFunc enumAliasFunc;
-    private final boolean supportNativeEnumValue;
 
-    public RosettaEnumBuilderIntrospector(boolean supportNativeEnumValue) {
-        this.supportNativeEnumValue = supportNativeEnumValue;
-        if (supportNativeEnumValue) {
+    public RosettaEnumBuilderIntrospector(boolean supportRosettaEnumValue) {
+        if (supportRosettaEnumValue) {
             this.enumNameFunc = (annotation, javaEnumName) -> annotation.value();
         } else {
             this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().equals("") ? annotation.displayName() : javaEnumName;

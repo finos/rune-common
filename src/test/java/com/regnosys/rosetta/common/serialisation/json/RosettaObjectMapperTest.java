@@ -1,9 +1,10 @@
-package com.regnosys.rosetta.common.serialisation;
+package com.regnosys.rosetta.common.serialisation.json;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.rosetta.model.lib.meta.Key;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;

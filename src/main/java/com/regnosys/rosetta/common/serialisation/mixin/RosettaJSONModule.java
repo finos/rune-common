@@ -6,20 +6,20 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 /**
  * Using a module class to append our annotation introspector with a minimal fuss
  */
-public class RosettaModule extends SimpleModule {
+public class RosettaJSONModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
-    private final boolean supportNativeEnumValue;
+    private final boolean supportRosettaEnumValue;
 
-    public RosettaModule(boolean supportNativeEnumValue) {
+    public RosettaJSONModule(boolean supportRosettaEnumValue) {
         super(PackageVersion.VERSION);
-        this.supportNativeEnumValue = supportNativeEnumValue;
+        this.supportRosettaEnumValue = supportRosettaEnumValue;
     }
 
     @Override
     public void setupModule(SetupContext context) {
         super.setupModule(context);
-        context.insertAnnotationIntrospector(new RosettaBuilderIntrospector(supportNativeEnumValue));
+        context.insertAnnotationIntrospector(new RosettaJSONAnnotationIntrospector(supportRosettaEnumValue));
     }
 
     @Override

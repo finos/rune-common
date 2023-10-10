@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.preannotation.testpojo.metafields;
+package com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.metafields;
 
 import com.google.common.collect.ImmutableList;
 import com.rosetta.model.lib.RosettaModelObject;

@@ -1,6 +1,7 @@
-package com.regnosys.rosetta.common.serialisation;
+package com.regnosys.rosetta.common.serialisation.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.lookup.JsonLookupDataLoader;
 import com.regnosys.rosetta.common.serialisation.lookup.LookupDataSet;
 import org.junit.jupiter.api.Test;

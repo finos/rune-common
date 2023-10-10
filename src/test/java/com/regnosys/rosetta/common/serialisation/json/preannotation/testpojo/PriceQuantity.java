@@ -1,6 +1,6 @@
-package com.regnosys.rosetta.common.serialisation.preannotation.testpojo;
+package com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo;
 
-import com.regnosys.rosetta.common.serialisation.preannotation.testpojo.metafields.FieldWithMetaPrice;
+import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.metafields.FieldWithMetaPrice;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaClass;

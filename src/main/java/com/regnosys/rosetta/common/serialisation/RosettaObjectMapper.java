@@ -13,7 +13,9 @@ public class RosettaObjectMapper {
     }
 
     public static ObjectMapper getNewMinimalRosettaObjectMapper() {
-        return RosettaObjectMapperCreator.forJSON().create();
+        return RosettaObjectMapperCreator.forJSON().create()
+                // This will scan the classpath and might be slow.
+                .findAndRegisterModules();
     }
 
     /**

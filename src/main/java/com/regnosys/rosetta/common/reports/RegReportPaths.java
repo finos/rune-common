@@ -78,9 +78,17 @@ public class RegReportPaths {
     public static Path getReportPath(Path outputPath, ModelReportId reportIdentifier) {
         return outputPath.resolve(directoryName(reportIdentifier));
     }
+    @Deprecated
+    public static Path getLegacyReportPath(Path outputPath, ModelReportId reportIdentifier) {
+        return outputPath.resolve(legacyDirectoryName(reportIdentifier));
+    }
 
     public static Path getReportDataSetPath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
         return getReportPath(outputPath, reportIdentifier).resolve(directoryNameOfDataset(dataSetName));
+    }
+    @Deprecated
+    public static Path getLegacyReportDataSetPath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
+        return getLegacyReportPath(outputPath, reportIdentifier).resolve(directoryNameOfDataset(dataSetName));
     }
 
     public static Path getReportExpectationsFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
@@ -91,6 +99,11 @@ public class RegReportPaths {
         return getReportDataSetPath(outputPath, reportIdentifier, dataSetName)
                 .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
     }
+    @Deprecated
+    public static Path getLegacyKeyValueExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
+        return getLegacyReportDataSetPath(outputPath, reportIdentifier, dataSetName)
+                .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
+    }
 
     public static Path getReportExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
         return getReportDataSetPath(outputPath, reportIdentifier, dataSetName)
@@ -99,6 +112,12 @@ public class RegReportPaths {
 
     public static String directoryName(ModelReportId id) {
         return id.joinRegulatoryReference("-")
+                .replace("_", "-")
+                .toLowerCase();
+    }
+    @Deprecated
+    public static String legacyDirectoryName(ModelReportId id) {
+        return id.joinRegulatoryReference("", "-")
                 .replace("_", "-")
                 .toLowerCase();
     }

@@ -47,10 +47,20 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
         if (data.getInput() instanceof String) {
             // attempt to load per report expectation file
             Path inputFileName = Paths.get(String.valueOf(data.getInput()));
+
+            URL keyValueExpectationUrl = null;
             Path keyValueExpectationPath = RegReportPaths
                     .getKeyValueExpectationFilePath(UrlUtils.toPath(outputPath), reportIdentifier, dataSetName, inputFileName);
             if (Files.exists(keyValueExpectationPath)) {
-                URL keyValueExpectationUrl = UrlUtils.toUrl(keyValueExpectationPath);
+                keyValueExpectationUrl = UrlUtils.toUrl(keyValueExpectationPath);
+            } else {
+                Path legacyKeyValueExpectationPath = RegReportPaths
+                        .getLegacyKeyValueExpectationFilePath(UrlUtils.toPath(outputPath), reportIdentifier, dataSetName, inputFileName);
+                if (Files.exists(legacyKeyValueExpectationPath)) {
+                    keyValueExpectationUrl = UrlUtils.toUrl(legacyKeyValueExpectationPath);
+                }
+            }
+            if (keyValueExpectationUrl != null) {
                 List<ExpectedResultField> resultFields = readTypeList(ExpectedResultField.class, rosettaObjectMapper, keyValueExpectationUrl);
                 ExpectedResult expectedResult =
                         data.getExpected() == null ?

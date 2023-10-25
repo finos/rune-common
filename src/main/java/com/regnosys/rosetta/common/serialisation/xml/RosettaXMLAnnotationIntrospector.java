@@ -34,8 +34,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     private static final long serialVersionUID = 1L;
 
-    private static final String ROSETTA_BUILD_METHOD_NAME = "build";
-    private static final String ROSETTA_BUILDER_SETTER_PREFIX = "set";
+    // Our generated code uses 'build' for the build method, 'set' as setter prefix
+    private static final JsonPOJOBuilder.Value ROSETTA_BUILDER_CONFIG = new JsonPOJOBuilder.Value("build", "set");
 
     public static final String SCHEMA_LOCATION_ATTRIBUTE_NAME = "schemaLocation";
     private static final String SCHEMA_LOCATION_ATTRIBUTE_PREFIXED_NAME = "xsi:" + SCHEMA_LOCATION_ATTRIBUTE_NAME;
@@ -66,11 +66,9 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     @Override
-    public JsonPOJOBuilder.Value findPOJOBuilderConfig(AnnotatedClass ac)
-    {
+    public JsonPOJOBuilder.Value findPOJOBuilderConfig(AnnotatedClass ac) {
         if (ac.hasAnnotation(RosettaDataType.class)) {
-            // Our generated code uses 'build' for the build method, 'set' as setter prefix
-            return new JsonPOJOBuilder.Value(ROSETTA_BUILD_METHOD_NAME, ROSETTA_BUILDER_SETTER_PREFIX);
+            return ROSETTA_BUILDER_CONFIG;
         }
         return super.findPOJOBuilderConfig(ac);
     }

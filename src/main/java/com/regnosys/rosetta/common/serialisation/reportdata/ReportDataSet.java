@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
+import com.rosetta.model.lib.ModelReportId;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -9,10 +11,10 @@ public class ReportDataSet {
 
     private String dataSetName;
     private String inputType;
-    private List<String> applicableReports;
+    private List<ModelReportId> applicableReports;
     private List<ReportDataItem> data;
 
-    public ReportDataSet(String dataSetName, String inputType, List<String> applicableReports, List<ReportDataItem> data) {
+    public ReportDataSet(String dataSetName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
         this.inputType = inputType;
         this.applicableReports = applicableReports;
@@ -34,7 +36,7 @@ public class ReportDataSet {
         return EXPECTED_TYPE;
     }
 
-    public List<String> getApplicableReports() {
+    public List<ModelReportId> getApplicableReports() {
         return applicableReports;
     }
 

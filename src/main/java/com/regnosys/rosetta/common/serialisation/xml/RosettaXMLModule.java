@@ -49,7 +49,7 @@ public class RosettaXMLModule extends SimpleModule {
                 String next = p.readValueAs(String.class);
                 try {
                     OffsetTime time = OffsetTime.parse(next, DateTimeFormatter.ISO_TIME);
-                    return time.toLocalTime().plusSeconds(time.getOffset().getTotalSeconds());
+                    return time.toLocalTime().minusSeconds(time.getOffset().getTotalSeconds());
                 } catch (DateTimeParseException e) {
                     return LocalTime.parse(next, DateTimeFormatter.ISO_TIME);
                 }

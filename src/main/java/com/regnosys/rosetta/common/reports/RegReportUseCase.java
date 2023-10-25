@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+@Deprecated
 public class RegReportUseCase {
 	private final String useCase;
 	private final String dataSetName;

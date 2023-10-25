@@ -1,15 +1,15 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
-import com.regnosys.rosetta.common.reports.RegReportIdentifier;
+import com.rosetta.model.lib.ModelReportId;
 
 import java.util.Objects;
 
 public class ReportIdentifierDataSet {
 
-    private RegReportIdentifier reportIdentifier;
+    private ModelReportId reportIdentifier;
     private ReportDataSet dataSet;
 
-    public ReportIdentifierDataSet(RegReportIdentifier reportIdentifier, ReportDataSet dataSet) {
+    public ReportIdentifierDataSet(ModelReportId reportIdentifier, ReportDataSet dataSet) {
         this.reportIdentifier = reportIdentifier;
         this.dataSet = dataSet;
     }
@@ -17,7 +17,7 @@ public class ReportIdentifierDataSet {
     public ReportIdentifierDataSet() {
     }
 
-    public RegReportIdentifier getReportIdentifier() {
+    public ModelReportId getReportIdentifier() {
         return reportIdentifier;
     }
 

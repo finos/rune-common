@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Comparator;
 import java.util.StringJoiner;
 
+@Deprecated
 public class ReportField implements Comparable<ReportField> {
 
 	private final String name;

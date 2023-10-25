@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 
+@Deprecated
 public class RegReportIdentifier {
 
 	private final String body;

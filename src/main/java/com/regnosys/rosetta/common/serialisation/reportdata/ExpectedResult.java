@@ -2,22 +2,23 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.rosetta.model.lib.ModelReportId;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class ExpectedResult {
-    private Map<String, List<ExpectedResultField>> expectationsPerReport;
+    private Map<ModelReportId, List<ExpectedResultField>> expectationsPerReport;
 
     public ExpectedResult(){}
 
     @JsonCreator
-    public ExpectedResult(@JsonProperty Map<String, List<ExpectedResultField>> expectationsPerReport) {
+    public ExpectedResult(@JsonProperty Map<ModelReportId, List<ExpectedResultField>> expectationsPerReport) {
         this.expectationsPerReport = expectationsPerReport;
     }
 
-    public Map<String, List<ExpectedResultField>> getExpectationsPerReport() {
+    public Map<ModelReportId, List<ExpectedResultField>> getExpectationsPerReport() {
         return expectationsPerReport;
     }
 

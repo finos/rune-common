@@ -91,8 +91,8 @@ public class XmlSerialisationTest {
 
     @Test
     public void testTimeDeserialisationWithTimeOffset() throws JsonProcessingException {
-        TimeContainer expected = TimeContainer.builder().setTimeValue(LocalTime.of(3, 23, 45)).build();
-        String xml = "<TimeContainer><timeValue>01:23:45+02:00</timeValue></TimeContainer>";
+        TimeContainer expected = TimeContainer.builder().setTimeValue(LocalTime.of(1, 23, 45)).build();
+        String xml = "<TimeContainer><timeValue>03:23:45+02:00</timeValue></TimeContainer>";
 
         // Test deserialisation
         TimeContainer actual = xmlMapper.readValue(xml, TimeContainer.class);

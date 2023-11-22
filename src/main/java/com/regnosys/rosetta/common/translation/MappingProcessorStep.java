@@ -62,7 +62,7 @@ public class MappingProcessorStep implements PostProcessStep {
 		Future<?> mappingsFuture = executor.submit(() -> {
 			RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
 			for (MappingDelegate mapper : mappingDelegates) {
-				LOGGER.info("Running mapper {} for model path {}", mapper.getClass().getSimpleName(), mapper.getModelPath());
+				LOGGER.debug("Running mapper {} for model path {}", mapper.getClass().getSimpleName(), mapper.getModelPath());
 				MappingBuilderProcessor processor = new MappingBuilderProcessor(mapper);
 				processor.processRosetta(path, topClass, builder, null);
 				builder.process(path, processor);

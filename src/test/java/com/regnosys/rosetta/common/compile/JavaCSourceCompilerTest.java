@@ -26,7 +26,7 @@ class JavaCSourceCompilerTest {
     void setup() throws IOException {
         input = Files.createTempDirectory("JavaCSourceCompilerTest-Input");
         output = Files.createTempDirectory("JavaCSourceCompilerTest-Output");
-        javaCompiler = new JavaCSourceCompiler(Executors.newSingleThreadExecutor(), true, true, "11");
+        javaCompiler = new JavaCSourceCompiler(Executors.newSingleThreadExecutor(), true, true, JavaCompileReleaseFlag.JAVA_11);
     }
 
     @Test

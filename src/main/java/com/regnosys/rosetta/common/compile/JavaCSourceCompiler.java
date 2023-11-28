@@ -10,23 +10,23 @@ public class JavaCSourceCompiler implements JavaCompiler {
     private final ExecutorService executorService;
     private final boolean useSystemClassPath;
     private final boolean deleteOnError;
-    private final String javaVersion;
+    private final JavaCompileReleaseFlag releaseFlag;
     private final Path[] additionalClassPaths;
 
     public JavaCSourceCompiler(ExecutorService executorService,
                                boolean useSystemClassPath,
                                boolean deleteOnError,
-                               String javaVersion,
+                               JavaCompileReleaseFlag releaseFlag,
                                Path... additionalClassPaths) {
         this.executorService = executorService;
         this.useSystemClassPath = useSystemClassPath;
         this.deleteOnError = deleteOnError;
-        this.javaVersion = javaVersion;
+        this.releaseFlag = releaseFlag;
         this.additionalClassPaths = additionalClassPaths;
     }
 
     @Override
-    public List<String> compile(List<Path> sourceJavaPaths,
+    public JavaCompilationResult compile(List<Path> sourceJavaPaths,
                                 Path targetClassesPath,
                                 Supplier<Boolean> isCancelled) {
         return null;

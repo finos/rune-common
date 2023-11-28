@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public interface JavaCompiler {
-    List<String> compile(List<Path> sourceJavaPaths,
+    JavaCompilationResult compile(List<Path> sourceJavaPaths,
                          Path targetClassesPath,
                          Supplier<Boolean> isCancelled);
 

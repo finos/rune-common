@@ -26,14 +26,14 @@ class JavaCSourceCompilerTest {
     void setup() throws IOException {
         input = Files.createTempDirectory("JavaCSourceCompilerTest-Input");
         output = Files.createTempDirectory("JavaCSourceCompilerTest-Output");
-        javaCompiler = new JavaCSourceCompiler(Executors.newSingleThreadExecutor());
+        javaCompiler = new JavaCSourceCompiler(Executors.newSingleThreadExecutor(), true, true, "11");
     }
 
     @Test
     void compilesHelloWorld() throws IOException {
         String helloWorldJava = "HelloWorld.java";
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
-        javaCompiler.compile(sourceJavas, output, true, true, () -> false);
+        javaCompiler.compile(sourceJavas, output, () -> false);
         File classFile = output.resolve(helloWorldJava).toFile();
         assertTrue(classFile.exists());
     }

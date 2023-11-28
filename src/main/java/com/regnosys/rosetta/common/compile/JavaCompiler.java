@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 public interface JavaCompiler {
     JavaCompilationResult compile(List<Path> sourceJavaPaths,
-                         Path targetClassesPath,
+                         Path targetPath,
                          Supplier<Boolean> isCancelled);
 
 }

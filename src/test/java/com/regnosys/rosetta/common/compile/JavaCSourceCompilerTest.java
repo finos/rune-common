@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JavaCSourceCompilerTest {
@@ -26,14 +28,16 @@ class JavaCSourceCompilerTest {
     void setup() throws IOException {
         input = Files.createTempDirectory("JavaCSourceCompilerTest-Input");
         output = Files.createTempDirectory("JavaCSourceCompilerTest-Output");
-        javaCompiler = new JavaCSourceCompiler(Executors.newSingleThreadExecutor(), true, true, JavaCompileReleaseFlag.JAVA_11);
+        javaCompiler = new JavaCSourceCompiler(Executors.newSingleThreadExecutor(), true, true, false, JavaCompileReleaseFlag.JAVA_11);
     }
 
     @Test
     void compilesHelloWorld() throws IOException {
         String helloWorldJava = "HelloWorld.java";
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
-        javaCompiler.compile(sourceJavas, output, () -> false);
+        JavaCompilationResult compilationResult = javaCompiler.compile(sourceJavas, output, () -> false);
+
+        assertThat(compilationResult.isCompilationSuccessful(), is(true));
         File classFile = output.resolve(helloWorldJava).toFile();
         assertTrue(classFile.exists());
     }

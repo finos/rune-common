@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -22,23 +23,23 @@ class JavaCSourceCompilerTest {
 
     private Path input;
     private Path output;
-    private JavaCompiler javaCompiler;
+    private JavaCancellableCompiler javaCancellableCompiler;
 
     @BeforeEach
     void setup() throws IOException {
         input = Files.createTempDirectory("JavaCSourceCompilerTest-Input");
         output = Files.createTempDirectory("JavaCSourceCompilerTest-Output");
-        javaCompiler = new JavaCSourceCompiler(Executors.newSingleThreadExecutor(), true, true, false, JavaCompileReleaseFlag.JAVA_11);
+        javaCancellableCompiler = new JavaCSourceCancellableCompiler(Executors.newSingleThreadExecutor(), true, true, false, JavaCompileReleaseFlag.JAVA_11);
     }
 
     @Test
-    void compilesHelloWorld() throws IOException {
+    void compilesHelloWorld() throws IOException, ExecutionException, InterruptedException {
         String helloWorldJava = "HelloWorld.java";
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
-        JavaCompilationResult compilationResult = javaCompiler.compile(sourceJavas, output, () -> false);
+        JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, () -> false);
 
         assertThat(compilationResult.isCompilationSuccessful(), is(true));
-        File classFile = output.resolve(helloWorldJava).toFile();
+        File classFile = output.resolve("HelloWorld.class").toFile();
         assertTrue(classFile.exists());
     }
 

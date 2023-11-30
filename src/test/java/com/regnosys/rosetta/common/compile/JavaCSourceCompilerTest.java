@@ -62,6 +62,22 @@ class JavaCSourceCompilerTest {
         }
     }
 
+    @Test
+    void respectsDeleteOnErrorWhenFlagWhenFalse() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        javaCancellableCompiler = new JavaCSourceCancellableCompiler(Executors.newSingleThreadExecutor(), true, false, false, JavaCompileReleaseFlag.JAVA_11);
+        List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList("HelloWorld.java", "BrokenHelloWorld.java"));
+        JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, () -> false);
+
+        assertThat(compilationResult.isCompilationComplete(), is(true));
+        assertThat(compilationResult.isCompilationSuccessful(), is(false));
+
+        try(Stream<Path> list = Files.list(output)) {
+            assertThat(list.count(), equalTo(1L));
+        }
+        File goodFile = output.resolve("HelloWorld.class").toFile();
+        assertThat(goodFile.exists(), is(true));
+    }
+
 
     List<Path> setupSourceJavas(List<String> javaFiles) throws IOException {
         ArrayList<Path> javaSourcePaths = new ArrayList<>();

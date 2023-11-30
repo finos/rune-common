@@ -1,17 +1,21 @@
 package com.regnosys.rosetta.common.compile;
 
 import com.google.common.base.StandardSystemProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class JavaCSourceCompiler implements JavaCompiler {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavaCSourceCompiler.class);
     private final ExecutorService executorService;
     private final boolean useSystemClassPath;
     private final boolean deleteOnError;
@@ -54,6 +58,13 @@ public class JavaCSourceCompiler implements JavaCompiler {
         args.add(targetPath.toAbsolutePath().toString());
 
         args.add(createClasspath(targetPath, useSystemClassPath, additionalClassPaths));
+
+        args.add("-encoding");
+        args.add("UTF-8");
+        args.add("-proc:none");
+        args.add("--release");
+        args.add(releaseFlag.getVersion());
+
         return args;
     }
 
@@ -64,18 +75,21 @@ public class JavaCSourceCompiler implements JavaCompiler {
         classpath.append(StandardSystemProperty.PATH_SEPARATOR.value());
 
         if (useSystemClassPath) {
-            classpath.append(StandardSystemProperty.JAVA_CLASS_PATH.value());
-            classpath.append(StandardSystemProperty.PATH_SEPARATOR.value());
+            String javaClassPath = StandardSystemProperty.JAVA_CLASS_PATH.value();
+            if (javaClassPath != null && !javaClassPath.isEmpty()) {
+                classpath.append(javaClassPath);
+                classpath.append(File.pathSeparator);
+            } else {
+                LOGGER.warn("Compile called with useSystemClassPath flag set but the system classpath is empty, continuing compilation without");
+            }
         }
 
         String additionalClassPathsString = Arrays.stream(additionalClassPaths)
                 .map(Path::toAbsolutePath)
                 .map(Path::toString)
-                .collect(Collectors.joining(StandardSystemProperty.PATH_SEPARATOR.value()));
+                .collect(Collectors.joining(File.pathSeparator));
 
         classpath.append(additionalClassPathsString);
-
-
 
         return classpath.toString();
     }

@@ -9,6 +9,6 @@ import java.util.function.Supplier;
 public interface JavaCancellableCompiler {
     JavaCompilationResult compile(List<Path> sourceJavaPaths,
                          Path targetPath,
-                         Supplier<Boolean> isCancelled) throws ExecutionException, InterruptedException;
+                         Supplier<Boolean> isCancelled) throws ExecutionException, InterruptedException, TimeoutException;
 
 }

@@ -13,7 +13,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,19 +33,35 @@ class JavaCSourceCompilerTest {
     void setup() throws IOException {
         input = Files.createTempDirectory("JavaCSourceCompilerTest-Input");
         output = Files.createTempDirectory("JavaCSourceCompilerTest-Output");
-        javaCancellableCompiler = new JavaCSourceCancellableCompiler(Executors.newSingleThreadExecutor(), true, true, false, JavaCompileReleaseFlag.JAVA_11);
     }
 
     @Test
-    void compilesHelloWorld() throws IOException, ExecutionException, InterruptedException {
+    void compilesHelloWorld() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        javaCancellableCompiler = new JavaCSourceCancellableCompiler(Executors.newSingleThreadExecutor(), true, false, false, JavaCompileReleaseFlag.JAVA_11);
         String helloWorldJava = "HelloWorld.java";
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
         JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, () -> false);
 
+        assertThat(compilationResult.isCompilationComplete(), is(true));
         assertThat(compilationResult.isCompilationSuccessful(), is(true));
         File classFile = output.resolve("HelloWorld.class").toFile();
-        assertTrue(classFile.exists());
+        assertThat(classFile.exists(), is(true));
     }
+
+    @Test
+    void respectsDeleteOnErrorWhenFlagWhenTrue() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        javaCancellableCompiler = new JavaCSourceCancellableCompiler(Executors.newSingleThreadExecutor(), true, true, false, JavaCompileReleaseFlag.JAVA_11);
+        List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList("HelloWorld.java", "BrokenHelloWorld.java"));
+        JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, () -> false);
+
+        assertThat(compilationResult.isCompilationComplete(), is(true));
+        assertThat(compilationResult.isCompilationSuccessful(), is(false));
+
+        try(Stream<Path> list = Files.list(output)) {
+            assertThat(list.count(), equalTo(0L));
+        }
+    }
+
 
     List<Path> setupSourceJavas(List<String> javaFiles) throws IOException {
         ArrayList<Path> javaSourcePaths = new ArrayList<>();

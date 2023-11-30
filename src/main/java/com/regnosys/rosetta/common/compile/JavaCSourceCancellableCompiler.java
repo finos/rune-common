@@ -44,7 +44,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     @Override
     public JavaCompilationResult compile(List<Path> sourceJavaPaths,
                                          Path targetPath,
-                                         Supplier<Boolean> isCancelled) throws ExecutionException, InterruptedException {
+                                         Supplier<Boolean> isCancelled) throws ExecutionException, InterruptedException, TimeoutException {
         DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
         JavaCompiler.CompilationTask compilationTask = getCompilationTask(sourceJavaPaths, targetPath, diagnosticCollector);
 
@@ -56,14 +56,16 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         return new JavaCompilationResult(result.isPresent(), result.orElse(false), diagnosticCollector.getDiagnostics());
     }
 
-    private Optional<Boolean> submitAndWait(int maxWaitCycles, Future<Boolean> submittedTask) throws InterruptedException, ExecutionException {
+    private Optional<Boolean> submitAndWait(int maxWaitCycles, Future<Boolean> submittedTask) throws InterruptedException, ExecutionException, TimeoutException {
         Optional<Boolean> result = Optional.empty();
         for (int i = 0; i < maxWaitCycles; i++) {
             try {
                 result = Optional.of(submittedTask.get(THREAD_POLL_INTERVAL_MS, TimeUnit.MILLISECONDS));
             } catch (TimeoutException e) {
                 if (i == maxWaitCycles-1) {
-                    LOGGER.error("Timed out waiting for compilation task");
+                    String timedOutError = "Timed out waiting for compilation task";
+                    LOGGER.error(timedOutError);
+                    throw new TimeoutException(timedOutError);
                 }
             }
         }

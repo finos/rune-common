@@ -1,11 +1,14 @@
 package com.regnosys.rosetta.common.compile;
 
 import com.google.common.base.StandardSystemProperty;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.tools.*;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +56,20 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         int maxWaitCycles = MAX_COMPILE_TIMEOUT_SECONDS * 1000 / THREAD_POLL_INTERVAL_MS;
 
         Optional<Boolean> result = submitAndWait(maxWaitCycles, submittedTask);
+
+        if (deleteOnError && !result.orElse(false)) {
+            wipeTargetPath(targetPath);
+        }
+
         return new JavaCompilationResult(result.isPresent(), result.orElse(false), diagnosticCollector.getDiagnostics());
+    }
+
+    private void wipeTargetPath(Path targetPath) {
+        try {
+            FileUtils.cleanDirectory(targetPath.toFile());
+        } catch (IOException e) {
+            throw new TargetDeleteFailureException("Failed to delete target classes after compilation error", e);
+        }
     }
 
     private Optional<Boolean> submitAndWait(int maxWaitCycles, Future<Boolean> submittedTask) throws InterruptedException, ExecutionException, TimeoutException {
@@ -63,9 +79,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                 result = Optional.of(submittedTask.get(THREAD_POLL_INTERVAL_MS, TimeUnit.MILLISECONDS));
             } catch (TimeoutException e) {
                 if (i == maxWaitCycles-1) {
-                    String timedOutError = "Timed out waiting for compilation task";
-                    LOGGER.error(timedOutError);
-                    throw new TimeoutException(timedOutError);
+                    throw new TimeoutException("Timed out waiting for compilation task");
                 }
             }
         }

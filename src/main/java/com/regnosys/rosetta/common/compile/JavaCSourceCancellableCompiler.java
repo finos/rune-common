@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +67,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         try {
             FileUtils.cleanDirectory(targetPath.toFile());
         } catch (IOException e) {
-            throw new TargetDeleteFailureException("Failed to delete target classes after compilation error", e);
+            throw new CompilationTargetDeletionException("Failed to delete target classes after compilation error", e);
         }
     }
 

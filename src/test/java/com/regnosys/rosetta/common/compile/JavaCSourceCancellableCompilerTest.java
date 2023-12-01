@@ -105,7 +105,7 @@ class JavaCSourceCancellableCompilerTest {
                 return true;
             }
             cancelCheckCount.getAndIncrement();
-            return true;
+            return false;
         };
 
         JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, cancelIndicator);

@@ -160,7 +160,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         StringBuilder classpath = new StringBuilder();
 
         classpath.append(targetPath.toAbsolutePath());
-        classpath.append(StandardSystemProperty.PATH_SEPARATOR.value());
+        classpath.append(File.pathSeparator);
 
         if (useSystemClassPath) {
             String javaClassPath = StandardSystemProperty.JAVA_CLASS_PATH.value();

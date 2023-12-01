@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-class JavaCSourceCompilerTest {
+class JavaCSourceCancellableCompilerTest {
     private static final String TEST_RESOURCES = "compile-test";
 
     private Path input;

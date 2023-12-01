@@ -72,18 +72,19 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     }
 
     private Optional<Boolean> submitAndWait(int maxWaitCycles, Future<Boolean> submittedTask) throws InterruptedException, ExecutionException, TimeoutException {
-        Optional<Boolean> result = Optional.empty();
+        Optional<Boolean> result;
         for (int i = 0; i < maxWaitCycles; i++) {
             try {
+                LOGGER.debug("Trying get from task");
                 result = Optional.of(submittedTask.get(THREAD_POLL_INTERVAL_MS, TimeUnit.MILLISECONDS));
+                return result;
             } catch (TimeoutException e) {
-                if (i == maxWaitCycles-1) {
-                    throw new TimeoutException("Timed out waiting for compilation task");
-                }
+                LOGGER.debug("Timed out whilst getting from task");
             }
         }
-        return result;
+        throw new TimeoutException("Timed out waiting for compilation task");
     }
+
 
     private JavaCompiler.CompilationTask getCompilationTask(List<Path> sourceJavaPaths,
                                                             Path targetPath,

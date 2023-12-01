@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -88,7 +89,7 @@ class JavaCSourceCancellableCompilerTest {
                 .thenReturn(compilationTask);
 
         javaCancellableCompiler = new JavaCSourceCancellableCompiler(5,
-                1,
+                500,
                 mockExecutor,
                 true,
                 false,
@@ -114,6 +115,32 @@ class JavaCSourceCancellableCompilerTest {
         assertThat(compilationTask.isCancelled(), is(true));
     }
 
+    @Test
+    void compileTimesOutCorrectly() throws IOException {
+        ExecutorService mockExecutor = mock(ExecutorService.class);
+        CompletableFuture<Boolean> compilationTask = new CompletableFuture<>();
+        when(mockExecutor.submit(any(JavaCompiler.CompilationTask.class)))
+                .thenReturn(compilationTask);
+
+        javaCancellableCompiler = new JavaCSourceCancellableCompiler(1,
+                5,
+                mockExecutor,
+                true,
+                false,
+                false,
+                JavaCompileReleaseFlag.JAVA_11);
+
+
+        String helloWorldJava = "HelloWorld.java";
+        List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
+
+        AtomicInteger cancelCheckCount = new AtomicInteger(0);
+        Supplier<Boolean> cancelIndicator = () -> false;
+
+        assertThrows(TimeoutException.class, () -> {
+            javaCancellableCompiler.compile(sourceJavas, output, cancelIndicator);
+        });
+    }
 
     List<Path> setupSourceJavas(List<String> javaFiles) throws IOException {
         ArrayList<Path> javaSourcePaths = new ArrayList<>();

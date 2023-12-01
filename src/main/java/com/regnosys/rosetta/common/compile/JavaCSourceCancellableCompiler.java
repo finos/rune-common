@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
 public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaCSourceCancellableCompiler.class);
     public static final int DEFAULT_THREAD_POLL_INTERVAL_MS = 100;
-    public static final int DEFAULT_MAX_COMPILE_TIMEOUT_SECONDS = 300;
+    public static final int DEFAULT_MAX_COMPILE_TIMEOUT_MS = 300_000;
 
     private final int threadPollIntervalMs;
-    private final int maxCompileTimeoutSeconds;
+    private final int maxCompileTimeoutMs;
     private final ExecutorService executorService;
     private final boolean useSystemClassPath;
     private final boolean deleteOnError;
@@ -32,7 +32,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     private final Path[] additionalClassPaths;
 
     public JavaCSourceCancellableCompiler(int threadPollIntervalMs,
-                                          int maxCompileTimeoutSeconds,
+                                          int maxCompileTimeoutMs,
                                           ExecutorService executorService,
                                           boolean useSystemClassPath,
                                           boolean deleteOnError,
@@ -40,7 +40,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                                           JavaCompileReleaseFlag releaseFlag,
                                           Path... additionalClassPaths) {
         this.threadPollIntervalMs = threadPollIntervalMs;
-        this.maxCompileTimeoutSeconds = maxCompileTimeoutSeconds;
+        this.maxCompileTimeoutMs = maxCompileTimeoutMs;
         this.executorService = executorService;
         this.useSystemClassPath = useSystemClassPath;
         this.isVerbose = isVerbose;
@@ -56,7 +56,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                                           JavaCompileReleaseFlag releaseFlag,
                                           Path... additionalClassPaths) {
         this(DEFAULT_THREAD_POLL_INTERVAL_MS,
-                DEFAULT_MAX_COMPILE_TIMEOUT_SECONDS,
+                DEFAULT_MAX_COMPILE_TIMEOUT_MS,
                 executorService,
                 useSystemClassPath,
                 deleteOnError,
@@ -92,7 +92,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     }
 
     private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, Supplier<Boolean> isCancelled) throws InterruptedException, ExecutionException, TimeoutException {
-        int maxWaitCycles = maxCompileTimeoutSeconds * 1000 / threadPollIntervalMs;
+        int maxWaitCycles = maxCompileTimeoutMs / threadPollIntervalMs;
 
         Optional<Boolean> result;
         for (int i = 0; i < maxWaitCycles; i++) {

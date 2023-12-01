@@ -134,7 +134,6 @@ class JavaCSourceCancellableCompilerTest {
         String helloWorldJava = "HelloWorld.java";
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
 
-        AtomicInteger cancelCheckCount = new AtomicInteger(0);
         Supplier<Boolean> cancelIndicator = () -> false;
 
         assertThrows(TimeoutException.class, () -> {

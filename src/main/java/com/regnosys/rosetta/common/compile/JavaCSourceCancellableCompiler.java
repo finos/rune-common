@@ -22,8 +22,8 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     public static final int DEFAULT_THREAD_POLL_INTERVAL_MS = 100;
     public static final int DEFAULT_MAX_COMPILE_TIMEOUT_SECONDS = 300;
 
-    private final int THREAD_POLL_INTERVAL_MS;
-    private final int MAX_COMPILE_TIMEOUT_SECONDS;
+    private final int threadPollIntervalMs;
+    private final int maxCompileTimeoutSeconds;
     private final ExecutorService executorService;
     private final boolean useSystemClassPath;
     private final boolean deleteOnError;
@@ -39,8 +39,8 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                                           boolean isVerbose,
                                           JavaCompileReleaseFlag releaseFlag,
                                           Path... additionalClassPaths) {
-        this.THREAD_POLL_INTERVAL_MS = threadPollIntervalMs;
-        this.MAX_COMPILE_TIMEOUT_SECONDS = maxCompileTimeoutSeconds;
+        this.threadPollIntervalMs = threadPollIntervalMs;
+        this.maxCompileTimeoutSeconds = maxCompileTimeoutSeconds;
         this.executorService = executorService;
         this.useSystemClassPath = useSystemClassPath;
         this.isVerbose = isVerbose;
@@ -92,13 +92,13 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     }
 
     private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, Supplier<Boolean> isCancelled) throws InterruptedException, ExecutionException, TimeoutException {
-        int maxWaitCycles = MAX_COMPILE_TIMEOUT_SECONDS * 1000 / THREAD_POLL_INTERVAL_MS;
+        int maxWaitCycles = maxCompileTimeoutSeconds * 1000 / threadPollIntervalMs;
 
         Optional<Boolean> result;
         for (int i = 0; i < maxWaitCycles; i++) {
             try {
                 LOGGER.debug("Trying get from task");
-                result = Optional.of(submittedTask.get(THREAD_POLL_INTERVAL_MS, TimeUnit.MILLISECONDS));
+                result = Optional.of(submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS));
                 return result;
             } catch (TimeoutException e) {
                 if (isCancelled.get()) {

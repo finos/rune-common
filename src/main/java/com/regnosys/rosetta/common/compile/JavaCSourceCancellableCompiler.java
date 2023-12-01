@@ -94,12 +94,10 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, Supplier<Boolean> isCancelled) throws InterruptedException, ExecutionException, TimeoutException {
         int maxWaitCycles = maxCompileTimeoutMs / threadPollIntervalMs;
 
-        Optional<Boolean> result;
         for (int i = 0; i < maxWaitCycles; i++) {
             try {
                 LOGGER.debug("Trying get from task");
-                result = Optional.of(submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS));
-                return result;
+                return Optional.of(submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS));
             } catch (TimeoutException e) {
                 if (isCancelled.get()) {
                     boolean cancelled = submittedTask.cancel(true);

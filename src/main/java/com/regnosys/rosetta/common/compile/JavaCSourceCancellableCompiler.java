@@ -52,9 +52,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
 
         Future<Boolean> submittedTask = executorService.submit(compilationTask);
 
-        int maxWaitCycles = MAX_COMPILE_TIMEOUT_SECONDS * 1000 / THREAD_POLL_INTERVAL_MS;
-
-        Optional<Boolean> result = submitAndWait(maxWaitCycles, submittedTask);
+        Optional<Boolean> result = submitAndWait(submittedTask);
 
         if (deleteOnError && !result.orElse(false)) {
             wipeTargetPath(targetPath);
@@ -71,7 +69,9 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         }
     }
 
-    private Optional<Boolean> submitAndWait(int maxWaitCycles, Future<Boolean> submittedTask) throws InterruptedException, ExecutionException, TimeoutException {
+    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask) throws InterruptedException, ExecutionException, TimeoutException {
+        int maxWaitCycles = MAX_COMPILE_TIMEOUT_SECONDS * 1000 / THREAD_POLL_INTERVAL_MS;
+
         Optional<Boolean> result;
         for (int i = 0; i < maxWaitCycles; i++) {
             try {

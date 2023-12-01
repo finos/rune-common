@@ -52,9 +52,9 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
 
         Future<Boolean> submittedTask = executorService.submit(compilationTask);
 
-        Optional<Boolean> result = submitAndWait(submittedTask);
+        Optional<Boolean> result = submitAndWait(submittedTask, isCancelled);
 
-        if (deleteOnError && !result.orElse(false)) {
+        if (deleteOnError && result.isPresent() && !result.get()) {
             wipeTargetPath(targetPath);
         }
 
@@ -69,7 +69,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         }
     }
 
-    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask) throws InterruptedException, ExecutionException, TimeoutException {
+    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, Supplier<Boolean> isCancelled) throws InterruptedException, ExecutionException, TimeoutException {
         int maxWaitCycles = MAX_COMPILE_TIMEOUT_SECONDS * 1000 / THREAD_POLL_INTERVAL_MS;
 
         Optional<Boolean> result;
@@ -79,6 +79,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                 result = Optional.of(submittedTask.get(THREAD_POLL_INTERVAL_MS, TimeUnit.MILLISECONDS));
                 return result;
             } catch (TimeoutException e) {
+                //TODO: handle cancellation here
                 LOGGER.debug("Timed out whilst getting from task");
             }
         }

@@ -76,6 +76,11 @@ class JavaCSourceCancellableCompilerTest {
         assertThat(goodFile.exists(), is(true));
     }
 
+    @Test
+    void compileCancelsTask() {
+
+    }
+
 
     List<Path> setupSourceJavas(List<String> javaFiles) throws IOException {
         ArrayList<Path> javaSourcePaths = new ArrayList<>();

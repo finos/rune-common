@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 
 public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaCSourceCancellableCompiler.class);
+    public static final int DEFAULT_THREAD_POLL_INTERVAL_MS = 100;
+    public static final int DEFAULT_MAX_COMPILE_TIMEOUT_SECONDS = 300;
 
     private final int THREAD_POLL_INTERVAL_MS;
     private final int MAX_COMPILE_TIMEOUT_SECONDS;
@@ -53,8 +55,8 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                                           boolean isVerbose,
                                           JavaCompileReleaseFlag releaseFlag,
                                           Path... additionalClassPaths) {
-        this(100,
-                300,
+        this(DEFAULT_THREAD_POLL_INTERVAL_MS,
+                DEFAULT_MAX_COMPILE_TIMEOUT_SECONDS,
                 executorService,
                 useSystemClassPath,
                 deleteOnError,

@@ -87,7 +87,7 @@ class JavaCSourceCancellableCompilerTest {
         when(mockExecutor.submit(any(JavaCompiler.CompilationTask.class)))
                 .thenReturn(compilationTask);
 
-        javaCancellableCompiler = new JavaCSourceCancellableCompiler(10,
+        javaCancellableCompiler = new JavaCSourceCancellableCompiler(5,
                 1,
                 mockExecutor,
                 true,

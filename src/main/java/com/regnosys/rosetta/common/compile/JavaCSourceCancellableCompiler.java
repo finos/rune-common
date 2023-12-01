@@ -101,8 +101,13 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
             } catch (TimeoutException e) {
                 if (isCancelled.get()) {
                     boolean cancelled = submittedTask.cancel(true);
-                    if (!cancelled) {
+                    if (!cancelled && submittedTask.isCancelled()) {
                         LOGGER.warn("Attempted to cancel a compilation task but the cancellation attempt was unsuccessful, this may be because the task was already cancelled");
+                    }
+                    if (!submittedTask.isCancelled()) {
+                        String message = "Attempt to cancel compilation task failed";
+                        LOGGER.error(message);
+                        throw new CompilationCancellationException(message);
                     }
                     return Optional.empty();
                 }

@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
 public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaCSourceCancellableCompiler.class);
 
-    private static final int THREAD_POLL_INTERVAL_MS = 100;
-    private static final int MAX_COMPILE_TIMEOUT_SECONDS = 300;
+    private final int THREAD_POLL_INTERVAL_MS;
+    private final int MAX_COMPILE_TIMEOUT_SECONDS;
     private final ExecutorService executorService;
     private final boolean useSystemClassPath;
     private final boolean deleteOnError;
@@ -29,18 +29,38 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     private final JavaCompileReleaseFlag releaseFlag;
     private final Path[] additionalClassPaths;
 
-    public JavaCSourceCancellableCompiler(ExecutorService executorService,
+    public JavaCSourceCancellableCompiler(int threadPollIntervalMs,
+                                          int maxCompileTimeoutSeconds,
+                                          ExecutorService executorService,
                                           boolean useSystemClassPath,
                                           boolean deleteOnError,
                                           boolean isVerbose,
                                           JavaCompileReleaseFlag releaseFlag,
                                           Path... additionalClassPaths) {
+        this.THREAD_POLL_INTERVAL_MS = threadPollIntervalMs;
+        this.MAX_COMPILE_TIMEOUT_SECONDS = maxCompileTimeoutSeconds;
         this.executorService = executorService;
         this.useSystemClassPath = useSystemClassPath;
         this.isVerbose = isVerbose;
         this.deleteOnError = deleteOnError;
         this.releaseFlag = releaseFlag;
         this.additionalClassPaths = additionalClassPaths;
+    }
+
+    public JavaCSourceCancellableCompiler(ExecutorService executorService,
+                                          boolean useSystemClassPath,
+                                          boolean deleteOnError,
+                                          boolean isVerbose,
+                                          JavaCompileReleaseFlag releaseFlag,
+                                          Path... additionalClassPaths) {
+        this(100,
+                300,
+                executorService,
+                useSystemClassPath,
+                deleteOnError,
+                isVerbose,
+                releaseFlag,
+                additionalClassPaths);
     }
 
     @Override
@@ -79,7 +99,13 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                 result = Optional.of(submittedTask.get(THREAD_POLL_INTERVAL_MS, TimeUnit.MILLISECONDS));
                 return result;
             } catch (TimeoutException e) {
-                //TODO: handle cancellation here
+                if (isCancelled.get()) {
+                    boolean cancelled = submittedTask.cancel(true);
+                    if (!cancelled) {
+                        LOGGER.warn("Attempted to cancel a compilation task but the cancellation attempt was unsuccessful, this may be because the task was already cancelled");
+                    }
+                    return Optional.empty();
+                }
                 LOGGER.debug("Timed out whilst getting from task");
             }
         }

@@ -2,8 +2,10 @@ package com.regnosys.rosetta.common.compile;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import javax.tools.JavaCompiler;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,14 +13,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class JavaCSourceCancellableCompilerTest {
     private static final String TEST_RESOURCES = "compile-test";
@@ -77,8 +81,37 @@ class JavaCSourceCancellableCompilerTest {
     }
 
     @Test
-    void compileCancelsTask() {
+    void compileCancelsTask() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        ExecutorService mockExecutor = mock(ExecutorService.class);
+        CompletableFuture<Boolean> compilationTask = new CompletableFuture<>();
+        when(mockExecutor.submit(any(JavaCompiler.CompilationTask.class)))
+                .thenReturn(compilationTask);
 
+        javaCancellableCompiler = new JavaCSourceCancellableCompiler(10,
+                1,
+                mockExecutor,
+                true,
+                false,
+                false,
+                JavaCompileReleaseFlag.JAVA_11);
+
+
+        String helloWorldJava = "HelloWorld.java";
+        List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
+
+        AtomicInteger cancelCheckCount = new AtomicInteger(0);
+        Supplier<Boolean> booleanSupplier = () -> {
+            if (cancelCheckCount.get() == 2) {
+                return true;
+            }
+            cancelCheckCount.getAndIncrement();
+            return true;
+        };
+
+        JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, booleanSupplier);
+
+        assertThat(compilationResult.isCompilationComplete(), is(false));
+        assertThat(compilationTask.isCancelled(), is(true));
     }
 
 

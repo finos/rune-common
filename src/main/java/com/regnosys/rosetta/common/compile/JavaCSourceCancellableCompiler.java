@@ -73,13 +73,15 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
 
         Future<Boolean> submittedTask = executorService.submit(compilationTask);
 
-        Optional<Boolean> result = submitAndWait(submittedTask, cancelIndicator, targetPath);
+        CompilationCompletionState compilationCompletionState = submitAndWait(submittedTask, cancelIndicator, targetPath);
 
-        if (deleteOnError && result.isPresent() && !result.get()) {
+        if (deleteOnError && compilationCompletionState == CompilationCompletionState.COMPLETED_UNSUCCESSFULLY) {
             wipeTargetPath(targetPath);
         }
 
-        return new JavaCompilationResult(result.isPresent(), result.orElse(false), diagnosticCollector.getDiagnostics());
+        return new JavaCompilationResult(compilationCompletionState != CompilationCompletionState.NOT_COMPLETE,
+                compilationCompletionState == CompilationCompletionState.COMPLETED_SUCCESSFULLY,
+                diagnosticCollector.getDiagnostics());
     }
 
     private void wipeTargetPath(Path targetPath) {
@@ -90,13 +92,14 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         }
     }
 
-    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, CancelIndicator cancelIndicator, Path targetPath) throws InterruptedException, ExecutionException, TimeoutException {
+    private CompilationCompletionState submitAndWait(Future<Boolean> submittedTask, CancelIndicator cancelIndicator, Path targetPath) throws InterruptedException, ExecutionException, TimeoutException {
         int maxWaitCycles = maxCompileTimeoutMs / threadPollIntervalMs;
 
         for (int i = 0; i < maxWaitCycles; i++) {
             try {
                 LOGGER.debug("Trying get from task");
-                return Optional.of(submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS));
+                return submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS) ?
+                        CompilationCompletionState.COMPLETED_SUCCESSFULLY : CompilationCompletionState.COMPLETED_UNSUCCESSFULLY;
             } catch (TimeoutException e) {
                 if (cancelIndicator.isCancelled()) {
                     boolean cancellationAttemptedSuccessfully = submittedTask.cancel(true);
@@ -110,7 +113,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                         LOGGER.error(message);
                         throw new CompilationCancellationException(message);
                     }
-                    return Optional.empty();
+                    return CompilationCompletionState.NOT_COMPLETE;
                 }
                 LOGGER.trace("Timed out whilst getting from task, iteration {}", i);
             }
@@ -179,5 +182,11 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         classpath.append(additionalClassPathsString);
 
         return classpath.toString();
+    }
+
+    private enum CompilationCompletionState {
+        COMPLETED_SUCCESSFULLY,
+        COMPLETED_UNSUCCESSFULLY,
+        NOT_COMPLETE
     }
 }

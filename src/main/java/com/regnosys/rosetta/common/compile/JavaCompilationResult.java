@@ -33,7 +33,7 @@ public class JavaCompilationResult {
     /**
      * Get the compilation success state.
      *
-     * @return true if and only all the files compiled without errors;
+     * @return true if and only if all the files compiled without errors;
      * false otherwise
      */
     public boolean isCompilationSuccessful() {

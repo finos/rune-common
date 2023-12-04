@@ -45,7 +45,6 @@ class JavaCSourceCancellableCompilerTest {
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
         JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, () -> false);
 
-        assertThat(compilationResult.isCompilationComplete(), is(true));
         assertThat(compilationResult.isCompilationSuccessful(), is(true));
         File classFile = output.resolve("HelloWorld.class").toFile();
         assertThat(classFile.exists(), is(true));
@@ -57,7 +56,6 @@ class JavaCSourceCancellableCompilerTest {
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList("HelloWorld.java", "BrokenHelloWorld.java"));
         JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, () -> false);
 
-        assertThat(compilationResult.isCompilationComplete(), is(true));
         assertThat(compilationResult.isCompilationSuccessful(), is(false));
 
         try(Stream<Path> list = Files.list(output)) {
@@ -71,7 +69,6 @@ class JavaCSourceCancellableCompilerTest {
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList("HelloWorld.java", "BrokenHelloWorld.java"));
         JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, () -> false);
 
-        assertThat(compilationResult.isCompilationComplete(), is(true));
         assertThat(compilationResult.isCompilationSuccessful(), is(false));
 
         try(Stream<Path> list = Files.list(output)) {
@@ -111,7 +108,7 @@ class JavaCSourceCancellableCompilerTest {
 
         JavaCompilationResult compilationResult = javaCancellableCompiler.compile(sourceJavas, output, cancelIndicator);
 
-        assertThat(compilationResult.isCompilationComplete(), is(false));
+        assertThat(compilationResult.getCompilationCompletionState(), equalTo(CompilationCompletionState.NOT_COMPLETE));
         assertThat(compilationTask.isCancelled(), is(true));
     }
 

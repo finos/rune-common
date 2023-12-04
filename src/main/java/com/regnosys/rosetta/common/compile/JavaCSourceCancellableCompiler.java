@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -75,12 +74,11 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
 
         CompilationCompletionState compilationCompletionState = submitAndWait(submittedTask, cancelIndicator, targetPath);
 
-        if (deleteOnError && compilationCompletionState == CompilationCompletionState.COMPLETED_UNSUCCESSFULLY) {
+        if (deleteOnError && compilationCompletionState == CompilationCompletionState.COMPILATION_FAILURES) {
             wipeTargetPath(targetPath);
         }
 
-        return new JavaCompilationResult(compilationCompletionState != CompilationCompletionState.NOT_COMPLETE,
-                compilationCompletionState == CompilationCompletionState.COMPLETED_SUCCESSFULLY,
+        return new JavaCompilationResult(compilationCompletionState,
                 diagnosticCollector.getDiagnostics());
     }
 
@@ -99,7 +97,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
             try {
                 LOGGER.debug("Trying get from task");
                 return submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS) ?
-                        CompilationCompletionState.COMPLETED_SUCCESSFULLY : CompilationCompletionState.COMPLETED_UNSUCCESSFULLY;
+                        CompilationCompletionState.COMPILATION_SUCCESS : CompilationCompletionState.COMPILATION_FAILURES;
             } catch (TimeoutException e) {
                 if (cancelIndicator.isCancelled()) {
                     boolean cancellationAttemptedSuccessfully = submittedTask.cancel(true);
@@ -184,9 +182,4 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         return classpath.toString();
     }
 
-    private enum CompilationCompletionState {
-        COMPLETED_SUCCESSFULLY,
-        COMPLETED_UNSUCCESSFULLY,
-        NOT_COMPLETE
-    }
 }

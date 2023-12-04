@@ -9,25 +9,13 @@ import java.util.List;
  */
 public class JavaCompilationResult {
 
-    private final boolean compilationComplete;
-    private final boolean compilationSuccessful;
+    private final CompilationCompletionState compilationCompletionState;
     private final List<Diagnostic<? extends JavaFileObject>> diagnostics;
 
-    public JavaCompilationResult(boolean compilationComplete,
-                                 boolean compilationSuccessful,
+    public JavaCompilationResult(CompilationCompletionState compilationCompletionState,
                                  List<Diagnostic<? extends JavaFileObject>> diagnostics) {
-        this.compilationComplete = compilationComplete;
-        this.compilationSuccessful = compilationSuccessful;
+        this.compilationCompletionState = compilationCompletionState;
         this.diagnostics = diagnostics;
-    }
-
-    /**
-     * Get the compilation completion state
-     * @return true if the compilation completed either successfully or unsuccessfully. Will return
-     * false if the compilation times out, is cancelled or fails with a compilation execution error.
-     */
-    public boolean isCompilationComplete() {
-        return compilationComplete;
     }
 
     /**
@@ -37,7 +25,17 @@ public class JavaCompilationResult {
      * false otherwise
      */
     public boolean isCompilationSuccessful() {
-        return compilationSuccessful;
+        return compilationCompletionState == CompilationCompletionState.COMPILATION_SUCCESS;
+    }
+
+    /**
+     * Get the compilation completion state
+     * @return {@code CompilationCompletionState} which enumerates whether the compilation completed successfully,
+     * completed with failures or did not complete at all. A failure to complete entirely could be due to
+     * a timeout, a cancellation or an execution error in the complication process.
+     */
+    public CompilationCompletionState getCompilationCompletionState() {
+        return compilationCompletionState;
     }
 
     /**

@@ -111,7 +111,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                     }
                     return Optional.empty();
                 }
-                LOGGER.debug("Timed out whilst getting from task");
+                LOGGER.trace("Timed out whilst getting from task, iteration {}", i);
             }
         }
         throw new TimeoutException("Timed out waiting for compilation task");

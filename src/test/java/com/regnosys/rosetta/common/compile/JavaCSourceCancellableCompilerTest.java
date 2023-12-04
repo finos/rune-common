@@ -101,7 +101,7 @@ class JavaCSourceCancellableCompilerTest {
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
 
         AtomicInteger cancelCheckCount = new AtomicInteger(0);
-        Supplier<Boolean> cancelIndicator = () -> {
+        CancelIndicator cancelIndicator = () -> {
             if (cancelCheckCount.get() == 2) {
                 return true;
             }
@@ -134,7 +134,7 @@ class JavaCSourceCancellableCompilerTest {
         String helloWorldJava = "HelloWorld.java";
         List<Path> sourceJavas = setupSourceJavas(Lists.newArrayList(helloWorldJava));
 
-        Supplier<Boolean> cancelIndicator = () -> false;
+        CancelIndicator cancelIndicator = () -> false;
 
         assertThrows(TimeoutException.class, () -> {
             javaCancellableCompiler.compile(sourceJavas, output, cancelIndicator);

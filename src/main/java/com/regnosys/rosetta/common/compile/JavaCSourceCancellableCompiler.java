@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
@@ -68,13 +67,13 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
     @Override
     public JavaCompilationResult compile(List<Path> sourceJavaPaths,
                                          Path targetPath,
-                                         Supplier<Boolean> isCancelled) throws ExecutionException, InterruptedException, TimeoutException {
+                                         CancelIndicator cancelIndicator) throws ExecutionException, InterruptedException, TimeoutException {
         DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
         JavaCompiler.CompilationTask compilationTask = getCompilationTask(sourceJavaPaths, targetPath, diagnosticCollector);
 
         Future<Boolean> submittedTask = executorService.submit(compilationTask);
 
-        Optional<Boolean> result = submitAndWait(submittedTask, isCancelled, targetPath);
+        Optional<Boolean> result = submitAndWait(submittedTask, cancelIndicator, targetPath);
 
         if (deleteOnError && result.isPresent() && !result.get()) {
             wipeTargetPath(targetPath);
@@ -91,7 +90,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         }
     }
 
-    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, Supplier<Boolean> isCancelled, Path targetPath) throws InterruptedException, ExecutionException, TimeoutException {
+    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, CancelIndicator cancelIndicator, Path targetPath) throws InterruptedException, ExecutionException, TimeoutException {
         int maxWaitCycles = maxCompileTimeoutMs / threadPollIntervalMs;
 
         for (int i = 0; i < maxWaitCycles; i++) {
@@ -99,7 +98,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                 LOGGER.debug("Trying get from task");
                 return Optional.of(submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS));
             } catch (TimeoutException e) {
-                if (isCancelled.get()) {
+                if (cancelIndicator.isCancelled()) {
                     boolean cancellationAttemptedSuccessfully = submittedTask.cancel(true);
                     if (!cancellationAttemptedSuccessfully && submittedTask.isCancelled()) {
                         LOGGER.info("Attempted to cancel a compilation task but the cancellation attempt was unsuccessful, this may be because the task was already cancelled");

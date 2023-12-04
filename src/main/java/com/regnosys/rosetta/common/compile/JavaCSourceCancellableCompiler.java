@@ -95,7 +95,6 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
 
         for (int i = 0; i < maxWaitCycles; i++) {
             try {
-                LOGGER.debug("Trying get from task");
                 return submittedTask.get(threadPollIntervalMs, TimeUnit.MILLISECONDS) ?
                         CompilationCompletionState.COMPILATION_SUCCESS : CompilationCompletionState.COMPILATION_FAILURES;
             } catch (TimeoutException e) {

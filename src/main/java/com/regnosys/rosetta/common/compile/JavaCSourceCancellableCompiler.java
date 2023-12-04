@@ -74,7 +74,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
 
         Future<Boolean> submittedTask = executorService.submit(compilationTask);
 
-        Optional<Boolean> result = submitAndWait(submittedTask, isCancelled);
+        Optional<Boolean> result = submitAndWait(submittedTask, isCancelled, targetPath);
 
         if (deleteOnError && result.isPresent() && !result.get()) {
             wipeTargetPath(targetPath);
@@ -91,7 +91,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         }
     }
 
-    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, Supplier<Boolean> isCancelled) throws InterruptedException, ExecutionException, TimeoutException {
+    private Optional<Boolean> submitAndWait(Future<Boolean> submittedTask, Supplier<Boolean> isCancelled, Path targetPath) throws InterruptedException, ExecutionException, TimeoutException {
         int maxWaitCycles = maxCompileTimeoutMs / threadPollIntervalMs;
 
         for (int i = 0; i < maxWaitCycles; i++) {
@@ -105,7 +105,9 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
                         LOGGER.info("Attempted to cancel a compilation task but the cancellation attempt was unsuccessful, this may be because the task was already cancelled");
                     }
                     if (!submittedTask.isCancelled()) {
-                        String message = "Attempt to cancel compilation task failed";
+                        String message = String.format(
+                        "Failed to cancel compile task while writing to %s. This may mean that the compilation process runs long or hangs.",
+                                targetPath);
                         LOGGER.error(message);
                         throw new CompilationCancellationException(message);
                     }

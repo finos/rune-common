@@ -74,10 +74,11 @@ public class QualifyProcessorStep implements PostProcessStep {
 				QualificationHandler<RosettaModelObject, R, RosettaModelObjectBuilder> handler =
 						(QualificationHandler<RosettaModelObject, R, RosettaModelObjectBuilder>) handlerMap.get(builder.getType());
 				RosettaModelObject qualifiableObject = handler.getQualifiableObject((R)builder.build());
-				QualificationResult result = qualify(handler.getQualifiableClass(), qualifiableObject);
-				collectedResults.add(result);
-				result.getUniqueSuccessQualifyResult().ifPresent(r->handler.setQualifier(builder, r.getName()));
-			}
+				if (null != qualifiableObject) {
+					QualificationResult result = qualify(handler.getQualifiableClass(), qualifiableObject);
+					collectedResults.add(result);
+					result.getUniqueSuccessQualifyResult().ifPresent(r->handler.setQualifier(builder, r.getName()));				}
+				}
 			return true;
 		}
 

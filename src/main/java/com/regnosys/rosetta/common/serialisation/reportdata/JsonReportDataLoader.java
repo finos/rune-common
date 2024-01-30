@@ -11,7 +11,7 @@ import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
 public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> {
 
-    public static final String DEFAULT_DESCRIPTOR_NAME = "regulatory-reporting-data-descriptor.json";
+    public static final String DEFAULT_DESCRIPTOR_NAME = "-data-descriptor.json";
 
     private final URL inputPath;
 

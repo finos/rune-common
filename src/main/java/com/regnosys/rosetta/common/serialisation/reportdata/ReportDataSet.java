@@ -18,7 +18,13 @@ public class ReportDataSet {
 
     public ReportDataSet(String dataSetName, String dataSetShortName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
-        this.dataSetShortName = dataSetShortName;
+
+        if(null != dataSetShortName && !dataSetShortName.isEmpty()){
+            this.dataSetShortName = dataSetShortName;
+        }
+        else{
+            this.dataSetShortName = dataSetName;
+        }
         this.inputType = inputType;
         this.applicableReports = applicableReports;
         this.data = data;

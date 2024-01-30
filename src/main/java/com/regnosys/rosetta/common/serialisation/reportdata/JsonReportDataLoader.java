@@ -45,7 +45,7 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
             }
             loadedData.add(reportDataItem);
         }
-        return new ReportDataSet(descriptor.getDataSetName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
+        return new ReportDataSet(descriptor.getDataSetName(), descriptor.getDataSetShortName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
     }
 
     private Object getInput(String inputType, ReportDataItem data) {

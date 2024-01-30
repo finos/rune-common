@@ -40,7 +40,7 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
         }
         return new ReportIdentifierDataSet(
                 descriptor.getReportIdentifier(),
-                new ReportDataSet(dataSet.getDataSetName(), dataSet.getInputType(), dataSet.getApplicableReports(), loadedData));
+                new ReportDataSet(dataSet.getDataSetName(), dataSet.getDataSetShortName(), dataSet.getInputType(), dataSet.getApplicableReports(), loadedData));
     }
 
     private Object getExpected(ModelReportId reportIdentifier, String dataSetName, String expectedType, ReportDataItem data) {

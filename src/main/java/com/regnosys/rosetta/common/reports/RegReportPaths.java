@@ -9,6 +9,9 @@ import java.nio.file.Paths;
 public class RegReportPaths {
 
     public static final Path REGULATORY_REPORTING_PATH = Paths.get("regulatory-reporting");
+    public static final Path PROJECTION_PATH = Paths.get("projection");
+    public static final Path ISO20022_PATH = Paths.get("iso-20022");
+
     public static final Path INPUT_PATH = Paths.get("input");
     public static final Path OUTPUT_PATH = Paths.get("output");
     public static final Path CONFIG_PATH = Paths.get("config");
@@ -21,11 +24,25 @@ public class RegReportPaths {
     public static final String KEY_VALUE_FILE_NAME_SUFFIX = "-key-value.json";
     public static final String REPORT_FILE_NAME_SUFFIX = "-report.json";
 
-    public static RegReportPaths get(Path resourcesPath) {
-        return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
-                RegReportPaths.getDefault() : RegReportPaths.getLegacy();
+    public static RegReportPaths get(Path resourcesPath, String reportProjection) {
+        if(reportProjection.equalsIgnoreCase("report") ){
+            return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
+                    RegReportPaths.getDefault() : RegReportPaths.getLegacy();
+        }
+        else{
+            return getProjectionPath();
+        }
     }
 
+    public static RegReportPaths getProjectionPath() {
+        Path projectionPath = PROJECTION_PATH;
+        Path isoPath = projectionPath.resolve(ISO20022_PATH);
+        return new RegReportPaths(isoPath,
+                isoPath.resolve(INPUT_PATH),
+                isoPath.resolve(OUTPUT_PATH),
+                isoPath.resolve(CONFIG_PATH),
+                isoPath.resolve(LOOKUP_PATH));
+    }
     public static RegReportPaths getDefault() {
         Path rootPath = REGULATORY_REPORTING_PATH;
         return new RegReportPaths(rootPath,

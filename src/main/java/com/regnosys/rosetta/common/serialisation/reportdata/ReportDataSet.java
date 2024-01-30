@@ -10,15 +10,30 @@ public class ReportDataSet {
     private final static String EXPECTED_TYPE = ExpectedResult.class.getName();
 
     private String dataSetName;
+
+    private String dataSetShortName;
     private String inputType;
     private List<ModelReportId> applicableReports;
     private List<ReportDataItem> data;
 
-    public ReportDataSet(String dataSetName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data) {
+    public ReportDataSet(String dataSetName, String dataSetShortName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
+        this.dataSetShortName = dataSetShortName;
         this.inputType = inputType;
         this.applicableReports = applicableReports;
         this.data = data;
+    }
+
+    public ReportDataSet(String dataSetName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data) {
+        this.dataSetName = dataSetName;
+        this.dataSetShortName = dataSetName;
+        this.inputType = inputType;
+        this.applicableReports = applicableReports;
+        this.data = data;
+    }
+
+    public String getDataSetShortName() {
+        return dataSetShortName;
     }
 
     public ReportDataSet() {
@@ -50,6 +65,7 @@ public class ReportDataSet {
         if (o == null || getClass() != o.getClass()) return false;
         ReportDataSet that = (ReportDataSet) o;
         return Objects.equals(dataSetName, that.dataSetName) &&
+                Objects.equals(dataSetShortName, that.dataSetShortName) &&
                 Objects.equals(inputType, that.inputType) &&
                 Objects.equals(applicableReports, that.applicableReports) &&
                 Objects.equals(data, that.data);
@@ -57,7 +73,7 @@ public class ReportDataSet {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dataSetName, inputType, EXPECTED_TYPE, applicableReports, data);
+        return Objects.hash(dataSetName, dataSetShortName, inputType, EXPECTED_TYPE, applicableReports, data);
     }
 
     @Override

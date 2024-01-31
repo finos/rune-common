@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.regnosys.rosetta.common.serialisation.reportdata.ExpectedResult;
-import com.rosetta.model.lib.ModelReportId;
+import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
 
 import java.util.List;
 import java.util.Objects;
@@ -14,9 +14,9 @@ public class DataSet {
 
     private String dataSetShortName;
     private String inputType;
-    private List<DataItem> data;
+    private List<ReportDataItem> data;
 
-    public DataSet(String dataSetName, String dataSetShortName, String inputType, List<DataItem> data) {
+    public DataSet(String dataSetName, String dataSetShortName, String inputType, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
 
         if(null != dataSetShortName && !dataSetShortName.isEmpty()){
@@ -29,7 +29,7 @@ public class DataSet {
         this.data = data;
     }
 
-    public DataSet(String dataSetName, String inputType, List<DataItem> data) {
+    public DataSet(String dataSetName, String inputType, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
         this.dataSetShortName = dataSetName;
         this.inputType = inputType;
@@ -55,7 +55,7 @@ public class DataSet {
         return EXPECTED_TYPE;
     }
 
-    public List<DataItem> getData() {
+    public List<ReportDataItem> getData() {
         return data;
     }
 

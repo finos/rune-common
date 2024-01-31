@@ -3,7 +3,7 @@ package com.regnosys.rosetta.common.serialisation.json.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.reportdata.JsonReportDataLoader;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
+import com.regnosys.rosetta.common.serialisation.DataItem;
 import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
 import org.junit.jupiter.api.Test;
 
@@ -39,11 +39,11 @@ class JsonReportDataLoaderTest {
         assertTrue(reportDataSets.get(0).getData().get(0).getInput() instanceof EventTestModelObject);
         assertTrue(reportDataSets.get(0).getData().get(1).getInput() instanceof EventTestModelObject);
 
-        assertEquals(new ReportDataItem("This is the desc of the usecase",
+        assertEquals(new DataItem("This is the desc of the usecase",
                         new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
                         null),
                 reportDataSets.get(0).getData().get(0));
-        assertEquals(new ReportDataItem("This is the desc of the another usecase that has inline json rather then a file",
+        assertEquals(new DataItem("This is the desc of the another usecase that has inline json rather then a file",
                         new EventTestModelObject(LocalDate.parse("2018-02-21"), "TerminatedTrade"),
                         null),
                 reportDataSets.get(0).getData().get(1));
@@ -101,7 +101,7 @@ class JsonReportDataLoaderTest {
         assertThrows(RuntimeException.class, () -> reportDataSets.get(0).getData().get(1).getInput());
 
         assertTrue(reportDataSets.get(0).getData().get(0).getInput() instanceof EventTestModelObject);
-        assertEquals(new ReportDataItem("This is the desc of the usecase",
+        assertEquals(new DataItem("This is the desc of the usecase",
                         new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"),
                         null),
                 reportDataSets.get(0).getData().get(0));

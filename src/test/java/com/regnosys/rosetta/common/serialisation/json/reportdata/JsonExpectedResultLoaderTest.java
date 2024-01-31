@@ -3,7 +3,7 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.reports.RegReportIdentifier;
+import com.regnosys.rosetta.common.serialisation.DataItem;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.rosetta.model.lib.ModelReportId;
 import org.junit.jupiter.api.Test;
@@ -40,14 +40,14 @@ class JsonExpectedResultLoaderTest {
         ReportIdentifierDataSet enrichedDataSet = jsonExpectedResultLoader.loadInputFiles(inputDataSet);
 
         assertNotNull(enrichedDataSet.getDataSet());
-        List<ReportDataItem> data = enrichedDataSet.getDataSet().getData();
+        List<DataItem> data = enrichedDataSet.getDataSet().getData();
         assertEquals(2, data.size());
 
-        ReportDataItem reportDataItem1 = data.get(0);
-        assertEquals("Name 1", reportDataItem1.getName());
-        assertEquals("test1.json", reportDataItem1.getInput());
+        DataItem dataItem1 = data.get(0);
+        assertEquals("Name 1", dataItem1.getName());
+        assertEquals("test1.json", dataItem1.getInput());
 
-        ExpectedResult expectedResult = (ExpectedResult) reportDataItem1.getExpected();
+        ExpectedResult expectedResult = (ExpectedResult) dataItem1.getExpected();
         List<ExpectedResultField> keyValueResults = expectedResult.getExpectationsPerReport().get(reportId);
         assertNotNull(keyValueResults);
         assertEquals(1, keyValueResults.size());
@@ -56,10 +56,10 @@ class JsonExpectedResultLoaderTest {
         assertEquals("column 1", expectedResultField.getName());
         assertEquals("NewTrade-expected", expectedResultField.getValue());
 
-        ReportDataItem reportDataItem2 = data.get(1);
-        assertEquals("Name 2", reportDataItem2.getName());
-        assertNotNull(reportDataItem2.getInput());
-        assertNull(reportDataItem2.getExpected());
+        DataItem dataItem2 = data.get(1);
+        assertEquals("Name 2", dataItem2.getName());
+        assertNotNull(dataItem2.getInput());
+        assertNull(dataItem2.getExpected());
     }
 
     @Test
@@ -78,16 +78,16 @@ class JsonExpectedResultLoaderTest {
 
         // data set
         assertNotNull(enrichedDataSet.getDataSet());
-        List<ReportDataItem> data = enrichedDataSet.getDataSet().getData();
+        List<DataItem> data = enrichedDataSet.getDataSet().getData();
         assertEquals(2, data.size());
 
         // data item 1
-        ReportDataItem reportDataItem1 = data.get(0);
-        assertEquals("Name 1", reportDataItem1.getName());
-        assertEquals("test1.json", reportDataItem1.getInput());
+        DataItem dataItem1 = data.get(0);
+        assertEquals("Name 1", dataItem1.getName());
+        assertEquals("test1.json", dataItem1.getInput());
 
         // data item 1 - expected results for report 1
-        ExpectedResult expectedResult = (ExpectedResult) reportDataItem1.getExpected();
+        ExpectedResult expectedResult = (ExpectedResult) dataItem1.getExpected();
         Map<ModelReportId, List<ExpectedResultField>> expectationsMap1 = expectedResult.getExpectationsPerReport();
 
         List<ExpectedResultField> keyValueResultsReport1 = expectationsMap1.get(reportId1);
@@ -102,12 +102,12 @@ class JsonExpectedResultLoaderTest {
         assertNull(keyValueResults1Report2);
 
         // data item 2
-        ReportDataItem reportDataItem2 = data.get(1);
-        assertEquals("Name 2", reportDataItem2.getName());
-        assertNotNull(reportDataItem2.getInput());
+        DataItem dataItem2 = data.get(1);
+        assertEquals("Name 2", dataItem2.getName());
+        assertNotNull(dataItem2.getInput());
 
         // data item 2 - expected results for report 1
-        ExpectedResult expectedResult2 = (ExpectedResult) reportDataItem2.getExpected();
+        ExpectedResult expectedResult2 = (ExpectedResult) dataItem2.getExpected();
         Map<ModelReportId, List<ExpectedResultField>> expectationsMap2 = expectedResult2.getExpectationsPerReport();
 
         List<ExpectedResultField> keyValueResults2Report1 = expectationsMap2.get(reportId1);

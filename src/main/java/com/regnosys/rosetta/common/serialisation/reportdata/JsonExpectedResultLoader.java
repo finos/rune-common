@@ -3,6 +3,7 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.InputDataLoader;
+import com.regnosys.rosetta.common.serialisation.DataItem;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.ModelReportId;
 
@@ -30,20 +31,20 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
 
     @Override
     public ReportIdentifierDataSet loadInputFiles(ReportIdentifierDataSet descriptor) {
-        List<ReportDataItem> loadedData = new ArrayList<>();
+        List<DataItem> loadedData = new ArrayList<>();
         ReportDataSet dataSet = descriptor.getDataSet();
-        for (ReportDataItem data : dataSet.getData()) {
-            ReportDataItem reportDataItem = new ReportDataItem(data.getName(),
+        for (DataItem data : dataSet.getData()) {
+            DataItem dataItem = new DataItem(data.getName(),
                     data.getInput(),
                     getExpected(descriptor.getReportIdentifier(), dataSet.getDataSetName(), dataSet.getExpectedType(), data));
-            loadedData.add(reportDataItem);
+            loadedData.add(dataItem);
         }
         return new ReportIdentifierDataSet(
                 descriptor.getReportIdentifier(),
                 new ReportDataSet(dataSet.getDataSetName(), dataSet.getDataSetShortName(), dataSet.getInputType(), dataSet.getApplicableReports(), loadedData));
     }
 
-    private Object getExpected(ModelReportId reportIdentifier, String dataSetName, String expectedType, ReportDataItem data) {
+    private Object getExpected(ModelReportId reportIdentifier, String dataSetName, String expectedType, DataItem data) {
         if (data.getInput() instanceof String) {
             // attempt to load per report expectation file
             Path inputFileName = Paths.get(String.valueOf(data.getInput()));

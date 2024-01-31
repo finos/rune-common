@@ -1,11 +1,11 @@
-package com.regnosys.rosetta.common.serialisation.reportdata;
+package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 
 import java.util.*;
 
-public class ReportDataItem {
+public class DataItem {
 
     private String name;
     private Object input;
@@ -15,13 +15,13 @@ public class ReportDataItem {
     private Exception error;
 
 
-    public ReportDataItem() {
+    public DataItem() {
     }
 
-    public ReportDataItem(String name, Object input, Object expected) {
+    public DataItem(String name, Object input, Object expected) {
         this(name, input, expected, null);
     }
-    public ReportDataItem(String name, Object input, Object expected, Exception error) {
+    public DataItem(String name, Object input, Object expected, Exception error) {
         this.name = name;
         this.input = input;
         this.expected = expected;
@@ -52,7 +52,7 @@ public class ReportDataItem {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ReportDataItem that = (ReportDataItem) o;
+        DataItem that = (DataItem) o;
         return Objects.equals(name, that.name) &&
                 Objects.equals(input, that.input) &&
                 Objects.equals(expected, that.expected);
@@ -65,7 +65,7 @@ public class ReportDataItem {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", ReportDataItem.class.getSimpleName() + "[", "]")
+        return new StringJoiner(", ", DataItem.class.getSimpleName() + "[", "]")
                 .add("name='" + name + "'")
                 .add("input=" + input)
                 .add("expected=" + (expected == null ? "" : expected.toString()))

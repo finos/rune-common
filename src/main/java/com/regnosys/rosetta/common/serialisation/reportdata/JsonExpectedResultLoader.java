@@ -3,7 +3,6 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.regnosys.rosetta.common.serialisation.InputDataLoader;
-import com.regnosys.rosetta.common.serialisation.DataItem;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.ModelReportId;
 
@@ -31,20 +30,20 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
 
     @Override
     public ReportIdentifierDataSet loadInputFiles(ReportIdentifierDataSet descriptor) {
-        List<DataItem> loadedData = new ArrayList<>();
+        List<ReportDataItem> loadedData = new ArrayList<>();
         ReportDataSet dataSet = descriptor.getDataSet();
-        for (DataItem data : dataSet.getData()) {
-            DataItem dataItem = new DataItem(data.getName(),
+        for (ReportDataItem data : dataSet.getData()) {
+            ReportDataItem reportDataItem = new ReportDataItem(data.getName(),
                     data.getInput(),
                     getExpected(descriptor.getReportIdentifier(), dataSet.getDataSetName(), dataSet.getExpectedType(), data));
-            loadedData.add(dataItem);
+            loadedData.add(reportDataItem);
         }
         return new ReportIdentifierDataSet(
                 descriptor.getReportIdentifier(),
-                new ReportDataSet(dataSet.getDataSetName(), dataSet.getDataSetShortName(), dataSet.getInputType(), dataSet.getApplicableReports(), loadedData));
+                new ReportDataSet(dataSet.getDataSetName(), dataSet.getInputType(), dataSet.getApplicableReports(), loadedData));
     }
 
-    private Object getExpected(ModelReportId reportIdentifier, String dataSetName, String expectedType, DataItem data) {
+    private Object getExpected(ModelReportId reportIdentifier, String dataSetName, String expectedType, ReportDataItem data) {
         if (data.getInput() instanceof String) {
             // attempt to load per report expectation file
             Path inputFileName = Paths.get(String.valueOf(data.getInput()));

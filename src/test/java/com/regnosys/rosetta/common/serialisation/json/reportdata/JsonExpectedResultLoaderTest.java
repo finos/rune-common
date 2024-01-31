@@ -3,7 +3,6 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.serialisation.DataItem;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.rosetta.model.lib.ModelReportId;
 import org.junit.jupiter.api.Test;
@@ -40,10 +39,10 @@ class JsonExpectedResultLoaderTest {
         ReportIdentifierDataSet enrichedDataSet = jsonExpectedResultLoader.loadInputFiles(inputDataSet);
 
         assertNotNull(enrichedDataSet.getDataSet());
-        List<DataItem> data = enrichedDataSet.getDataSet().getData();
+        List<ReportDataItem> data = enrichedDataSet.getDataSet().getData();
         assertEquals(2, data.size());
 
-        DataItem dataItem1 = data.get(0);
+        ReportDataItem dataItem1 = data.get(0);
         assertEquals("Name 1", dataItem1.getName());
         assertEquals("test1.json", dataItem1.getInput());
 
@@ -56,7 +55,7 @@ class JsonExpectedResultLoaderTest {
         assertEquals("column 1", expectedResultField.getName());
         assertEquals("NewTrade-expected", expectedResultField.getValue());
 
-        DataItem dataItem2 = data.get(1);
+        ReportDataItem dataItem2 = data.get(1);
         assertEquals("Name 2", dataItem2.getName());
         assertNotNull(dataItem2.getInput());
         assertNull(dataItem2.getExpected());
@@ -78,11 +77,11 @@ class JsonExpectedResultLoaderTest {
 
         // data set
         assertNotNull(enrichedDataSet.getDataSet());
-        List<DataItem> data = enrichedDataSet.getDataSet().getData();
+        List<ReportDataItem> data = enrichedDataSet.getDataSet().getData();
         assertEquals(2, data.size());
 
         // data item 1
-        DataItem dataItem1 = data.get(0);
+        ReportDataItem dataItem1 = data.get(0);
         assertEquals("Name 1", dataItem1.getName());
         assertEquals("test1.json", dataItem1.getInput());
 
@@ -102,7 +101,7 @@ class JsonExpectedResultLoaderTest {
         assertNull(keyValueResults1Report2);
 
         // data item 2
-        DataItem dataItem2 = data.get(1);
+        ReportDataItem dataItem2 = data.get(1);
         assertEquals("Name 2", dataItem2.getName());
         assertNotNull(dataItem2.getInput());
 

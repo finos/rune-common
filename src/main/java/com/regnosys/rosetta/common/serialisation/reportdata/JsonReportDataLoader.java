@@ -2,7 +2,6 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
-import com.regnosys.rosetta.common.serialisation.DataItem;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -35,21 +34,21 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
 
     @Override
     public ReportDataSet loadInputFiles(ReportDataSet descriptor) {
-        List<DataItem> loadedData = new ArrayList<>();
-        for (DataItem data : descriptor.getData()) {
-            DataItem dataItem;
+        List<ReportDataItem> loadedData = new ArrayList<>();
+        for (ReportDataItem data : descriptor.getData()) {
+            ReportDataItem reportDataItem;
             try {
-                dataItem = new DataItem(data.getName(), getInput(descriptor.getInputType(), data),
+                reportDataItem = new ReportDataItem(data.getName(), getInput(descriptor.getInputType(), data),
                         data.getExpected()); // expected is handled by JsonExpectedResultLoader
             } catch (RuntimeException e) {
-                dataItem = new DataItem(data.getName(), data.getInput(), data.getExpected(), e);
+                reportDataItem = new ReportDataItem(data.getName(), data.getInput(), data.getExpected(), e);
             }
-            loadedData.add(dataItem);
+            loadedData.add(reportDataItem);
         }
-        return new ReportDataSet(descriptor.getDataSetName(), descriptor.getDataSetShortName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
+        return new ReportDataSet(descriptor.getDataSetName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
     }
 
-    private Object getInput(String inputType, DataItem data) {
+    private Object getInput(String inputType, ReportDataItem data) {
         Class<?> inputTypeClass = loadClass(inputType, classLoader);
         if (data.getInput() instanceof String) {
             // by path

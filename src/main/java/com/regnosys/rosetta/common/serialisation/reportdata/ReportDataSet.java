@@ -18,9 +18,8 @@ public class ReportDataSet {
     private List<ModelReportId> applicableReports;
     private List<ReportDataItem> data;
 
-    public ReportDataSet(String dataSetName, String dataSetShortName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data, String applicableProjection) {
+    public ReportDataSet(String dataSetName, String dataSetShortName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
-
         if(null != dataSetShortName && !dataSetShortName.isEmpty()){
             this.dataSetShortName = dataSetShortName;
         }
@@ -30,15 +29,20 @@ public class ReportDataSet {
         this.inputType = inputType;
         this.applicableReports = applicableReports;
         this.data = data;
-        this.applicableProjection = applicableProjection;
     }
 
-    public ReportDataSet(String dataSetName, String inputType, String applicableProjection, List<ReportDataItem> data ) {
+    public ReportDataSet(String dataSetName, String dataSetShortName, String inputType, String applicableProjection, List<ReportDataItem> data ) {
         this.dataSetName = dataSetName;
-        this.dataSetShortName = dataSetName;
+
+        if(null != dataSetShortName && !dataSetShortName.isEmpty()){
+            this.dataSetShortName = dataSetShortName;
+        }
+        else{
+            this.dataSetShortName = dataSetName;
+        }
         this.inputType = inputType;
-        this.data = data;
         this.applicableProjection = applicableProjection;
+        this.data = data;
     }
 
     public ReportDataSet(String dataSetName, String inputType, List<ModelReportId> applicableReports, List<ReportDataItem> data) {

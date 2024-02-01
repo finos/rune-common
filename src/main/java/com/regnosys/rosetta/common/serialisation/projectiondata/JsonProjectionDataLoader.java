@@ -1,33 +1,33 @@
-package com.regnosys.rosetta.common.serialisation.reportdata;
+package com.regnosys.rosetta.common.serialisation.projectiondata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
+import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
+import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
-
-public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> {
+public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ReportDataSet> {
 
     public static final String DEFAULT_DESCRIPTOR_NAME = "-data-descriptor.json";
 
     private final URL inputPath;
 
-    public JsonReportDataLoader(ClassLoader classLoader,
-                                ObjectMapper rosettaObjectMapper,
-                                URL descriptorPath,
-                                List<String> descriptorFileNames) {
+    public JsonProjectionDataLoader(ClassLoader classLoader,
+                                    ObjectMapper rosettaObjectMapper,
+                                    URL descriptorPath,
+                                    List<String> descriptorFileNames) {
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, false);
         this.inputPath = null;
     }
 
-    public JsonReportDataLoader(ClassLoader classLoader,
-                                ObjectMapper rosettaObjectMapper,
-                                URL descriptorPath,
-                                List<String> descriptorFileNames,
-                                URL inputPath) {
+    public JsonProjectionDataLoader(ClassLoader classLoader,
+                                    ObjectMapper rosettaObjectMapper,
+                                    URL descriptorPath,
+                                    List<String> descriptorFileNames,
+                                    URL inputPath) {
         super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, true);
         this.inputPath = inputPath;
     }

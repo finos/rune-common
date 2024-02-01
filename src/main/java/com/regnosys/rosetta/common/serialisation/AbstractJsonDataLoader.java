@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +12,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.readTypeList;
+import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
+import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.fromObject;
 
 public abstract class AbstractJsonDataLoader<T> implements DataLoader<T>, InputDataLoader<T> {
 
@@ -56,5 +58,17 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T>, InputD
         URL resolvedUrl = UrlUtils.resolve(url, child);
         LOGGER.debug("Resolved URL {}", resolvedUrl);
         return resolvedUrl;
+    }
+
+
+    public Object getInput(String inputType, ReportDataItem data, URL inputPath) {
+        Class<?> inputTypeClass = loadClass(inputType, classLoader);
+        if (data.getInput() instanceof String) {
+            // by path
+            String inputFileName = (String) data.getInput();
+            return readType(inputTypeClass, rosettaObjectMapper, resolve(inputPath, inputFileName));
+        } else {
+            return fromObject(data.getInput(), inputTypeClass, rosettaObjectMapper);
+        }
     }
 }

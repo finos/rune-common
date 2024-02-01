@@ -2,23 +2,22 @@ package com.regnosys.rosetta.common.serialisation;
 
 import com.regnosys.rosetta.common.serialisation.reportdata.ExpectedResult;
 import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
+import com.rosetta.model.lib.ModelReportId;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-public class DataSet {
+public abstract class DataSet {
     private final static String EXPECTED_TYPE = ExpectedResult.class.getName();
 
     private String dataSetName;
-
     private String dataSetShortName;
     private String inputType;
     private List<ReportDataItem> data;
 
     public DataSet(String dataSetName, String dataSetShortName, String inputType, List<ReportDataItem> data) {
         this.dataSetName = dataSetName;
-
         if(null != dataSetShortName && !dataSetShortName.isEmpty()){
             this.dataSetShortName = dataSetShortName;
         }
@@ -28,14 +27,6 @@ public class DataSet {
         this.inputType = inputType;
         this.data = data;
     }
-
-    public DataSet(String dataSetName, String inputType, List<ReportDataItem> data) {
-        this.dataSetName = dataSetName;
-        this.dataSetShortName = dataSetName;
-        this.inputType = inputType;
-        this.data = data;
-    }
-
     public String getDataSetShortName() {
         return dataSetShortName;
     }
@@ -75,13 +66,4 @@ public class DataSet {
         return Objects.hash(dataSetName, dataSetShortName, inputType, EXPECTED_TYPE, data);
     }
 
-    @Override
-    public String toString() {
-        return new StringJoiner(", ", DataSet.class.getSimpleName() + "[", "]")
-                .add("dataSetName='" + dataSetName + "'")
-                .add("inputType='" + inputType + "'")
-                .add("expectedType='" + EXPECTED_TYPE + "'")
-                .add("data=" + data)
-                .toString();
-    }
 }

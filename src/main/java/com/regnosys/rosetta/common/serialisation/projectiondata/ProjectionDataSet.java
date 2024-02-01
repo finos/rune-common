@@ -2,25 +2,23 @@ package com.regnosys.rosetta.common.serialisation.projectiondata;
 
 import com.regnosys.rosetta.common.serialisation.DataSet;
 import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
 import com.rosetta.model.lib.ModelReportId;
 
 import java.util.List;
 import java.util.Objects;
 
 public class ProjectionDataSet extends DataSet {
+
     private String applicableProjection;
 
+
     public ProjectionDataSet(String dataSetName, String dataSetShortName, String inputType, String applicableProjection, List<ReportDataItem> data) {
-        super(dataSetName, dataSetShortName, inputType, data);
+       super(dataSetName, dataSetShortName, inputType, data);
         this.applicableProjection = applicableProjection;
     }
 
-    public ProjectionDataSet(String dataSetName, String inputType, String applicableProjection, List<ReportDataItem> data) {
-        super(dataSetName, inputType, data);
-        this.applicableProjection = applicableProjection;
+    public ProjectionDataSet() {
     }
-
 
     public String getApplicableProjection() {
         return applicableProjection;

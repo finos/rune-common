@@ -9,7 +9,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ReportDataSet> {
+public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ProjectionDataSet> {
 
     public static final String DEFAULT_DESCRIPTOR_NAME = "-data-descriptor.json";
 
@@ -19,7 +19,7 @@ public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ReportDataS
                                     ObjectMapper rosettaObjectMapper,
                                     URL descriptorPath,
                                     List<String> descriptorFileNames) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, false);
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ProjectionDataSet.class, false);
         this.inputPath = null;
     }
 
@@ -28,12 +28,12 @@ public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ReportDataS
                                     URL descriptorPath,
                                     List<String> descriptorFileNames,
                                     URL inputPath) {
-        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ReportDataSet.class, true);
+        super(classLoader, rosettaObjectMapper, descriptorPath, descriptorFileNames, ProjectionDataSet.class, true);
         this.inputPath = inputPath;
     }
 
     @Override
-    public ReportDataSet loadInputFiles(ReportDataSet descriptor) {
+    public ProjectionDataSet loadInputFiles(ProjectionDataSet descriptor) {
         List<ReportDataItem> loadedData = new ArrayList<>();
         for (ReportDataItem data : descriptor.getData()) {
             ReportDataItem reportDataItem;
@@ -45,7 +45,7 @@ public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ReportDataS
             }
             loadedData.add(reportDataItem);
         }
-        return new ReportDataSet(descriptor.getDataSetName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
+        return new ProjectionDataSet(descriptor.getDataSetName(),descriptor.getDataSetShortName(), descriptor.getInputType(), descriptor.getApplicableProjection(), loadedData);
     }
 
 }

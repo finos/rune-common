@@ -39,8 +39,12 @@ public class ReportDataSet extends DataSet {
 
     @Override
     public String toString() {
-        return "ReportDataSet{" +
-                "applicableReports=" + applicableReports +
-                '}';
+        return new StringJoiner(", ", ReportDataSet.class.getSimpleName() + "[", "]")
+                .add("dataSetName='" + getDataSetName() + "'")
+                .add("inputType='" + getInputType() + "'")
+                .add("expectedType='" + getExpectedType() + "'")
+                .add("applicableReports=" + applicableReports)
+                .add("data=" + getData())
+                .toString();
     }
 }

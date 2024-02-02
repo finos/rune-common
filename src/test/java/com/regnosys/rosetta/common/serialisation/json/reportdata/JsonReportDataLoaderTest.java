@@ -22,7 +22,7 @@ class JsonReportDataLoaderTest {
 
     private static final Path RESOURCES_PATH = Paths.get("src/test/resources");
 
-    private static final List<String> DESCRIPTOR_FILE_NAMES = Collections.singletonList("regulatory-reporting" + JsonReportDataLoader.DEFAULT_DESCRIPTOR_NAME);
+    private static final List<String> DESCRIPTOR_FILE_NAMES = Collections.singletonList(JsonReportDataLoader.DEFAULT_DESCRIPTOR_NAME);
 
     private final ObjectMapper rosettaObjectMapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 

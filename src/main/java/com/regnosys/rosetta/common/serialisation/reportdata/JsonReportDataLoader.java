@@ -11,7 +11,7 @@ import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
 public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> {
 
-    public static final String DEFAULT_DESCRIPTOR_NAME = "-data-descriptor.json";
+    public static final String DEFAULT_DESCRIPTOR_NAME = "regulatory-reporting-data-descriptor.json";
 
     private final URL inputPath;
 
@@ -38,7 +38,7 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
         for (ReportDataItem data : descriptor.getData()) {
             ReportDataItem reportDataItem;
             try {
-                reportDataItem = new ReportDataItem(data.getName(), getInput(descriptor.getInputType(), data, inputPath),
+                reportDataItem = new ReportDataItem(data.getName(), getInput(descriptor.getInputType(), data),
                         data.getExpected()); // expected is handled by JsonExpectedResultLoader
             } catch (RuntimeException e) {
                 reportDataItem = new ReportDataItem(data.getName(), data.getInput(), data.getExpected(), e);
@@ -48,4 +48,14 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
         return new ReportDataSet(descriptor.getDataSetName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
     }
 
+    private Object getInput(String inputType, ReportDataItem data) {
+        Class<?> inputTypeClass = loadClass(inputType, classLoader);
+        if (data.getInput() instanceof String) {
+            // by path
+            String inputFileName = (String) data.getInput();
+            return readType(inputTypeClass, rosettaObjectMapper, resolve(inputPath, inputFileName));
+        } else {
+            return fromObject(data.getInput(), inputTypeClass, rosettaObjectMapper);
+        }
+    }
 }

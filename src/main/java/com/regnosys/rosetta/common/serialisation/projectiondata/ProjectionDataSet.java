@@ -6,6 +6,7 @@ import com.rosetta.model.lib.ModelReportId;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 public class ProjectionDataSet extends DataSet {
 
@@ -40,8 +41,12 @@ public class ProjectionDataSet extends DataSet {
 
     @Override
     public String toString() {
-        return "ProjectionDataSet{" +
-                "applicableProjection='" + applicableProjection + '\'' +
-                '}';
+        return new StringJoiner(", ", ProjectionDataSet.class.getSimpleName() + "[", "]")
+                .add("dataSetName='" + getDataSetName() + "'")
+                .add("inputType='" + getInputType() + "'")
+                .add("expectedType='" + getExpectedType() + "'")
+                .add("applicableReports=" + applicableProjection)
+                .add("data=" + getData())
+                .toString();
     }
 }

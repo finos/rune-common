@@ -24,14 +24,9 @@ public class RegReportPaths {
     public static final String KEY_VALUE_FILE_NAME_SUFFIX = "-key-value.json";
     public static final String REPORT_FILE_NAME_SUFFIX = "-report.json";
 
-    public static RegReportPaths get(Path resourcesPath, String reportProjection) {
-        if(reportProjection.equalsIgnoreCase("report") ){
-            return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
-                    RegReportPaths.getDefault() : RegReportPaths.getLegacy();
-        }
-        else{
-            return getProjectionPath();
-        }
+    public static RegReportPaths get(Path resourcesPath) {
+        return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
+                RegReportPaths.getDefault() : RegReportPaths.getLegacy();
     }
 
     public static RegReportPaths getProjectionPath() {

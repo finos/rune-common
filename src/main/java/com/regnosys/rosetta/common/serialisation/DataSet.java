@@ -66,4 +66,7 @@ public abstract class DataSet {
         return Objects.hash(dataSetName, dataSetShortName, inputType, EXPECTED_TYPE, data);
     }
 
+    public void setData(List<ReportDataItem> data) {
+        this.data = data;
+    }
 }

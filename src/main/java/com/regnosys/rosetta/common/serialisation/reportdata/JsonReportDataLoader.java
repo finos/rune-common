@@ -38,7 +38,7 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
         for (ReportDataItem data : descriptor.getData()) {
             ReportDataItem reportDataItem;
             try {
-                reportDataItem = new ReportDataItem(data.getName(), getInput(descriptor.getInputType(), data),
+                reportDataItem = new ReportDataItem(data.getName(), getInput(descriptor.getInputType(), data, inputPath),
                         data.getExpected()); // expected is handled by JsonExpectedResultLoader
             } catch (RuntimeException e) {
                 reportDataItem = new ReportDataItem(data.getName(), data.getInput(), data.getExpected(), e);
@@ -46,16 +46,5 @@ public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> 
             loadedData.add(reportDataItem);
         }
         return new ReportDataSet(descriptor.getDataSetName(), descriptor.getInputType(), descriptor.getApplicableReports(), loadedData);
-    }
-
-    private Object getInput(String inputType, ReportDataItem data) {
-        Class<?> inputTypeClass = loadClass(inputType, classLoader);
-        if (data.getInput() instanceof String) {
-            // by path
-            String inputFileName = (String) data.getInput();
-            return readType(inputTypeClass, rosettaObjectMapper, resolve(inputPath, inputFileName));
-        } else {
-            return fromObject(data.getInput(), inputTypeClass, rosettaObjectMapper);
-        }
     }
 }

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -68,5 +69,20 @@ public abstract class AbstractJsonDataLoader<T> implements DataLoader<T>, InputD
         } else {
             return fromObject(data.getInput(), inputTypeClass, rosettaObjectMapper);
         }
+    }
+
+    public List<ReportDataItem> getDataItem(DataSet descriptor, URL inputPath){
+        List<ReportDataItem> loadedData = new ArrayList<>();
+        for (ReportDataItem data : descriptor.getData()) {
+            ReportDataItem reportDataItem;
+            try {
+                reportDataItem = new ReportDataItem(data.getName(), getInput(descriptor.getInputType(), data, inputPath),
+                        data.getExpected()); // expected is handled by JsonExpectedResultLoader
+            } catch (RuntimeException e) {
+                reportDataItem = new ReportDataItem(data.getName(), data.getInput(), data.getExpected(), e);
+            }
+            loadedData.add(reportDataItem);
+        }
+        return loadedData;
     }
 }

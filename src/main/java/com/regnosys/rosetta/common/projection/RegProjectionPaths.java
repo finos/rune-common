@@ -15,10 +15,10 @@ public class RegProjectionPaths extends RegPaths {
         super(rootPath, input, output, config, lookup);
     }
 
-    public static RegReportPaths getProjectionPath() {
+    public static RegProjectionPaths getProjectionPath() {
         Path projectionPath = PROJECTION_PATH;
         Path isoPath = projectionPath.resolve(ISO20022_PATH);
-        return new RegReportPaths(isoPath,
+        return new RegProjectionPaths(isoPath,
                 isoPath.resolve(INPUT_PATH),
                 isoPath.resolve(OUTPUT_PATH),
                 isoPath.resolve(CONFIG_PATH),

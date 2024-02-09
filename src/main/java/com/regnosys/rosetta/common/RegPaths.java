@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common;
 
+import com.regnosys.rosetta.common.reports.RegReportPaths;
 import com.rosetta.model.lib.ModelReportId;
 
 import java.nio.file.Files;
@@ -15,7 +16,8 @@ public class RegPaths {
 
     // Legacy folder structure
     public static final Path LEGACY_DATA_PATH = Paths.get("data");
-
+    public static final String KEY_VALUE_FILE_NAME_SUFFIX = "-key-value.json";
+    public static final String REPORT_FILE_NAME_SUFFIX = "-report.json";
     private final Path rootPath;
     private final Path input;
     private final Path output;
@@ -55,5 +57,29 @@ public class RegPaths {
                 .replace(" ", "-")
                 .replace("_", "-")
                 .trim().toLowerCase();
+    }
+
+    public static String directoryName(ModelReportId id) {
+        return id.joinRegulatoryReference("-")
+                .replace("_", "-")
+                .toLowerCase();
+    }
+
+    public static Path getOutputPath(Path outputPath, ModelReportId reportIdentifier) {
+        return outputPath.resolve(directoryName(reportIdentifier));
+    }
+
+    public static Path getOutputDataSetPath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
+        return getOutputPath(outputPath, reportIdentifier).resolve(directoryNameOfDataset(dataSetName));
+    }
+
+    public static Path getInputDataSetPath(Path inputPath, String dataSetName) {
+        return inputPath.resolve(directoryNameOfDataset(dataSetName));
+    }
+
+
+    public static Path getKeyValueExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
+        return getOutputDataSetPath(outputPath, reportIdentifier, dataSetName)
+                .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
     }
 }

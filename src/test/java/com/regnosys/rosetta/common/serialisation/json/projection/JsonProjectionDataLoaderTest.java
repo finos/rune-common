@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -44,17 +45,40 @@ class JsonProjectionDataLoaderTest {
         List<ProjectionDataSet> projectionDataSets = loadProjectionDataSets(path, path);
 
         assertEquals(1, projectionDataSets.size());
-        assertEquals("Test set 1", projectionDataSets.get(0).getDataSetName());
-        assertEquals("Testset1", projectionDataSets.get(0).getDataSetShortName());
-        assertEquals("com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest", projectionDataSets.get(0).getApplicableProjection());
+        ProjectionDataSet projectionDataSet1 = projectionDataSets.get(0);
+        assertEquals("Test set 1", projectionDataSet1.getDataSetName());
+        assertEquals("Testset1", projectionDataSet1.getDataSetShortName());
+        assertEquals("com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest", projectionDataSet1.getApplicableProjection());
 
-        assertEquals(2, projectionDataSets.get(0).getData().size());
+        assertEquals(2, projectionDataSet1.getData().size());
 
-        assertTrue(projectionDataSets.get(0).getData().get(0).getInput() instanceof EventTestModelObject);
-        assertEquals(new ReportDataItem("This is the desc of the usecase", new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"), null), projectionDataSets.get(0).getData().get(0));
+        assertTrue(projectionDataSet1.getData().get(0).getInput() instanceof EventTestModelObject);
+        assertEquals(new ReportDataItem("This is the desc of the usecase", new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"), null), projectionDataSet1.getData().get(0));
+
+        Set<String> applicableProjections = projectionDataSet1.getApplicableProjections();
+        assertEquals(2, applicableProjections.size());
+        String firstProjection = applicableProjections.stream().findFirst().get();
+
+        assertEquals(projectionDataSet1.getApplicableProjection(), firstProjection);
 
     }
 
+    @Test
+    void CreateProjectionDataSetfromNullApplicableProjections() throws MalformedURLException {
+        // descriptor and input on same path
+        Path path = RESOURCES_PATH.resolve("projection/null-applicable-projections");
+
+        List<ProjectionDataSet> projectionDataSets = loadProjectionDataSets(path, path);
+
+        assertEquals(1, projectionDataSets.size());
+        ProjectionDataSet projectionDataSet1 = projectionDataSets.get(0);
+        assertEquals("Test set 2", projectionDataSet1.getDataSetName());
+        assertEquals("Testset2", projectionDataSet1.getDataSetShortName());
+
+        Set<String> applicableProjections = projectionDataSet1.getApplicableProjections();
+        assertEquals(0, applicableProjections.size());
+
+    }
     private List<ProjectionDataSet> loadProjectionDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {
         return new JsonProjectionDataLoader(this.getClass().getClassLoader(),
                 rosettaObjectMapper,

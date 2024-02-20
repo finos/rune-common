@@ -1,7 +1,7 @@
 [
   {
-    "dataSetName": "Test set 1",
-    "dataSetShortName": "Testset1",
+    "dataSetName": "Test set 2",
+    "dataSetShortName": "Testset2",
     "inputType": "com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest$EventTestModelObject",
     "applicableProjection": "com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest",
     "data": [
@@ -16,7 +16,6 @@
           "eventQualifier": "TerminatedTrade"
         }
       }
-    ],
-    "applicableProjections": ["com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest","com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest2"]
+    ]
   }
 ]

@@ -3,13 +3,9 @@ package com.regnosys.rosetta.common.serialisation.projectiondata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.AbstractJsonDataLoader;
 import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
-
-import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
 public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ProjectionDataSet> {
 
@@ -37,6 +33,6 @@ public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ProjectionD
     @Override
     public ProjectionDataSet loadInputFiles(ProjectionDataSet descriptor) {
         List<ReportDataItem> loadedData = getDataItem(descriptor, inputPath);
-        return new ProjectionDataSet(descriptor.getDataSetName(), descriptor.getDataSetShortName(), descriptor.getInputType(), descriptor.getApplicableProjection(), loadedData);
+        return new ProjectionDataSet(descriptor.getDataSetName(), descriptor.getDataSetShortName(), descriptor.getInputType(), descriptor.getApplicableProjection(), loadedData, descriptor.getApplicableProjections());
     }
 }

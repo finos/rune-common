@@ -8,12 +8,12 @@ import java.util.*;
 public class ProjectionDataSet extends DataSet {
 
     private String applicableProjection;
-    private SortedSet<String> applicableProjections;
+    private List<String> applicableProjections;
 
-    public ProjectionDataSet(String dataSetName, String dataSetShortName, String inputType, String applicableProjection, List<ReportDataItem> data, SortedSet<String> applicableProjections) {
+    public ProjectionDataSet(String dataSetName, String dataSetShortName, String inputType, String applicableProjection, List<ReportDataItem> data, List<String> applicableProjections) {
        super(dataSetName, dataSetShortName, inputType, data);
         this.applicableProjection = applicableProjection;
-        this.applicableProjections = null==applicableProjections? Collections.emptySortedSet():applicableProjections;
+        this.applicableProjections = null==applicableProjections? Collections.emptyList():applicableProjections;
     }
 
     public ProjectionDataSet() {
@@ -29,7 +29,7 @@ public class ProjectionDataSet extends DataSet {
         if (!(o instanceof ProjectionDataSet)) return false;
         if (!super.equals(o)) return false;
         ProjectionDataSet that = (ProjectionDataSet) o;
-        return Objects.equals(getApplicableProjection(), that.getApplicableProjection()) && Objects.equals(getApplicableProjectionsSet(), that.getApplicableProjectionsSet());
+        return Objects.equals(getApplicableProjection(), that.getApplicableProjection()) && Objects.equals(getApplicableProjections(), that.getApplicableProjections());
     }
 
     @Override
@@ -49,15 +49,13 @@ public class ProjectionDataSet extends DataSet {
                 .toString();
     }
 
-    public SortedSet<String> getApplicableProjectionsSet() {
-        return this.applicableProjections;
-    }
-
     public List<String> getApplicableProjections() {
 
         List<String> applicableProjectionsAsList = new ArrayList<>();
-        applicableProjectionsAsList.addAll(this.applicableProjections);
-        if(!applicableProjectionsAsList.contains(getApplicableProjection())){
+        if(null!=this.applicableProjections) {
+            applicableProjectionsAsList.addAll(this.applicableProjections);
+        }
+        if(null != getApplicableProjection() && !applicableProjectionsAsList.contains(getApplicableProjection())){
             applicableProjectionsAsList.add(getApplicableProjection());
         }
         return applicableProjectionsAsList;

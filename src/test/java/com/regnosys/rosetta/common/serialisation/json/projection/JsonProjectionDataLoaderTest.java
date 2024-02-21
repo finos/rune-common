@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,7 +54,7 @@ class JsonProjectionDataLoaderTest {
         assertTrue(projectionDataSet1.getData().get(0).getInput() instanceof EventTestModelObject);
         assertEquals(new ReportDataItem("This is the desc of the usecase", new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"), null), projectionDataSet1.getData().get(0));
 
-        Set<String> applicableProjections = projectionDataSet1.getApplicableProjections();
+        List<String> applicableProjections = projectionDataSet1.getApplicableProjections();
         assertEquals(2, applicableProjections.size());
         String firstProjection = applicableProjections.stream().findFirst().get();
 
@@ -75,8 +74,8 @@ class JsonProjectionDataLoaderTest {
         assertEquals("Test set 2", projectionDataSet1.getDataSetName());
         assertEquals("Testset2", projectionDataSet1.getDataSetShortName());
 
-        Set<String> applicableProjections = projectionDataSet1.getApplicableProjections();
-        assertEquals(0, applicableProjections.size());
+        List<String> applicableProjections = projectionDataSet1.getApplicableProjections();
+        assertEquals(1, applicableProjections.size());
 
     }
     private List<ProjectionDataSet> loadProjectionDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {

@@ -29,7 +29,7 @@ public class ProjectionDataSet extends DataSet {
         if (!(o instanceof ProjectionDataSet)) return false;
         if (!super.equals(o)) return false;
         ProjectionDataSet that = (ProjectionDataSet) o;
-        return Objects.equals(getApplicableProjection(), that.getApplicableProjection()) && Objects.equals(getApplicableProjections(), that.getApplicableProjections());
+        return Objects.equals(getApplicableProjection(), that.getApplicableProjection()) && Objects.equals(getApplicableProjectionsSet(), that.getApplicableProjectionsSet());
     }
 
     @Override
@@ -49,8 +49,18 @@ public class ProjectionDataSet extends DataSet {
                 .toString();
     }
 
-    public SortedSet<String> getApplicableProjections() {
+    public SortedSet<String> getApplicableProjectionsSet() {
         return this.applicableProjections;
+    }
+
+    public List<String> getApplicableProjections() {
+
+        List<String> applicableProjectionsAsList = new ArrayList<>();
+        applicableProjectionsAsList.addAll(this.applicableProjections);
+        if(!applicableProjectionsAsList.contains(getApplicableProjection())){
+            applicableProjectionsAsList.add(getApplicableProjection());
+        }
+        return applicableProjectionsAsList;
 
     }
 }

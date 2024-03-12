@@ -33,6 +33,6 @@ public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ProjectionD
     @Override
     public ProjectionDataSet loadInputFiles(ProjectionDataSet descriptor) {
         List<ReportDataItem> loadedData = getDataItem(descriptor, inputPath);
-        return new ProjectionDataSet(descriptor.getDataSetName(), descriptor.getDataSetShortName(), descriptor.getInputType(), descriptor.getApplicableProjection(), loadedData, descriptor.getApplicableProjections());
+        return new ProjectionDataSet(descriptor.getDataSetName(), descriptor.getDataSetShortName(), descriptor.getInputType(), descriptor.getApplicableProjections(), descriptor.getApplicableReports(), loadedData);
     }
 }

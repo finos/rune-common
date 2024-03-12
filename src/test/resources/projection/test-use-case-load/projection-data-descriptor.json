@@ -3,7 +3,6 @@
     "dataSetName": "Test set 1",
     "dataSetShortName": "Testset1",
     "inputType": "com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest$EventTestModelObject",
-    "applicableProjection": "com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest",
     "data": [
       {
         "name": "This is the desc of the usecase",

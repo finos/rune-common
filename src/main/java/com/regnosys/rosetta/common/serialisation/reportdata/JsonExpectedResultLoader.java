@@ -2,6 +2,7 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.reports.RegReportPaths;
+import com.regnosys.rosetta.common.serialisation.DataSet;
 import com.regnosys.rosetta.common.serialisation.InputDataLoader;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.ModelReportId;
@@ -31,7 +32,7 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
     @Override
     public ReportIdentifierDataSet loadInputFiles(ReportIdentifierDataSet descriptor) {
         List<ReportDataItem> loadedData = new ArrayList<>();
-        ReportDataSet dataSet = descriptor.getDataSet();
+        DataSet dataSet = descriptor.getDataSet();
         for (ReportDataItem data : dataSet.getData()) {
             ReportDataItem reportDataItem = new ReportDataItem(data.getName(),
                     data.getInput(),
@@ -40,7 +41,7 @@ public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifie
         }
         return new ReportIdentifierDataSet(
                 descriptor.getReportIdentifier(),
-                new ReportDataSet(dataSet.getDataSetName(), dataSet.getInputType(), dataSet.getApplicableReports(), loadedData));
+                new DataSet(dataSet.getDataSetName(), dataSet.getInputType(), loadedData, dataSet.getApplicableReports(), dataSet.getApplicableProjections()));
     }
 
     private Object getExpected(ModelReportId reportIdentifier, String dataSetName, String expectedType, ReportDataItem data) {

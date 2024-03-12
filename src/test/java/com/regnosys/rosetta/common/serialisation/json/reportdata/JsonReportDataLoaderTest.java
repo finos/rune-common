@@ -1,10 +1,10 @@
 package com.regnosys.rosetta.common.serialisation.json.reportdata;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.serialisation.DataSet;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.reportdata.JsonReportDataLoader;
 import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
-import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataSet;
 import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
@@ -31,7 +31,7 @@ class JsonReportDataLoaderTest {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("regs/test-use-case-load");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
+        List<DataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
@@ -54,7 +54,7 @@ class JsonReportDataLoaderTest {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("not-found");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
+        List<DataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 0);
     }
@@ -64,7 +64,7 @@ class JsonReportDataLoaderTest {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("test-workspaces");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
+        List<DataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 0);
     }
@@ -74,7 +74,7 @@ class JsonReportDataLoaderTest {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("regs/test-use-case-load-error");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
+        List<DataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
@@ -90,7 +90,7 @@ class JsonReportDataLoaderTest {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("regs/test-use-case-load-one-error");
 
-        List<ReportDataSet> reportDataSets = loadReportDataSets(path, path);
+        List<DataSet> reportDataSets = loadReportDataSets(path, path);
 
         assertEquals(reportDataSets.size(), 1);
         assertEquals(reportDataSets.get(0).getData().size(), 2);
@@ -108,7 +108,7 @@ class JsonReportDataLoaderTest {
 
     }
 
-    private List<ReportDataSet> loadReportDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {
+    private List<DataSet> loadReportDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {
         return new JsonReportDataLoader(this.getClass().getClassLoader(),
                 rosettaObjectMapper,
                 descriptorPath.toUri().toURL(),

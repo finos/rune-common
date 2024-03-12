@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.common.serialisation.reportdata;
 
+import com.regnosys.rosetta.common.serialisation.DataSet;
 import com.rosetta.model.lib.ModelReportId;
 
 import java.util.Objects;
@@ -7,9 +8,9 @@ import java.util.Objects;
 public class ReportIdentifierDataSet {
 
     private ModelReportId reportIdentifier;
-    private ReportDataSet dataSet;
+    private DataSet dataSet;
 
-    public ReportIdentifierDataSet(ModelReportId reportIdentifier, ReportDataSet dataSet) {
+    public ReportIdentifierDataSet(ModelReportId reportIdentifier, DataSet dataSet) {
         this.reportIdentifier = reportIdentifier;
         this.dataSet = dataSet;
     }
@@ -21,7 +22,7 @@ public class ReportIdentifierDataSet {
         return reportIdentifier;
     }
 
-    public ReportDataSet getDataSet() {
+    public DataSet getDataSet() {
         return dataSet;
     }
 

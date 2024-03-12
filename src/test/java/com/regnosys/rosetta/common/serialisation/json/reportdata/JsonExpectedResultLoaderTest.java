@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.reports.RegReportIdentifier;
+import com.regnosys.rosetta.common.serialisation.DataSet;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.rosetta.model.lib.ModelReportId;
 import org.junit.jupiter.api.Test;
@@ -131,9 +132,9 @@ class JsonExpectedResultLoaderTest {
     private ReportIdentifierDataSet getReportIdentifierDataSet(Path descriptorPath, ModelReportId reportId) throws IOException {
         URL url = Resources.getResource(descriptorPath.resolve("regulatory-reporting-data-descriptor.json").toString());
         String json = Resources.toString(url, StandardCharsets.UTF_8);
-        CollectionType loadType = rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, ReportDataSet.class);
-        List<ReportDataSet> reportDataSets = rosettaObjectMapper.readValue(json, loadType);
-        ReportDataSet reportDataSet = reportDataSets.get(0);
+        CollectionType loadType = rosettaObjectMapper.getTypeFactory().constructCollectionType(List.class, DataSet.class);
+        List<DataSet> reportDataSets = rosettaObjectMapper.readValue(json, loadType);
+        DataSet reportDataSet = reportDataSets.get(0);
 
         return new ReportIdentifierDataSet(reportId, reportDataSet);
     }

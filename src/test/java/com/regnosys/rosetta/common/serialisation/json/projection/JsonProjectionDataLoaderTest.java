@@ -1,9 +1,10 @@
 package com.regnosys.rosetta.common.serialisation.json.projection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.projectiondata.JsonProjectionDataLoader;
-import com.regnosys.rosetta.common.serialisation.projectiondata.ProjectionDataSet;
+import com.regnosys.rosetta.common.serialisation.DataSet;
 import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,7 @@ class JsonProjectionDataLoaderTest {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("not-found");
 
-        List<ProjectionDataSet> projectionDataSets = loadProjectionDataSets(path, path);
+        List<DataSet> projectionDataSets = loadProjectionDataSets(path, path);
 
         assertEquals(projectionDataSets.size(), 0);
     }
@@ -41,44 +42,38 @@ class JsonProjectionDataLoaderTest {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("projection/test-use-case-load");
 
-        List<ProjectionDataSet> projectionDataSets = loadProjectionDataSets(path, path);
+        List<DataSet> projectionDataSets = loadProjectionDataSets(path, path);
 
         assertEquals(1, projectionDataSets.size());
-        ProjectionDataSet projectionDataSet1 = projectionDataSets.get(0);
+        DataSet projectionDataSet1 = projectionDataSets.get(0);
         assertEquals("Test set 1", projectionDataSet1.getDataSetName());
         assertEquals("Testset1", projectionDataSet1.getDataSetShortName());
-        assertEquals("com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest", projectionDataSet1.getApplicableProjection());
+        assertEquals(Lists.newArrayList("com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest","com.regnosys.rosetta.common.serialisation.json.projection.JsonProjectionDataLoaderTest2"), projectionDataSet1.getApplicableProjections());
 
         assertEquals(2, projectionDataSet1.getData().size());
 
         assertTrue(projectionDataSet1.getData().get(0).getInput() instanceof EventTestModelObject);
         assertEquals(new ReportDataItem("This is the desc of the usecase", new EventTestModelObject(LocalDate.parse("2018-02-20"), "NewTrade"), null), projectionDataSet1.getData().get(0));
 
-        List<String> applicableProjections = projectionDataSet1.getApplicableProjections();
-        assertEquals(2, applicableProjections.size());
-        String firstProjection = applicableProjections.stream().findFirst().get();
-
-        assertEquals(projectionDataSet1.getApplicableProjection(), firstProjection);
-
     }
 
     @Test
-    void CreateProjectionDataSetfromNullApplicableProjections() throws MalformedURLException {
+    void applicableProjectionsShouldBeEmptyListWhenNull() throws MalformedURLException {
         // descriptor and input on same path
         Path path = RESOURCES_PATH.resolve("projection/null-applicable-projections");
 
-        List<ProjectionDataSet> projectionDataSets = loadProjectionDataSets(path, path);
+        List<DataSet> projectionDataSets = loadProjectionDataSets(path, path);
 
         assertEquals(1, projectionDataSets.size());
-        ProjectionDataSet projectionDataSet1 = projectionDataSets.get(0);
+        DataSet projectionDataSet1 = projectionDataSets.get(0);
         assertEquals("Test set 2", projectionDataSet1.getDataSetName());
         assertEquals("Testset2", projectionDataSet1.getDataSetShortName());
 
         List<String> applicableProjections = projectionDataSet1.getApplicableProjections();
-        assertEquals(1, applicableProjections.size());
+        assertEquals(0, applicableProjections.size());
 
     }
-    private List<ProjectionDataSet> loadProjectionDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {
+    private List<DataSet> loadProjectionDataSets(Path descriptorPath, Path inputPath) throws MalformedURLException {
         return new JsonProjectionDataLoader(this.getClass().getClassLoader(),
                 rosettaObjectMapper,
                 descriptorPath.toUri().toURL(),

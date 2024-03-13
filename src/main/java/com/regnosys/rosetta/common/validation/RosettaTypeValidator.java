@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.common.validation;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.regnosys.rosetta.common.util.SimpleProcessor;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -8,12 +10,15 @@ import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.PostProcessStep;
 import com.rosetta.model.lib.validation.ValidationResult;
+import com.rosetta.model.lib.validation.Validator;
 import com.rosetta.model.lib.validation.ValidatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 public class RosettaTypeValidator implements PostProcessStep {
 
@@ -47,10 +52,11 @@ public class RosettaTypeValidator implements PostProcessStep {
 			@SuppressWarnings("unchecked")
 			RosettaMetaData<R> metaData = (RosettaMetaData<R>)instance.metaData();
 			List<ValidationResult<?>> validationResults = result.getValidationResults();
-			metaData.dataRules(validatorFactory).forEach(dr->validationResults.add(dr.validate(path, instance)));
-			metaData.choiceRuleValidators().forEach(dr->validationResults.add(dr.validate(path, instance)));
-			if (metaData.validator()!=null) validationResults.add(metaData.validator().validate(path, instance));
-            if (metaData.typeFormatValidator()!=null) validationResults.add(metaData.typeFormatValidator().validate(path, instance));
+            Streams.<Validator<? super R>>concat(
+                    metaData.dataRules(validatorFactory).stream(),
+                    Optional.ofNullable(metaData.validator()).map(Stream::of).orElse(Stream.empty()),
+                    Optional.ofNullable(metaData.typeFormatValidator()).map(Stream::of).orElse(Stream.empty())
+                ).forEach(validator -> validationResults.addAll(validator.getValidationResults(path, instance)));
 			return true;
 		}
 

@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
+@Deprecated
 public abstract class AbstractJsonDataLoader<T> implements DataLoader<T>, InputDataLoader<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJsonDataLoader.class);

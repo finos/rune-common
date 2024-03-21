@@ -7,6 +7,7 @@ import com.regnosys.rosetta.common.serialisation.reportdata.ReportDataItem;
 import java.net.URL;
 import java.util.List;
 
+@Deprecated
 public class JsonProjectionDataLoader extends AbstractJsonDataLoader<ProjectionDataSet> {
 
     public static final String DEFAULT_DESCRIPTOR_NAME = "data-descriptor.json";

@@ -9,6 +9,7 @@ import java.util.List;
 
 import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
+@Deprecated
 public class JsonReportDataLoader extends AbstractJsonDataLoader<ReportDataSet> {
 
     public static final String DEFAULT_DESCRIPTOR_NAME = "regulatory-reporting-data-descriptor.json";

@@ -16,6 +16,7 @@ import java.util.List;
 
 import static com.regnosys.rosetta.common.serialisation.JsonDataLoaderUtil.*;
 
+@Deprecated
 public class JsonExpectedResultLoader implements InputDataLoader<ReportIdentifierDataSet> {
 
     private final ClassLoader classLoader;

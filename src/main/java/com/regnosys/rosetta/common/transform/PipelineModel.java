@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.common.transform;
 
+import java.util.Objects;
+
 public class PipelineModel {
 
     private final String id;
@@ -36,6 +38,30 @@ public class PipelineModel {
         return outputSerialisation;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PipelineModel)) return false;
+        PipelineModel that = (PipelineModel) o;
+        return Objects.equals(getId(), that.getId()) && Objects.equals(getName(), that.getName()) && Objects.equals(getTransform(), that.getTransform()) && Objects.equals(getUpstreamPipelineId(), that.getUpstreamPipelineId()) && Objects.equals(getOutputSerialisation(), that.getOutputSerialisation());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId(), getName(), getTransform(), getUpstreamPipelineId(), getOutputSerialisation());
+    }
+
+    @Override
+    public String toString() {
+        return "PipelineModel{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", transform=" + transform +
+                ", upstreamPipelineId='" + upstreamPipelineId + '\'' +
+                ", outputSerialisation=" + outputSerialisation +
+                '}';
+    }
+
     public class Transform {
         private final TransformType type;
         private final String function;
@@ -64,6 +90,29 @@ public class PipelineModel {
         public String getOutputType() {
             return outputType;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Transform)) return false;
+            Transform transform = (Transform) o;
+            return getType() == transform.getType() && Objects.equals(getFunction(), transform.getFunction()) && Objects.equals(getInputType(), transform.getInputType()) && Objects.equals(getOutputType(), transform.getOutputType());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getType(), getFunction(), getInputType(), getOutputType());
+        }
+
+        @Override
+        public String toString() {
+            return "Transform{" +
+                    "type=" + type +
+                    ", function='" + function + '\'' +
+                    ", inputType='" + inputType + '\'' +
+                    ", outputType='" + outputType + '\'' +
+                    '}';
+        }
     }
 
     public static class Serialisation {
@@ -81,6 +130,27 @@ public class PipelineModel {
 
         public String getConfigPath() {
             return configPath;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Serialisation)) return false;
+            Serialisation that = (Serialisation) o;
+            return getFormat() == that.getFormat() && Objects.equals(getConfigPath(), that.getConfigPath());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getFormat(), getConfigPath());
+        }
+
+        @Override
+        public String toString() {
+            return "Serialisation{" +
+                    "format=" + format +
+                    ", configPath='" + configPath + '\'' +
+                    '}';
         }
 
         public enum  Format {

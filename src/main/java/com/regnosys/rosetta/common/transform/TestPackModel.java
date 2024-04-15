@@ -1,6 +1,7 @@
 package com.regnosys.rosetta.common.transform;
 
 import java.util.List;
+import java.util.Objects;
 
 public class TestPackModel {
     
@@ -29,6 +30,29 @@ public class TestPackModel {
     }
     public List<SampleModel> getSamples() {
         return samples;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof TestPackModel)) return false;
+        TestPackModel that = (TestPackModel) o;
+        return Objects.equals(getId(), that.getId()) && Objects.equals(getPipelineId(), that.getPipelineId()) && Objects.equals(getName(), that.getName()) && Objects.equals(getSamples(), that.getSamples());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId(), getPipelineId(), getName(), getSamples());
+    }
+
+    @Override
+    public String toString() {
+        return "TestPackModel{" +
+                "id='" + id + '\'' +
+                ", pipelineId='" + pipelineId + '\'' +
+                ", name='" + name + '\'' +
+                ", samples=" + samples +
+                '}';
     }
 
     public class SampleModel {
@@ -71,6 +95,31 @@ public class TestPackModel {
             return assertions;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SampleModel)) return false;
+            SampleModel that = (SampleModel) o;
+            return Objects.equals(getId(), that.getId()) && Objects.equals(getName(), that.getName()) && Objects.equals(getInputPath(), that.getInputPath()) && Objects.equals(getOutputPath(), that.getOutputPath()) && Objects.equals(getOutputTabulatedPath(), that.getOutputTabulatedPath()) && Objects.equals(getAssertions(), that.getAssertions());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getId(), getName(), getInputPath(), getOutputPath(), getOutputTabulatedPath(), getAssertions());
+        }
+
+        @Override
+        public String toString() {
+            return "SampleModel{" +
+                    "id='" + id + '\'' +
+                    ", name='" + name + '\'' +
+                    ", inputPath='" + inputPath + '\'' +
+                    ", outputPath='" + outputPath + '\'' +
+                    ", outputTabulatedPath='" + outputTabulatedPath + '\'' +
+                    ", assertions=" + assertions +
+                    '}';
+        }
+
         public class Assertions {
 
             private final Integer modelValidationFailures;
@@ -93,6 +142,28 @@ public class TestPackModel {
 
             public boolean isRuntimeError() {
                 return runtimeError;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (!(o instanceof Assertions)) return false;
+                Assertions that = (Assertions) o;
+                return isSchemaValidationFailure() == that.isSchemaValidationFailure() && isRuntimeError() == that.isRuntimeError() && Objects.equals(getModelValidationFailures(), that.getModelValidationFailures());
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(getModelValidationFailures(), isSchemaValidationFailure(), isRuntimeError());
+            }
+
+            @Override
+            public String toString() {
+                return "Assertions{" +
+                        "modelValidationFailures=" + modelValidationFailures +
+                        ", schemaValidationFailure=" + schemaValidationFailure +
+                        ", runtimeError=" + runtimeError +
+                        '}';
             }
         }
     }

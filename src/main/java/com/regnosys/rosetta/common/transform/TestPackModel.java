@@ -4,11 +4,11 @@ import java.util.List;
 
 public class TestPackModel {
     
-    private String id;
+    private final String id;
     
-    private String pipelineId;
-    private String name;
-    private List<SampleModel> samples;
+    private final String pipelineId;
+    private final String name;
+    private final List<SampleModel> samples;
 
     public TestPackModel(String id, String pipelineId, String name, List<SampleModel> samples) {
         this.id = id;
@@ -33,12 +33,12 @@ public class TestPackModel {
 
     public class SampleModel {
 
-        private String id;
-        private String name;
-        String inputPath;
-        private String outputPath;
-        private String outputTabulatedPath;
-        private Assertions assertions;
+        private final String id;
+        private final String name;
+        private final String inputPath;
+        private final String outputPath;
+        private final String outputTabulatedPath;
+        private final Assertions assertions;
 
         public SampleModel(String id, String name, String inputPath, String outputPath, String outputTabulatedPath, Assertions assertions) {
             this.id = id;
@@ -73,9 +73,9 @@ public class TestPackModel {
 
         public class Assertions {
 
-            private Integer modelValidationFailures;
-            private boolean schemaValidationFailure;
-            private boolean runtimeError;
+            private final Integer modelValidationFailures;
+            private final boolean schemaValidationFailure;
+            private final boolean runtimeError;
 
             public Assertions(Integer modelValidationFailures, boolean schemaValidationFailure, boolean runtimeError) {
                 this.modelValidationFailures = modelValidationFailures;
@@ -87,12 +87,12 @@ public class TestPackModel {
                 return modelValidationFailures;
             }
 
-            public void setModelValidationFailures(Integer modelValidationFailures) {
-                this.modelValidationFailures = modelValidationFailures;
-            }
-
             public boolean isSchemaValidationFailure() {
                 return schemaValidationFailure;
+            }
+
+            public boolean isRuntimeError() {
+                return runtimeError;
             }
         }
     }

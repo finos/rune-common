@@ -2,11 +2,11 @@ package com.regnosys.rosetta.common.transform;
 
 public class PipelineModel {
 
-    private String id;
-    private String name;
-    private Transform transform;
-    private String upstreamPipelineId;
-    private Serialisation outputSerialisation;
+    private final String id;
+    private final String name;
+    private final Transform transform;
+    private final String upstreamPipelineId;
+    private final Serialisation outputSerialisation;
 
     public PipelineModel(String id, String name, Transform transform, String upstreamPipelineId, Serialisation outputSerialisation) {
         this.id = id;
@@ -37,10 +37,10 @@ public class PipelineModel {
     }
 
     public class Transform {
-        private TransformType type;
-        private String function;
-        private String inputType;
-        private String outputType;
+        private final TransformType type;
+        private final String function;
+        private final String inputType;
+        private final String outputType;
 
         public Transform(TransformType type, String function, String inputType, String outputType) {
             this.type = type;
@@ -67,8 +67,8 @@ public class PipelineModel {
     }
 
     public static class Serialisation {
-        private Format format;
-        private  String configPath;
+        private final Format format;
+        private final String configPath;
 
         public Serialisation(Format format, String configPath) {
             this.format = format;

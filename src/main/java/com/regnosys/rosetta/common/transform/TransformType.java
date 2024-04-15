@@ -23,6 +23,6 @@ public enum TransformType {
   }
 
   public String getTabulatorName(String functionName) {
-    return tabulatorName.formatted(functionName);
+    return tabulatorName.format(functionName);
   }
 }

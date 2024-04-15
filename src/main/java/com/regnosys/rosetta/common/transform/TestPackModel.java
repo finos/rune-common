@@ -122,25 +122,25 @@ public class TestPackModel {
 
         public class Assertions {
 
-            private final int modelValidationFailures;
-            private final boolean schemaValidationFailure;
-            private final boolean runtimeError;
+            private final Integer modelValidationFailures;
+            private final Boolean schemaValidationFailure;
+            private final Boolean runtimeError;
 
-            public Assertions(int modelValidationFailures, boolean schemaValidationFailure, boolean runtimeError) {
+            public Assertions(Integer modelValidationFailures, Boolean schemaValidationFailure, Boolean runtimeError) {
                 this.modelValidationFailures = modelValidationFailures;
                 this.schemaValidationFailure = schemaValidationFailure;
                 this.runtimeError = runtimeError;
             }
 
-            public int getModelValidationFailures() {
+            public Integer getModelValidationFailures() {
                 return modelValidationFailures;
             }
 
-            public boolean isSchemaValidationFailure() {
+            public Boolean isSchemaValidationFailure() {
                 return schemaValidationFailure;
             }
 
-            public boolean isRuntimeError() {
+            public Boolean isRuntimeError() {
                 return runtimeError;
             }
 
@@ -149,12 +149,12 @@ public class TestPackModel {
                 if (this == o) return true;
                 if (!(o instanceof Assertions)) return false;
                 Assertions that = (Assertions) o;
-                return isSchemaValidationFailure() == that.isSchemaValidationFailure() && isRuntimeError() == that.isRuntimeError() && Objects.equals(getModelValidationFailures(), that.getModelValidationFailures());
+                return Objects.equals(getModelValidationFailures(), that.getModelValidationFailures()) && Objects.equals(schemaValidationFailure, that.schemaValidationFailure) && Objects.equals(runtimeError, that.runtimeError);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(getModelValidationFailures(), isSchemaValidationFailure(), isRuntimeError());
+                return Objects.hash(getModelValidationFailures(), schemaValidationFailure, runtimeError);
             }
 
             @Override

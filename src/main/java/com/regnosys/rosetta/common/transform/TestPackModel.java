@@ -122,17 +122,17 @@ public class TestPackModel {
 
         public class Assertions {
 
-            private final Integer modelValidationFailures;
+            private final int modelValidationFailures;
             private final boolean schemaValidationFailure;
             private final boolean runtimeError;
 
-            public Assertions(Integer modelValidationFailures, boolean schemaValidationFailure, boolean runtimeError) {
+            public Assertions(int modelValidationFailures, boolean schemaValidationFailure, boolean runtimeError) {
                 this.modelValidationFailures = modelValidationFailures;
                 this.schemaValidationFailure = schemaValidationFailure;
                 this.runtimeError = runtimeError;
             }
 
-            public Integer getModelValidationFailures() {
+            public int getModelValidationFailures() {
                 return modelValidationFailures;
             }
 

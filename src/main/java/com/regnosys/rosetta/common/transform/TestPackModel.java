@@ -55,7 +55,7 @@ public class TestPackModel {
                 '}';
     }
 
-    public class SampleModel {
+    public static class SampleModel {
 
         private final String id;
         private final String name;

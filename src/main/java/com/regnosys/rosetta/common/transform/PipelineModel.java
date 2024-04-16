@@ -62,7 +62,7 @@ public class PipelineModel {
                 '}';
     }
 
-    public class Transform {
+    public static class Transform {
         private final TransformType type;
         private final String function;
         private final String inputType;

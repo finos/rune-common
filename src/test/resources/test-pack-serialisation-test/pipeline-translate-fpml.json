@@ -1,0 +1,8 @@
+{
+  "id" : "pipeline-translate-fpml",
+  "name" : "FpML 5.1.3 SP3",
+  "transform" : {
+    "type" : "TRANSLATE",
+    "function" : "drr.projection.iso20022.esma.emir.refit.trade.functions.Translate_FpML"
+  }
+}

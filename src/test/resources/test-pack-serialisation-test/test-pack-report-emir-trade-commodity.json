@@ -1,0 +1,16 @@
+{
+  "id" : "test-pack-report-emir-trade-commodity",
+  "pipelineId" : "pipeline-report-emir-trade",
+  "name" : "Commodity",
+  "samples" : [ {
+    "id" : "commodity-cfd-energy-oil-ex01-cash",
+    "name" : "Commodity CFD Energy Oil ex01 Cash",
+    "inputPath" : "translate/fpml/output/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report.json",
+    "outputPath" : "report/esma-emir-trade/output/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report-output.xml",
+    "outputTabulatedPath" : "report/esma-emir-trade/output/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report-key-value.json",
+    "assertions" : {
+      "modelValidationFailures" : 0,
+      "runtimeError" : false
+    }
+  } ]
+}

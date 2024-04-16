@@ -1,5 +1,8 @@
 package com.regnosys.rosetta.common.transform;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Objects;
 
 public class PipelineModel {
@@ -10,7 +13,12 @@ public class PipelineModel {
     private final String upstreamPipelineId;
     private final Serialisation outputSerialisation;
 
-    public PipelineModel(String id, String name, Transform transform, String upstreamPipelineId, Serialisation outputSerialisation) {
+    @JsonCreator
+    public PipelineModel(@JsonProperty("id") String id,
+                         @JsonProperty("name") String name,
+                         @JsonProperty("transform") Transform transform,
+                         @JsonProperty("upstreamPipelineId") String upstreamPipelineId,
+                         @JsonProperty("outputSerialisation") Serialisation outputSerialisation) {
         this.id = id;
         this.name = name;
         this.transform = transform;
@@ -62,13 +70,17 @@ public class PipelineModel {
                 '}';
     }
 
-    public class Transform {
+    public static class Transform {
         private final TransformType type;
         private final String function;
         private final String inputType;
         private final String outputType;
 
-        public Transform(TransformType type, String function, String inputType, String outputType) {
+        @JsonCreator
+        public Transform(@JsonProperty("type") TransformType type,
+                         @JsonProperty("function") String function,
+                         @JsonProperty("inputType") String inputType,
+                         @JsonProperty("outputType") String outputType) {
             this.type = type;
             this.function = function;
             this.inputType = inputType;
@@ -119,7 +131,10 @@ public class PipelineModel {
         private final Format format;
         private final String configPath;
 
-        public Serialisation(Format format, String configPath) {
+
+       @JsonCreator
+       public Serialisation(@JsonProperty("format") Format format,
+                            @JsonProperty("configPath")String configPath) {
             this.format = format;
             this.configPath = configPath;
         }

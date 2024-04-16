@@ -1,0 +1,11 @@
+{
+  "id" : "pipeline-report-emir-trade",
+  "name" : "ESMA EMIR / Trade",
+  "transform" : {
+    "type" : "REPORT",
+    "function" : "drr.regulation.esma.emir.refit.trade.reports.ESMAEMIRTradeReportFunction",
+    "inputType" : "drr.regulation.common.TransactionReportInstruction",
+    "outputType" : "drr.regulation.esma.emir.refit.trade.ESMAEMIRTransactionReport"
+  },
+  "upstreamPipelineId" : "pipeline-translate-fpml"
+}

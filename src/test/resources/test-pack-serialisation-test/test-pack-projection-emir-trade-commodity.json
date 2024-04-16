@@ -1,0 +1,28 @@
+{
+  "id" : "test-pack-projection-emir-trade-commodity",
+  "pipelineId" : "pipeline-projection-emir-trade",
+  "name" : "Commodity",
+  "samples" : [ {
+    "id" : "commodity-cfd-energy-oil-ex01-cash",
+    "name" : "Commodity CFD Energy Oil ex01 Cash",
+    "inputPath" : "regulatory-reporting/esma-emir-trade/output/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report.json",
+    "outputPath" : "projection/iso-20022/output/esma-emir-trade/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report-output.xml",
+    "outputTabulatedPath" : "projection/iso-20022/output/esma-emir-trade/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report-key-value.json",
+    "assertions" : {
+      "modelValidationFailures" : 0,
+      "schemaValidationFailure" : false,
+      "runtimeError" : false
+    }
+  }, {
+    "id" : "commodity-cfd-energy-oil-ex02-cash",
+    "name" : "Commodity CFD Energy Oil ex02 Cash",
+    "inputPath" : "regulatory-reporting/esma-emir-trade/output/commodity/Commodity-CFD-Energy-Oil-ex02-Cash-report.json",
+    "outputPath" : "projection/iso-20022/output/esma-emir-trade/commodity/Commodity-CFD-Energy-Oil-ex02-Cash-report-output.xml",
+    "outputTabulatedPath" : "projection/iso-20022/output/esma-emir-trade/commodity/Commodity-CFD-Energy-Oil-ex02-Cash-report-key-value.json",
+    "assertions" : {
+      "modelValidationFailures" : 3,
+      "schemaValidationFailure" : false,
+      "runtimeError" : false
+    }
+  } ]
+}

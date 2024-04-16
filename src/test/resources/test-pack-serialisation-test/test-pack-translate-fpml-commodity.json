@@ -1,0 +1,16 @@
+{
+  "id" : "test-pack-translate-fpml-commodity",
+  "pipelineId" : "pipeline-translate-fpml-10",
+  "name" : "Commodity",
+  "samples" : [ {
+    "id" : "commodity-cfd-energy-oil-ex01-cash",
+    "name" : "Commodity CFD Energy Oil ex01 Cash",
+    "inputPath" : "translate/fpml/input/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report.xml",
+    "outputPath" : "translate/fpml/output/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report-output.json",
+    "outputTabulatedPath" : "translate/fpml/output/commodity/Commodity-CFD-Energy-Oil-ex01-Cash-report-key-value.json",
+    "assertions" : {
+      "modelValidationFailures" : 0,
+      "runtimeError" : false
+    }
+  } ]
+}

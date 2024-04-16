@@ -1,0 +1,11 @@
+{
+  "id" : "pipeline-projection-emir-trade",
+  "name" : "Esma Emir Trade ISO20022",
+  "transform" : {
+    "type" : "PROJECTION",
+    "function" : "drr.projection.iso20022.esma.emir.refit.trade.functions.Project_EsmaEmirTradeReportToIso20022",
+    "inputType" : "drr.regulation.esma.emir.refit.trade.ESMAEMIRTransactionReport",
+    "outputType" : "iso20022.auth030.esma.Document"
+  },
+  "upstreamPipelineId" : "pipeline-report-emir-trade"
+}

@@ -1,17 +1,23 @@
 package com.regnosys.rosetta.common.transform;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 import java.util.Objects;
 
 public class TestPackModel {
     
     private final String id;
-    
     private final String pipelineId;
     private final String name;
     private final List<SampleModel> samples;
 
-    public TestPackModel(String id, String pipelineId, String name, List<SampleModel> samples) {
+    @JsonCreator
+    public TestPackModel(@JsonProperty("id") String id,
+                         @JsonProperty("pipelineId") String pipelineId,
+                         @JsonProperty("name") String name,
+                         @JsonProperty("samples") List<SampleModel> samples) {
         this.id = id;
         this.pipelineId = pipelineId;
         this.name = name;
@@ -55,7 +61,7 @@ public class TestPackModel {
                 '}';
     }
 
-    public class SampleModel {
+    public static class SampleModel {
 
         private final String id;
         private final String name;
@@ -64,7 +70,13 @@ public class TestPackModel {
         private final String outputTabulatedPath;
         private final Assertions assertions;
 
-        public SampleModel(String id, String name, String inputPath, String outputPath, String outputTabulatedPath, Assertions assertions) {
+        @JsonCreator
+        public SampleModel(@JsonProperty("id") String id,
+                           @JsonProperty("name") String name,
+                           @JsonProperty("inputPath") String inputPath,
+                           @JsonProperty("outputPath") String outputPath,
+                           @JsonProperty("outputTabulatedPath") String outputTabulatedPath,
+                           @JsonProperty("assertions") Assertions assertions) {
             this.id = id;
             this.name = name;
             this.inputPath = inputPath;
@@ -120,13 +132,16 @@ public class TestPackModel {
                     '}';
         }
 
-        public class Assertions {
+        public static class Assertions {
 
             private final Integer modelValidationFailures;
             private final Boolean schemaValidationFailure;
             private final Boolean runtimeError;
 
-            public Assertions(Integer modelValidationFailures, Boolean schemaValidationFailure, Boolean runtimeError) {
+            @JsonCreator
+            public Assertions(@JsonProperty("modelValidationFailures") Integer modelValidationFailures,
+                              @JsonProperty("schemaValidationFailure") Boolean schemaValidationFailure,
+                              @JsonProperty("runtimeError") Boolean runtimeError) {
                 this.modelValidationFailures = modelValidationFailures;
                 this.schemaValidationFailure = schemaValidationFailure;
                 this.runtimeError = runtimeError;

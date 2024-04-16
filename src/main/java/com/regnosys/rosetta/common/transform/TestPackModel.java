@@ -120,7 +120,7 @@ public class TestPackModel {
                     '}';
         }
 
-        public class Assertions {
+        public static class Assertions {
 
             private final Integer modelValidationFailures;
             private final Boolean schemaValidationFailure;

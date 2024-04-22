@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class TestPackModel {
-    
+
     private final String id;
     private final String pipelineId;
     private final String name;
@@ -31,9 +31,11 @@ public class TestPackModel {
     public String getPipelineId() {
         return pipelineId;
     }
+
     public String getName() {
         return name;
     }
+
     public List<SampleModel> getSamples() {
         return samples;
     }
@@ -88,9 +90,11 @@ public class TestPackModel {
         public String getId() {
             return id;
         }
+
         public String getName() {
             return name;
         }
+
         public String getInputPath() {
             return inputPath;
         }

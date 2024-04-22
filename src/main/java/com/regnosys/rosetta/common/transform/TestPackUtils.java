@@ -13,12 +13,17 @@ public class TestPackUtils {
     }
 
     private static String createTestPackId(TransformType transformType, String formattedFunctionName, String dataSetName) {
-        return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, dataSetName.toLowerCase());
+        return String.format("test-pack-%s-%s-%s",
+                transformType.name().toLowerCase(),
+                formattedFunctionName,
+                dataSetName.replace(" ", "-").toLowerCase());
     }
 
 
     private static String createPipelineId(TransformType transformType, String formattedFunctionName) {
-        return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
+        return String.format("pipeline-%s-%s",
+                transformType.name().toLowerCase(),
+                formattedFunctionName);
     }
 
 }

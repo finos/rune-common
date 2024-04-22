@@ -132,9 +132,9 @@ public class PipelineModel {
         private final String configPath;
 
 
-       @JsonCreator
-       public Serialisation(@JsonProperty("format") Format format,
-                            @JsonProperty("configPath")String configPath) {
+        @JsonCreator
+        public Serialisation(@JsonProperty("format") Format format,
+                             @JsonProperty("configPath") String configPath) {
             this.format = format;
             this.configPath = configPath;
         }
@@ -168,7 +168,7 @@ public class PipelineModel {
                     '}';
         }
 
-        public enum  Format {
+        public enum Format {
             JSON,
             XML
         }

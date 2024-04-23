@@ -12,6 +12,32 @@ steps:
       - cf_export GEN_DEPLOY_POM_SCRIPT="${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/create-deploy-pom.sh"
       - cf_export GEN_DEPLOY_POM_PY="${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/create-deploy-pom.py"
 
+  ReleaseProperties:
+    stage: 'setup'
+    title: Setup release build
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == true"
+    commands:
+      - cf_export RELEASE_NAME=${{TAG_NAME}}
+      - cf_export MAVEN_BUILD_PROFILES="full,gpg"
+      - cf_export MVN_DEPLOY_FILE_FLAGS="${{MVN_BUILD_FLAGS}} ${{MVN_DEPLOY_FLAGS}} -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2 -DrepositoryId=ossrh-distro -Dgpg.passphrase=${{GPG_PASSPHRASE}}"
+
+  SnapshotProperties:
+    stage: 'setup'
+    title: Setup snapshot build
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == false"
+    commands:
+      - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}-SNAPSHOT
+      - cf_export MAVEN_BUILD_PROFILES="full,gpg"
+      - cf_export MVN_DEPLOY_FILE_FLAGS="${{MVN_BUILD_FLAGS}} ${{MVN_DEPLOY_FLAGS}} -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=ossrh -Dgpg.passphrase=${{GPG_PASSPHRASE}}"
+
   TagReleaseName:
     title: Setup RELEASE_NAME variable with tag
     image: alpine/git
@@ -33,14 +59,15 @@ steps:
       - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}
 
   Build:
+    stage: 'build'
     title: Maven build
     fail_fast: false
-    image: regnosys-docker-registry.jfrog.io/regnosys/rosetta-products-deps:java-17
+    image: maven:3.8.2-jdk-11
     working_directory: ./
     commands:
-      - rm -rf /codefresh/volume/.m2/com/regnosys
-      - mvn -s /settings.xml versions:set -DnewVersion=${{RELEASE_NAME}}
-      - mvn -U -s /settings.xml clean deploy
+      - bash -c "${{GPG_IMPORT_COMMAND}}"
+      - mvn ${{MVN_BUILD_FLAGS}} versions:set -DnewVersion=${{RELEASE_NAME}} -DallowSnapshots=true
+      - mvn ${{MVN_DEPLOY_FLAGS}} clean deploy -P "${{MAVEN_BUILD_PROFILES}}"
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed

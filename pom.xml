@@ -71,7 +71,7 @@
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[17,18)</java.enforced.version>
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.release>8</maven.compiler.release>
         <repoServerHost>oss.sonatype.org</repoServerHost>
         <rosetta.dsl.version>9.8.0</rosetta.dsl.version>
 
@@ -582,11 +582,4 @@
             </plugins>
         </pluginManagement>
     </build>
-    <distributionManagement>
-        <repository>
-            <id>snapshots</id>
-            <name>libs-snapshots</name>
-            <url>https://regnosys.jfrog.io/regnosys/libs-snapshot-local</url>
-        </repository>
-    </distributionManagement>
 </project>

@@ -1,7 +1,6 @@
 version: '1.0'
 steps:
   SetProperties:
-    stage: 'setup'
     title: Setup build
     image: alpine/git
     commands:
@@ -12,7 +11,6 @@ steps:
       - cf_export GEN_DEPLOY_POM_PY="${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/create-deploy-pom.py"
 
   ReleaseProperties:
-    stage: 'setup'
     title: Setup release build
     image: alpine/git
     when:
@@ -25,7 +23,6 @@ steps:
       - cf_export MVN_DEPLOY_FILE_FLAGS="${{MVN_BUILD_FLAGS}} ${{MVN_DEPLOY_FLAGS}} -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2 -DrepositoryId=ossrh-distro -Dgpg.passphrase=${{GPG_PASSPHRASE}}"
 
   SnapshotProperties:
-    stage: 'setup'
     title: Setup snapshot build
     image: alpine/git
     when:

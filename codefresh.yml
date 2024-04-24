@@ -55,7 +55,6 @@ steps:
       - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}
 
   Build:
-    stage: 'build'
     title: Maven build
     fail_fast: false
     image: maven:3.8.2-jdk-11

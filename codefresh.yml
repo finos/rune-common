@@ -1,6 +1,5 @@
 version: '1.0'
 steps:
-
   SetProperties:
     stage: 'setup'
     title: Setup build

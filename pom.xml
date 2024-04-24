@@ -10,7 +10,7 @@
     </parent>
 
     <name>Rosetta Common</name>
-    <groupId>com.regnosys</groupId>
+    <groupId>com.regnosys.rosetta</groupId>
     <artifactId>rosetta-common</artifactId>
     <packaging>jar</packaging>
     <version>0.0.0.master-SNAPSHOT</version>
@@ -102,6 +102,7 @@
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
+        <stagingTimeoutInMinutes>10</stagingTimeoutInMinutes>
     </properties>
     <profiles>
         <profile>
@@ -578,6 +579,18 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>${nexus-staging-maven-plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <nexusUrl>https://${repoServerHost}</nexusUrl>
+                        <serverId>ossrh</serverId>
+                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        <stagingProgressTimeoutMinutes>${stagingTimeoutInMinutes}</stagingProgressTimeoutMinutes>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

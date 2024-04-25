@@ -1,7 +1,12 @@
 version: '1.0'
+stages:
+  - setup
+  - build
+  - finalise
 steps:
   SetProperties:
     title: Setup build
+    stage: 'setup'
     image: alpine/git
     commands:
       - cf_export MVN_DEPLOY_FLAGS="-s ${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/settings.xml -Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2 -Denv.CI_DEPLOY_PASSWORD=${{CI_DEPLOY_PASSWORD}} -Denv.CI_DEPLOY_USERNAME=${{CI_DEPLOY_USERNAME}} -Denv.GPG_KEYNAME=${{GPG_KEYNAME}} -Denv.GPG_PASSPHRASE=${{GPG_PASSPHRASE}}"
@@ -12,6 +17,7 @@ steps:
 
   ReleaseProperties:
     title: Setup release build
+    stage: 'setup'
     image: alpine/git
     when:
       condition:
@@ -24,6 +30,7 @@ steps:
 
   SnapshotProperties:
     title: Setup snapshot build
+    stage: 'setup'
     image: alpine/git
     when:
       condition:
@@ -36,6 +43,7 @@ steps:
 
   Build:
     title: Maven build
+    stage: 'build'
     fail_fast: false
     image: maven:3.8.5-openjdk-17
     working_directory: ./
@@ -46,6 +54,7 @@ steps:
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed
+    stage: 'finalise'
     image: codefresh/cli
     when:
       branch:
@@ -68,6 +77,7 @@ steps:
 
   FailPipeline:
     title: Fail pipeline if the Maven build failed
+    stage: 'finalise'
     image: codefresh/cli
     when:
       steps:
@@ -79,6 +89,7 @@ steps:
 
   TagRepo:
     title: Tag git repo with release name
+    stage: 'finalise'
     image: alpine/git
     when:
       condition:
@@ -94,6 +105,7 @@ steps:
 
   StartNextBuild:
     title: Build rosetta-components if on master
+    stage: 'finalise'
     image: codefresh/cli
     when:
       branch:

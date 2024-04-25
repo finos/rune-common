@@ -48,7 +48,7 @@ steps:
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
       - mvn ${{MVN_BUILD_FLAGS}} versions:set -DnewVersion=${{RELEASE_NAME}} -DallowSnapshots=true
-      - mvn "${{MVN_DEPLOY_FLAGS}}" clean deploy -P "${{MAVEN_BUILD_PROFILES}}"
+      - mvn ${{MVN_DEPLOY_FLAGS}} clean deploy -P ${{MAVEN_BUILD_PROFILES}}
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed
@@ -99,7 +99,6 @@ steps:
       - git fetch --prune https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git "+refs/tags/*:refs/tags/*"
       - git tag ${{RELEASE_NAME}}
       - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
-
 
   StartNextBuild:
     title: Build rosetta-components if on master

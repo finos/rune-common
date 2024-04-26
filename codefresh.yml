@@ -48,7 +48,7 @@ steps:
     title: Maven build
     stage: 'build'
     fail_fast: false
-    image: maven:3.8.8-amazoncorretto-17
+    image: maven:openjdk
     working_directory: ./
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"

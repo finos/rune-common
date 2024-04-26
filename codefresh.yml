@@ -50,7 +50,7 @@ steps:
     stage: 'build'
     fail_fast: false
     image: maven:3.8.5-openjdk-17
-    working_directory: ./
+    working_directory: ./rosetta-common/
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
       - mvn "${{MVN_BUILD_FLAGS}}" versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true

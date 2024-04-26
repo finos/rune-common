@@ -84,6 +84,8 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+                .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
+                .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
                 //The next two lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
                 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with

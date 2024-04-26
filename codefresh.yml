@@ -49,12 +49,13 @@ steps:
     title: Maven build
     stage: 'build'
     fail_fast: false
-    image: maven:3.8.5-openjdk-17
+    image: maven:3.8.5-openjdk-17-slim
     working_directory: ./
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
-      - mvn "${{MVN_BUILD_FLAGS}}" versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
-      - mvn -s settings.xml "${{MVN_DEPLOY_FLAGS}}" clean deploy -P "${{MAVEN_BUILD_PROFILES}}"
+      - export JDK_JAVA_OPTIONS="-Djdk.attach.allowAttachSelf=true"
+      - mvn versions:set "${{MVN_BUILD_FLAGS}}" -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
+      - mvn -s settings.xml clean deploy "${{MVN_DEPLOY_FLAGS}}" -P "${{MAVEN_BUILD_PROFILES}}"
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed

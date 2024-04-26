@@ -27,4 +27,5 @@
             </properties>
         </profile>
     </profiles>
+    <localRepository>/codefresh/volume/m2_repository</localRepository>
 </settings>

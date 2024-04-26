@@ -4,6 +4,14 @@ stages:
   - build
   - finalise
 steps:
+  main_clone:
+    title: Cloning main repository...
+    stage: 'setup'
+    type: git-clone
+    git: github
+    repo: "${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}"
+    revision: "${{CF_REVISION}}"
+
   SetProperties:
     title: Setup build
     stage: 'setup'

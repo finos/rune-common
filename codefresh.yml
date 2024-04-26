@@ -1,17 +1,21 @@
 version: '1.0'
+stages:
+  - setup
+  - build
+  - finalise
 steps:
   SetProperties:
     title: Setup build
+    stage: 'setup'
     image: alpine/git
     commands:
       - cf_export MVN_DEPLOY_FLAGS="-s ${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/settings.xml -Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2 -Denv.CI_DEPLOY_PASSWORD=${{CI_DEPLOY_PASSWORD}} -Denv.CI_DEPLOY_USERNAME=${{CI_DEPLOY_USERNAME}} -Denv.GPG_KEYNAME=${{GPG_KEYNAME}} -Denv.GPG_PASSPHRASE=${{GPG_PASSPHRASE}}"
       - cf_export MVN_BUILD_FLAGS="-Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2"
       - cf_export GPG_IMPORT_COMMAND="cat <(echo -e '${{GPG_PRIVATE_KEY}}') | gpg --batch --import"
-      - cf_export GEN_DEPLOY_POM_SCRIPT="${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/create-deploy-pom.sh"
-      - cf_export GEN_DEPLOY_POM_PY="${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/create-deploy-pom.py"
 
   ReleaseProperties:
     title: Setup release build
+    stage: 'setup'
     image: alpine/git
     when:
       condition:
@@ -20,10 +24,10 @@ steps:
     commands:
       - cf_export RELEASE_NAME=${{TAG_NAME}}
       - cf_export MAVEN_BUILD_PROFILES="gpg"
-      - cf_export MVN_DEPLOY_FILE_FLAGS="${{MVN_BUILD_FLAGS}} ${{MVN_DEPLOY_FLAGS}} -Durl=https://oss.sonatype.org/service/local/staging/deploy/maven2 -DrepositoryId=ossrh-distro -Dgpg.passphrase=${{GPG_PASSPHRASE}}"
 
   SnapshotProperties:
     title: Setup snapshot build
+    stage: 'setup'
     image: alpine/git
     when:
       condition:
@@ -32,10 +36,10 @@ steps:
     commands:
       - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}-SNAPSHOT
       - cf_export MAVEN_BUILD_PROFILES="gpg"
-      - cf_export MVN_DEPLOY_FILE_FLAGS="${{MVN_BUILD_FLAGS}} ${{MVN_DEPLOY_FLAGS}} -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=ossrh -Dgpg.passphrase=${{GPG_PASSPHRASE}}"
-
+      
   Build:
     title: Maven build
+    stage: 'build'
     fail_fast: false
     image: maven:3.8.5-openjdk-17
     working_directory: ./
@@ -46,6 +50,7 @@ steps:
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed
+    stage: 'finalise'
     image: codefresh/cli
     when:
       branch:
@@ -68,6 +73,7 @@ steps:
 
   FailPipeline:
     title: Fail pipeline if the Maven build failed
+    stage: 'finalise'
     image: codefresh/cli
     when:
       steps:
@@ -79,6 +85,7 @@ steps:
 
   TagRepo:
     title: Tag git repo with release name
+    stage: 'finalise'
     image: alpine/git
     when:
       condition:
@@ -91,9 +98,9 @@ steps:
       - git tag ${{RELEASE_NAME}}
       - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
 
-
   StartNextBuild:
     title: Build rosetta-components if on master
+    stage: 'finalise'
     image: codefresh/cli
     when:
       branch:

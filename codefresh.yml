@@ -17,8 +17,9 @@ steps:
     stage: 'setup'
     image: alpine/git
     commands:
-      - cf_export CICD_REPO="${{CF_VOLUME_PATH}}/m2_repository"
+      - cf_export CICD_REPO='${{CF_VOLUME_PATH}}'/m2_repository"
       - cf_export GPG_IMPORT_COMMAND="cat <(echo -e '${{GPG_PRIVATE_KEY}}') | gpg --batch --import"
+      - cf_export MAVEN_BUILD_DEPLOY_FLAGS="-Denv.CI_DEPLOY_USERNAME='${{CI_DEPLOY_USERNAME}}' -Denv.CI_DEPLOY_PASSWORD='${{CI_DEPLOY_PASSWORD}}' -Denv.GPG_KEYNAME='${{GPG_KEYNAME}}' -Denv.GPG_PASSPHRASE='${{GPG_PASSPHRASE}}'"
       - cf_export MAVEN_BUILD_PROFILES="gpg"
 
   ReleaseProperties:
@@ -50,9 +51,9 @@ steps:
     image: maven:3.8.5-openjdk-17
     working_directory: ./
     commands:
-      - bash -c "${{GPG_IMPORT_COMMAND}}"
-      - mvn versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
-      - mvn -X -s settings.xml clean deploy -Denv.CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}" -Denv.CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}" -Denv.GPG_KEYNAME="${{GPG_KEYNAME}}" -Denv.GPG_PASSPHRASE="${{GPG_PASSPHRASE}}" -Denv.CICD_REPO="${{CICD_REPO}}" -P "${{MAVEN_BUILD_PROFILES}}"
+      - bash -c '${{GPG_IMPORT_COMMAND}}'
+      - mvn versions:set -DnewVersion='${{RELEASE_NAME}}' -DallowSnapshots=true
+      - mvn -s settings.xml clean deploy '${{MAVEN_BUILD_DEPLOY_FLAGS}}' -Denv.CICD_REPO='${{CICD_REPO}}' -P '${{MAVEN_BUILD_PROFILES}}'
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed

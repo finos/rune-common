@@ -20,6 +20,7 @@ steps:
       - cf_export MVN_DEPLOY_FLAGS="-Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2 -Denv.CI_DEPLOY_PASSWORD=${{CI_DEPLOY_PASSWORD}} -Denv.CI_DEPLOY_USERNAME=${{CI_DEPLOY_USERNAME}} -Denv.GPG_KEYNAME=${{GPG_KEYNAME}} -Denv.GPG_PASSPHRASE=${{GPG_PASSPHRASE}}"
       - cf_export MVN_BUILD_FLAGS="-Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2"
       - cf_export GPG_IMPORT_COMMAND="cat <(echo -e '${{GPG_PRIVATE_KEY}}') | gpg --batch --import"
+      - cf_export MAVEN_BUILD_PROFILES="gpg"
 
   ReleaseProperties:
     title: Setup release build
@@ -31,7 +32,6 @@ steps:
           releaseNameNotDefined: "${{TAG_REPO}} == true"
     commands:
       - cf_export RELEASE_NAME=${{TAG_NAME}}
-      - cf_export MAVEN_BUILD_PROFILES="gpg"
 
   SnapshotProperties:
     title: Setup snapshot build
@@ -43,13 +43,12 @@ steps:
           releaseNameNotDefined: "${{TAG_REPO}} == false"
     commands:
       - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}-SNAPSHOT
-      - cf_export MAVEN_BUILD_PROFILES="gpg"
-      
+
   Build:
     title: Maven build
     stage: 'build'
     fail_fast: false
-    image: maven:3.8.5-openjdk-17
+    image: maven:3.8.8-amazoncorretto-17
     working_directory: ./
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"

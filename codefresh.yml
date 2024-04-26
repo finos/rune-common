@@ -54,7 +54,7 @@ steps:
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
       - export JDK_JAVA_OPTIONS="-Djdk.attach.allowAttachSelf=true"
-      - mvn versions:set "${{MVN_BUILD_FLAGS}}" -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
+      - mvn versions:set "${{MVN_BUILD_FLAGS}}" -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true -Djdk.attach.allowAttachSelf=true
       - mvn -s settings.xml clean deploy "${{MVN_DEPLOY_FLAGS}}" -P "${{MAVEN_BUILD_PROFILES}}"
 
   NotifySlackOnFail:

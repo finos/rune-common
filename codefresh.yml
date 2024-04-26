@@ -51,7 +51,7 @@ steps:
     image: maven:3.8.5-openjdk-17
     working_directory: ./
     commands:
-      - bash -c '${{GPG_IMPORT_COMMAND}}'
+      - bash -c "${{GPG_IMPORT_COMMAND}}"
       - mvn versions:set -DnewVersion='${{RELEASE_NAME}}' -DallowSnapshots=true
       - mvn -s settings.xml clean deploy '${{MAVEN_BUILD_DEPLOY_FLAGS}}' -Denv.CICD_REPO='${{CICD_REPO}}' -P '${{MAVEN_BUILD_PROFILES}}'
 

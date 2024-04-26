@@ -17,7 +17,7 @@ steps:
     stage: 'setup'
     image: alpine/git
     commands:
-      - cf_export MVN_DEPLOY_FLAGS="-s settings.xml -Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2 -Denv.CI_DEPLOY_PASSWORD=${{CI_DEPLOY_PASSWORD}} -Denv.CI_DEPLOY_USERNAME=${{CI_DEPLOY_USERNAME}} -Denv.GPG_KEYNAME=${{GPG_KEYNAME}} -Denv.GPG_PASSPHRASE=${{GPG_PASSPHRASE}}"
+      - cf_export MVN_DEPLOY_FLAGS="-Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2 -Denv.CI_DEPLOY_PASSWORD=${{CI_DEPLOY_PASSWORD}} -Denv.CI_DEPLOY_USERNAME=${{CI_DEPLOY_USERNAME}} -Denv.GPG_KEYNAME=${{GPG_KEYNAME}} -Denv.GPG_PASSPHRASE=${{GPG_PASSPHRASE}}"
       - cf_export MVN_BUILD_FLAGS="-Dmaven.repo.local=${{CF_VOLUME_PATH}}/.m2"
       - cf_export GPG_IMPORT_COMMAND="cat <(echo -e '${{GPG_PRIVATE_KEY}}') | gpg --batch --import"
 
@@ -50,11 +50,11 @@ steps:
     stage: 'build'
     fail_fast: false
     image: maven:3.8.5-openjdk-17
-    working_directory: ./rosetta-common/
+    working_directory: ./
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
       - mvn "${{MVN_BUILD_FLAGS}}" versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
-      - mvn "${{MVN_DEPLOY_FLAGS}}" clean deploy -P "${{MAVEN_BUILD_PROFILES}}"
+      - mvn -s settings.xml "${{MVN_DEPLOY_FLAGS}}" clean deploy -P "${{MAVEN_BUILD_PROFILES}}"
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed

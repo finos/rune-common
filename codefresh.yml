@@ -1,7 +1,29 @@
 version: '1.0'
+stages:
+  - setup
+  - build
+  - finalise
 steps:
-  TagReleaseName:
-    title: Setup RELEASE_NAME variable with tag
+  main_clone:
+    title: Cloning main repository...
+    stage: 'setup'
+    type: git-clone
+    git: github
+    repo: "${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}"
+    revision: "${{CF_REVISION}}"
+
+  SetProperties:
+    title: Setup build
+    stage: 'setup'
+    image: alpine/git
+    commands:
+      - cf_export CICD_REPO="${{CF_VOLUME_PATH}}/m2_repository"
+      - cf_export GPG_IMPORT_COMMAND="cat <(echo -e '${{GPG_PRIVATE_KEY}}') | gpg --batch --import"
+      - cf_export MAVEN_BUILD_PROFILES="gpg"
+
+  ReleaseProperties:
+    title: Setup release build
+    stage: 'setup'
     image: alpine/git
     when:
       condition:
@@ -10,28 +32,31 @@ steps:
     commands:
       - cf_export RELEASE_NAME=${{TAG_NAME}}
 
-  BranchReleaseName:
-    title: Setup RELEASE_NAME variable with branch name
+  SnapshotProperties:
+    title: Setup snapshot build
+    stage: 'setup'
     image: alpine/git
     when:
       condition:
         all:
           releaseNameNotDefined: "${{TAG_REPO}} == false"
     commands:
-      - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}
+      - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}-SNAPSHOT
 
   Build:
     title: Maven build
+    stage: 'build'
     fail_fast: false
-    image: regnosys-docker-registry.jfrog.io/regnosys/rosetta-products-deps:java-17
+    image: maven:3.8.5-openjdk-17
     working_directory: ./
     commands:
-      - rm -rf /codefresh/volume/.m2/com/regnosys
-      - mvn -s /settings.xml versions:set -DnewVersion=${{RELEASE_NAME}}
-      - mvn -U -s /settings.xml clean deploy
+      - bash -c "${{GPG_IMPORT_COMMAND}}"
+      - mvn versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
+      - mvn -s settings.xml -U -B clean deploy -Denv.CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}" -Denv.CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}" -Denv.GPG_KEYNAME="${{GPG_KEYNAME}}" -Denv.GPG_PASSPHRASE="${{GPG_PASSPHRASE}}" -Denv.CICD_REPO="${{CICD_REPO}}" -P "${{MAVEN_BUILD_PROFILES}}"
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if master build failed
+    stage: 'finalise'
     image: codefresh/cli
     when:
       branch:
@@ -54,6 +79,7 @@ steps:
 
   FailPipeline:
     title: Fail pipeline if the Maven build failed
+    stage: 'finalise'
     image: codefresh/cli
     when:
       steps:
@@ -65,6 +91,7 @@ steps:
 
   TagRepo:
     title: Tag git repo with release name
+    stage: 'finalise'
     image: alpine/git
     when:
       condition:
@@ -77,9 +104,9 @@ steps:
       - git tag ${{RELEASE_NAME}}
       - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
 
-
   StartNextBuild:
     title: Build rosetta-components if on master
+    stage: 'finalise'
     image: codefresh/cli
     when:
       branch:

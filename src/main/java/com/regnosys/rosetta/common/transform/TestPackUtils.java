@@ -16,4 +16,8 @@ public class TestPackUtils {
         return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
     }
 
+    public static PipelineModel createPipeline(TransformType transformType, String functionQualifiedName, String displayName, String formattedFunctionName, String inputType, String outputType, String upstreamPipelineId, PipelineModel.Serialisation outputSerialisation) {
+        return new PipelineModel(createPipelineId(transformType, formattedFunctionName), displayName, new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType), upstreamPipelineId, outputSerialisation);
+    }
+
 }

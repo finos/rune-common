@@ -14,28 +14,26 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TestPackUtils {
+    private static final ObjectMapper JSON_OBJECT_MAPPER = RosettaObjectMapper.getNewRosettaObjectMapper();
+
     private final static ObjectWriter JSON_OBJECT_WRITER =
-            RosettaObjectMapper
-                    .getNewRosettaObjectMapper()
+            JSON_OBJECT_MAPPER
                     .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
                     .writerWithDefaultPrettyPrinter();
 
-    private static final ObjectMapper JSON_OBJECT_MAPPER = RosettaObjectMapper.getNewRosettaObjectMapper();
-
-
-    public static TestPackModel createTestPack(String dataSetName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
-        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, dataSetName), createPipelineId(transformType, formattedFunctionName), dataSetName, sampleModels);
+    public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
+        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName), testPackName, sampleModels);
     }
 
-    private static String createTestPackId(TransformType transformType, String formattedFunctionName, String dataSetName) {
-        return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, dataSetName.replace(" ", "-").toLowerCase());
+    private static String createTestPackId(TransformType transformType, String formattedFunctionName, String testPackName) {
+        return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-").toLowerCase());
     }
-
 
     private static String createPipelineId(TransformType transformType, String formattedFunctionName) {
         return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
@@ -45,33 +43,13 @@ public class TestPackUtils {
         return new PipelineModel(createPipelineId(transformType, formattedFunctionName), displayName, new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType), upstreamPipelineId, outputSerialisation);
     }
 
-    public static List<URL> findPaths(Path basePath, ClassLoader classLoader, String fileName) {
-        List<URL> expectations = ClassPathUtils
-                .findPathsFromClassPath(List.of(UrlUtils.toPortableString(basePath)),
-                        fileName,
-                        Optional.empty(),
-                        classLoader)
-                .stream()
-                .map(UrlUtils::toUrl)
-                .collect(Collectors.toList());
-        return ImmutableList.copyOf(expectations);
-    }
-
-    public static <T> T readFile(URL u, ObjectMapper mapper, Class<T> clazz) {
-        try {
-            return mapper.readValue(UrlUtils.openURL(u), clazz);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static PipelineModel getPipelineModel(String functionName, ClassLoader classLoader, Path resourcePath) {
         List<URL> pipelineFiles = findPaths(resourcePath, classLoader, "pipeline-.*\\.json");
         return pipelineFiles.stream()
                 .map(url -> readFile(url, JSON_OBJECT_MAPPER, PipelineModel.class))
                 .filter(p -> p.getTransform().getFunction().equals(functionName))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName)));
     }
 
     public static List<TestPackModel> getTestPackModels(String pipelineId, ClassLoader classLoader, Path resourcePath) {
@@ -96,4 +74,23 @@ public class TestPackUtils {
         }
     }
 
+    public static List<URL> findPaths(Path basePath, ClassLoader classLoader, String fileName) {
+        List<URL> expectations = ClassPathUtils
+                .findPathsFromClassPath(Arrays.asList(UrlUtils.toPortableString(basePath)),
+                        fileName,
+                        Optional.empty(),
+                        classLoader)
+                .stream()
+                .map(UrlUtils::toUrl)
+                .collect(Collectors.toList());
+        return ImmutableList.copyOf(expectations);
+    }
+
+    public static <T> T readFile(URL u, ObjectMapper mapper, Class<T> clazz) {
+        try {
+            return mapper.readValue(UrlUtils.openURL(u), clazz);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

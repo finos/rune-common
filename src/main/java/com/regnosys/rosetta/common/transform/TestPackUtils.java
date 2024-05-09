@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TestPackUtils {
-    public final static ObjectWriter ROSETTA_OBJECT_WRITER =
+    private final static ObjectWriter ROSETTA_OBJECT_WRITER =
             RosettaObjectMapper
                     .getNewRosettaObjectMapper()
                     .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)

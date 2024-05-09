@@ -479,7 +479,6 @@
                 </executions>
                 <configuration>
                     <release>${maven.compiler.release}</release>
-
                 </configuration>
             </plugin>
             <plugin>

@@ -19,13 +19,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TestPackUtils {
-    private final static ObjectWriter ROSETTA_OBJECT_WRITER =
+    private final static ObjectWriter JSON_OBJECT_WRITER =
             RosettaObjectMapper
                     .getNewRosettaObjectMapper()
                     .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
                     .writerWithDefaultPrettyPrinter();
 
-    private static final ObjectMapper OBJECT_MAPPER = RosettaObjectMapper.getNewRosettaObjectMapper();
+    private static final ObjectMapper JSON_OBJECT_MAPPER = RosettaObjectMapper.getNewRosettaObjectMapper();
 
 
     public static TestPackModel createTestPack(String dataSetName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
@@ -68,7 +68,7 @@ public class TestPackUtils {
     public static PipelineModel getPipelineModel(String functionName, ClassLoader classLoader, Path resourcePath) {
         List<URL> pipelineFiles = findPaths(resourcePath, classLoader, "pipeline-.*\\.json");
         return pipelineFiles.stream()
-                .map(url -> readFile(url, OBJECT_MAPPER, PipelineModel.class))
+                .map(url -> readFile(url, JSON_OBJECT_MAPPER, PipelineModel.class))
                 .filter(p -> p.getTransform().getFunction().equals(functionName))
                 .findFirst()
                 .orElseThrow();
@@ -77,7 +77,7 @@ public class TestPackUtils {
     public static List<TestPackModel> getTestPackModels(String pipelineId, ClassLoader classLoader, Path resourcePath) {
         List<URL> testPackUrls = findPaths(resourcePath, classLoader, "test-pack-.*\\.json");
         return testPackUrls.stream()
-                .map(url -> readFile(url, OBJECT_MAPPER, TestPackModel.class))
+                .map(url -> readFile(url, JSON_OBJECT_MAPPER, TestPackModel.class))
                 .filter(testPackModel -> testPackModel.getPipelineId() != null)
                 .filter(testPackModel -> testPackModel.getPipelineId().equals(pipelineId))
                 .collect(Collectors.toList());
@@ -92,7 +92,7 @@ public class TestPackUtils {
                 throw new UncheckedIOException(e);
             }
         } else {
-            return ROSETTA_OBJECT_WRITER;
+            return JSON_OBJECT_WRITER;
         }
     }
 

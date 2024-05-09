@@ -65,8 +65,7 @@ public class TestPackUtils {
         }
     }
 
-    // TODO move to util class?
-    private static PipelineModel getPipelineModel(String functionName, ClassLoader classLoader, Path resourcePath) {
+    public static PipelineModel getPipelineModel(String functionName, ClassLoader classLoader, Path resourcePath) {
         List<URL> pipelineFiles = findPaths(resourcePath, classLoader, "pipeline-.*\\.json");
         return pipelineFiles.stream()
                 .map(url -> readFile(url, OBJECT_MAPPER, PipelineModel.class))
@@ -75,8 +74,7 @@ public class TestPackUtils {
                 .orElseThrow();
     }
 
-    // TODO move to util class?
-    private static List<TestPackModel> getTestPackModels(String pipelineId, ClassLoader classLoader, Path resourcePath) {
+    public static List<TestPackModel> getTestPackModels(String pipelineId, ClassLoader classLoader, Path resourcePath) {
         List<URL> testPackUrls = findPaths(resourcePath, classLoader, "test-pack-.*\\.json");
         return testPackUrls.stream()
                 .map(url -> readFile(url, OBJECT_MAPPER, TestPackModel.class))
@@ -85,8 +83,7 @@ public class TestPackUtils {
                 .collect(Collectors.toList());
     }
 
-    // TODO move to util class?
-    private static ObjectWriter getObjectWriter(PipelineModel.Serialisation outputSerialisation) {
+    public static ObjectWriter getObjectWriter(PipelineModel.Serialisation outputSerialisation) {
         if (outputSerialisation != null && outputSerialisation.getFormat() == PipelineModel.Serialisation.Format.XML) {
             URL xmlConfigPath = Resources.getResource(outputSerialisation.getConfigPath());
             try {

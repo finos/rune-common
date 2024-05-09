@@ -479,8 +479,7 @@
                 </executions>
                 <configuration>
                     <release>${maven.compiler.release}</release>
-                    <source>10</source>
-                    <target>10</target>
+
                 </configuration>
             </plugin>
             <plugin>

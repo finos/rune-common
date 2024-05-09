@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,16 @@ public class TestPackUtils {
             JSON_OBJECT_MAPPER
                     .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
                     .writerWithDefaultPrettyPrinter();
+
+    public static final Path PROJECTION_PATH = Paths.get("projection");
+
+    public static final Path PROJECTION_ISO20022_PATH = PROJECTION_PATH.resolve("iso-20022");
+
+    public static final Path PROJECTION_OUTPUT_PATH =
+            PROJECTION_ISO20022_PATH.resolve("output");
+
+    public static final Path PROJECTION_CONFIG_PATH =
+            PROJECTION_ISO20022_PATH.resolve("config");
 
     public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
         return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName), testPackName, sampleModels);
@@ -72,6 +83,14 @@ public class TestPackUtils {
         } else {
             return JSON_OBJECT_WRITER;
         }
+    }
+
+    public static String getProjectionTestPackName(String reportId) {
+        return "test-pack-projection-" + reportId + "-report-to-iso20022.*\\.json";
+    }
+
+    public static String getReportTestPackName(String reportId) {
+        return "test-pack-report-" + reportId + ".*\\.json";
     }
 
     public static List<URL> findPaths(Path basePath, ClassLoader classLoader, String fileName) {

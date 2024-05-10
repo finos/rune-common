@@ -1,11 +1,9 @@
 package com.regnosys.rosetta.common.transform;
 
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
@@ -21,13 +19,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TestPackUtils {
-    private static final ObjectMapper JSON_OBJECT_MAPPER = RosettaObjectMapper.getNewRosettaObjectMapper();
-
-    private final static ObjectWriter JSON_OBJECT_WRITER =
-            JSON_OBJECT_MAPPER
-                    .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
-                    .writerWithDefaultPrettyPrinter();
-
     public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
     public static final Path PROJECTION_ISO20022_PATH = PROJECTION_PATH.resolve("iso-20022");
     public static final Path PROJECTION_OUTPUT_PATH = PROJECTION_ISO20022_PATH.resolve("output");
@@ -52,34 +43,45 @@ public class TestPackUtils {
         return new PipelineModel(createPipelineId(transformType, formattedFunctionName), displayName, new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType), upstreamPipelineId, outputSerialisation);
     }
 
-    public static PipelineModel getPipelineModel(String functionName, ClassLoader classLoader, Path resourcePath) {
+    public static List<PipelineModel> getPipelineModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {
         List<URL> pipelineFiles = findPaths(resourcePath, classLoader, "pipeline-.*\\.json");
-        return pipelineFiles.stream()
-                .map(url -> readFile(url, JSON_OBJECT_MAPPER, PipelineModel.class))
+        List<PipelineModel> pipelineModels = pipelineFiles.stream()
+                .map(url -> readFile(url, jsonObjectMapper, PipelineModel.class))
+                .collect(Collectors.toList());
+        return pipelineModels;
+    }
+
+    public static PipelineModel getPipelineModel(List<PipelineModel> pipelineModels, String functionName) {
+        return pipelineModels.stream()
                 .filter(p -> p.getTransform().getFunction().equals(functionName))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName)));
     }
 
-    public static List<TestPackModel> getTestPackModels(String pipelineId, ClassLoader classLoader, Path resourcePath) {
+    public static List<TestPackModel> getTestPackModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {
         List<URL> testPackUrls = findPaths(resourcePath, classLoader, "test-pack-.*\\.json");
         return testPackUrls.stream()
-                .map(url -> readFile(url, JSON_OBJECT_MAPPER, TestPackModel.class))
+                .map(url -> readFile(url, jsonObjectMapper, TestPackModel.class))
+                .collect(Collectors.toList());
+    }
+
+    public static List<TestPackModel> getTestPackModels(List<TestPackModel> testPackModels, String pipelineId) {
+        return testPackModels.stream()
                 .filter(testPackModel -> testPackModel.getPipelineId() != null)
                 .filter(testPackModel -> testPackModel.getPipelineId().equals(pipelineId))
                 .collect(Collectors.toList());
     }
 
-    public static ObjectWriter getObjectWriter(PipelineModel.Serialisation outputSerialisation) {
+    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation outputSerialisation) {
         if (outputSerialisation != null && outputSerialisation.getFormat() == PipelineModel.Serialisation.Format.XML) {
             URL xmlConfigPath = Resources.getResource(outputSerialisation.getConfigPath());
             try {
-                return RosettaObjectMapperCreator.forXML(xmlConfigPath.openStream()).create().writerWithDefaultPrettyPrinter();
+                return Optional.of(RosettaObjectMapperCreator.forXML(xmlConfigPath.openStream()).create().writerWithDefaultPrettyPrinter());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         } else {
-            return JSON_OBJECT_WRITER;
+            return Optional.empty();
         }
     }
 

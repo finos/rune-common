@@ -69,7 +69,6 @@ public class TestPackModel {
         private final String name;
         private final String inputPath;
         private final String outputPath;
-        private final String outputTabulatedPath;
         private final Assertions assertions;
 
         @JsonCreator
@@ -77,13 +76,11 @@ public class TestPackModel {
                            @JsonProperty("name") String name,
                            @JsonProperty("inputPath") String inputPath,
                            @JsonProperty("outputPath") String outputPath,
-                           @JsonProperty("outputTabulatedPath") String outputTabulatedPath,
                            @JsonProperty("assertions") Assertions assertions) {
             this.id = id;
             this.name = name;
             this.inputPath = inputPath;
             this.outputPath = outputPath;
-            this.outputTabulatedPath = outputTabulatedPath;
             this.assertions = assertions;
         }
 
@@ -103,25 +100,21 @@ public class TestPackModel {
             return outputPath;
         }
 
-        public String getOutputTabulatedPath() {
-            return outputTabulatedPath;
-        }
-
         public Assertions getAssertions() {
             return assertions;
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof SampleModel)) return false;
-            SampleModel that = (SampleModel) o;
-            return Objects.equals(getId(), that.getId()) && Objects.equals(getName(), that.getName()) && Objects.equals(getInputPath(), that.getInputPath()) && Objects.equals(getOutputPath(), that.getOutputPath()) && Objects.equals(getOutputTabulatedPath(), that.getOutputTabulatedPath()) && Objects.equals(getAssertions(), that.getAssertions());
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (!(object instanceof SampleModel)) return false;
+            SampleModel that = (SampleModel) object;
+            return Objects.equals(getId(), that.getId()) && Objects.equals(getName(), that.getName()) && Objects.equals(getInputPath(), that.getInputPath()) && Objects.equals(getOutputPath(), that.getOutputPath()) && Objects.equals(getAssertions(), that.getAssertions());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(getId(), getName(), getInputPath(), getOutputPath(), getOutputTabulatedPath(), getAssertions());
+            return Objects.hash(getId(), getName(), getInputPath(), getOutputPath(), getAssertions());
         }
 
         @Override
@@ -131,7 +124,6 @@ public class TestPackModel {
                     ", name='" + name + '\'' +
                     ", inputPath='" + inputPath + '\'' +
                     ", outputPath='" + outputPath + '\'' +
-                    ", outputTabulatedPath='" + outputTabulatedPath + '\'' +
                     ", assertions=" + assertions +
                     '}';
         }

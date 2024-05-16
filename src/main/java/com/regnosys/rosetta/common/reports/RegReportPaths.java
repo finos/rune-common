@@ -13,10 +13,6 @@ public class RegReportPaths extends RegPaths {
     public static final String REPORT_EXPECTATIONS_FILE_NAME = "report-expectations.json";
 
 
-    public RegReportPaths(Path rootPath, Path input, Path output, Path config, Path lookup) {
-        super(rootPath, input, output, config, lookup);
-    }
-
     public static RegReportPaths get(Path resourcesPath) {
         return Files.exists(resourcesPath.resolve(REGULATORY_REPORTING_PATH).resolve(INPUT_PATH)) ?
                 RegReportPaths.getDefault() : RegReportPaths.getLegacy();
@@ -37,13 +33,40 @@ public class RegReportPaths extends RegPaths {
         return new RegReportPaths(dataPath, dataPath, dataPath, dataPath, lookup);
     }
 
+    public RegReportPaths(Path rootPath, Path input, Path output, Path config, Path lookup) {
+        super(rootPath, input, output, config, lookup);
+    }
+
     public static Path getReportExpectationsFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
         return getOutputDataSetPath(outputPath, reportIdentifier, dataSetName).resolve(REPORT_EXPECTATIONS_FILE_NAME);
+    }
+
+    @Deprecated
+    public static Path getLegacyReportPath(Path outputPath, ModelReportId reportIdentifier) {
+        return outputPath.resolve(legacyDirectoryName(reportIdentifier));
+    }
+
+    @Deprecated
+    public static Path getLegacyKeyValueExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
+        return getLegacyReportDataSetPath(outputPath, reportIdentifier, dataSetName)
+                .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
     }
 
     public static Path getReportExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
         return getOutputDataSetPath(outputPath, reportIdentifier, dataSetName)
                 .resolve(inputPath.getFileName().toString().replace(".json", REPORT_FILE_NAME_SUFFIX));
+    }
+
+
+    @Deprecated
+    public static String legacyDirectoryName(ModelReportId id) {
+        return id.joinRegulatoryReference("", "-")
+                .replace("_", "-")
+                .toLowerCase();
+    }
+    @Deprecated
+    public static Path getLegacyReportDataSetPath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
+        return getLegacyReportPath(outputPath, reportIdentifier).resolve(directoryNameOfDataset(dataSetName));
     }
 
 }

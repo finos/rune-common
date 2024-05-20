@@ -45,7 +45,7 @@ public class CollectionUtils {
 	 *            "match"
 	 * @return
 	 */
-	public static <A> boolean collectionMatch(Collection<A> col1, Collection<A> col2, BiPredicate<A, A> comparer) {
+	public static <A> boolean collectionContains(Collection<A> col1, Collection<A> col2, BiPredicate<A, A> comparer) {
 		List<A> tempCol = new LinkedList<>(col2);
 		for (A a1 : col1) {
 			Iterator<A> it = tempCol.iterator();

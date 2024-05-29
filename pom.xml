@@ -148,7 +148,7 @@
                         <extensions>true</extensions>
                         <configuration>
                             <nexusUrl>https://${repoServerHost}</nexusUrl>
-                            <serverId>ossrh-distro</serverId>
+                            <serverId>ossrh</serverId>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                             <stagingProgressTimeoutMinutes>${stagingTimeoutInMinutes}</stagingProgressTimeoutMinutes>
                         </configuration>

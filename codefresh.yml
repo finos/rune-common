@@ -17,7 +17,6 @@ steps:
     stage: 'setup'
     image: alpine/git
     commands:
-      - cf_export CICD_REPO="${{CF_VOLUME_PATH}}/m2_repository"
       - cf_export GPG_IMPORT_COMMAND="cat <(echo -e '${{GPG_PRIVATE_KEY}}') | gpg --batch --import" --mask
 
   ReleaseProperties:
@@ -55,7 +54,6 @@ steps:
       - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"
       - export GPG_KEYNAME="${{GPG_KEYNAME}}"
       - export GPG_PASSPHRASE="${{GPG_PASSPHRASE}}"
-      - export CICD_REPO="${{CICD_REPO}}"
       - mvn -s settings.xml -U -B clean deploy -P gpg
 
   NotifySlackOnFail:

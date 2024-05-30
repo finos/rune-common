@@ -31,7 +31,6 @@
     <packaging>jar</packaging>
     <version>0.0.0.master-SNAPSHOT</version>
     <url>https://github.com/REGnosys/rosetta-common</url>
-    <inceptionYear>2024</inceptionYear>
 
     <scm>
         <developerConnection>scm:git:https://github.com/REGnosys/rosetta-common</developerConnection>
@@ -606,7 +605,10 @@
                 <version>2.4.0</version>
                 <configuration>
                     <verbose>false</verbose>
-                    <addSvnKeyWords>true</addSvnKeyWords>
+                    <licenseName>apache_v2</licenseName>
+                    <organizationName>REGnosys</organizationName>
+                    <projectName>Rune Common</projectName>
+                    <inceptionYear>2018</inceptionYear>
                 </configuration>
                 <executions>
                     <execution>
@@ -616,9 +618,6 @@
                         </goals>
                         <phase>process-sources</phase>
                         <configuration>
-                            <licenseName>apache_v2</licenseName>
-                            <organizationName>REGnosys</organizationName>
-                            <projectName>Rune Common</projectName>
                             <roots>
                                 <root>src/main/java</root>
                                 <root>src/test</root>

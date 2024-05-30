@@ -1,141 +1,55 @@
-# How to contribute #
+# Rune Contribution and Governance Policies
 
-We'd love for you to contribute to rosetta-common. There are
-a just a few small guidelines  we would like you to follow:
+This document describes the contribution process and governance policies of the FINOS Rune project. The project is also governed by the [Linux Foundation Antitrust Policy](https://www.linuxfoundation.org/antitrust-policy/), and the FINOS [IP Policy]( https://community.finos.org/governance-docs/IP-policy.pdf), [Code of Conduct](https://community.finos.org/docs/governance/code-of-conduct), [Collaborative Principles](https://community.finos.org/docs/governance/collaborative-principles/), and [Meeting Procedures](https://community.finos.org/docs/governance/meeting-procedures/).
 
- - [Code of Conduct](#coc)
- - [Issues and Bugs](#issue)
- - [Feature Requests](#feature)
- - [Submission Guidelines](#submit)
- - [Coding Rules](#rules)
+## Contribution Process
 
+Before making a contribution, please take the following steps:
+1. Check whether there's already an open issue related to your proposed contribution. If there is, join the discussion and propose your contribution there.
+2. If there isn't already a relevant issue, create one, describing your contribution and the problem you're trying to solve.
+3. Respond to any questions or suggestions raised in the issue by other developers.
+4. Fork the project repository and prepare your proposed contribution.
+5. Submit a pull request.
 
-## <a name="coc"></a> Code of Conduct
-As contributors and maintainers of this project, we pledge to respect everyone who contributes by posting issues, updating documentation, submitting pull requests, providing feedback in comments, and any other activities.
+NOTE: All contributors must have a contributor license agreement (CLA) on file with FINOS before their pull requests will be merged. Please review the FINOS [contribution requirements](https://community.finos.org/docs/governance/Software-Projects/contribution-compliance-requirements) and submit (or have your employer submit) the required CLA before submitting a pull request.
 
-Communication should be constructive and never resort to personal attacks, trolling, public or private harassment, insults, or other unprofessional conduct.
+## Governance
 
-We promise to extend courtesy and respect to everyone involved in this project. We expect anyone contributing to do the same.
+### Roles
 
-If any member of the community violates this code of conduct, the maintainers of this may take action, removing issues, comments, and PRs as deemed appropriate.
+The project community consists of Contributors and Maintainers:
+* A **Contributor** is anyone who submits a contribution to the project. (Contributions may include code, issues, comments, documentation, media, or any combination of the above.)
+* A **Maintainer** is a Contributor who, by virtue of their contribution history, has been given write access to project repositories and may merge approved contributions.
+* The **Lead Maintainer** is the project's interface with the FINOS team and Board. They are responsible for approving [quarterly project reports](https://community.finos.org/docs/governance/#project-governing-board-reporting) and communicating on behalf of the project. The Lead Maintainer is elected by a vote of the Maintainers.
 
-## <a name="issue"></a> Found a Bug?
-If you find a bug in the source code, you can [submit an issue](#submit-issue) to our [GitHub Repository][github].
-You can get more information about [github issues here].
-Even better, you can [submit a Pull Request](#submit-pr) with a fix.
+### Contribution Rules
 
-## <a name="feature"></a> Missing a Feature?
-You can *request* a new feature by [submitting an issue](#submit-issue) to our GitHub
-Repository. If you would like to *implement* a new feature, please submit an issue with
-a proposal for your work first, to be sure that we can use it.
+Anyone is welcome to submit a contribution to the project. The rules below apply to all contributions. (The key words "MUST", "SHALL", "SHOULD", "MAY", etc. in this document are to be interpreted as described in [IETF RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).)
 
-* For a **Major Feature**, first open an issue and outline your proposal so that it can be
-discussed. This will also allow us to better coordinate our efforts, prevent duplication of work,
-and help you to craft the change so that it is successfully accepted into the project.
-* **Small Features** can be crafted and directly [submitted as a Pull Request](#submit-pr).
+* All contributions MUST be submitted as pull requests, including contributions by Maintainers.
+* All pull requests SHOULD be reviewed by a Maintainer (other than the Contributor) before being merged.
+* Pull requests for non-trivial contributions SHOULD remain open for a review period sufficient to give all Maintainers a sufficient opportunity to review and comment on them.
+* After the review period, if no Maintainer has an objection to the pull request, any Maintainer MAY merge it.
+* If any Maintainer objects to a pull request, the Maintainers SHOULD try to come to consensus through discussion. If not consensus can be reached, any Maintainer MAY call for a vote on the contribution.
 
-## <a name="submit"></a> Submission Guidelines
+### Maintainer Voting
 
-### <a name="submit-issue"></a> Submitting an Issue
+The Maintainers MAY hold votes only when they are unable to reach consensus on an issue. Any Maintainer MAY call a vote on a contested issue, after which Maintainers SHALL have 36 hours to register their votes. Votes SHALL take the form of "+1" (agree), "-1" (disagree), "+0" (abstain). Issues SHALL be decided by the majority of votes cast. If there is only one Maintainer, they SHALL decide any issue otherwise requiring a Maintainer vote. If a vote is tied, the Lead Maintainer MAY cast an additional tie-breaker vote.
 
-Before you submit an issue, please search the issue tracker, maybe an issue for your problem already exists and the discussion might inform you of workarounds readily available.
+The Maintainers SHALL decide the following matters by consensus or, if necessary, a vote:
+* Contested pull requests
+* Election and removal of the Lead Maintainer
+* Election and removal of Maintainers
 
-We want to fix all the issues as soon as possible, but before fixing a bug we need to reproduce and confirm it. In order to reproduce bugs, we ask you to provide us with the necessary information, so that we act without going back & forth to you with additional questions.
+All Maintainer votes MUST be carried out transparently, with all discussion and voting occurring in public, either:
+* in comments associated with the relevant issue or pull request, if applicable;
+* on the project mailing list or other official public communication channel; or
+* during a regular, minuted project meeting.
 
-A minimal reproduction allows us to quickly confirm a bug (or point out a coding problem) as well as confirm that we are fixing the right problem.
+### Maintainer Qualifications
 
-You can file new issues by selecting from our [new issue templates](https://github.com/REGnosys/rosetta-common/issues/new/choose) and filling out the issue template.
+Any Contributor who has made a substantial contribution to the project MAY apply (or be nominated) to become a Maintainer. The existing Maintainers SHALL decide whether to approve the nomination according to the Maintainer Voting process above.
 
-### <a name="submit-pr"></a> Submitting a Pull Request (PR)
-Before you submit your Pull Request (PR) consider the following guidelines:
+### Changes to this Document
 
-1. Search [GitHub](https://github.com/REGnosys/rosetta-common/pulls) for an open or closed PR
-  that relates to your submission. You don't want to duplicate effort.
-1. Be sure that an issue describes the problem you're fixing, or documents the design for the feature you'd like to add.
-   Discussing the design up front helps to ensure that we're ready to accept your work.
-1. Fork the REGnosys/rosetta-common repo.
-   [More information about forking]
-1. Setup a new branch for your changes.
-
-     ```shell
-     git checkout -b cool-feature-branch master
-     ```
-
-1. Create your patch, **including appropriate test cases**.
-1. Follow our [Coding Rules](#rules).
-1. Run the full build at the *parent* level of the project and ensure that all tests pass.
-
-     ```shell
-     ... rosetta-common> mvn clean install
-     ```
-
-1. Commit your changes using [well-formed commit messages][]. This provides consistency throughout the project,
-    and ensures that commit messages are able to be formatted properly and used by various git tools.
-
-     ```shell
-     git commit -a
-     ```
-    Note: the optional commit `-a` command line option will automatically "add" and "rm" edited files.
-
-1. Push your branch to GitHub:
-
-    ```shell
-    git push origin cool-feature-branch
-    ```
-
-1. In GitHub, create a [pull request] to `rosetta-common:master` and choose as reviewer
-    a member of the team
-* If we suggest changes then:
-  * Make the required updates.
-  * Re-run the build to ensure tests are still passing.
-  * Rebase your branch and force push to your GitHub repository (this will update your Pull Request):
-
-    ```shell
-    git rebase master -i
-    git push -f
-    ```
-
-That's it! Thank you for your contribution!
-
-### After your pull request is merged
-
-After your pull request is merged, you can safely delete your branch and pull the changes
-from the main (upstream) repository:
-
-* Delete the remote branch on GitHub either through the GitHub web UI or your local shell as follows:
-
-    ```shell
-    git push origin --delete cool-feature-branch
-    ```
-
-* Check out the master branch:
-
-    ```shell
-    git checkout master -f
-    ```
-
-* Delete the local branch:
-
-    ```shell
-    git branch -D cool-feature-branch
-    ```
-
-* Update your master with the latest upstream version:
-
-    ```shell
-    git pull --ff upstream master
-    ```
-
-## <a name="rules"></a> Coding Rules
-To ensure consistency throughout the source code, keep these rules in mind as you are working:
-
-* All public API methods **should be documented**.
-* We format the code using a version of the built-in Eclipse java formatter (allows for 120 characters line length), which can be imported in both Eclipse and IntelliJ IDEA and check the build with matching [checkstyle rules]. At the moment this does not fail the build, but only produces warning messages; this can change in future releases.
-
-
-[More information about forking]: https://help.github.com/articles/fork-a-repo
-[well-formed commit messages]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
-[pull request]: https://help.github.com/articles/creating-a-pull-request
-[github issues here]:https://guides.github.com/features/issues
-[github]: https://github.com/REGnosys/rosetta-common
-[checkstyle rules]: https://github.com/REGnosys/rosetta-common/tree/master/checkstyle/checkstyle.xml
+This document MAY be amended by a vote of the Maintainers according to the Maintainer Voting process above.

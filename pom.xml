@@ -609,6 +609,14 @@
                     <organizationName>REGnosys</organizationName>
                     <projectName>Rune Common</projectName>
                     <inceptionYear>2018</inceptionYear>
+                    <roots>
+                        <root>src/main/java</root>
+                        <root>src/test</root>
+                    </roots>
+                    <includes>
+                        <include>**/*.java</include>
+                        <include>**/*.xml</include>
+                    </includes>
                 </configuration>
                 <executions>
                     <execution>
@@ -617,12 +625,6 @@
                             <goal>update-file-header</goal>
                         </goals>
                         <phase>process-sources</phase>
-                        <configuration>
-                            <roots>
-                                <root>src/main/java</root>
-                                <root>src/test</root>
-                            </roots>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

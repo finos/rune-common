@@ -35,7 +35,7 @@ For any questions, bugs or feature requests please open an [issue](https://githu
 For anything else please send an email to {project mailing list}.
 
 To submit a contribution:
-1. Fork it (<https://github.com/finos/rune-dsl/fork>)
+1. Fork it (<https://github.com/finos/rune-common/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
 4. Commit your changes (`git commit -am 'Add some fooBar'`)
@@ -49,7 +49,7 @@ _NOTE:_ Commits and pull requests to FINOS repositories will only be accepted fr
 
 ## Get in touch with the Rune Team
 
-Get in touch with the Rune team by creating a [GitHub issue](https://github.com/REGnosys/rosetta-dsl/issues/new) and labelling it with "help wanted".
+Get in touch with the Rune team by creating a [GitHub issue](https://github.com/REGnosys/rosetta-common/issues/new) and labelling it with "help wanted".
 
 We encourage the community to get in touch via the [FINOS Slack](https://www.finos.org/blog/finos-announces-new-community-slack).
 

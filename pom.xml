@@ -616,7 +616,6 @@
                         </goals>
                         <phase>process-sources</phase>
                         <configuration>
-                            <licenseName>apache_v2</licenseName>
                             <organizationName>REGnosys</organizationName>
                             <projectName>Rune Common</projectName>
                             <roots>

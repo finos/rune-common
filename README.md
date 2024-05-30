@@ -2,27 +2,32 @@
 
 # Rune Common
 
-Rune Common is a java library that is utilised by [Rosetta Code Generators](https://github.com/REGnosys/rosetta-code-generators) and models expressed in the [Rune DSL](https://github.com/finos/rune-dsl)
+Rune Common is a java library that is utilised by [Rosetta Code Generators](https://github.com/REGnosys/rosetta-code-generators) and models expressed in the [Rune DSL](https://github.com/finos/rune-dsl).
 
-
-## Getting Started
-
-### Dependencies
+## Installation
 
 You will need Java 11 SDK installed and referenced by the JAVA_HOME environment variable.
-
 You will need [Maven](http://maven.apache.org/) and [Git](https://git-scm.com/) installed and configured in your environment.
-
-
-### Installing
-
 [Fork and clone](https://help.github.com/articles/fork-a-repo) the project in your own workspace. Then run the first build:
 
-
-### Executing program
-
-``` Java
+``` sh
 mvn clean install
+```
+
+## Usage example
+
+Use the transform data structures in your project, e.g., `TestPackModel` or `PipelineModel`.
+
+## Development setup
+
+Add the library to your project using as a maven dependency as shown below:
+
+``` xml
+<dependency>
+    <groupId>com.regnosys</groupId>
+    <artifactId>rosetta-common</artifactId>
+    <version>0.0.0-SNAPSHOT</version>
+</dependency>
 ```
 
 ## Contributing
@@ -50,7 +55,7 @@ We encourage the community to get in touch via the [FINOS Slack](https://www.fin
 
 ## License
 
-Copyright 2019 REGnosys
+Copyright 2024 REGnosys
 
 Distributed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 

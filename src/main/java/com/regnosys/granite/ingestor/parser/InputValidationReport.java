@@ -2,7 +2,7 @@ package com.regnosys.granite.ingestor.parser;
 
 /*-
  * #%L
- * Rune Common
+ * Rosetta Common
  * %%
  * Copyright (C) 2018 - 2024 REGnosys
  * %%

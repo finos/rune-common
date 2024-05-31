@@ -2,7 +2,7 @@ package com.regnosys.rosetta.common.serialisation.json;
 
 /*-
  * #%L
- * Rune Common
+ * Rosetta Common
  * %%
  * Copyright (C) 2018 - 2024 REGnosys
  * %%

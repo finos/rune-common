@@ -607,7 +607,7 @@
                     <verbose>false</verbose>
                     <licenseName>apache_v2</licenseName>
                     <organizationName>REGnosys</organizationName>
-                    <projectName>Rune Common</projectName>
+                    <projectName>Rosetta Common</projectName>
                     <inceptionYear>2018</inceptionYear>
                     <roots>
                         <root>src/main/java</root>

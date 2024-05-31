@@ -31,7 +31,7 @@ Add the library to your project using as a maven dependency as shown below:
 ```
 
 ## Contributing
-For any questions, bugs or feature requests please open an [issue](https://github.com/finos/rune-dsl/issues)
+For any questions, bugs or feature requests please open an [issue](https://github.com/REGnosys/rosetta-common/issues)
 For anything else please send an email to {project mailing list}.
 
 To submit a contribution:
@@ -47,9 +47,9 @@ _NOTE:_ Commits and pull requests to FINOS repositories will only be accepted fr
 * Unsure if you are covered under an existing CCLA? Email [help@finos.org](mailto:help@finos.org)*
 
 
-## Get in touch with the Rune Team
+## Get in touch with the Rosetta Common Team
 
-Get in touch with the Rune team by creating a [GitHub issue](https://github.com/REGnosys/rosetta-common/issues/new) and labelling it with "help wanted".
+Get in touch with the Rosetta Common team by creating a [GitHub issue](https://github.com/REGnosys/rosetta-common/issues/new) and labelling it with "help wanted".
 
 We encourage the community to get in touch via the [FINOS Slack](https://www.finos.org/blog/finos-announces-new-community-slack).
 

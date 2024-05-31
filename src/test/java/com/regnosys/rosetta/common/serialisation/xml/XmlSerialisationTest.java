@@ -127,9 +127,8 @@ public class XmlSerialisationTest {
                 .addFoo(Foo.builder().setXmlValue("foo2").addAttr1(3).build())
                 .build();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.text"), StandardCharsets.UTF_8);
         // Test serialisation
-        String actualXML = licenseHeader + xmlMapper
+        String actualXML = xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(multicardinalityContainer);
         String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/multicardinality-container.xml"), StandardCharsets.UTF_8);

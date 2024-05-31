@@ -17,14 +17,3 @@
   limitations under the License.
   #L%
   -->
-<MulticardinalityContainer>
-  <foo>
-    <XMLValue>foo1</XMLValue>
-    <Attr1>1</Attr1>
-    <Attr1>2</Attr1>
-  </foo>
-  <foo>
-    <XMLValue>foo2</XMLValue>
-    <Attr1>3</Attr1>
-  </foo>
-</MulticardinalityContainer>

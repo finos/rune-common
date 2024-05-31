@@ -1,8 +1,8 @@
 [![FINOS - Incubating](https://cdn.jsdelivr.net/gh/finos/contrib-toolbox@master/images/badge-incubating.svg)](https://community.finos.org/docs/governance/Software-Projects/stages/incubating)
 
-# Rune Common
+# Rosetta Common
 
-Rune Common is a java library that is utilised by [Rosetta Code Generators](https://github.com/REGnosys/rosetta-code-generators) and models expressed in the [Rune DSL](https://github.com/finos/rune-dsl).
+Rosetta Common is a java library that is utilised by [Rosetta Code Generators](https://github.com/REGnosys/rosetta-code-generators) and models expressed in the [Rune DSL](https://github.com/finos/rune-dsl).
 
 ## Installation
 
@@ -35,7 +35,7 @@ For any questions, bugs or feature requests please open an [issue](https://githu
 For anything else please send an email to {project mailing list}.
 
 To submit a contribution:
-1. Fork it (<https://github.com/finos/rune-common/fork>)
+1. Fork it (<https://github.com/finos/Rosetta-Common/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
 4. Commit your changes (`git commit -am 'Add some fooBar'`)

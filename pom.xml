@@ -618,7 +618,7 @@
                         <include>**/*.xml</include>
                     </includes>
                     <processStartTag> ==============</processStartTag>
-                    <sectionDelimiter>--------------</sectionDelimiter>
+                    <sectionDelimiter>==============</sectionDelimiter>
                     <processEndTag>   ==============</processEndTag>
                 </configuration>
                 <executions>

@@ -3,9 +3,9 @@ package com.regnosys.rosetta.common.serialisation.xml;
 /*-
  * ==============
  * Rosetta Common
- * --------------
+ * ==============
  * Copyright (C) 2018 - 2024 REGnosys
- * --------------
+ * ==============
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -127,8 +127,9 @@ public class XmlSerialisationTest {
                 .addFoo(Foo.builder().setXmlValue("foo2").addAttr1(3).build())
                 .build();
 
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
-        String actualXML = xmlMapper
+        String actualXML = licenseHeader + xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(multicardinalityContainer);
         String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/multicardinality-container.xml"), StandardCharsets.UTF_8);

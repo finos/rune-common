@@ -2,7 +2,7 @@ package com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo;
 
 /*-
  * ==============
- * Rosetta Common
+ * Rune Common
  * ==============
  * Copyright (C) 2018 - 2024 REGnosys
  * ==============

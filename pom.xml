@@ -25,7 +25,7 @@
         <version>5</version>
     </parent>
 
-    <name>Rosetta Common</name>
+    <name>Rune Common</name>
     <groupId>com.regnosys</groupId>
     <artifactId>rosetta-common</artifactId>
     <packaging>jar</packaging>
@@ -39,7 +39,7 @@
         <url>https://github.com/REGnosys/rosetta-common</url>
     </scm>
 
-    <description>Rosetta Common is a java library that is utilised by Rosetta Code Generators and models expressed in the Rosetta DSL.</description>
+    <description>Rune Common is a java library that is utilised by Rosetta Code Generators and models expressed in the Rosetta DSL.</description>
 
     <organization>
         <name>REGnosys</name>
@@ -607,7 +607,7 @@
                     <verbose>false</verbose>
                     <licenseName>apache_v2</licenseName>
                     <organizationName>REGnosys</organizationName>
-                    <projectName>Rosetta Common</projectName>
+                    <projectName>Rune Common</projectName>
                     <inceptionYear>2018</inceptionYear>
                     <roots>
                         <root>src/main/java</root>

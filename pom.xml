@@ -25,7 +25,7 @@
         <version>5</version>
     </parent>
 
-    <name>Rune Common</name>
+    <name>Rosetta Common</name>
     <groupId>com.regnosys</groupId>
     <artifactId>rosetta-common</artifactId>
     <packaging>jar</packaging>

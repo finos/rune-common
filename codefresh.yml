@@ -57,13 +57,13 @@ steps:
       - mvn -s settings.xml -U -B clean deploy -P gpg
 
   NotifySlackOnFail:
-    title: Trigger Slack dev channel notification if master build failed
+    title: Trigger Slack dev channel notification if main build failed
     stage: 'finalise'
     image: codefresh/cli
     when:
       branch:
         only:
-          - master
+          - main
       steps:
         - name: Build
           on:
@@ -107,17 +107,17 @@ steps:
       - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
 
   StartNextBuild:
-    title: Build rosetta-components if on master
+    title: Build rosetta-testing if on main
     stage: 'finalise'
     image: codefresh/cli
     when:
       branch:
         only:
-          - master
+          - main
       condition:
         all:
           buildPassed: steps.Build.result == 'success'
           variableDefined: "${{TAG_REPO}} == false"
           skipNextBuild: "${{SKIP_NEXT_BUILD}} == false"
     commands:
-      - codefresh run REGnosys/rosetta-testing/rosetta-testing --branch master --trigger REGnosys/rosetta-testing --detach
+      - codefresh run REGnosys/rosetta-testing/rosetta-testing --branch main --trigger REGnosys/rosetta-testing --detach

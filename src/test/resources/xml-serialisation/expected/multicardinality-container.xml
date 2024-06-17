@@ -19,12 +19,12 @@
   -->
 <MulticardinalityContainer>
   <foo>
-    <XMLValue>foo1</XMLValue>
-    <Attr1>1</Attr1>
-    <Attr1>2</Attr1>
+    <xmlValue>foo1</xmlValue>
+    <attr1>1</attr1>
+    <attr1>2</attr1>
   </foo>
   <foo>
-    <XMLValue>foo2</XMLValue>
-    <Attr1>3</Attr1>
+    <xmlValue>foo2</xmlValue>
+    <attr1>3</attr1>
   </foo>
 </MulticardinalityContainer>

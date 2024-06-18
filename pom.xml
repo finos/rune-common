@@ -29,7 +29,7 @@
     <groupId>com.regnosys</groupId>
     <artifactId>rosetta-common</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.0.master-SNAPSHOT</version>
+    <version>0.0.0.main-SNAPSHOT</version>
     <url>https://github.com/REGnosys/rosetta-common</url>
 
     <scm>

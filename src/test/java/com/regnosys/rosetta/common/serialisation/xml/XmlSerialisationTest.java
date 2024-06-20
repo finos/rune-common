@@ -77,7 +77,7 @@ public class XmlSerialisationTest {
                 .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
         String actualXML = xmlWriter.writeValueAsString(document);
         String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/document.xml"), StandardCharsets.UTF_8);
-        // assertEquals(expectedXML, actualXML);
+        assertEquals(expectedXML, actualXML);
 
         // Test serialised document matches the XSD schema
         xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));

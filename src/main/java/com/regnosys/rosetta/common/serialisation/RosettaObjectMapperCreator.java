@@ -73,7 +73,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     }
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
         boolean supportRosettaEnumValue = true;
-        ObjectMapper base = new XmlMapper();
+        ObjectMapper base = XmlMapper.xmlBuilder().defaultUseWrapper(false).build();
         return new RosettaObjectMapperCreator(new RosettaXMLModule(config, supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {

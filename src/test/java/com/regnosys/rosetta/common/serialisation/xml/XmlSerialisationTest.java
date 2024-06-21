@@ -44,8 +44,6 @@ import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// TODO: enable again:
-@Disabled
 public class XmlSerialisationTest {
     private static final String XSD_SCHEMA = "/xml-serialisation/schema/schema.xsd";
 
@@ -64,6 +62,8 @@ public class XmlSerialisationTest {
                 Resources.getResource("xml-serialisation/xml-config.json").openStream()).create();
     }
 
+    // TODO: enable again:
+    @Disabled
     @Test
     public void testDocumentSerialisation() throws SAXException, IOException {
         // Construct a Document object

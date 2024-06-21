@@ -20,6 +20,8 @@ package com.regnosys.rosetta.common.serialisation.mixin;
  * ==============
  */
 
+import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.rosetta.model.lib.annotations.RosettaEnum;
 import com.rosetta.model.lib.annotations.RosettaEnumValue;
 
@@ -34,47 +36,47 @@ public class RosettaEnumBuilderIntrospector {
 
     public RosettaEnumBuilderIntrospector(boolean supportRosettaEnumValue) {
         if (supportRosettaEnumValue) {
-            this.enumNameFunc = (annotation, javaEnumName) -> annotation.value();
+            this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ? annotation.displayName() : annotation.value();
         } else {
-            this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().equals("") ? annotation.displayName() : javaEnumName;
+            this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ? annotation.displayName() : javaEnumName;
         }
-        this.enumAliasFunc = (annotation, javaEnumName) -> !annotation.displayName().equals("") ?
+        this.enumAliasFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ?
                 new String[]{javaEnumName, annotation.displayName(), annotation.value()}:
                 new String[]{javaEnumName,  annotation.value()};
     }
 
-    public boolean isApplicable(Class<?> enumType) {
+    public boolean isApplicable(AnnotatedClass enumType) {
         return enumType.getAnnotation(RosettaEnum.class) != null;
     }
 
-    public void findEnumValues(Class<?> enumType, Enum<?>[] enumValues, String[] names) {
-        Stream.of(enumType.getDeclaredFields())
-                .filter(Field::isEnumConstant)
-                .filter(f -> f.getAnnotation(RosettaEnumValue.class) != null)
-                .forEach(f -> {
-                    RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
-                    final String name = f.getName();
-                    for (int i = 0, end = enumValues.length; i < end; ++i) {
-                        if (name.equals(enumValues[i].name())) {
-                            names[i] = enumNameFunc.apply(annotation, name);
-                        }
+    public void findEnumValues(AnnotatedClass enumType, Enum<?>[] enumValues, String[] names) {
+        for (AnnotatedField f : enumType.fields()) {
+            if (f.hasAnnotation(RosettaEnumValue.class)) {
+                RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
+                final String name = f.getName();
+                for (int i = 0, end = enumValues.length; i < end; ++i) {
+                    if (name.equals(enumValues[i].name())) {
+                        names[i] = enumNameFunc.apply(annotation, name);
+                        break;
                     }
-                });
+                }
+            }
+        }
     }
 
-    public void findEnumAliases(Class<?> enumType, Enum<?>[] enumValues, String[][] aliasList) {
-        Stream.of(enumType.getDeclaredFields())
-                .filter(Field::isEnumConstant)
-                .filter(f -> f.getAnnotation(RosettaEnumValue.class) != null)
-                .forEach(f -> {
-                    RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
-                    final String name = f.getName();
-                    for (int i = 0, end = enumValues.length; i < end; ++i) {
-                        if (name.equals(enumValues[i].name())) {
-                            aliasList[i] = enumAliasFunc.apply(annotation, name);
-                        }
+    public void findEnumAliases(AnnotatedClass enumType, Enum<?>[] enumValues, String[][] aliasList) {
+        for (AnnotatedField f : enumType.fields()) {
+            if (f.hasAnnotation(RosettaEnumValue.class)) {
+                RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
+                final String name = f.getName();
+                for (int i = 0, end = enumValues.length; i < end; ++i) {
+                    if (name.equals(enumValues[i].name())) {
+                        aliasList[i] = enumAliasFunc.apply(annotation, name);
+                        break;
                     }
-                });
+                }
+            }
+        }
     }
 
 

@@ -248,7 +248,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     @Override
-    public String[] findEnumValues(Class<?> enumType, Enum<?>[] enumValues, String[] names) {
+    public String[] findEnumValues(MapperConfig<?> config, AnnotatedClass enumType,
+                                   Enum<?>[] enumValues, String[] names) {
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
         } else {
@@ -258,11 +259,12 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     @Override
-    public void findEnumAliases(Class<?> enumType, Enum<?>[] enumValues, String[][] aliasList) {
+    public void findEnumAliases(MapperConfig<?> config, AnnotatedClass enumType,
+                                Enum<?>[] enumValues, String[][] aliasList) {
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumAliases(enumType, enumValues, aliasList);
         } else {
-            super.findEnumAliases(enumType, enumValues, aliasList);
+            super.findEnumAliases(config, enumType, enumValues, aliasList);
         }
     }
 

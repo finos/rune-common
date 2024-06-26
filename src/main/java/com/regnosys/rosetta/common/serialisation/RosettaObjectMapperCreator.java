@@ -73,7 +73,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     }
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
         boolean supportRosettaEnumValue = true;
-        ObjectMapper base = XmlMapper.xmlBuilder().defaultUseWrapper(false).build();
+        ObjectMapper base = XmlMapper.xmlBuilder().defaultUseWrapper(false).build(); // TODO: enable default wrapping after this issue is resolved: https://github.com/FasterXML/jackson-databind/issues/4595
         return new RosettaObjectMapperCreator(new RosettaXMLModule(config, supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {

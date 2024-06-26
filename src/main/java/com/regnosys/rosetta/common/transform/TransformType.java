@@ -25,7 +25,8 @@ import java.util.function.Function;
 public enum TransformType {
     TRANSLATE("translate", "TBD"),
     PROJECTION("projection", "projections.%sProjectionTabulator"),
-    REPORT("regulatory-reporting", "reports.%sReportTabulator", stripReportFunctionName());
+    REPORT("regulatory-reporting", "reports.%sReportTabulator", stripReportFunctionName()),
+    ENRICH("enrich", null);
 
     private final String resourcePath;
     private final String tabulatorName;

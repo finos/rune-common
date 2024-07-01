@@ -107,7 +107,7 @@ steps:
       - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
 
   StartNextBuild:
-    title: Build rune-testing if on main
+    title: Build Rune-testing if on main
     stage: 'finalise'
     image: codefresh/cli
     when:

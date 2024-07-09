@@ -53,6 +53,9 @@ public enum TransformType {
         return resourcePath;
     }
 
+    /**
+     * @deprecated custom tabulator names have been deprecated in favour of having a common naming convention for tabulators
+     */
     @Deprecated
     public String getTabulatorName(String functionName) {
         if (tabulatorName == null) {

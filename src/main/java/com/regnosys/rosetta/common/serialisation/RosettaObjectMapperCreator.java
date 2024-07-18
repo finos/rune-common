@@ -54,7 +54,6 @@ import java.util.Collections;
  */
 public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
-    private final boolean supportRosettaEnumValue;
     private final Module rosettaModule;
     private final ObjectMapper baseMapper;
 
@@ -62,8 +61,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
      * If the supportNativeEnumValue is set to true, then the Logical Model enumerations will be used to
      * read and write the enums rather than the Java enum names which are upper case by convention.
      */
-    public RosettaObjectMapperCreator(boolean supportRosettaEnumValue, Module rosettaModule, ObjectMapper baseMapper) {
-        this.supportRosettaEnumValue = supportRosettaEnumValue;
+    public RosettaObjectMapperCreator(Module rosettaModule, ObjectMapper baseMapper) {
         this.rosettaModule = rosettaModule;
         this.baseMapper = baseMapper;
     }
@@ -71,12 +69,12 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     public static RosettaObjectMapperCreator forJSON() {
         boolean supportRosettaEnumValue = true;
         ObjectMapper base = new ObjectMapper();
-        return new RosettaObjectMapperCreator(supportRosettaEnumValue, new RosettaJSONModule(supportRosettaEnumValue), base);
+        return new RosettaObjectMapperCreator(new RosettaJSONModule(supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
         boolean supportRosettaEnumValue = true;
-        ObjectMapper base = new XmlMapper();
-        return new RosettaObjectMapperCreator(supportRosettaEnumValue, new RosettaXMLModule(config, supportRosettaEnumValue), base);
+        ObjectMapper base = XmlMapper.xmlBuilder().defaultUseWrapper(false).build(); // TODO: enable default wrapping after this issue is resolved: https://github.com/FasterXML/jackson-databind/issues/4595
+        return new RosettaObjectMapperCreator(new RosettaXMLModule(config, supportRosettaEnumValue), base);
     }
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {
         ObjectMapper xmlConfigurationMapper = new ObjectMapper()
@@ -118,10 +116,6 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
                 .setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
 
-        if (supportRosettaEnumValue) {
-            mapper.enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING);
-            mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
-        }
         return mapper;
     }
 }

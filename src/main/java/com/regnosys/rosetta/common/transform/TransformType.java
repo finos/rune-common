@@ -23,9 +23,10 @@ package com.regnosys.rosetta.common.transform;
 import java.util.function.Function;
 
 public enum TransformType {
-    TRANSLATE("translate", "TBD"),
+    TRANSLATE("translate", null),
     PROJECTION("projection", "projections.%sProjectionTabulator"),
-    REPORT("regulatory-reporting", "reports.%sReportTabulator", stripReportFunctionName());
+    REPORT("regulatory-reporting", "reports.%sReportTabulator", stripReportFunctionName()),
+    ENRICH("enrich", null);
 
     private final String resourcePath;
     private final String tabulatorName;
@@ -52,7 +53,14 @@ public enum TransformType {
         return resourcePath;
     }
 
+    /**
+     * @deprecated custom tabulator names have been deprecated in favour of having a common naming convention for tabulators
+     */
+    @Deprecated
     public String getTabulatorName(String functionName) {
+        if (tabulatorName == null) {
+            throw new UnsupportedOperationException(String.format("Cannot get tabulator name from TransformType.%s", name()));
+        }
         return String.format(tabulatorName, transformFunctionName.apply(functionName));
     }
 

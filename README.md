@@ -1,8 +1,10 @@
+[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/regnosysops/FINOS%2Frune-common?type=cf-1)]( https://g.codefresh.io/public/accounts/regnosysops/pipelines/new/667e8e2a5151928589be94bf)
+
 [![FINOS - Incubating](https://cdn.jsdelivr.net/gh/finos/contrib-toolbox@master/images/badge-incubating.svg)](https://community.finos.org/docs/governance/Software-Projects/stages/incubating)
 
 # Rune Common
 
-Rune Common is a java library that is utilised by [Rosetta Code Generators](https://github.com/REGnosys/rosetta-code-generators) and models expressed in the [Rune DSL](https://github.com/finos/rune-dsl).
+Rune Common is a java library that is utilised by [Rune Code Generators](https://github.com/REGnosys/rosetta-code-generators) and models expressed in the [Rune DSL](https://github.com/finos/rune-dsl) the main `Rune` project.
 
 ## Installation
 
@@ -35,7 +37,7 @@ For any questions, bugs or feature requests please open an [issue](https://githu
 For anything else please send an email to {project mailing list}.
 
 To submit a contribution:
-1. Fork it (<https://github.com/finos/rune-common/fork>)
+1. Fork it (<https://github.com/REGnosys/rosetta-common/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
 4. Commit your changes (`git commit -am 'Add some fooBar'`)

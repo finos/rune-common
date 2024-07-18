@@ -57,13 +57,13 @@ steps:
       - mvn -s settings.xml -U -B clean deploy -P gpg
 
   NotifySlackOnFail:
-    title: Trigger Slack dev channel notification if master build failed
+    title: Trigger Slack dev channel notification if main build failed
     stage: 'finalise'
     image: codefresh/cli
     when:
       branch:
         only:
-          - master
+          - main
       steps:
         - name: Build
           on:
@@ -102,22 +102,22 @@ steps:
           isRelease: "${{TAG_REPO}}"
     commands:
       - echo This is a release build, tag repos with release name [${{RELEASE_NAME}}]
-      - git fetch --prune https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git "+refs/tags/*:refs/tags/*"
+      - git fetch --prune https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/finos/${{CF_REPO_NAME}}.git "+refs/tags/*:refs/tags/*"
       - git tag ${{RELEASE_NAME}}
-      - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
+      - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/finos/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
 
   StartNextBuild:
-    title: Build rosetta-components if on master
+    title: Build Rune-testing if on main
     stage: 'finalise'
     image: codefresh/cli
     when:
       branch:
         only:
-          - master
+          - main
       condition:
         all:
           buildPassed: steps.Build.result == 'success'
           variableDefined: "${{TAG_REPO}} == false"
           skipNextBuild: "${{SKIP_NEXT_BUILD}} == false"
     commands:
-      - codefresh run REGnosys/rosetta-testing/rosetta-testing --branch master --trigger REGnosys/rosetta-testing --detach
+      - codefresh run FINOS/rune-testing --branch main --trigger finos/rune-testing/push --detach

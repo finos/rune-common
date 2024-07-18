@@ -29,7 +29,7 @@
     <groupId>com.regnosys</groupId>
     <artifactId>rosetta-common</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.0.master-SNAPSHOT</version>
+    <version>0.0.0.main-SNAPSHOT</version>
     <url>https://github.com/REGnosys/rosetta-common</url>
 
     <scm>
@@ -94,18 +94,17 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>10</stagingTimeoutInMinutes>
 
-        <reflections.version>0.9.11</reflections.version>
         <!-- Also to be changed in rosetta-products->persistence -->
-        <jackson.version>2.15.2</jackson.version>
+        <jackson.version>2.17.1</jackson.version>
         <guice.version>5.0.1</guice.version>
         <guava.version>32.0.1-jre</guava.version>
-        <slf4j-api.version>2.0.7</slf4j-api.version>
+        <slf4j-api.version>2.0.13</slf4j-api.version>
         <commons.io.version>2.11.0</commons.io.version>
         <xtext.version>2.27.0</xtext.version>
 
         <!-- test -->
-        <junit.version>5.9.1</junit.version>
-        <mockito.version>5.1.1</mockito.version>
+        <junit.version>5.10.2</junit.version>
+        <mockito.version>5.12.0</mockito.version>
         <hamcrest.version>2.2</hamcrest.version>
         <logback.version>1.4.7</logback.version>
 
@@ -197,11 +196,6 @@
                 <groupId>com.regnosys.rosetta</groupId>
                 <artifactId>com.regnosys.rosetta.lib</artifactId>
                 <version>${rosetta.dsl.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.reflections</groupId>
-                <artifactId>reflections</artifactId>
-                <version>${reflections.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -325,10 +319,6 @@
         <dependency>
             <groupId>com.regnosys.rosetta</groupId>
             <artifactId>com.regnosys.rosetta.lib</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

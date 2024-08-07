@@ -24,11 +24,12 @@ import java.util.function.Function;
 
 public enum TransformType {
     PRE_TRANSLATE("translate/pre"),
-    TRANSLATE("translate"),
+    TRANSLATE("translate", null),
+    TRANSLATE_1_5("ingestions", null),
     POST_TRANSLATE("translate/post"),
 
     PRE_ENRICH("enrich/pre"),
-    ENRICH("enrich"),
+    ENRICH("enrich", null),
     POST_ENRICH("enrich/post"),
 
     PRE_REPORT("regulatory-reporting/pre", "reports.%sReportTabulator", stripReportFunctionName()),

@@ -23,10 +23,11 @@ package com.regnosys.rosetta.common.transform;
 import java.util.function.Function;
 
 public enum TransformType {
+    TRANSLATE_1_5("ingestions", null),
     TRANSLATE("translate", null),
-    PROJECTION("projection", "projections.%sProjectionTabulator"),
+    ENRICH("enrich", null),
     REPORT("regulatory-reporting", "reports.%sReportTabulator", stripReportFunctionName()),
-    ENRICH("enrich", null);
+    PROJECTION("projection", "projections.%sProjectionTabulator");
 
     private final String resourcePath;
     private final String tabulatorName;

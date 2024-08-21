@@ -99,6 +99,12 @@ public class Path {
         return Path.valueOf("*").append(this);
     }
 
+    public Path trimFirst() {
+        LinkedList<PathElement> elements = new LinkedList<>(getElements());
+        elements.removeFirst();
+        return new Path(elements);
+    }
+    
     /**
      * return true if the all the elements of this path are the start of the other path
      * matching only on the name

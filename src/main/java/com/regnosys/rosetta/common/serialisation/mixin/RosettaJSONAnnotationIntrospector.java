@@ -21,15 +21,18 @@ package com.regnosys.rosetta.common.serialisation.mixin;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.*;
+import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.regnosys.rosetta.common.serialisation.BackwardsCompatibleAnnotationIntrospector;
 import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.meta.RosettaProxy;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -107,11 +110,24 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
         return findPropertyIgnorals(ann);
     }
 
+    @Override
+    public NameTransformer findUnwrappingNameTransformer(AnnotatedMember member)
+    {
+        if (RosettaProxy.class.isAssignableFrom(member.getDeclaringClass()) && member.getName().equals("getInstance")) {
+            return NameTransformer.simpleTransformer("", "");
+        }
+        return super.findUnwrappingNameTransformer(member);
+    }
+
     @Deprecated
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
         if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
             AnnotatedClass acc = (AnnotatedClass) ac;
+            if (RosettaProxy.class.isAssignableFrom(ac.getRawType())) {
+                Set<String> ignored = getPropertyNames(acc, x -> !x.getName().equals("getInstance"));
+                return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
+            }
             Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
             Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));
             ignored.removeAll(includes);

@@ -21,7 +21,7 @@ package com.regnosys.rosetta.common.serialisation;
  */
 
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
+//import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 
 /**
  * Returns a pre-configured {@link ObjectMapper} that serves as the default when
@@ -42,7 +42,7 @@ public class RosettaObjectMapper {
      * Creating new RosettaObjectMapper instances is expensive, use the singleton instance if possible.
      */
     public static ObjectMapper getNewRosettaObjectMapper() {
-        return getNewMinimalRosettaObjectMapper()
-                .registerModule(new BlackbirdModule());
+        return getNewMinimalRosettaObjectMapper();
+               // .registerModule(new BlackbirdModule());
     }
 }

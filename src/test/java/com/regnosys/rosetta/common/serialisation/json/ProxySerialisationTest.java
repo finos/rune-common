@@ -58,15 +58,15 @@ public class ProxySerialisationTest {
                 "        attr1 string (0..1)\n" +
                 "        attr2 string (0..1)\n";
 
-        String expectedJson = "{\"attr1\":\"foo\",\"attr2\":\"bar\"}";
+        String expectedJson = "{\"@referenceKey\":\"key\",\"attr1\":\"foo\",\"attr2\":\"bar\"}";
 
         HashMap<String, String> generatedCode = codeGeneratorTestHelper.generateCode(rosetta);
         Map<String, Class<?>> compiledCode = codeGeneratorTestHelper.compileToClasses(generatedCode);
 
         Class<?> compiledClass = compiledCode.get("com.rosetta.test.model.A");
 
-        Object value = mapper.readValue(expectedJson, compiledClass);
-        Object proxy = referenceService.register(value, "key", (Class<Object>)compiledClass);
+        RosettaModelObject value = (RosettaModelObject) mapper.readValue(expectedJson, compiledClass);
+        RosettaModelObject proxy = referenceService.register(value, "key", (Class<RosettaModelObject>)compiledClass);
 
         String actualJson = mapper.writeValueAsString(proxy);
         assertJsonEquals(expectedJson, actualJson);

@@ -32,6 +32,7 @@ import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.meta.RosettaOriginalProxy;
 import com.rosetta.model.lib.meta.RosettaProxy;
 
 import java.util.*;
@@ -71,6 +72,11 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     public PropertyName findNameForSerialization(Annotated a) {
         if (a.hasAnnotation(RosettaAttribute.class)) {
             return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
+        } else if (a instanceof AnnotatedMethod) {
+            AnnotatedMethod m = (AnnotatedMethod) a;
+            if (RosettaProxy.class.isAssignableFrom(m.getDeclaringClass()) && m.getName().equals("getKey")) {
+                return new PropertyName("@referenceKey");
+            }
         }
         return super.findNameForSerialization(a);
     }
@@ -125,7 +131,12 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
         if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
             AnnotatedClass acc = (AnnotatedClass) ac;
             if (RosettaProxy.class.isAssignableFrom(ac.getRawType())) {
-                Set<String> ignored = getPropertyNames(acc, x -> !x.getName().equals("getInstance"));
+                Set<String> includedNames = new HashSet<>();
+                includedNames.add("getKey");
+                if (RosettaOriginalProxy.class.isAssignableFrom(ac.getRawType())) {
+                    includedNames.add("getInstance");
+                }
+                Set<String> ignored = getPropertyNames(acc, x -> !includedNames.contains(x.getName()));
                 return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
             }
             Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));

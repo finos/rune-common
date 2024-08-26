@@ -58,18 +58,23 @@ public class ProxySerialisationTest {
                 "        attr1 string (0..1)\n" +
                 "        attr2 string (0..1)\n";
 
-        String expectedJson = "{\"@referenceKey\":\"key\",\"attr1\":\"foo\",\"attr2\":\"bar\"}";
+        String expectedJson = "{\"@referenceKey\":\"key\"}";
+        String expectedOriginalJson = "{\"attr1\":\"foo\",\"attr2\":\"bar\"}";
 
         HashMap<String, String> generatedCode = codeGeneratorTestHelper.generateCode(rosetta);
         Map<String, Class<?>> compiledCode = codeGeneratorTestHelper.compileToClasses(generatedCode);
 
-        Class<?> compiledClass = compiledCode.get("com.rosetta.test.model.A");
+        Class<RosettaModelObject> compiledClass = (Class<RosettaModelObject>)compiledCode.get("com.rosetta.test.model.A");
 
-        RosettaModelObject value = (RosettaModelObject) mapper.readValue(expectedJson, compiledClass);
-        RosettaModelObject proxy = referenceService.register(value, "key", (Class<RosettaModelObject>)compiledClass);
+        RosettaModelObject value = mapper.readValue(expectedOriginalJson, compiledClass);
+        RosettaModelObject originalInstance = referenceService.register(value, "key", compiledClass);
+        RosettaModelObject proxy = referenceService.getProxy("key", compiledClass);
 
         String actualJson = mapper.writeValueAsString(proxy);
         assertJsonEquals(expectedJson, actualJson);
+
+        String actualOriginalJson = mapper.writeValueAsString(originalInstance);
+        assertJsonEquals(expectedOriginalJson, actualOriginalJson);
     }
 
     private void assertJsonEquals(String expectedJson, String actualJson) throws JsonProcessingException {

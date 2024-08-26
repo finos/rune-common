@@ -132,9 +132,10 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
             AnnotatedClass acc = (AnnotatedClass) ac;
             if (RosettaProxy.class.isAssignableFrom(ac.getRawType())) {
                 Set<String> includedNames = new HashSet<>();
-                includedNames.add("getKey");
                 if (RosettaOriginalProxy.class.isAssignableFrom(ac.getRawType())) {
                     includedNames.add("getInstance");
+                } else {
+                    includedNames.add("getKey");
                 }
                 Set<String> ignored = getPropertyNames(acc, x -> !includedNames.contains(x.getName()));
                 return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
@@ -152,7 +153,7 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
-                .map(m -> BeanUtil.getPropertyName(m.getAnnotated()))
+                .map(m -> m.getName().equals("getKey") ? "@referenceKey" : BeanUtil.getPropertyName(m.getAnnotated()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }

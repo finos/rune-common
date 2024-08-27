@@ -52,7 +52,7 @@ public class RosettaObjectCollectorProcessStep<B extends RosettaModelObject> imp
 	public <T extends RosettaModelObject> RosettaObjectCollectorProcessReport<B> runProcessStep(Class<? extends T> topClass, T instance) {
 		List<B> collectedObjects = new ArrayList<>();
 		RosettaObjectCollectorProcess<B> process = new RosettaObjectCollectorProcess<>(collectRosettaType, collectedObjects);
-		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+		RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
 		process.processRosetta(path, topClass, instance, null);
 		instance.process(path, process);
 		return new RosettaObjectCollectorProcessReport<>(instance, collectedObjects);

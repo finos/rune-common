@@ -49,10 +49,10 @@ public class RosettaTypeValidator implements PostProcessStep {
 
 	@Override
 	public <T extends RosettaModelObject> ValidationReport runProcessStep(Class<? extends T> topClass, T instance) {
-		LOGGER.debug("Running validation for " + topClass.getSimpleName());
+		LOGGER.debug("Running validation for " + instance.getType().getSimpleName());
 		ValidationReport report = new ValidationReport(instance, new ArrayList<>());
 		RosettaTypeProcessor processor = new RosettaTypeProcessor(report);
-		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+		RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
 		processor.processRosetta(path, topClass, instance, null);
 		instance.process(path, processor);
 		return report;

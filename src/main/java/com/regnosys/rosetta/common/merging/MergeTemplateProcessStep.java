@@ -64,7 +64,7 @@ public class MergeTemplateProcessStep implements PostProcessStep {
 	@Override
 	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<? extends T> topClass, T instance) {
 		MergeTemplateBuilderProcessor process = new MergeTemplateBuilderProcessor();
-		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+		RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
 		RosettaModelObjectBuilder builder= instance.toBuilder();
 		process.processRosetta(path, topClass, builder, null);
 		builder.process(path, process);

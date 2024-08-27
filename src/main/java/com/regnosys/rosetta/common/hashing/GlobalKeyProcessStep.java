@@ -65,7 +65,7 @@ public class GlobalKeyProcessStep implements PostProcessStep {
 		RosettaModelObjectBuilder builder = instance.toBuilder();
 		KeyPostProcessReport thisReport = new KeyPostProcessReport(builder, new HashMap<>());
 		ReKeyProcessor reKeyProcessor = new ReKeyProcessor(thisReport);
-		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+		RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
 		reKeyProcessor.processRosetta(path, topClass, builder, null);
 		builder.process(path, reKeyProcessor);
 		return thisReport;

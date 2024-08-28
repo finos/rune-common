@@ -72,11 +72,6 @@ public class RegReportPaths extends RegPaths {
                 .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
     }
 
-    public static Path getReportExpectationFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName, Path inputPath) {
-        return getOutputDataSetPath(outputPath, reportIdentifier, dataSetName)
-                .resolve(inputPath.getFileName().toString().replace(".json", REPORT_FILE_NAME_SUFFIX));
-    }
-
 
     @Deprecated
     public static String legacyDirectoryName(ModelReportId id) {

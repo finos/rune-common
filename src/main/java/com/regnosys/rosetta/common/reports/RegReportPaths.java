@@ -30,7 +30,6 @@ import java.nio.file.Paths;
 public class RegReportPaths extends RegPaths {
 
     public static final Path REGULATORY_REPORTING_PATH = Paths.get("regulatory-reporting");
-    public static final String REPORT_EXPECTATIONS_FILE_NAME = "report-expectations.json";
 
 
     public static RegReportPaths get(Path resourcesPath) {
@@ -57,10 +56,6 @@ public class RegReportPaths extends RegPaths {
         super(rootPath, input, output, config, lookup);
     }
 
-    public static Path getReportExpectationsFilePath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
-        return getOutputDataSetPath(outputPath, reportIdentifier, dataSetName).resolve(REPORT_EXPECTATIONS_FILE_NAME);
-    }
-
     @Deprecated
     public static Path getLegacyReportPath(Path outputPath, ModelReportId reportIdentifier) {
         return outputPath.resolve(legacyDirectoryName(reportIdentifier));
@@ -72,7 +67,6 @@ public class RegReportPaths extends RegPaths {
                 .resolve(inputPath.getFileName().toString().replace(".json", KEY_VALUE_FILE_NAME_SUFFIX));
     }
 
-
     @Deprecated
     public static String legacyDirectoryName(ModelReportId id) {
         return id.joinRegulatoryReference("", "-")
@@ -83,5 +77,4 @@ public class RegReportPaths extends RegPaths {
     public static Path getLegacyReportDataSetPath(Path outputPath, ModelReportId reportIdentifier, String dataSetName) {
         return getLegacyReportPath(outputPath, reportIdentifier).resolve(directoryNameOfDataset(dataSetName));
     }
-
 }

@@ -40,6 +40,11 @@ import java.util.stream.Collectors;
 
 public class TestPackUtils {
     public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
+    public static final Path PROJECTION_ISO20022_PATH = PROJECTION_PATH.resolve("iso-20022");
+
+    @Deprecated //This should not be used as the new test pack configs are not generated in ISO-20022 folder
+    public static final Path PROJECTION_CONFIG_PATH = PROJECTION_ISO20022_PATH.resolve("config");
+    public static final Path PROJECTION_OUTPUT_PATH = PROJECTION_ISO20022_PATH.resolve("output");
 
     public static final Path PROJECTION_CONFIG_PATH_WITHOUT_ISO20022 = PROJECTION_PATH.resolve("config");
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");

@@ -67,9 +67,9 @@ public class ValidationReport implements PostProcessorReport, Processor.Report {
 	public void logReport() {
 		for (ValidationResult<?> validationResult : validationResults) {
 			if (!validationResult.isSuccess()) {
-				LOGGER.error(validationResult.toString());
-			} else {
 				LOGGER.debug(validationResult.toString());
+			} else {
+				LOGGER.trace(validationResult.toString());
 			}
 		}
 	}

@@ -49,13 +49,12 @@ public class ClassPathUtils {
      * @param classLoader          Classloader to search in.
      * @return
      */
-
     public static List<Path> findPathsFromClassPath(Collection<String> classPathDirectories, String includeRegex, Optional<String> excludeRegex, ClassLoader classLoader) {
         List<Path> modelPaths = classPathDirectories.stream().flatMap(path -> loadFromClasspath(path, classLoader))
                 .collect(Collectors.toList());
         List<Path> expandedModelPaths = expandPaths(modelPaths, includeRegex, excludeRegex);
-        LOGGER.debug("Using paths:" + expandedModelPaths);
-        expandedModelPaths.forEach(x -> LOGGER.debug("   " + x));
+        LOGGER.trace("Using paths: {}", expandedModelPaths);
+        expandedModelPaths.forEach(x -> LOGGER.trace("   {}", x));
         return expandedModelPaths;
     }
 

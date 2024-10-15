@@ -66,6 +66,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
+    private MapperConfig<?> lastConfig = null;
+
 
     public RosettaXMLAnnotationIntrospector(final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
         this(rosettaXMLConfiguration, new RosettaEnumBuilderIntrospector(supportNativeEnumValue), new EnumAsStringBuilderIntrospector());
@@ -75,6 +77,19 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
+    }
+
+    private MapperConfig<?> getLastConfig() {
+        if (lastConfig == null) {
+            throw new IllegalStateException("No last config available");
+        }
+        return lastConfig;
+    }
+
+    @Override
+    public Boolean hasAsKey(MapperConfig<?> config, Annotated a) {
+        lastConfig = config;
+        return super.hasAsKey(config, a);
     }
 
     @Override
@@ -110,13 +125,13 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     protected PropertyName _findXmlName(Annotated a) {
-        if (this.shouldUseDefaultPropertyName(a)) {
+        if (this.shouldUseDefaultPropertyName(getLastConfig(), a)) {
             // This is an edge case to conform to the same behaviour as the @JacksonXmlText annotation
             // in case where the attribute should be rendered as an XML value.
             return PropertyName.USE_DEFAULT;
         }
         // If the XML name is specified in the XML configuration, use that.
-        return this.getAttributeXMLConfiguration(a)
+        return this.getAttributeXMLConfiguration(getLastConfig(), a)
                 .flatMap(AttributeXMLConfiguration::getXmlName)
                 .map(PropertyName::construct)
                 .orElseGet(
@@ -126,8 +141,9 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 );
     }
 
-    private boolean shouldUseDefaultPropertyName(Annotated a) {
-        return getAttributeXMLConfiguration(a)
+    private boolean shouldUseDefaultPropertyName(MapperConfig<?> config, Annotated a) {
+        lastConfig = config;
+        return getAttributeXMLConfiguration(config, a)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                 .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
                 .orElse(false);
@@ -135,6 +151,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass ac, List<BeanPropertyWriter> properties) {
+        lastConfig = config;
         getTypeXMLConfiguration(ac)
                 .ifPresent(typeXMLConfiguration -> {
                     typeXMLConfiguration.getXmlAttributes().ifPresent(xmlAttributes -> {
@@ -172,12 +189,13 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public Boolean isOutputAsAttribute(MapperConfig<?> config, Annotated ann) {
+        lastConfig = config;
         if (ann instanceof VirtualXMLAttribute) {
             // Edge case: manually constructed `VirtualXMLAttribute` instances should be rendered as attributes.
             return true;
         }
         // If the XML representation for this member equals ATTRIBUTE, render it as an attribute.
-        return getAttributeXMLConfiguration(ann)
+        return getAttributeXMLConfiguration(config, ann)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                 .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.ATTRIBUTE)
                 .orElseGet(() -> super.isOutputAsAttribute(config, ann));
@@ -185,8 +203,9 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public Boolean isOutputAsText(MapperConfig<?> config, Annotated ann) {
+        lastConfig = config;
         // If the XML representation for this member equals VALUE, render it as a value.
-        return getAttributeXMLConfiguration(ann)
+        return getAttributeXMLConfiguration(config, ann)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                 .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
                 .orElseGet(() -> super.isOutputAsText(config, ann));
@@ -205,6 +224,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
+        lastConfig = config;
         // For the root element, ignore the xsi:schemaLocation attribute.
         JsonIgnoreProperties.Value ignoreProps = super.findPropertyIgnoralByName(config, a);
         return Optional.of(a)
@@ -250,6 +270,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     @Override
     public String[] findEnumValues(MapperConfig<?> config, AnnotatedClass enumType,
                                    Enum<?>[] enumValues, String[] names) {
+        lastConfig = config;
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
         } else {
@@ -261,6 +282,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     @Override
     public void findEnumAliases(MapperConfig<?> config, AnnotatedClass enumType,
                                 Enum<?>[] enumValues, String[][] aliasList) {
+        lastConfig = config;
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumAliases(enumType, enumValues, aliasList);
         } else {
@@ -268,19 +290,19 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
     }
 
-    private AnnotatedClass getEnclosingAnnotatedClass(AnnotatedMember member) {
+    private AnnotatedClass getEnclosingAnnotatedClass(MapperConfig<?> config, AnnotatedMember member) {
         // TODO: get rid of use of deprecated API, see issue https://github.com/FasterXML/jackson-databind/issues/4141
-        return (AnnotatedClass) member.getTypeContext();
+        return AnnotatedClassResolver.resolve(config, member.getType(), config);
     }
 
-    private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(Annotated a) {
+    private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(MapperConfig<?> config, Annotated a) {
         return Optional.of(a)
                 .filter(annotated -> annotated instanceof AnnotatedMember)
                 .map(annotated -> (AnnotatedMember) annotated)
                 .flatMap(annotatedMember ->
                         Optional.ofNullable(annotatedMember.getAnnotation(RosettaAttribute.class))
                                 .flatMap(rosettaAttributeAnnotation ->
-                                        getTypeXMLConfiguration(getEnclosingAnnotatedClass(annotatedMember))
+                                        getTypeXMLConfiguration(getEnclosingAnnotatedClass(config, annotatedMember))
                                                 .flatMap(TypeXMLConfiguration::getAttributes)
                                                 .map(attributeMap -> attributeMap.get(rosettaAttributeAnnotation.value())))
                 );

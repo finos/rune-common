@@ -48,7 +48,7 @@ public class ReKeyProcessStep implements PostProcessStep {
 
 	@Override
 	public <T extends RosettaModelObject> PostProcessorReport runProcessStep(Class<? extends T> topClass, T instance) {
-		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+		RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
 		RosettaModelObjectBuilder builder = instance.toBuilder();
 		ReKeyPostProcessReport report = new ReKeyPostProcessReport(builder);
 		ReKeyProcessor processor = new ReKeyProcessor(report, keyProcessor.runProcessStep(topClass, instance));

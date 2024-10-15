@@ -54,7 +54,7 @@ public class QualifyProcessorStep implements PostProcessStep {
 
 	@Override
 	public <T extends RosettaModelObject> QualificationReport runProcessStep(Class<? extends T> topClass, T instance) {
-		RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+		RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
 		RosettaModelObjectBuilder builder = (RosettaModelObjectBuilder) instance;
 
 		List<QualificationResult> collectedResults = new ArrayList<>();

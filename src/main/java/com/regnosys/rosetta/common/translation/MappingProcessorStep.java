@@ -80,16 +80,11 @@ public class MappingProcessorStep implements PostProcessStep {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		RosettaModelObjectBuilder builder = instance.toBuilder();
 		Future<?> mappingsFuture = executor.submit(() -> {
-			RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+			RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
 			for (MappingDelegate mapper : mappingDelegates) {
 				LOGGER.debug("Running mapper {} for model path {}", mapper.getClass().getSimpleName(), mapper.getModelPath());
-				long t0 = System.currentTimeMillis();
 				MappingBuilderProcessor processor = new MappingBuilderProcessor(mapper);
 				processor.processRosetta(path, topClass, builder, null);
-				long t = System.currentTimeMillis() - t0;
-				if (t > 200) {
-					LOGGER.debug("Took {} ms to run mapper {} for model path {}", t, mapper.getClass().getSimpleName(), mapper.getModelPath());	
-				}
 				builder.process(path, processor);
 			}
 			// Mapper thread waits for invoked tasks to complete before continuing (subject to timeout before)

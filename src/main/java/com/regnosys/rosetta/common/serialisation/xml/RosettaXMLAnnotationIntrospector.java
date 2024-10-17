@@ -22,6 +22,8 @@ package com.regnosys.rosetta.common.serialisation.xml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyMetadata;
 import com.fasterxml.jackson.databind.PropertyName;
@@ -30,6 +32,7 @@ import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.AttributePropertyWriter;
+import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
@@ -57,6 +60,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     // Our generated code uses 'build' for the build method, 'set' as setter prefix
     private static final JsonPOJOBuilder.Value ROSETTA_BUILDER_CONFIG = new JsonPOJOBuilder.Value("build", "set");
 
+    private static final NameTransformer UNWRAP = NameTransformer.simpleTransformer("", "");
+
     public static final String SCHEMA_LOCATION_ATTRIBUTE_NAME = "schemaLocation";
     private static final String SCHEMA_LOCATION_ATTRIBUTE_PREFIXED_NAME = "xsi:" + SCHEMA_LOCATION_ATTRIBUTE_NAME;
 
@@ -80,6 +85,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     private MapperConfig<?> getLastConfig() {
+        // TODO: see issue https://github.com/FasterXML/jackson-databind/issues/4141
         if (lastConfig == null) {
             throw new IllegalStateException("No last config available");
         }
@@ -91,6 +97,32 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         lastConfig = config;
         return super.hasAsKey(config, a);
     }
+
+    @Override
+    public NameTransformer findUnwrappingNameTransformer(AnnotatedMember member) {
+        if (!member.getRawType().equals(List.class)) {
+            return getAttributeXMLConfiguration(getLastConfig(), member)
+                    .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
+                    .filter(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VIRTUAL)
+                    .map(repr -> UNWRAP)
+                    .orElseGet(() -> super.findUnwrappingNameTransformer(member));
+        }
+        return super.findUnwrappingNameTransformer(member);
+    }
+
+//    @Override
+//    public Boolean hasAsValue(Annotated a) {
+//        if (a instanceof AnnotatedMember) {
+//            AnnotatedMember member = (AnnotatedMember) a;
+//            if (member.getRawType().equals(List.class)) {
+//                return getAttributeXMLConfiguration(getLastConfig(), a)
+//                        .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
+//                        .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VIRTUAL)
+//                        .orElseGet(() -> super.hasAsValue(a));
+//            }
+//        }
+//        return super.hasAsValue(a);
+//    }
 
     @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {
@@ -117,9 +149,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 .flatMap(TypeXMLConfiguration::getXmlRootElementName)
                 .map(PropertyName::construct)
                 .orElseGet(() ->
-                        Optional.ofNullable(ac.getAnnotation(RosettaDataType.class))
-                                .map(rosettaDataTypeAnn -> PropertyName.construct(rosettaDataTypeAnn.value()))
-                                .orElseGet(() -> super.findRootName(ac))
+                        Optional.ofNullable(super.findRootName(ac))
+                                .orElseGet(() -> Optional.ofNullable(ac.getAnnotation(RosettaDataType.class))
+                                        .map(rosettaDataTypeAnn -> PropertyName.construct(rosettaDataTypeAnn.value()))
+                                        .orElse(null))
                 );
     }
 
@@ -142,7 +175,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     private boolean shouldUseDefaultPropertyName(MapperConfig<?> config, Annotated a) {
-        lastConfig = config;
         return getAttributeXMLConfiguration(config, a)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                 .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VALUE)
@@ -151,7 +183,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass ac, List<BeanPropertyWriter> properties) {
-        lastConfig = config;
         getTypeXMLConfiguration(ac)
                 .ifPresent(typeXMLConfiguration -> {
                     typeXMLConfiguration.getXmlAttributes().ifPresent(xmlAttributes -> {
@@ -189,7 +220,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public Boolean isOutputAsAttribute(MapperConfig<?> config, Annotated ann) {
-        lastConfig = config;
         if (ann instanceof VirtualXMLAttribute) {
             // Edge case: manually constructed `VirtualXMLAttribute` instances should be rendered as attributes.
             return true;
@@ -203,7 +233,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public Boolean isOutputAsText(MapperConfig<?> config, Annotated ann) {
-        lastConfig = config;
         // If the XML representation for this member equals VALUE, render it as a value.
         return getAttributeXMLConfiguration(config, ann)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
@@ -291,8 +320,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     private AnnotatedClass getEnclosingAnnotatedClass(MapperConfig<?> config, AnnotatedMember member) {
-        // TODO: get rid of use of deprecated API, see issue https://github.com/FasterXML/jackson-databind/issues/4141
-        return AnnotatedClassResolver.resolve(config, member.getType(), config);
+        // TODO: see issue https://github.com/FasterXML/jackson-databind/issues/4141
+        return AnnotatedClassResolver.resolve(config, config.constructType(member.getDeclaringClass()), config);
     }
 
     private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(MapperConfig<?> config, Annotated a) {

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.rosetta.test.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
@@ -139,5 +140,28 @@ public class XmlSerialisationTest {
         // Test deserialisation
         MulticardinalityContainer actual = xmlMapper.readValue(expectedXML, MulticardinalityContainer.class);
         assertEquals(multicardinalityContainer, actual);
+    }
+
+    @Test
+    @Disabled // TODO
+    public void testNestedContainerSerialisation() throws IOException {
+        // Construct a MultiCardinality object
+        NestedContainer nestedContainer = NestedContainer.builder()
+                .setNestedContainerSequence0(NestedContainerSequence0.builder().setA(0).setB(1).build())
+                .addNestedContainerSequence1(NestedContainerSequence1.builder().setC(2).setD(3).build())
+                .addNestedContainerSequence1(NestedContainerSequence1.builder().setC(4).setD(5).build())
+                .build();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(nestedContainer);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/nested-container.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        NestedContainer actual = xmlMapper.readValue(expectedXML, NestedContainer.class);
+        assertEquals(nestedContainer, actual);
     }
 }

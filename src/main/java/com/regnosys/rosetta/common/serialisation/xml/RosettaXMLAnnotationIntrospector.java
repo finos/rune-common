@@ -22,9 +22,8 @@ package com.regnosys.rosetta.common.serialisation.xml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyMetadata;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -48,10 +47,7 @@ import com.rosetta.util.serialisation.AttributeXMLRepresentation;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 import com.rosetta.util.serialisation.TypeXMLConfiguration;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntrospector {
 
@@ -59,8 +55,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     // Our generated code uses 'build' for the build method, 'set' as setter prefix
     private static final JsonPOJOBuilder.Value ROSETTA_BUILDER_CONFIG = new JsonPOJOBuilder.Value("build", "set");
-
-    private static final NameTransformer UNWRAP = NameTransformer.simpleTransformer("", "");
 
     public static final String SCHEMA_LOCATION_ATTRIBUTE_NAME = "schemaLocation";
     private static final String SCHEMA_LOCATION_ATTRIBUTE_PREFIXED_NAME = "xsi:" + SCHEMA_LOCATION_ATTRIBUTE_NAME;
@@ -71,43 +65,30 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
-    private MapperConfig<?> lastConfig = null;
+    private final ObjectMapper mapper;
 
 
-    public RosettaXMLAnnotationIntrospector(final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
-        this(rosettaXMLConfiguration, new RosettaEnumBuilderIntrospector(supportNativeEnumValue), new EnumAsStringBuilderIntrospector());
+    public RosettaXMLAnnotationIntrospector(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
+        this(mapper, rosettaXMLConfiguration, new RosettaEnumBuilderIntrospector(supportNativeEnumValue), new EnumAsStringBuilderIntrospector());
     }
 
-    public RosettaXMLAnnotationIntrospector(RosettaXMLConfiguration rosettaXMLConfiguration, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector, final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector) {
+    public RosettaXMLAnnotationIntrospector(ObjectMapper mapper, RosettaXMLConfiguration rosettaXMLConfiguration, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector, final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector) {
+        this.mapper = mapper;
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
 
-    private MapperConfig<?> getLastConfig() {
-        // TODO: see issue https://github.com/FasterXML/jackson-databind/issues/4141
-        if (lastConfig == null) {
-            throw new IllegalStateException("No last config available");
-        }
-        return lastConfig;
-    }
-
-    @Override
-    public Boolean hasAsKey(MapperConfig<?> config, Annotated a) {
-        lastConfig = config;
-        return super.hasAsKey(config, a);
-    }
-
     @Override
     public NameTransformer findUnwrappingNameTransformer(AnnotatedMember member) {
-        if (!member.getRawType().equals(List.class)) {
-            return getAttributeXMLConfiguration(getLastConfig(), member)
+//        if (!member.getRawType().equals(List.class)) {
+            return getAttributeXMLConfiguration(mapper.getDeserializationConfig(), member)
                     .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
                     .filter(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VIRTUAL)
-                    .map(repr -> UNWRAP)
+                    .map(repr -> NameTransformer.NOP)
                     .orElseGet(() -> super.findUnwrappingNameTransformer(member));
-        }
-        return super.findUnwrappingNameTransformer(member);
+//        }
+//        return super.findUnwrappingNameTransformer(member);
     }
 
 //    @Override
@@ -145,8 +126,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         // If the root element name is specified in the XML configuration, use that.
         // Otherwise, if the RosettaDataType annotation is present, use the name from that.
         // Otherwise, use the default.
-        return getTypeXMLConfiguration(ac)
-                .flatMap(TypeXMLConfiguration::getXmlRootElementName)
+        return getTypeXMLConfigurations(mapper.getSerializationConfig(), ac).stream()
+                .filter(t -> t.getXmlRootElementName().isPresent())
+                .map(t -> t.getXmlRootElementName().get())
+                .findFirst()
                 .map(PropertyName::construct)
                 .orElseGet(() ->
                         Optional.ofNullable(super.findRootName(ac))
@@ -158,13 +141,16 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     protected PropertyName _findXmlName(Annotated a) {
-        if (this.shouldUseDefaultPropertyName(getLastConfig(), a)) {
+        if (a.getRawType().equals(List.class) && getAttributeXMLConfiguration(mapper.getSerializationConfig(), a).flatMap(attr -> attr.getXmlRepresentation()).map(repr -> repr == AttributeXMLRepresentation.VIRTUAL).orElse(false)) {
+            return PropertyName.NO_NAME;
+        }
+        if (this.shouldUseDefaultPropertyName(mapper.getSerializationConfig(), a)) {
             // This is an edge case to conform to the same behaviour as the @JacksonXmlText annotation
             // in case where the attribute should be rendered as an XML value.
             return PropertyName.USE_DEFAULT;
         }
         // If the XML name is specified in the XML configuration, use that.
-        return this.getAttributeXMLConfiguration(getLastConfig(), a)
+        return this.getAttributeXMLConfiguration(mapper.getSerializationConfig(), a)
                 .flatMap(AttributeXMLConfiguration::getXmlName)
                 .map(PropertyName::construct)
                 .orElseGet(
@@ -183,8 +169,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass ac, List<BeanPropertyWriter> properties) {
-        getTypeXMLConfiguration(ac)
-                .ifPresent(typeXMLConfiguration -> {
+        getTypeXMLConfigurations(config, ac)
+                .forEach(typeXMLConfiguration -> {
                     typeXMLConfiguration.getXmlAttributes().ifPresent(xmlAttributes -> {
                         // For each XML attribute in the configuration, add a virtual XML attribute.
                         for (String xmlAttributeName : xmlAttributes.keySet()) {
@@ -253,14 +239,12 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
-        lastConfig = config;
         // For the root element, ignore the xsi:schemaLocation attribute.
         JsonIgnoreProperties.Value ignoreProps = super.findPropertyIgnoralByName(config, a);
         return Optional.of(a)
                 .filter(ann -> ann instanceof AnnotatedClass)
                 .map(ann -> (AnnotatedClass) ann)
-                .flatMap(this::getTypeXMLConfiguration)
-                .flatMap(TypeXMLConfiguration::getXmlRootElementName)
+                .flatMap(ac -> this.getTypeXMLConfigurations(config, ac).stream().filter(t -> t.getXmlRootElementName().isPresent()).map(t -> t.getXmlRootElementName().get()).findFirst())
                 .map(rootElementName -> {
                     Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
                     ignoredNames.add(SCHEMA_LOCATION_ATTRIBUTE_NAME);
@@ -299,7 +283,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     @Override
     public String[] findEnumValues(MapperConfig<?> config, AnnotatedClass enumType,
                                    Enum<?>[] enumValues, String[] names) {
-        lastConfig = config;
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
         } else {
@@ -311,7 +294,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     @Override
     public void findEnumAliases(MapperConfig<?> config, AnnotatedClass enumType,
                                 Enum<?>[] enumValues, String[][] aliasList) {
-        lastConfig = config;
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumAliases(enumType, enumValues, aliasList);
         } else {
@@ -331,20 +313,32 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 .flatMap(annotatedMember ->
                         Optional.ofNullable(annotatedMember.getAnnotation(RosettaAttribute.class))
                                 .flatMap(rosettaAttributeAnnotation ->
-                                        getTypeXMLConfiguration(getEnclosingAnnotatedClass(config, annotatedMember))
-                                                .flatMap(TypeXMLConfiguration::getAttributes)
-                                                .map(attributeMap -> attributeMap.get(rosettaAttributeAnnotation.value())))
+                                        getTypeXMLConfigurations(config, getEnclosingAnnotatedClass(config, annotatedMember)).stream()
+                                                .filter(t -> t.getAttributes().isPresent())
+                                                .map(t -> t.getAttributes().get())
+                                                .filter(attrMap -> attrMap.containsKey(rosettaAttributeAnnotation.value()))
+                                                .map(attributeMap -> attributeMap.get(rosettaAttributeAnnotation.value()))
+                                                .findFirst())
+
                 );
 
     }
 
-    private Optional<TypeXMLConfiguration> getTypeXMLConfiguration(AnnotatedClass ac) {
-        return Optional.ofNullable(ac.getAnnotation(RosettaDataType.class)).flatMap(rosettaDataTypeAnnotation -> {
+    private List<TypeXMLConfiguration> getTypeXMLConfigurations(MapperConfig<?> config, AnnotatedClass ac) {
+        List<TypeXMLConfiguration> result = new ArrayList<>();
+        RosettaDataType ann;
+        while ((ann = ac.getAnnotation(RosettaDataType.class)) != null) {
             final String namespace = ac.getType().getRawClass().getPackage().getName();
             final DottedPath dottedPath = DottedPath.splitOnDots(namespace);
-            final String name = ac.getAnnotation(RosettaDataType.class).value();
+            final String name = ann.value();
             final ModelSymbolId modelSymbolId = new ModelSymbolId(dottedPath, name);
-            return rosettaXMLConfiguration.getConfigurationForType(modelSymbolId);
-        });
+            rosettaXMLConfiguration.getConfigurationForType(modelSymbolId).ifPresent(result::add);
+
+            if (ac.getType().getSuperClass() == null) {
+                break;
+            }
+            ac = AnnotatedClassResolver.resolve(config, ac.getType().getSuperClass(), config);
+        }
+        return result;
     }
 }

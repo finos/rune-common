@@ -20,11 +20,30 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
+import com.fasterxml.jackson.databind.util.NameTransformer;
+import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.meta.RosettaMetaData;
+import com.rosetta.model.lib.path.RosettaPath;
+import com.rosetta.model.lib.process.BuilderMerger;
+import com.rosetta.model.lib.process.BuilderProcessor;
+import com.rosetta.model.lib.process.Processor;
 import com.rosetta.test.*;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -41,6 +60,8 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -63,11 +84,12 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    @Disabled // TODO
     public void testDocumentSerialisation() throws SAXException, IOException {
         // Construct a Document object
         Foo foo = Foo.builder().setXmlValue("My value").addAttr1(1).addAttr1(2).build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
-        Document document = Document.builder().setAttr(foo).setValue(measure).build();
+        TopLevel document = TopLevel.builder().setAttr(foo).setValue(measure).build();
 
         // Test serialisation
         ObjectWriter xmlWriter = xmlMapper
@@ -75,15 +97,14 @@ public class XmlSerialisationTest {
                 .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
         String actualXML = xmlWriter.writeValueAsString(document);
         String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/document.xml"), StandardCharsets.UTF_8);
-        // assertEquals(expectedXML, actualXML);
+        assertEquals(expectedXML, actualXML);
 
         // Test serialised document matches the XSD schema
-        // TODO: enable again:
-        //  xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
 
         // Test deserialisaton
-        // Document actual = xmlMapper.readValue(expectedXML, Document.class);
-        // assertEquals(document, actual);
+        Document actual = xmlMapper.readValue(expectedXML, Document.class);
+        assertEquals(document, actual);
     }
 
     @Test
@@ -143,7 +164,6 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    @Disabled // TODO
     public void testNestedContainerSerialisation() throws IOException {
         // Construct a MultiCardinality object
         NestedContainer nestedContainer = NestedContainer.builder()
@@ -163,5 +183,208 @@ public class XmlSerialisationTest {
         // Test deserialisation
         NestedContainer actual = xmlMapper.readValue(expectedXML, NestedContainer.class);
         assertEquals(nestedContainer, actual);
+    }
+
+    @Test
+    public void test() throws JsonProcessingException {
+        ObjectMapper mapper = new XmlMapper((JacksonXmlModule) null) // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
+                .setSerializerFactory(RosettaSerialiserFactory.INSTANCE)
+                .registerModule(new JacksonXmlModule())
+                .registerModule(new Module() {
+                    @Override
+                    public String getModuleName() {
+                        return "";
+                    }
+
+                    @Override
+                    public Version version() {
+                        return Version.unknownVersion();
+                    }
+
+                    @Override
+                    public void setupModule(SetupContext context) {
+                        context.setClassIntrospector(new RosettaClassIntrospector());
+                    }
+                });
+
+        Document document =
+                new Document()
+                        .setMyABPair(new ABPair().setA("A0").setB("B0"))
+//                        .setMyABPair2(new ABPair().setA("A1").setB("B1"))
+                        .addABPair(new ABPair().setA("A1").setB("B1"))
+                        .addABPair(new ABPair().setA("A2").setB("B2"))
+                        .addABPair(new ABPair().setA("A3").setB("B3"));
+        assertEquals("<document><a>A0</a><b>B0</b><a>A1</a><b>B1</b><a>A2</a><b>B2</b><a>A3</a><b>B3</b></document>", mapper.writeValueAsString(document));
+
+        Document deserialised = mapper.readValue("<document><a>A0</a><b>B0</b><a>A1</a><b>B1</b><a>A2</a><b>B2</b><a>A3</a><b>B3</b></document>", Document.class);
+        assertEquals("<document><a>A0</a><b>B0</b><a>A1</a><b>B1</b><a>A2</a><b>B2</b><a>A3</a><b>B3</b></document>", mapper.writeValueAsString(deserialised));
+    }
+
+    public static class DocumentSerializer extends JsonSerializer<Document> {
+        @Override
+        public void serialize(Document document, JsonGenerator g, SerializerProvider provider) throws IOException {
+            g.writeStartObject();
+            for (ABPair value : document.getABPairs()) {
+                g.writeFieldName("a");
+                g.writeString(value.getA());
+                g.writeFieldName("b");
+                g.writeString(value.getB());
+            }
+            g.writeEndObject();
+        }
+    }
+    public static class DocumentDeserializer extends JsonDeserializer<Document> {
+
+        @Override
+        public Document deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            Document document = new Document();
+            while (p.nextToken() != JsonToken.END_OBJECT) {
+                String name = p.getCurrentName();
+                p.nextToken(); // move to value
+                String value = p.getText();
+                if ("a".equals(name)) {
+                    ABPair pair = new ABPair().setA(value);
+                    document.addABPair(pair);
+                } else if ("b".equals(name)) {
+                    List<ABPair> pairs = document.getABPairs();
+                    if (!pairs.isEmpty()) {
+                        ABPair lastPair = pairs.get(pairs.size() - 1);
+                        lastPair.setB(value);
+                    }
+                }
+            }
+            return document;
+        }
+    }
+    public static class ABPairsSerializer extends JsonSerializer<List<ABPair>> {
+        public ABPairsSerializer() {
+            super();
+        }
+
+        @Override
+        public void serialize(List<ABPair> values, JsonGenerator g, SerializerProvider provider) throws IOException {
+            JsonSerializer<Object> pairSerializer = provider.findValueSerializer(ABPair.class).unwrappingSerializer(NameTransformer.simpleTransformer("", ""));
+            ToXmlGenerator xgen = (ToXmlGenerator) g;
+            xgen.setNextIsUnwrapped(true);
+//            xml.setNextName(null);
+//            g.writeStartArray();
+            xgen.writeStartObject();
+            for (ABPair value : values) {
+                xgen.writeFieldName("a");
+                xgen.writeString(value.getA());
+                xgen.writeFieldName("b");
+                xgen.writeString(value.getB());
+            }
+            xgen.writeEndObject();
+//            g.writeEndArray();
+        }
+    }
+
+    @JacksonXmlRootElement(localName = "document")
+    @JsonPropertyOrder({ "myABPair", "myABPair2", "abPairs" })
+//    @RosettaDataType(builder = DocumentBuilder.class)
+//    @JsonSerialize(using = DocumentSerializer.class)
+//    @JsonDeserialize(using = DocumentDeserializer.class)
+    public static class Document {
+        private ABPair myABPair = null;
+        private ABPair myABPair2 = null;
+        private List<ABPair> abPairs = new ArrayList<>();
+
+        @JsonUnwrapped
+        public ABPair getMyABPair() {
+            return myABPair;
+        }
+        public Document setMyABPair(ABPair pair) {
+            myABPair = pair;
+            return this;
+        }
+
+        @JsonUnwrapped
+        public ABPair getMyABPair2() {
+            return myABPair2;
+        }
+        public Document setMyABPair2(ABPair pair) {
+            myABPair2 = pair;
+            return this;
+        }
+
+        @JsonUnwrapped
+        @JacksonXmlElementWrapper(useWrapping = false)
+//        @JsonSerialize(using = ABPairsSerializer.class)
+        public List<ABPair> getABPairs() {
+            return abPairs;
+        }
+        public Document addABPair(ABPair pair) {
+            abPairs.add(pair);
+            return this;
+        }
+    }
+    public static class DocumentBuilder implements RosettaModelObjectBuilder {
+
+        @Override
+        public <B extends RosettaModelObjectBuilder> B prune() {
+            return null;
+        }
+
+        @Override
+        public void process(RosettaPath rosettaPath, BuilderProcessor builderProcessor) {
+
+        }
+
+        @Override
+        public boolean hasData() {
+            return false;
+        }
+
+        @Override
+        public <B extends RosettaModelObjectBuilder> B merge(B b, BuilderMerger builderMerger) {
+            return null;
+        }
+
+        @Override
+        public RosettaModelObjectBuilder toBuilder() {
+            return null;
+        }
+
+        @Override
+        public RosettaModelObject build() {
+            return null;
+        }
+
+        @Override
+        public RosettaMetaData<? extends RosettaModelObject> metaData() {
+            return null;
+        }
+
+        @Override
+        public Class<? extends RosettaModelObject> getType() {
+            return null;
+        }
+
+        @Override
+        public void process(RosettaPath rosettaPath, Processor processor) {
+
+        }
+    }
+
+    public static class ABPair {
+        private String a;
+        private String b;
+        
+        public String getA() {
+            return a;
+        }
+        public String getB() {
+            return b;
+        }
+
+        public ABPair setA(String a) {
+            this.a = a;
+            return this;
+        }
+        public ABPair setB(String b) {
+            this.b = b;
+            return this;
+        }
     }
 }

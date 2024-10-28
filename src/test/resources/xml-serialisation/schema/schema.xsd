@@ -13,11 +13,19 @@
             <xs:element name="Value" type="Measure" />
         </xs:sequence>
     </xs:complexType>
-    <xs:complexType name="Foo">
+    <xs:complexType name="FooBase">
         <xs:sequence>
             <xs:element name="XMLValue" type="xs:string" />
-            <xs:element name="Attr1" type="xs:int" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Foo">
+        <xs:complexContent>
+            <xs:extension base="FooBase">
+                <xs:sequence>
+                    <xs:element name="Attr1" type="xs:int" minOccurs="0" maxOccurs="unbounded" />
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
     <xs:simpleType name="UnitEnum">
         <xs:restriction base="xs:string">

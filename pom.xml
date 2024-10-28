@@ -87,7 +87,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[17,18)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rosetta.dsl.version>0.0.0.xsd-import-SNAPSHOT</rosetta.dsl.version>
+        <rosetta.dsl.version>0.0.0.main-SNAPSHOT</rosetta.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
@@ -95,7 +95,7 @@
         <stagingTimeoutInMinutes>10</stagingTimeoutInMinutes>
 
         <!-- Also to be changed in rosetta-products->persistence -->
-        <jackson.version>2.17.1</jackson.version>
+        <jackson.version>2.18.0</jackson.version>
         <guice.version>5.0.1</guice.version>
         <guava.version>32.0.1-jre</guava.version>
         <slf4j-api.version>2.0.13</slf4j-api.version>
@@ -415,6 +415,17 @@
                 <exclusion>
                     <groupId>org.eclipse.jdt</groupId>
                     <artifactId>org.eclipse.jdt.core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.regnosys.rosetta</groupId>
+            <artifactId>com.regnosys.rosetta.tools</artifactId>
+            <version>${rosetta.dsl.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.regnosys.rosetta</groupId>
+                    <artifactId>com.regnosys.rosetta.ide</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

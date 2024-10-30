@@ -1,5 +1,25 @@
 package com.regnosys.rosetta.common.serialisation.xml;
 
+/*-
+ * ==============
+ * Rune Common
+ * ==============
+ * Copyright (C) 2018 - 2024 REGnosys
+ * ==============
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============
+ */
+
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.cfg.SerializerFactoryConfig;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
@@ -40,13 +60,13 @@ public class RosettaSerialiserFactory extends BeanSerializerFactory {
     }
 
     @Override
-    public  ContainerSerializer<?> buildIndexedListSerializer(JavaType elemType,
-                                                              boolean staticTyping, TypeSerializer vts, JsonSerializer<Object> valueSerializer) {
+    public ContainerSerializer<?> buildIndexedListSerializer(JavaType elemType,
+                                                             boolean staticTyping, TypeSerializer vts, JsonSerializer<Object> valueSerializer) {
         return new UnwrappableIndexedListSerializer(elemType, staticTyping, vts, valueSerializer);
     }
 //
-//    protected RosettaBeanSerialiserBuilder constructRosettaBeanSerializerBuilder(BeanDescription beanDesc) {
-//        return new RosettaBeanSerialiserBuilder(beanDesc);
+//    protected RosettaBeanSerializerBuilder constructRosettaBeanSerializerBuilder(BeanDescription beanDesc) {
+//        return new RosettaBeanSerializerBuilder(beanDesc);
 //    }
 
 //    @Override
@@ -66,7 +86,7 @@ public class RosettaSerialiserFactory extends BeanSerializerFactory {
 //        JsonSerializer<?> ser;
 //
 //        final SerializationConfig config = prov.getConfig();
-//        RosettaBeanSerialiserBuilder builder = constructRosettaBeanSerializerBuilder(beanDesc);
+//        RosettaBeanSerializerBuilder builder = constructRosettaBeanSerializerBuilder(beanDesc);
 //        builder.setConfig(config);
 //
 //        // First: any detectable (auto-detect, annotations) properties to serialize?
@@ -136,7 +156,7 @@ public class RosettaSerialiserFactory extends BeanSerializerFactory {
 //        // Finally: let interested parties mess with the result bit more...
 //        if (_factoryConfig.hasSerializerModifiers()) {
 //            for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
-//                builder = (RosettaBeanSerialiserBuilder) mod.updateBuilder(config, beanDesc, builder);
+//                builder = (RosettaBeanSerializerBuilder) mod.updateBuilder(config, beanDesc, builder);
 //            }
 //        }
 //

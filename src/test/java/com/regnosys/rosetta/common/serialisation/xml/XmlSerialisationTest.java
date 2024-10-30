@@ -186,6 +186,25 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testSubstitutionGroupSerialisation() throws IOException {
+        AnimalContainer animalContainer = AnimalContainer.builder()
+                .setAnimal(Goat.builder().setName("Goatee").build())
+                .build();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(animalContainer);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        AnimalContainer actual = xmlMapper.readValue(expectedXML, AnimalContainer.class);
+        assertEquals(animalContainer, actual);
+    }
+
+    @Test
     public void test() throws JsonProcessingException {
         ObjectMapper mapper = new XmlMapper((JacksonXmlModule) null) // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
                 .setSerializerFactory(RosettaSerialiserFactory.INSTANCE)

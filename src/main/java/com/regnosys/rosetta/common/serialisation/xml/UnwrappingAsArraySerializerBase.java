@@ -1,5 +1,25 @@
 package com.regnosys.rosetta.common.serialisation.xml;
 
+/*-
+ * ==============
+ * Rune Common
+ * ==============
+ * Copyright (C) 2018 - 2024 REGnosys
+ * ==============
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============
+ */
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
@@ -12,7 +32,7 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 
 import java.io.IOException;
 
-public abstract class UnwrappingAsArraySerialiserBase<T>
+public abstract class UnwrappingAsArraySerializerBase<T>
         extends ContainerSerializer<T>
         implements ContextualSerializer {
     protected final JavaType _elementType;
@@ -58,7 +78,7 @@ public abstract class UnwrappingAsArraySerialiserBase<T>
      *
      * @since 2.6
      */
-    protected UnwrappingAsArraySerialiserBase(Class<?> cls, JavaType et, boolean staticTyping,
+    protected UnwrappingAsArraySerializerBase(Class<?> cls, JavaType et, boolean staticTyping,
                                               TypeSerializer vts, JsonSerializer<Object> elementSerializer, NameTransformer nameTransformer) {
         this(cls, et, staticTyping, vts, null, elementSerializer, nameTransformer);
     }
@@ -69,7 +89,7 @@ public abstract class UnwrappingAsArraySerialiserBase<T>
      * @since 2.12
      */
     @SuppressWarnings("unchecked")
-    protected UnwrappingAsArraySerialiserBase(Class<?> cls, JavaType elementType, boolean staticTyping,
+    protected UnwrappingAsArraySerializerBase(Class<?> cls, JavaType elementType, boolean staticTyping,
                                               TypeSerializer vts, BeanProperty property, JsonSerializer<?> elementSerializer, NameTransformer nameTransformer) {
         // typing with generics is messy... have to resort to this:
         super(cls, false);
@@ -84,7 +104,7 @@ public abstract class UnwrappingAsArraySerialiserBase<T>
     }
 
     @SuppressWarnings("unchecked")
-    protected UnwrappingAsArraySerialiserBase(UnwrappingAsArraySerialiserBase<?> src,
+    protected UnwrappingAsArraySerializerBase(UnwrappingAsArraySerializerBase<?> src,
                                               BeanProperty property, TypeSerializer vts, JsonSerializer<?> elementSerializer) {
         super(src);
         _elementType = src._elementType;
@@ -100,7 +120,7 @@ public abstract class UnwrappingAsArraySerialiserBase<T>
     /**
      * @since 2.6
      */
-    public abstract UnwrappingAsArraySerialiserBase<T> withResolved(BeanProperty property,
+    public abstract UnwrappingAsArraySerializerBase<T> withResolved(BeanProperty property,
                                                                     TypeSerializer vts, JsonSerializer<?> elementSerializer);
 
     /*

@@ -20,6 +20,7 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JavaType;
@@ -35,6 +36,7 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
+import com.google.common.collect.Streams;
 import com.regnosys.rosetta.common.serialisation.ConstantAttributePropertyWriter;
 import com.regnosys.rosetta.common.serialisation.mixin.EnumAsStringBuilderIntrospector;
 import com.regnosys.rosetta.common.serialisation.mixin.RosettaEnumBuilderIntrospector;
@@ -48,6 +50,8 @@ import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 import com.rosetta.util.serialisation.TypeXMLConfiguration;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntrospector {
 
@@ -77,6 +81,36 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
+    }
+
+    public SubstitutionMap findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member) {
+        AnnotatedClass ac = getAnnotatedClass(config, member);
+        RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
+        if (ann != null) {
+            ModelSymbolId id = createModelSymbolId(ac, ann);
+            List<ModelSymbolId> substitutions = rosettaXMLConfiguration.getSubstitutionsForType(id);
+            if (substitutions.isEmpty()) {
+                return null;
+            }
+
+            return new SubstitutionMap(
+                    Streams.concat(substitutions.stream(), Stream.of(id))
+                            .collect(Collectors.toMap(
+                                    s -> {
+                                        try {
+                                            return config.constructType(RosettaXMLAnnotationIntrospector.class.getClassLoader().loadClass(s.toString()));
+                                        } catch (ClassNotFoundException e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    },
+                                    this::getElementName
+                            ))
+            );
+        }
+        return null;
+    }
+    private String getElementName(ModelSymbolId type) {
+        return rosettaXMLConfiguration.getConfigurationForType(type).flatMap(TypeXMLConfiguration::getXmlElementName).orElse(type.getName());
     }
 
     @Override
@@ -123,12 +157,12 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public PropertyName findRootName(AnnotatedClass ac) {
-        // If the root element name is specified in the XML configuration, use that.
+        // If the element name is specified in the XML configuration, use that.
         // Otherwise, if the RosettaDataType annotation is present, use the name from that.
         // Otherwise, use the default.
         return getTypeXMLConfigurations(mapper.getSerializationConfig(), ac).stream()
-                .filter(t -> t.getXmlRootElementName().isPresent())
-                .map(t -> t.getXmlRootElementName().get())
+                .filter(t -> t.getXmlElementName().isPresent())
+                .map(t -> t.getXmlElementName().get())
                 .findFirst()
                 .map(PropertyName::construct)
                 .orElseGet(() ->
@@ -182,7 +216,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                     });
                     // For the root XML element, add an optional xsi:schemaLocation attribute
                     // that can be configured using `ObjectWriter::withAttribute("schemaLocation", <value>)`.
-                    if (typeXMLConfiguration.getXmlRootElementName().isPresent()) {
+                    // TODO: substitution groups should not add this property
+                    if (typeXMLConfiguration.getXmlElementName().isPresent()) {
                         JavaType propType = config.constructType(String.class);
                         BeanPropertyWriter bpw = constructVirtualSchemaLocationAttribute(config, ac, propType);
                         properties.add(bpw);
@@ -244,7 +279,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return Optional.of(a)
                 .filter(ann -> ann instanceof AnnotatedClass)
                 .map(ann -> (AnnotatedClass) ann)
-                .flatMap(ac -> this.getTypeXMLConfigurations(config, ac).stream().filter(t -> t.getXmlRootElementName().isPresent()).map(t -> t.getXmlRootElementName().get()).findFirst())
+                // TODO: substitution groups should not have this
+                .flatMap(ac -> this.getTypeXMLConfigurations(config, ac).stream().filter(t -> t.getXmlElementName().isPresent()).map(t -> t.getXmlElementName().get()).findFirst())
                 .map(rootElementName -> {
                     Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
                     ignoredNames.add(SCHEMA_LOCATION_ATTRIBUTE_NAME);
@@ -305,6 +341,17 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         // TODO: see issue https://github.com/FasterXML/jackson-databind/issues/4141
         return AnnotatedClassResolver.resolve(config, config.constructType(member.getDeclaringClass()), config);
     }
+    private AnnotatedClass getAnnotatedClass(MapperConfig<?> config, AnnotatedMember m) {
+        if (m instanceof AnnotatedMethod) {
+            AnnotatedMethod method = (AnnotatedMethod) m;
+            if (method.getParameterCount() == 1) {
+                // For setters
+                return AnnotatedClassResolver.resolve(config, method.getParameterType(0), config);
+            }
+        }
+        // For anything else
+        return AnnotatedClassResolver.resolve(config, m.getType(), config);
+    }
 
     private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(MapperConfig<?> config, Annotated a) {
         return Optional.of(a)
@@ -326,13 +373,13 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     private List<TypeXMLConfiguration> getTypeXMLConfigurations(MapperConfig<?> config, AnnotatedClass ac) {
         List<TypeXMLConfiguration> result = new ArrayList<>();
+        Set<ModelSymbolId> visited = new HashSet<>();
         RosettaDataType ann;
         while ((ann = ac.getAnnotation(RosettaDataType.class)) != null) {
-            final String namespace = ac.getType().getRawClass().getPackage().getName();
-            final DottedPath dottedPath = DottedPath.splitOnDots(namespace);
-            final String name = ann.value();
-            final ModelSymbolId modelSymbolId = new ModelSymbolId(dottedPath, name);
-            rosettaXMLConfiguration.getConfigurationForType(modelSymbolId).ifPresent(result::add);
+            final ModelSymbolId modelSymbolId = createModelSymbolId(ac, ann);
+            if (visited.add(modelSymbolId)) {
+                rosettaXMLConfiguration.getConfigurationForType(modelSymbolId).ifPresent(result::add);
+            }
 
             if (ac.getType().getSuperClass() == null) {
                 break;
@@ -340,5 +387,11 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             ac = AnnotatedClassResolver.resolve(config, ac.getType().getSuperClass(), config);
         }
         return result;
+    }
+
+    private ModelSymbolId createModelSymbolId(AnnotatedClass ac, RosettaDataType ann) {
+        final String namespace = ac.getType().getRawClass().getPackage().getName();
+        final String name = ann.value();
+        return new ModelSymbolId(DottedPath.splitOnDots(namespace), name);
     }
 }

@@ -27,6 +27,9 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+import com.fasterxml.jackson.dataformat.xml.deser.XmlBeanDeserializerModifier;
+import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerModifier;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
 import java.io.IOException;
@@ -59,6 +62,11 @@ public class RosettaXMLModule extends SimpleModule {
 
     @Override
     public void setupModule(SetupContext context) {
+        context.addBeanSerializerModifier(new XmlBeanSerializerModifier());
+        context.addBeanSerializerModifier(new RosettaBeanSerializerModifier());
+        context.addBeanDeserializerModifier(new XmlBeanDeserializerModifier(FromXmlParser.DEFAULT_UNNAMED_TEXT_PROPERTY));
+        context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier());
+
         context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(mapper, rosettaXMLConfiguration,supportNativeEnumValue));
         context.setClassIntrospector(new RosettaClassIntrospector());
 

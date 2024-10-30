@@ -78,9 +78,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
         // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
         XmlMapper baseXML = new XmlMapper((JacksonXmlModule) null);
-        baseXML
-                .setSerializerFactory(RosettaSerialiserFactory.INSTANCE)
-                .registerModule(new JacksonXmlModule());
+        baseXML.setSerializerFactory(RosettaSerialiserFactory.INSTANCE);
 
         ObjectMapper base = new XmlMapper.Builder(baseXML)
                 .defaultUseWrapper(false) // TODO: enable default wrapping after this issue is resolved: https://github.com/FasterXML/jackson-databind/issues/4595

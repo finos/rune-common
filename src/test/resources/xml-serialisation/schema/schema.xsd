@@ -96,4 +96,10 @@
             <xs:extension base="Animal" />
         </xs:complexContent>
     </xs:complexType>
+
+    <xs:complexType name="Zoo">
+        <xs:sequence>
+            <xs:element ref="animal" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
 </xs:schema>

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanPropertyWriter;
+import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializer;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerBase;
 import com.fasterxml.jackson.dataformat.xml.util.AnnotationUtil;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
@@ -71,9 +72,11 @@ public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
     @Override
     public JsonSerializer<?> modifySerializer(SerializationConfig config,
                                               BeanDescription beanDesc, JsonSerializer<?> serializer) {
-        if (!(serializer instanceof BeanSerializerBase)) {
+        if (!(serializer instanceof XmlBeanSerializer)) {
             return serializer;
         }
-        return new RosettaBeanSerializer((BeanSerializerBase) serializer);
+        final AnnotationIntrospector intr = config.getAnnotationIntrospector();
+
+        return new RosettaBeanSerializer((XmlBeanSerializer) serializer, null);
     }
 }

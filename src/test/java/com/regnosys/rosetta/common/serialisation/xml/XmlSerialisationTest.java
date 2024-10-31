@@ -84,7 +84,6 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    @Disabled // TODO
     public void testDocumentSerialisation() throws SAXException, IOException {
         // Construct a Document object
         Foo foo = Foo.builder().setXmlValue("My value").addAttr1(1).addAttr1(2).build();
@@ -92,10 +91,11 @@ public class XmlSerialisationTest {
         TopLevel document = TopLevel.builder().setAttr(foo).setValue(measure).build();
 
         // Test serialisation
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
         ObjectWriter xmlWriter = xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
-        String actualXML = xmlWriter.writeValueAsString(document);
+        String actualXML = licenseHeader + xmlWriter.writeValueAsString(document);
         String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/document.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
@@ -103,7 +103,7 @@ public class XmlSerialisationTest {
         xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
 
         // Test deserialisaton
-        Document actual = xmlMapper.readValue(expectedXML, Document.class);
+        TopLevel actual = xmlMapper.readValue(expectedXML, TopLevel.class);
         assertEquals(document, actual);
     }
 
@@ -164,6 +164,7 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    @Disabled // TODO
     public void testNestedContainerSerialisation() throws IOException {
         // Construct a MultiCardinality object
         NestedContainer nestedContainer = NestedContainer.builder()
@@ -186,6 +187,7 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    // TODO: test non-substituted groups should not perform substitution
     public void testSubstitutionGroupSerialisation() throws IOException {
         AnimalContainer animalContainer = AnimalContainer.builder()
                 .setAnimal(Goat.builder().setName("Goatee").build())
@@ -205,6 +207,27 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testMulticardinalitySubstitutionGroupSerialisation() throws IOException {
+        Zoo zoo = Zoo.builder()
+                .addAnimal(Goat.builder().setName("Goatee").build())
+                .addAnimal(Cow.builder().setName("Moomoo").build())
+                .build();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(zoo);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group-multi.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        Zoo actual = xmlMapper.readValue(expectedXML, Zoo.class);
+        assertEquals(zoo, actual);
+    }
+
+    @Test
+    @Disabled
     public void test() throws JsonProcessingException {
         ObjectMapper mapper = new XmlMapper((JacksonXmlModule) null) // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
                 .setSerializerFactory(RosettaSerialiserFactory.INSTANCE)

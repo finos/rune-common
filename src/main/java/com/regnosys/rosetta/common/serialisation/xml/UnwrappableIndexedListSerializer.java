@@ -26,13 +26,18 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.impl.PropertySerializerMap;
 import com.fasterxml.jackson.databind.ser.std.AsArraySerializerBase;
 import com.fasterxml.jackson.databind.util.NameTransformer;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 
+import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.util.List;
 
 // A copy of the final class `IndexedListSerializer`, except for the method `unwrappingSerializer`.
+// Also includes substitution capabilities. TODO: find a cleaner way?
 public class UnwrappableIndexedListSerializer extends AsArraySerializerBase<List<?>> {
     private static final long serialVersionUID = 1L;
+
+    private SubstitutionMap nextElementSubstitutionMap = null;
 
     public UnwrappableIndexedListSerializer(JavaType elemType, boolean staticTyping, TypeSerializer vts,
                                             JsonSerializer<Object> valueSerializer) {
@@ -43,6 +48,10 @@ public class UnwrappableIndexedListSerializer extends AsArraySerializerBase<List
                                             BeanProperty property, com.fasterxml.jackson.databind.jsontype.TypeSerializer vts, JsonSerializer<?> valueSerializer,
                                             Boolean unwrapSingle) {
         super(src, property, vts, valueSerializer, unwrapSingle);
+    }
+
+    public void setNextElementSubstitutionMap(SubstitutionMap elementSubstitutionMap) {
+        this.nextElementSubstitutionMap = elementSubstitutionMap;
     }
 
     @Override
@@ -96,6 +105,13 @@ public class UnwrappableIndexedListSerializer extends AsArraySerializerBase<List
         gen.writeEndArray();
     }
 
+    private void substituteElementName(Object elem, JsonGenerator g) {
+        if (nextElementSubstitutionMap != null && g instanceof ToXmlGenerator) {
+            String substitutedName = nextElementSubstitutionMap.getSubstitutedName(elem);
+            ((ToXmlGenerator) g).setNextName(new QName(substitutedName));
+        }
+    }
+
     @Override
     public void serializeContents(List<?> value, JsonGenerator g, SerializerProvider provider)
             throws IOException {
@@ -131,9 +147,11 @@ public class UnwrappableIndexedListSerializer extends AsArraySerializerBase<List
                         }
                         serializers = _dynamicSerializers;
                     }
+                    substituteElementName(elem, g);
                     serializer.serialize(elem, g, provider);
                 }
             }
+            nextElementSubstitutionMap = null;
         } catch (Exception e) {
             wrapAndThrow(provider, e, value, i);
         }
@@ -150,6 +168,7 @@ public class UnwrappableIndexedListSerializer extends AsArraySerializerBase<List
         for (int i = 0; i < len; ++i) {
             Object elem = value.get(i);
             try {
+                substituteElementName(elem, jgen);
                 if (elem == null) {
                     provider.defaultSerializeNull(jgen);
                 } else if (typeSer == null) {
@@ -162,6 +181,7 @@ public class UnwrappableIndexedListSerializer extends AsArraySerializerBase<List
                 wrapAndThrow(provider, e, value, i);
             }
         }
+        nextElementSubstitutionMap = null;
     }
 
     public void serializeTypedContents(List<?> value, JsonGenerator jgen, SerializerProvider provider)
@@ -191,9 +211,11 @@ public class UnwrappableIndexedListSerializer extends AsArraySerializerBase<List
                         }
                         serializers = _dynamicSerializers;
                     }
+                    substituteElementName(elem, jgen);
                     serializer.serializeWithType(elem, jgen, provider, typeSer);
                 }
             }
+            nextElementSubstitutionMap = null;
         } catch (Exception e) {
             wrapAndThrow(provider, e, value, i);
         }

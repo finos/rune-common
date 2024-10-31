@@ -62,10 +62,11 @@ public class RosettaXMLModule extends SimpleModule {
 
     @Override
     public void setupModule(SetupContext context) {
-        context.addBeanSerializerModifier(new XmlBeanSerializerModifier());
+        // Note: order is important. Each modifier is inserted to the front of the list of modifiers.
         context.addBeanSerializerModifier(new RosettaBeanSerializerModifier());
-        context.addBeanDeserializerModifier(new XmlBeanDeserializerModifier(FromXmlParser.DEFAULT_UNNAMED_TEXT_PROPERTY));
+        context.addBeanSerializerModifier(new XmlBeanSerializerModifier());
         context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier());
+        context.addBeanDeserializerModifier(new XmlBeanDeserializerModifier(FromXmlParser.DEFAULT_UNNAMED_TEXT_PROPERTY));
 
         context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(mapper, rosettaXMLConfiguration,supportNativeEnumValue));
         context.setClassIntrospector(new RosettaClassIntrospector());

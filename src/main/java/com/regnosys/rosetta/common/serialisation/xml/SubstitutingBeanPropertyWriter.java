@@ -97,6 +97,9 @@ public class SubstitutingBeanPropertyWriter extends BeanPropertyWriter {
             }
         }
         gen.writeFieldName(substitutedName);
+        if ((JsonSerializer<?>)ser instanceof UnwrappableIndexedListSerializer) {
+            ((UnwrappableIndexedListSerializer)(JsonSerializer<?>) ser).setNextElementSubstitutionMap(substitutionNameMap);
+        }
         if (_typeSerializer == null) {
             ser.serialize(value, gen, prov);
         } else {

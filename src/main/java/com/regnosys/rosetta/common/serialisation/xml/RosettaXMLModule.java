@@ -69,7 +69,6 @@ public class RosettaXMLModule extends SimpleModule {
         context.addBeanDeserializerModifier(new XmlBeanDeserializerModifier(FromXmlParser.DEFAULT_UNNAMED_TEXT_PROPERTY));
 
         context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(mapper, rosettaXMLConfiguration,supportNativeEnumValue));
-        context.setClassIntrospector(new RosettaClassIntrospector());
 
         // Workaround, see https://github.com/REGnosys/rosetta-dsl/issues/663
         addDeserializer(LocalTime.class, new StdDeserializer<LocalTime>(LocalTime.class) {

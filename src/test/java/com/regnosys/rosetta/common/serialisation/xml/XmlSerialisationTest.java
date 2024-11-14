@@ -231,23 +231,7 @@ public class XmlSerialisationTest {
     public void test() throws JsonProcessingException {
         ObjectMapper mapper = new XmlMapper((JacksonXmlModule) null) // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
                 .setSerializerFactory(RosettaSerialiserFactory.INSTANCE)
-                .registerModule(new JacksonXmlModule())
-                .registerModule(new Module() {
-                    @Override
-                    public String getModuleName() {
-                        return "";
-                    }
-
-                    @Override
-                    public Version version() {
-                        return Version.unknownVersion();
-                    }
-
-                    @Override
-                    public void setupModule(SetupContext context) {
-                        context.setClassIntrospector(new RosettaClassIntrospector());
-                    }
-                });
+                .registerModule(new JacksonXmlModule());
 
         Document document =
                 new Document()

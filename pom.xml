@@ -507,10 +507,8 @@
                             <mainClass>com.regnosys.rosetta.tools.modelimport.XsdImportMain</mainClass>
                             <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <arguments>
-                                <argument>-xsd-path</argument>
-                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/schema.xsd</argument>
-                                <argument>-properties-path</argument>
-                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/import-schema.properties</argument>
+                                <argument>-config-path</argument>
+                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/import-config.yml</argument>
                                 <argument>-rosetta-output-path</argument>
                                 <argument>${project.build.testOutputDirectory}/xml-serialisation/rosetta</argument>
                                 <argument>-xml-config-output-path</argument>

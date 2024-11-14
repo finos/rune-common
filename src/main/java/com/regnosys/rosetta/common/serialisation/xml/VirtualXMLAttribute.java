@@ -25,8 +25,8 @@ import com.fasterxml.jackson.databind.introspect.TypeResolutionContext;
 import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
 
 public class VirtualXMLAttribute extends VirtualAnnotatedMember {
-    public VirtualXMLAttribute(TypeResolutionContext typeContext, Class<?> declaringClass, String name, JavaType type) {
+    public VirtualXMLAttribute(Class<?> declaringClass, String name, JavaType type) {
 
-        super(typeContext, declaringClass, name, type);
+        super(null, declaringClass, name, type);
     }
 }

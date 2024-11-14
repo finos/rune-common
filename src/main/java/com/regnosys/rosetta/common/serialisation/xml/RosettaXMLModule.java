@@ -23,14 +23,13 @@ package com.regnosys.rosetta.common.serialisation.xml;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
+import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+import com.fasterxml.jackson.dataformat.xml.deser.XmlBeanDeserializerModifier;
+import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerModifier;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
 import java.io.IOException;
@@ -51,16 +50,26 @@ public class RosettaXMLModule extends SimpleModule {
 
     private final boolean supportNativeEnumValue;
 
+    private final ObjectMapper mapper;
 
-    public RosettaXMLModule(final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
+
+    public RosettaXMLModule(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
         super(RosettaXMLModule.class.getSimpleName());
+        this.mapper = mapper;
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.supportNativeEnumValue = supportNativeEnumValue;
     }
 
     @Override
     public void setupModule(SetupContext context) {
-        context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(rosettaXMLConfiguration,supportNativeEnumValue));
+        // Note: order is important. Each modifier is inserted to the front of the list of modifiers.
+        context.addBeanSerializerModifier(new RosettaBeanSerializerModifier());
+        context.addBeanSerializerModifier(new XmlBeanSerializerModifier());
+        context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier());
+        context.addBeanDeserializerModifier(new XmlBeanDeserializerModifier(FromXmlParser.DEFAULT_UNNAMED_TEXT_PROPERTY));
+
+        context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(mapper, rosettaXMLConfiguration,supportNativeEnumValue));
+        context.setClassIntrospector(new RosettaClassIntrospector());
 
         // Workaround, see https://github.com/REGnosys/rosetta-dsl/issues/663
         addDeserializer(LocalTime.class, new StdDeserializer<LocalTime>(LocalTime.class) {

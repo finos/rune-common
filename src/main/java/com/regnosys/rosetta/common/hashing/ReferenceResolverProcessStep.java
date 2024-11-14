@@ -70,7 +70,7 @@ public class ReferenceResolverProcessStep implements PostProcessStep {
     public <T extends RosettaModelObject> ReferenceResolverPostProcessorReport runProcessStep(
             Class<? extends T> topClass,
             T instance) {
-        RosettaPath path = RosettaPath.valueOf(topClass.getSimpleName());
+        RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
         ReferenceCollector collector = new ReferenceCollector(referenceConfig);
         instance.process(path, collector);
         ReferenceResolver resolver =

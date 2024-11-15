@@ -28,6 +28,10 @@ public enum TransformType {
     TRANSLATE_1_5("ingestions", null),
     POST_TRANSLATE("translate/post"),
 
+    PRE_INGEST("ingest/pre"),
+    INGEST("ingest", null),
+    POST_INGEST("ingest/post"),
+    
     PRE_ENRICH("enrich/pre"),
     ENRICH("enrich", null),
     POST_ENRICH("enrich/post"),

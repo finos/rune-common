@@ -252,7 +252,7 @@ class MappingProcessorStepTest {
 
 		@Override
 		public Class<? extends RosettaModelObject> getType() {
-			throw new UnsupportedOperationException("method getType in RosettaModelObject has not been implemented");
+			return TestModel.class;
 		}
 
 		@Override

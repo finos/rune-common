@@ -13,11 +13,19 @@
             <xs:element name="Value" type="Measure" />
         </xs:sequence>
     </xs:complexType>
-    <xs:complexType name="Foo">
+    <xs:complexType name="FooBase">
         <xs:sequence>
             <xs:element name="XMLValue" type="xs:string" />
-            <xs:element name="Attr1" type="xs:int" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Foo">
+        <xs:complexContent>
+            <xs:extension base="FooBase">
+                <xs:sequence>
+                    <xs:element name="Attr1" type="xs:int" minOccurs="0" maxOccurs="unbounded" />
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
     <xs:simpleType name="UnitEnum">
         <xs:restriction base="xs:string">
@@ -49,6 +57,49 @@
     <xs:complexType name="MulticardinalityContainer">
         <xs:sequence>
             <xs:element name="foo" type="Foo" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="NestedContainer">
+        <xs:sequence>
+            <xs:sequence minOccurs="0">
+                <xs:element name="a" type="xs:int" />
+                <xs:element name="b" type="xs:int" />
+            </xs:sequence>
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="c" type="xs:int" />
+                <xs:element name="d" type="xs:int" />
+            </xs:sequence>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="AnimalContainer">
+        <xs:sequence>
+            <xs:element ref="animal"/> <!-- Note that the name of this element is determined by the actual type of animal -->
+        </xs:sequence>
+    </xs:complexType>
+    <!-- Element names: `Cow`s should be serialised as an element named `cow`, `Goat`s should be serialised as an element named `goat`. -->
+    <xs:element name="animal" type="Animal" abstract="true" />
+    <xs:element name="cow" type="Cow" substitutionGroup="animal" />
+    <xs:element name="goat" type="Goat" substitutionGroup="animal" />
+    <!-- Types: `Cow` and `Goat` extend from `Animal` -->
+    <xs:complexType name="Animal">
+        <xs:attribute name="name" type="xs:string" />
+    </xs:complexType>
+    <xs:complexType name="Cow">
+        <xs:complexContent>
+            <xs:extension base="Animal" />
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="Goat">
+        <xs:complexContent>
+            <xs:extension base="Animal" />
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="Zoo">
+        <xs:sequence>
+            <xs:element ref="animal" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
 </xs:schema>

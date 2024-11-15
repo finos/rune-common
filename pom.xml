@@ -87,7 +87,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[17,18)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rosetta.dsl.version>9.20.0</rosetta.dsl.version>
+        <rosetta.dsl.version>9.22.0</rosetta.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
@@ -507,10 +507,8 @@
                             <mainClass>com.regnosys.rosetta.tools.modelimport.XsdImportMain</mainClass>
                             <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <arguments>
-                                <argument>-xsd-path</argument>
-                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/schema.xsd</argument>
-                                <argument>-properties-path</argument>
-                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/import-schema.properties</argument>
+                                <argument>-config-path</argument>
+                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/import-config.yml</argument>
                                 <argument>-rosetta-output-path</argument>
                                 <argument>${project.build.testOutputDirectory}/xml-serialisation/rosetta</argument>
                                 <argument>-xml-config-output-path</argument>

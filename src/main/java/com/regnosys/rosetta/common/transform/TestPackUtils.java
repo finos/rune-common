@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.transform;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,10 +40,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TestPackUtils {
-    public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
 
+    public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
     public static final Path PROJECTION_CONFIG_PATH_WITHOUT_ISO20022 = PROJECTION_PATH.resolve("config");
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");
+    public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.INGEST.getResourcePath()).resolve("config");
 
     public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
         return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName), testPackName, sampleModels);
@@ -57,14 +58,14 @@ public class TestPackUtils {
         return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
     }
 
-    public static PipelineModel createPipeline(TransformType transformType, 
-                                               String functionQualifiedName, 
-                                               String displayName, 
-                                               String formattedFunctionName, 
-                                               String inputType, 
-                                               String outputType, 
-                                               String upstreamPipelineId, 
-                                               PipelineModel.Serialisation inputSerialisation, 
+    public static PipelineModel createPipeline(TransformType transformType,
+                                               String functionQualifiedName,
+                                               String displayName,
+                                               String formattedFunctionName,
+                                               String inputType,
+                                               String outputType,
+                                               String upstreamPipelineId,
+                                               PipelineModel.Serialisation inputSerialisation,
                                                PipelineModel.Serialisation outputSerialisation) {
         String pipelineId = createPipelineId(transformType, formattedFunctionName);
         PipelineModel.Transform transform = new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType);
@@ -111,11 +112,11 @@ public class TestPackUtils {
             return Optional.empty();
         }
     }
-    
+
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
         return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
-    
+
     public static String getProjectionTestPackName(String reportId) {
         return "test-pack-projection-" + reportId + "-report-to-iso20022.*\\.json";
     }

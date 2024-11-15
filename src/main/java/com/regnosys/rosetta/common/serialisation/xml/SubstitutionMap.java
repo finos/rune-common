@@ -26,6 +26,11 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * An map defining the relation between types and
+ * their substituted name. This is a representation
+ * of all XML substitution groups defined in an XSD schema.
+ */
 public class SubstitutionMap {
     private final Map<JavaType, String> typeToNameMap;
 

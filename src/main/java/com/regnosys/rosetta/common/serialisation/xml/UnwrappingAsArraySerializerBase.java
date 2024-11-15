@@ -32,6 +32,10 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 
 import java.io.IOException;
 
+/**
+ * A copy of the class {@code AsArraySerializerBase},
+ * except that it will unwrap all items.
+ */
 public abstract class UnwrappingAsArraySerializerBase<T>
         extends ContainerSerializer<T>
         implements ContextualSerializer {

@@ -38,6 +38,11 @@ import com.rosetta.model.lib.annotations.RosettaDataType;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Support for serialising substitution groups by replacing property writers
+ * with {@code SubstitutingBeanPropertyWriter}, which will serialise the right
+ * property name based on the type of the value.
+ */
 public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
     @Override
     public List<BeanPropertyWriter> changeProperties(SerializationConfig config,

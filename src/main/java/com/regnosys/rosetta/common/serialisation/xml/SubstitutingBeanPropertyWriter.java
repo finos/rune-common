@@ -28,6 +28,12 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.PropertySerializerMap;
 
+/**
+ * A bean property writer which will change the property name
+ * based on the actual type of the value of the property.
+ *
+ * This is required for serialising substitution groups.
+ */
 public class SubstitutingBeanPropertyWriter extends BeanPropertyWriter {
     private final SubstitutionMap substitutionNameMap;
 
@@ -46,6 +52,7 @@ public class SubstitutingBeanPropertyWriter extends BeanPropertyWriter {
         return new SubstitutingBeanPropertyWriter(this, newName);
     }
 
+    // TODO: also override other serializeXXX methods.
     @Override
     public void serializeAsField(Object bean, JsonGenerator gen,
                                  SerializerProvider prov) throws Exception {

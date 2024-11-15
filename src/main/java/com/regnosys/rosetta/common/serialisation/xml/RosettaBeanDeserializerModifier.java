@@ -31,6 +31,10 @@ import java.util.List;
 
 import static com.regnosys.rosetta.common.serialisation.xml.RosettaBeanSerializerModifier.findSubstitutionMap;
 
+/**
+ * Support for deserialising substitution groups by adding additional properties
+ * to the `BeanDeserializerBuilder` for each additional name of a substitution.
+ */
 public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     @Override
     public BeanDeserializerBuilder updateBuilder(DeserializationConfig config,

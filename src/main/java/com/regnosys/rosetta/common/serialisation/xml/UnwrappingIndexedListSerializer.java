@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,12 +29,15 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * A copy of the class {@code IndexedListSerializer},
+ * except that it will unwrap all items.
+ */
 public class UnwrappingIndexedListSerializer extends UnwrappingAsArraySerializerBase<List<?>> {
     private static final long serialVersionUID = 1L;
 
     public UnwrappingIndexedListSerializer(JavaType elemType, boolean staticTyping, TypeSerializer vts,
-                                           JsonSerializer<Object> valueSerializer, NameTransformer nameTransformer)
-    {
+                                           JsonSerializer<Object> valueSerializer, NameTransformer nameTransformer) {
         super(List.class, elemType, staticTyping, vts, valueSerializer, nameTransformer);
     }
 
@@ -78,15 +81,13 @@ public class UnwrappingIndexedListSerializer extends UnwrappingAsArraySerializer
 
     @Override
     public final void serialize(List<?> value, JsonGenerator gen, SerializerProvider provider)
-            throws IOException
-    {
+            throws IOException {
         serializeContents(value, gen, provider);
     }
 
     @Override
     public void serializeContents(List<?> value, JsonGenerator g, SerializerProvider provider)
-            throws IOException
-    {
+            throws IOException {
         if (_elementSerializer != null) {
             serializeContentsUsing(value, g, provider, _elementSerializer);
             return;
@@ -129,8 +130,7 @@ public class UnwrappingIndexedListSerializer extends UnwrappingAsArraySerializer
 
     public void serializeContentsUsing(List<?> value, JsonGenerator jgen, SerializerProvider provider,
                                        JsonSerializer<Object> ser)
-            throws IOException
-    {
+            throws IOException {
         final int len = value.size();
         if (len == 0) {
             return;
@@ -154,8 +154,7 @@ public class UnwrappingIndexedListSerializer extends UnwrappingAsArraySerializer
     }
 
     public void serializeTypedContents(List<?> value, JsonGenerator jgen, SerializerProvider provider)
-            throws IOException
-    {
+            throws IOException {
         final int len = value.size();
         if (len == 0) {
             return;

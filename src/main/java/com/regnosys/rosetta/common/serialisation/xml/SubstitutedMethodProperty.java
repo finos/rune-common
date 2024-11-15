@@ -34,6 +34,13 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
+/**
+ * A copy of {@code MethodProperty}, which is a final class,
+ * with support for specializing the type to a more specific type.
+ *
+ * This is necessary for deserialising substitution groups; see
+ * {@code RosettaBeanDeserializerModifier}.
+ */
 public class SubstitutedMethodProperty extends SettableBeanProperty {
     private static final long serialVersionUID = 1;
 

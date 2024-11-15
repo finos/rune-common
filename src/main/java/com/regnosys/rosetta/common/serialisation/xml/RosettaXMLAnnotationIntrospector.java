@@ -67,6 +67,11 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
+    // Note: this is a hack! In some occasions, the methods below
+    // do not have access to the `MapperConfig<?>`, but they need it,
+    // so having access to the object mapper makes sure we can always
+    // access it.
+    // Related to https://github.com/FasterXML/jackson-databind/issues/4141.
     private final ObjectMapper mapper;
 
 
@@ -112,14 +117,11 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public NameTransformer findUnwrappingNameTransformer(AnnotatedMember member) {
-//        if (!member.getRawType().equals(List.class)) {
-            return getAttributeXMLConfiguration(mapper.getDeserializationConfig(), member)
-                    .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
-                    .filter(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VIRTUAL)
-                    .map(repr -> NameTransformer.NOP)
-                    .orElseGet(() -> super.findUnwrappingNameTransformer(member));
-//        }
-//        return super.findUnwrappingNameTransformer(member);
+        return getAttributeXMLConfiguration(mapper.getDeserializationConfig(), member)
+                .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
+                .filter(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.VIRTUAL)
+                .map(repr -> NameTransformer.NOP)
+                .orElseGet(() -> super.findUnwrappingNameTransformer(member));
     }
 
     @Override

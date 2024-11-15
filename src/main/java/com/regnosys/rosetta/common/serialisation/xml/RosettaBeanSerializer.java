@@ -38,6 +38,17 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Set;
 
+/**
+ * Add a `schemaLocation` to the root XML element, if configured.
+ * It can be configured through an object writer by using
+ * {@code withAttribute}. Example:
+ *
+ * <pre>
+ * xmlMapper
+ *     .writerWithDefaultPrettyPrinter()
+ *     .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd")
+ * </pre>
+ */
 public class RosettaBeanSerializer extends XmlBeanSerializer {
     public static final String SCHEMA_LOCATION_ATTRIBUTE_NAME = "schemaLocation";
     private static final String SCHEMA_LOCATION_ATTRIBUTE_PREFIXED_NAME = "xsi:" + SCHEMA_LOCATION_ATTRIBUTE_NAME;

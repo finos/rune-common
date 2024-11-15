@@ -29,6 +29,7 @@ import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -136,10 +137,10 @@ public class TestPackUtils {
     }
 
     public static <T> T readFile(URL u, ObjectMapper mapper, Class<T> clazz) {
-        try {
-            return mapper.readValue(UrlUtils.openURL(u), clazz);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        try (Reader src = UrlUtils.openURL(u)) {
+            return mapper.readValue(src, clazz);
+        } catch (IOException e) {
+            throw new UncheckedIOException(String.format("Failed to read url %s", u), e);
         }
     }
 }

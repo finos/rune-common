@@ -56,16 +56,25 @@ public class TestPackUtils {
         return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
     }
 
-    public static PipelineModel createPipeline(TransformType transformType, String functionQualifiedName, String displayName, String formattedFunctionName, String inputType, String outputType, String upstreamPipelineId, PipelineModel.Serialisation outputSerialisation) {
-        return new PipelineModel(createPipelineId(transformType, formattedFunctionName), displayName, new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType), upstreamPipelineId, outputSerialisation);
+    public static PipelineModel createPipeline(TransformType transformType, 
+                                               String functionQualifiedName, 
+                                               String displayName, 
+                                               String formattedFunctionName, 
+                                               String inputType, 
+                                               String outputType, 
+                                               String upstreamPipelineId, 
+                                               PipelineModel.Serialisation inputSerialisation, 
+                                               PipelineModel.Serialisation outputSerialisation) {
+        String pipelineId = createPipelineId(transformType, formattedFunctionName);
+        PipelineModel.Transform transform = new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType);
+        return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation);
     }
 
     public static List<PipelineModel> getPipelineModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {
         List<URL> pipelineFiles = findPaths(resourcePath, classLoader, "pipeline-.*\\.json");
-        List<PipelineModel> pipelineModels = pipelineFiles.stream()
+        return pipelineFiles.stream()
                 .map(url -> readFile(url, jsonObjectMapper, PipelineModel.class))
                 .collect(Collectors.toList());
-        return pipelineModels;
     }
 
     public static PipelineModel getPipelineModel(List<PipelineModel> pipelineModels, String functionName) {
@@ -89,11 +98,11 @@ public class TestPackUtils {
                 .collect(Collectors.toList());
     }
 
-    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation outputSerialisation) {
-        if (outputSerialisation != null && outputSerialisation.getFormat() == PipelineModel.Serialisation.Format.XML) {
-            URL xmlConfigPath = Resources.getResource(outputSerialisation.getConfigPath());
+    public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation) {
+        if (serialisation != null && serialisation.getFormat() == PipelineModel.Serialisation.Format.XML) {
+            URL xmlConfigPath = Resources.getResource(serialisation.getConfigPath());
             try {
-                return Optional.of(RosettaObjectMapperCreator.forXML(xmlConfigPath.openStream()).create().writerWithDefaultPrettyPrinter());
+                return Optional.of(RosettaObjectMapperCreator.forXML(xmlConfigPath.openStream()).create());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -101,7 +110,11 @@ public class TestPackUtils {
             return Optional.empty();
         }
     }
-
+    
+    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
+        return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    }
+    
     public static String getProjectionTestPackName(String reportId) {
         return "test-pack-projection-" + reportId + "-report-to-iso20022.*\\.json";
     }

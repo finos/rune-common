@@ -29,12 +29,12 @@ import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -104,8 +104,8 @@ public class TestPackUtils {
     public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation) {
         if (serialisation != null && serialisation.getFormat() == PipelineModel.Serialisation.Format.XML) {
             URL xmlConfigPath = Resources.getResource(serialisation.getConfigPath());
-            try {
-                return Optional.of(RosettaObjectMapperCreator.forXML(xmlConfigPath.openStream()).create());
+            try (InputStream inputStream = xmlConfigPath.openStream()) {
+                return Optional.of(RosettaObjectMapperCreator.forXML(inputStream).create());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

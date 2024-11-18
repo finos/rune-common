@@ -23,6 +23,7 @@ package com.regnosys.rosetta.common.transform;
 import java.util.function.Function;
 
 public enum TransformType {
+    // Legacy ingest
     PRE_TRANSLATE("translate/pre"),
     TRANSLATE("translate", null),
     TRANSLATE_1_5("ingestions", null),

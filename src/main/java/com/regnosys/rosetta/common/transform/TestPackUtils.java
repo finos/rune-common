@@ -35,6 +35,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -128,7 +129,7 @@ public class TestPackUtils {
 
     public static List<URL> findPaths(Path basePath, ClassLoader classLoader, String fileName) {
         List<URL> expectations = ClassPathUtils
-                .findPathsFromClassPath(Arrays.asList(UrlUtils.toPortableString(basePath)),
+                .findPathsFromClassPath(Collections.singletonList(UrlUtils.toPortableString(basePath)),
                         fileName,
                         Optional.empty(),
                         classLoader)

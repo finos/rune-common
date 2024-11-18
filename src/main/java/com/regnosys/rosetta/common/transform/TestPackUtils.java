@@ -44,7 +44,7 @@ public class TestPackUtils {
     public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
     public static final Path PROJECTION_CONFIG_PATH_WITHOUT_ISO20022 = PROJECTION_PATH.resolve("config");
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");
-    public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.INGEST.getResourcePath()).resolve("config");
+    public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.TRANSLATE.getResourcePath()).resolve("config");
 
     public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
         return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName), testPackName, sampleModels);

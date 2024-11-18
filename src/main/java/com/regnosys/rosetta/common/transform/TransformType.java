@@ -24,14 +24,10 @@ import java.util.function.Function;
 
 public enum TransformType {
     // Legacy ingest
-    PRE_TRANSLATE("translate/pre"),
-    TRANSLATE("translate", null),
+    PRE_TRANSLATE("ingest/pre"),
+    TRANSLATE("ingest", null),
     TRANSLATE_1_5("ingestions", null),
-    POST_TRANSLATE("translate/post"),
-
-    PRE_INGEST("ingest/pre"),
-    INGEST("ingest", null),
-    POST_INGEST("ingest/post"),
+    POST_TRANSLATE("ingest/post"),
     
     PRE_ENRICH("enrich/pre"),
     ENRICH("enrich", null),

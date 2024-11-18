@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -103,7 +104,7 @@ public class TestPackUtils {
 
     public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation) {
         if (serialisation != null && serialisation.getFormat() == PipelineModel.Serialisation.Format.XML) {
-            URL xmlConfigPath = Resources.getResource(serialisation.getConfigPath());
+            URL xmlConfigPath = Objects.requireNonNull(Resources.getResource(serialisation.getConfigPath()));
             try (InputStream inputStream = xmlConfigPath.openStream()) {
                 return Optional.of(RosettaObjectMapperCreator.forXML(inputStream).create());
             } catch (IOException e) {

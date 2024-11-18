@@ -117,6 +117,7 @@ public class TestPackUtils {
         return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
+    @Deprecated
     public static String getProjectionTestPackName(String reportId) {
         return "test-pack-projection-" + reportId + "-report-to-iso20022.*\\.json";
     }

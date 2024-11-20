@@ -1,5 +1,3 @@
 schemaLocation: "./schema.xsd"
 target:
   namespace: "com.rosetta.test"
-  nameOverrides: # TODO: make nullable
-    "a": "b"

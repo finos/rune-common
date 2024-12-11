@@ -1,0 +1,10 @@
+namespace basic
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+basicType string
+
+type Root:
+    [rootType]
+    stringType string (1..1)
+    numberType number (1..1)
+    

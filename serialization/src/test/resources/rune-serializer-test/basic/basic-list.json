@@ -1,0 +1,5 @@
+{
+  "@model": "test.basic",
+  "@type": "test.basic.Root",
+  "@version": "0.0.0"
+}

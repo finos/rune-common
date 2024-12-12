@@ -1,0 +1,9 @@
+{
+  "@model": "test.choicetype",
+  "@type": "test.choicetype.Root",
+  "@version": "0.0.0",
+  "choiceData": {
+    "@type": "test.choicetype.B",
+    "fieldB": "foo"
+  }
+}

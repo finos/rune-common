@@ -1,0 +1,10 @@
+{
+  "@model": "test.metalocation",
+  "@type": "test.metalocation.Root",
+  "@version": "0.0.0",
+  "typeA": {
+    "bAddress": {
+      "@ref:scoped": "someLocation"
+    }
+  }
+}

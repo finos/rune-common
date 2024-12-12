@@ -1,0 +1,16 @@
+namespace metalocation
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type A:
+  b B (1..1)
+    [metadata location]
+
+type B:
+  fieldB string (1..1)
+
+type Root:
+  [rootType]
+  typeA A (0..1)
+  bAddress B (0..1)
+    [metadata address "pointsTo"=A->b]

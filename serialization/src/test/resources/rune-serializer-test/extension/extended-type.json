@@ -1,0 +1,9 @@
+{
+  "@model": "test.extension",
+  "@type": "test.extension.Root",
+  "@version": "0.0.0",
+  "extendedType": {
+    "@type": "test.extension.B",
+    "fieldB": "foo"
+  }
+}

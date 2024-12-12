@@ -1,0 +1,15 @@
+namespace extension
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+
+type A:
+  fieldA string (1..1)
+
+type B extends A:
+  fieldB string (1..1)
+
+type Root:
+  [rootType]
+  baseType A (0..1)
+  extendedType B (0..1)

@@ -1,0 +1,8 @@
+{
+  "@model": "test.enumtypes",
+  "@type": "test.enumtypes.Root",
+  "@version": "0.0.0",
+  "enumList": {
+    "enumType": ["A", "B", "C", "B"]
+  }
+}

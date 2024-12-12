@@ -2,8 +2,7 @@
   "@model": "test.extension",
   "@type": "test.extension.Root",
   "@version": "0.0.0",
-  "typeA": {
-    "@type": "test.extension.B",
+  "typeB": {
     "fieldB": "foo"
   }
 }

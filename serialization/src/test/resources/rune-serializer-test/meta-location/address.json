@@ -6,9 +6,9 @@
     "b": {
       "@key:scoped": "someLocation",
       "fieldB": "foo"
-    },
-    "bAddress": {
-      "@ref:scoped": "someLocation"
     }
+  },
+  "bAddress": {
+    "@ref:scoped": "someLocation"
   }
 }

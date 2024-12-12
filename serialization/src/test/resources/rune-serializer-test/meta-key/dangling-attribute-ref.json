@@ -1,0 +1,11 @@
+{
+  "@model": "test.metakey",
+  "@type": "test.metakey.Root",
+  "@version": "0.0.0",
+  "attributeRef": {
+    "dateReference": {
+      "@reference": "someKey",
+      "@ref:external": "someExternalKey"
+    }
+  }
+}

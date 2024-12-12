@@ -1,0 +1,16 @@
+namespace data
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type A:
+  b B (1..*)
+
+type B:
+  c C (0..1)
+
+type C:
+  field string (1..1)
+
+type Root:
+  [rootType]
+  a A (1..1)

@@ -1,0 +1,17 @@
+{
+  "@model": "test.record",
+  "@type": "test.record.Root",
+  "@version": "0.0.0",
+  "a": {
+    "b": [
+      {
+        "c": null
+      },
+      {
+        "c": {
+          "field": "foo"
+        }
+      }
+    ]
+  }
+}

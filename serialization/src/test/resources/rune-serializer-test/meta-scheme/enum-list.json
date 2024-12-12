@@ -1,0 +1,19 @@
+{
+  "@model": "test.metascheme",
+  "@type": "test.metascheme.Root",
+  "@version": "0.0.0",
+  "enumTypeList": [
+    {
+      "@scheme": "https://www.example.com/scheme1",
+      "@data": "A"
+    },
+    {
+      "@scheme": "https://www.example.com/scheme2",
+      "@data": "B"
+    },
+    {
+      "@scheme": "https://www.example.com/scheme3",
+      "@data": "C"
+    }
+  ]
+}

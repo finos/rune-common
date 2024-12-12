@@ -1,0 +1,13 @@
+{
+  "@model": "test.basic",
+  "@type": "test.basic.Root",
+  "@version": "0.0.0",
+  "basicList": {
+    "booleanTypes": [true, false, true],
+    "numberTypes": [123.456, 789, 345.123],
+    "parameterisedNumberTypes": [123.99, 456, 99.12],
+    "parameterisedStringTypes": ["abcDEF", "foo", "foo"],
+    "stringTypes": ["foo", "bar", "Baz123"],
+    "timeTypes": ["12:00:00"]
+  }
+}

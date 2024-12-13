@@ -6,7 +6,7 @@ typeAlias ParameterisedNumberType:
 	number(digits: 18, fractionalDigits: 2)
 
 typeAlias ParameterisedStringType:
-    string(minLength: 1, maxLength: 2, pattern: "[a-zA-Z]")
+    string(minLength: 1, maxLength: 20, pattern: "[a-zA-Z]")
 
 type BasicSingle:
   booleanType boolean (1..1)

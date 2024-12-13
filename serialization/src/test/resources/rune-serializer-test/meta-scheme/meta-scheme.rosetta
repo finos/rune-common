@@ -9,15 +9,15 @@ enum EnumType:
 
 type A:
   fieldA string (1..1)
-  [metadata scheme]
+    [metadata scheme]
 
 type Root:
   [rootType]
   enumType EnumType (0..1)
-  [metadata scheme]
+    [metadata scheme]
   typeA A (0..1)
-  [metadata scheme]
+    [metadata scheme]
   enumTypeList EnumType (0..*)
-  [metadata scheme]
+    [metadata scheme]
   typeAList A (0..*)
-  [metadata scheme]
+    [metadata scheme]

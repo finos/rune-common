@@ -38,8 +38,8 @@ public class RuneSerializerTest {
     @ParameterizedTest(name = "{0} - {1}")
     @MethodSource("testCases")
     public void testSerializationRoundTrip(String group, String testCaseName, Class<? extends RosettaModelObject> rosettaRootType, String jsonString) {
-        RosettaModelObject deserializedObject = runeSerializer.fromJson(rosettaRootType, jsonString);
-        String serializedjsonString = runeSerializer.toJson(deserializedObject);
+        RosettaModelObject deserializedObject = runeSerializer.deserialize(rosettaRootType, jsonString);
+        String serializedjsonString = runeSerializer.serialize(deserializedObject);
         assertEquals(jsonString, serializedjsonString, testCaseName + ": Serialization round trip failed");
     }
 

@@ -44,10 +44,10 @@ public class RuneSerializerErrorHandlingTest {
                                                Class<? extends RosettaModelObject> rosettaRootType,
                                                String jsonString,
                                                String expectedErrorMessage) {
-        RosettaModelObject deserializedObject = runeSerializer.fromJson(rosettaRootType, jsonString);
+        RosettaModelObject deserializedObject = runeSerializer.deserialize(rosettaRootType, jsonString);
 
         RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
-            runeSerializer.toJson(deserializedObject);
+            runeSerializer.serialize(deserializedObject);
         });
 
         assertEquals(expectedErrorMessage, runtimeException.getMessage(), testCaseName + ": Serialization error handling failed");

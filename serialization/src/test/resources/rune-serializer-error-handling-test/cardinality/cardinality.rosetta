@@ -1,0 +1,7 @@
+namespace parameterised
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type Root:
+  [rootType]
+  stringList string (0..2)

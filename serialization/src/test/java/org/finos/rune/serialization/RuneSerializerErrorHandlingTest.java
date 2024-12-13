@@ -11,14 +11,16 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class RuneSerializerTest {
-    public static final String TEST_TYPE = "rune-serializer-test";
+public class RuneSerializerErrorHandlingTest {
+    public static final String TEST_TYPE = "rune-serializer-error-handling-test";
     private RuneSerializer runeSerializer;
 
     private static CodeGeneratorTestHelper helper;
@@ -37,10 +39,18 @@ public class RuneSerializerTest {
 
     @ParameterizedTest(name = "{0} - {1}")
     @MethodSource("testCases")
-    public void testSerializationRoundTrip(String group, String testCaseName, Class<? extends RosettaModelObject> rosettaRootType, String jsonString) {
+    public void testSerializationErrorHandling(String group,
+                                               String testCaseName,
+                                               Class<? extends RosettaModelObject> rosettaRootType,
+                                               String jsonString,
+                                               String expectedErrorMessage) {
         RosettaModelObject deserializedObject = runeSerializer.fromJson(rosettaRootType, jsonString);
-        String serializedjsonString = runeSerializer.toJson(deserializedObject);
-        assertEquals(jsonString, serializedjsonString, testCaseName + ": Serialization round trip failed");
+
+        RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
+            runeSerializer.toJson(deserializedObject);
+        });
+
+        assertEquals(expectedErrorMessage, runtimeException.getMessage(), testCaseName + ": Serialization error handling failed");
     }
 
     public static Stream<Arguments> testCases() {
@@ -55,10 +65,14 @@ public class RuneSerializerTest {
                                             groupName,
                                             jsonPath.getFileName().toString(),
                                             rootDataType,
-                                            readAsString(jsonPath)
+                                            readAsString(jsonPath),
+                                            readAsString(toErrorFile(jsonPath))
                                     ));
                         }
                 );
     }
 
+    private static Path toErrorFile(Path jsonPath) {
+        return Paths.get(jsonPath.toString().replaceAll("(.*)\\.json", "$1.error"));
+    }
 }

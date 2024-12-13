@@ -2,7 +2,7 @@
   "@model": "test.metascheme",
   "@type": "test.metascheme.Root",
   "@version": "0.0.0",
-  "typeA": [
+  "typeAList": [
     {
       "@scheme": "https://www.example.com/scheme1",
       "fieldA": "foo"

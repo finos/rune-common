@@ -40,11 +40,13 @@ public class PocMain {
 
         ObjectMapper objectMapper = create();
 
+        String json = metaKeyJson();
+
         System.out.println("Before:");
-        System.out.println(metaKeyJson());
+        System.out.println(json);
         System.out.println("\n\n");
 
-        Root root = objectMapper.readValue(metaKeyJson(), Root.class);
+        Root root = objectMapper.readValue(json, Root.class);
 
 
         System.out.println("After:");

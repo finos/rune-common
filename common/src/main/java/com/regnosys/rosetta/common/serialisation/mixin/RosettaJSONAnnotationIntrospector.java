@@ -40,7 +40,9 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
 
     private static final long serialVersionUID = 1L;
 
-    
+    private final LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector;
+    private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
+
     private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
 
     public RosettaJSONAnnotationIntrospector(boolean supportRosettaEnumValue) {
@@ -48,7 +50,9 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     }
 
     public RosettaJSONAnnotationIntrospector(LegacyRosettaBuilderIntrospector legacyRosettaBuilderIntrospector, EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+        this.legacyRosettaBuilderIntrospector = legacyRosettaBuilderIntrospector;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
+        this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
 
     @Override
@@ -56,7 +60,8 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
         if (ac.hasAnnotation(RosettaDataType.class)) {
             return ac.getAnnotation(RosettaDataType.class).builder();
         }
-        return super.findPOJOBuilder(ac);
+        return legacyRosettaBuilderIntrospector.findPOJOBuilder(ac)
+                .orElse(super.findPOJOBuilder(ac));
     }
 
     @Override
@@ -72,7 +77,8 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
         if (a.hasAnnotation(RosettaAttribute.class)) {
             return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
         }
-        return super.findNameForDeserialization(a);
+        return legacyRosettaBuilderIntrospector.findNameForDeserialization(a)
+                .orElse(super.findNameForDeserialization(a));
     }
 
     @Override
@@ -80,6 +86,8 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
                                    Enum<?>[] enumValues, String[] names) {
         if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
             rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
+        } else {
+            enumAsStringBuilderIntrospector.findEnumValues(enumType, enumValues, names);
         }
         return names;
     }
@@ -110,7 +118,8 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
             return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
         }
 
-        return JsonIgnoreProperties.Value.empty();
+        return legacyRosettaBuilderIntrospector.findPropertyIgnorals(ac)
+                .orElse(JsonIgnoreProperties.Value.empty());
     }
 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

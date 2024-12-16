@@ -70,6 +70,11 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.regnosys</groupId>
+            <artifactId>rosetta-common</artifactId>
+            <version>0.0.0.main-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

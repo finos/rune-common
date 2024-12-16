@@ -17,7 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector {
+class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector {
 
     private static final long serialVersionUID = 1L;
 
@@ -25,11 +25,11 @@ class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector {
 
     private final PocMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
 
-    public RosettaJSONAnnotationIntrospector(boolean supportRosettaEnumValue) {
+    public MyRosettaJSONAnnotationIntrospector(boolean supportRosettaEnumValue) {
         this(new PocMain.EnumAsStringBuilderIntrospector(), new PocMain.RosettaEnumBuilderIntrospector(supportRosettaEnumValue));
     }
 
-    public RosettaJSONAnnotationIntrospector(PocMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, PocMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+    public MyRosettaJSONAnnotationIntrospector(PocMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, PocMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }

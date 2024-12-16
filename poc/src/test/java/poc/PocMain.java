@@ -15,9 +15,9 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.rosetta.model.lib.annotations.RosettaEnum;
 import com.rosetta.model.lib.annotations.RosettaEnumValue;
-import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 
@@ -27,7 +27,6 @@ import java.time.LocalDate;
 import java.util.function.BiFunction;
 
 import metakey.Root;
-import metakey.metafields.ReferenceWithMetaA;
 
 public class PocMain {
 
@@ -38,6 +37,21 @@ public class PocMain {
 //        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
 //        helper.writeClasses(generateCode, "poc");
 
+        System.out.println("Old world serialisation:");
+        ObjectMapper oldMapper = RosettaObjectMapperCreator.forJSON().create();
+
+        String oldJson = oldFormatMetaKeyJson();
+
+        System.out.println("Before:");
+        System.out.println(oldJson);
+        System.out.println("\n\n");
+
+        Root oldRoot = oldMapper.readValue(oldJson, Root.class);
+
+        System.out.println("After:");
+        System.out.println(oldMapper.writerWithDefaultPrettyPrinter().writeValueAsString(oldRoot));
+
+        System.out.println("\n\n**********************");
         ObjectMapper objectMapper = create();
 
         String json = metaKeyJson();
@@ -62,7 +76,7 @@ public class PocMain {
                 .registerModule(new Jdk8Module())
                 .registerModule(new JavaTimeModule())
                 .registerModule(new RosettaDateModule())
-                .registerModule(new RosettaJSONModule(true))
+                .registerModule(new MyRosettaJSONModule(true))
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
@@ -111,12 +125,12 @@ public class PocMain {
     }
 
 
-    static class RosettaJSONModule extends SimpleModule {
+    static class MyRosettaJSONModule extends SimpleModule {
 
         private static final long serialVersionUID = 1L;
         private final boolean supportRosettaEnumValue;
 
-        public RosettaJSONModule(boolean supportRosettaEnumValue) {
+        public MyRosettaJSONModule(boolean supportRosettaEnumValue) {
             super(PackageVersion.VERSION);
             this.supportRosettaEnumValue = supportRosettaEnumValue;
         }
@@ -124,7 +138,7 @@ public class PocMain {
         @Override
         public void setupModule(SetupContext context) {
             super.setupModule(context);
-            context.insertAnnotationIntrospector(new RosettaJSONAnnotationIntrospector(supportRosettaEnumValue));
+            context.insertAnnotationIntrospector(new MyRosettaJSONAnnotationIntrospector(supportRosettaEnumValue));
         }
 
         @Override

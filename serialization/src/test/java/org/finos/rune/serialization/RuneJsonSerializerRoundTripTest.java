@@ -17,9 +17,9 @@ import java.util.stream.Stream;
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RuneSerializerRoundTripTest {
+public class RuneJsonSerializerRoundTripTest {
     public static final String TEST_TYPE = "rune-serializer-round-trip-test";
-    private RuneSerializer runeSerializer;
+    private RuneJsonSerializer runeJsonSerializer;
 
     private static CodeGeneratorTestHelper helper;
 
@@ -32,14 +32,14 @@ public class RuneSerializerRoundTripTest {
 
     @BeforeEach
     void setUp() {
-        runeSerializer = new RuneSerializerImpl();
+        runeJsonSerializer = new RuneJsonSerializerImpl();
     }
 
     @ParameterizedTest(name = "{0} - {1}")
     @MethodSource("testCases")
     public void testSerializationRoundTrip(String group, String testCaseName, Class<? extends RosettaModelObject> rosettaRootType, String jsonString) {
-        RosettaModelObject deserializedObject = runeSerializer.deserialize(rosettaRootType, jsonString);
-        String serializedjsonString = runeSerializer.serialize(deserializedObject);
+        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(rosettaRootType, jsonString);
+        String serializedjsonString = runeJsonSerializer.toJson(deserializedObject);
         assertEquals(jsonString, serializedjsonString, testCaseName + ": Serialization round trip failed");
     }
 

@@ -17,8 +17,8 @@ import java.util.stream.Stream;
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RuneSerializerTest {
-    public static final String TEST_TYPE = "rune-serializer-test";
+public class RuneSerializerRoundTripTest {
+    public static final String TEST_TYPE = "rune-serializer-round-trip-test";
     private RuneSerializer runeSerializer;
 
     private static CodeGeneratorTestHelper helper;

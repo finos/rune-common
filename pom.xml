@@ -29,6 +29,7 @@
     <modules>
         <module>common</module>
         <module>serialization</module>
+        <module>poc</module>
     </modules>
     <groupId>com.regnosys</groupId>
     <artifactId>rune-common-parent</artifactId>

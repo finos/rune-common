@@ -43,6 +43,16 @@ public class RuneSerializerTestHelper {
         }
     }
 
+    public static Path getFile(Path groupPath, String fileName) {
+        try (Stream<Path> files = Files.list(groupPath)) {
+            return files.filter(x -> x.getFileName().toString().equals(fileName)).collect(Collectors.toList())
+                    .stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("File not found: " + fileName));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public static List<Path> listFiles(Path groupPath, String suffix) {
         try (Stream<Path> files = Files.list(groupPath)) {
             return files.filter(x -> x.getFileName().toString().endsWith(suffix)).collect(Collectors.toList());

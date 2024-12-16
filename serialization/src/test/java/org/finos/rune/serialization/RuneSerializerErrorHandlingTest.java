@@ -6,14 +6,11 @@ import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.Collections;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,42 +34,89 @@ public class RuneSerializerErrorHandlingTest {
         runeSerializer = new RuneSerializerImpl();
     }
 
-    @ParameterizedTest(name = "{0} - {1}")
-    @MethodSource("testCases")
-    public void testSerializationErrorHandling(String group,
-                                               String testCaseName,
-                                               Class<? extends RosettaModelObject> rosettaRootType,
-                                               String jsonString,
-                                               String expectedErrorMessage) {
-        RosettaModelObject deserializedObject = runeSerializer.deserialize(rosettaRootType, jsonString);
+
+    @Test
+    public void testCardinalityTooManyElementsThrowsException() {
+        Path groupPath = getGroupPath("cardinality");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "cardinality.rosetta");
+        String json = readAsString(getFile(groupPath, "too-many-elements.json"));
+
+        RosettaModelObject deserializedObject = runeSerializer.deserialize(rootDataType, json);
 
         RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
             runeSerializer.serialize(deserializedObject);
         });
 
-        assertEquals(expectedErrorMessage, runtimeException.getMessage(), testCaseName + ": Serialization error handling failed");
+        assertEquals("Attribute contained more than the allowed number of elements", runtimeException.getMessage());
     }
 
-    public static Stream<Arguments> testCases() {
-        return groups(TEST_TYPE).stream()
-                .flatMap(groupPath -> {
-                            List<Path> rosettas = listFiles(groupPath, ".rosetta");
-                            String groupName = groupPath.getFileName().toString();
-                            Class<RosettaModelObject> rootDataType = generateCompileAndGetRootDataType(groupName, rosettas, helper);
+    @Test
+    public void testNumberFractionTooLargeThrowsException() {
+        Path groupPath = getGroupPath("parameterised");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
+        String json = readAsString(getFile(groupPath, "number-fraction-too-large.json"));
 
-                            return listFiles(groupPath, ".json").stream()
-                                    .map(jsonPath -> Arguments.of(
-                                            groupName,
-                                            jsonPath.getFileName().toString(),
-                                            rootDataType,
-                                            readAsString(jsonPath),
-                                            readAsString(toErrorFile(jsonPath))
-                                    ));
-                        }
-                );
+        RosettaModelObject deserializedObject = runeSerializer.deserialize(rootDataType, json);
+
+        RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
+            runeSerializer.serialize(deserializedObject);
+        });
+
+        assertEquals("Number contained more than the allowed number of digits", runtimeException.getMessage());
     }
 
-    private static Path toErrorFile(Path jsonPath) {
-        return Paths.get(jsonPath.toString().replaceAll("(.*)\\.json", "$1.error"));
+    @Test
+    public void testNumberTooLargeThrowsException() {
+        Path groupPath = getGroupPath("parameterised");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
+        String json = readAsString(getFile(groupPath, "number-too-large.json"));
+
+        RosettaModelObject deserializedObject = runeSerializer.deserialize(rootDataType, json);
+
+        RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
+            runeSerializer.serialize(deserializedObject);
+        });
+
+        assertEquals("Number contained more than the allowed number of digits", runtimeException.getMessage());
+    }
+
+    @Test
+    public void testStringIllegalPatternThrowsException() {
+        Path groupPath = getGroupPath("parameterised");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
+        String json = readAsString(getFile(groupPath, "string-illegal-pattern.json"));
+
+        RosettaModelObject deserializedObject = runeSerializer.deserialize(rootDataType, json);
+
+        RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
+            runeSerializer.serialize(deserializedObject);
+        });
+
+        assertEquals("String does not match the required pattern", runtimeException.getMessage());
+    }
+
+    @Test
+    public void testStringTooLargeThrowsException() {
+        Path groupPath = getGroupPath("parameterised");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
+        String json = readAsString(getFile(groupPath, "string-too-large.json"));
+
+        RosettaModelObject deserializedObject = runeSerializer.deserialize(rootDataType, json);
+
+        RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
+            runeSerializer.serialize(deserializedObject);
+        });
+
+        assertEquals("String exceeds the maximum length", runtimeException.getMessage());
+    }
+
+    private static Path getGroupPath(String groupName) {
+        return  Paths.get("src/test/resources").resolve(TEST_TYPE).resolve(groupName);
+    }
+
+    private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath, String fileName) {
+        Path rosetta = getFile(groupPath, fileName);
+        String groupName = groupPath.getFileName().toString();
+        return generateCompileAndGetRootDataType(groupName, Collections.singletonList(rosetta), helper);
     }
 }

@@ -1,4 +1,4 @@
-package metakey.meta;
+package test.metakey.meta;
 
 import com.rosetta.model.lib.annotations.RosettaMeta;
 import com.rosetta.model.lib.meta.RosettaMetaData;
@@ -12,10 +12,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import metakey.A;
-import metakey.validation.ATypeFormatValidator;
-import metakey.validation.AValidator;
-import metakey.validation.exists.AOnlyExistsValidator;
+import test.metakey.A;
+import test.metakey.validation.ATypeFormatValidator;
+import test.metakey.validation.AValidator;
+import test.metakey.validation.exists.AOnlyExistsValidator;
 
 
 /**

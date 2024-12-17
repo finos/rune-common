@@ -1,6 +1,7 @@
-package metakey.metafields;
+package test.metakey.metafields;
 
 import annotations.RuneAttribute;
+import annotations.RuneDataType;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -8,7 +9,6 @@ import com.rosetta.model.lib.annotations.RosettaDataType;
 import com.rosetta.model.lib.meta.BasicRosettaMetaData;
 import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
-import com.rosetta.model.lib.meta.ReferenceWithMeta.ReferenceWithMetaBuilder;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -16,7 +16,7 @@ import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import java.util.Objects;
-import metakey.A;
+import test.metakey.A;
 
 import static java.util.Optional.ofNullable;
 
@@ -24,6 +24,7 @@ import static java.util.Optional.ofNullable;
  * @version 1
  */
 @RosettaDataType(value="ReferenceWithMetaA", builder=ReferenceWithMetaA.ReferenceWithMetaABuilderImpl.class, version="0.0.0")
+@RuneDataType(value="ReferenceWithMetaA", model = "test", builder=ReferenceWithMetaA.ReferenceWithMetaABuilderImpl.class, version="0.0.0")
 public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMeta<A> {
 
 	ReferenceWithMetaAMeta metaData = new ReferenceWithMetaAMeta();
@@ -113,7 +114,7 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		
 		@Override
 		@RosettaAttribute("globalReference")
-		@RuneAttribute("@reference")
+		@RuneAttribute("@ref")
 		public String getGlobalReference() {
 			return globalReference;
 		}
@@ -217,7 +218,7 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		
 		@Override
 		@RosettaAttribute("globalReference")
-		@RuneAttribute("@reference")
+		@RuneAttribute("@ref")
 		public String getGlobalReference() {
 			return globalReference;
 		}
@@ -256,7 +257,7 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		}
 		@Override
 		@RosettaAttribute("globalReference")
-		@RuneAttribute("@reference")
+		@RuneAttribute("@ref")
 		public ReferenceWithMetaABuilder setGlobalReference(String globalReference) {
 			this.globalReference = globalReference==null?null:globalReference;
 			return this;

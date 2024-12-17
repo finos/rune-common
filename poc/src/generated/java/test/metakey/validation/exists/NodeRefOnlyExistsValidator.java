@@ -1,4 +1,4 @@
-package metakey.validation.exists;
+package test.metakey.validation.exists;
 
 import com.google.common.collect.ImmutableMap;
 import com.rosetta.model.lib.path.RosettaPath;
@@ -9,18 +9,21 @@ import com.rosetta.model.lib.validation.ValidatorWithArg;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import metakey.A;
+import test.metakey.A;
+import test.metakey.NodeRef;
+import test.metakey.metafields.ReferenceWithMetaA;
 
 import static com.rosetta.model.lib.validation.ValidationResult.failure;
 import static com.rosetta.model.lib.validation.ValidationResult.success;
 
-public class AOnlyExistsValidator implements ValidatorWithArg<A, Set<String>> {
+public class NodeRefOnlyExistsValidator implements ValidatorWithArg<NodeRef, Set<String>> {
 
 	/* Casting is required to ensure types are output to ensure recompilation in Rosetta */
 	@Override
-	public <T2 extends A> ValidationResult<A> validate(RosettaPath path, T2 o, Set<String> fields) {
+	public <T2 extends NodeRef> ValidationResult<NodeRef> validate(RosettaPath path, T2 o, Set<String> fields) {
 		Map<String, Boolean> fieldExistenceMap = ImmutableMap.<String, Boolean>builder()
-				.put("fieldA", ExistenceChecker.isSet((String) o.getFieldA()))
+				.put("typeA", ExistenceChecker.isSet((A) o.getTypeA()))
+				.put("aReference", ExistenceChecker.isSet((ReferenceWithMetaA) o.getAReference()))
 				.build();
 		
 		// Find the fields that are set
@@ -30,9 +33,9 @@ public class AOnlyExistsValidator implements ValidatorWithArg<A, Set<String>> {
 				.collect(Collectors.toSet());
 		
 		if (setFields.equals(fields)) {
-			return success("A", ValidationType.ONLY_EXISTS, "A", path, "");
+			return success("NodeRef", ValidationType.ONLY_EXISTS, "NodeRef", path, "");
 		}
-		return failure("A", ValidationType.ONLY_EXISTS, "A", path, "",
+		return failure("NodeRef", ValidationType.ONLY_EXISTS, "NodeRef", path, "",
 				String.format("[%s] should only be set.  Set fields: %s", fields, setFields));
 	}
 }

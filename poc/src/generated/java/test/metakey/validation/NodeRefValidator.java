@@ -1,4 +1,4 @@
-package metakey.validation;
+package test.metakey.validation;
 
 import com.google.common.collect.Lists;
 import com.rosetta.model.lib.expression.ComparisonResult;
@@ -7,7 +7,9 @@ import com.rosetta.model.lib.validation.ValidationResult;
 import com.rosetta.model.lib.validation.ValidationResult.ValidationType;
 import com.rosetta.model.lib.validation.Validator;
 import java.util.List;
-import metakey.A;
+import test.metakey.A;
+import test.metakey.NodeRef;
+import test.metakey.metafields.ReferenceWithMetaA;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.rosetta.model.lib.expression.ExpressionOperators.checkCardinality;
@@ -16,16 +18,17 @@ import static com.rosetta.model.lib.validation.ValidationResult.success;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-public class AValidator implements Validator<A> {
+public class NodeRefValidator implements Validator<NodeRef> {
 
-	private List<ComparisonResult> getComparisonResults(A o) {
+	private List<ComparisonResult> getComparisonResults(NodeRef o) {
 		return Lists.<ComparisonResult>newArrayList(
-				checkCardinality("fieldA", (String) o.getFieldA() != null ? 1 : 0, 1, 1)
+				checkCardinality("typeA", (A) o.getTypeA() != null ? 1 : 0, 0, 1), 
+				checkCardinality("aReference", (ReferenceWithMetaA) o.getAReference() != null ? 1 : 0, 0, 1)
 			);
 	}
 
 	@Override
-	public ValidationResult<A> validate(RosettaPath path, A o) {
+	public ValidationResult<NodeRef> validate(RosettaPath path, NodeRef o) {
 		String error = getComparisonResults(o)
 			.stream()
 			.filter(res -> !res.get())
@@ -33,20 +36,20 @@ public class AValidator implements Validator<A> {
 			.collect(joining("; "));
 
 		if (!isNullOrEmpty(error)) {
-			return failure("A", ValidationType.CARDINALITY, "A", path, "", error);
+			return failure("NodeRef", ValidationType.CARDINALITY, "NodeRef", path, "", error);
 		}
-		return success("A", ValidationType.CARDINALITY, "A", path, "");
+		return success("NodeRef", ValidationType.CARDINALITY, "NodeRef", path, "");
 	}
 
 	@Override
-	public List<ValidationResult<?>> getValidationResults(RosettaPath path, A o) {
+	public List<ValidationResult<?>> getValidationResults(RosettaPath path, NodeRef o) {
 		return getComparisonResults(o)
 			.stream()
 			.map(res -> {
 				if (!isNullOrEmpty(res.getError())) {
-					return failure("A", ValidationType.CARDINALITY, "A", path, "", res.getError());
+					return failure("NodeRef", ValidationType.CARDINALITY, "NodeRef", path, "", res.getError());
 				}
-				return success("A", ValidationType.CARDINALITY, "A", path, "");
+				return success("NodeRef", ValidationType.CARDINALITY, "NodeRef", path, "");
 			})
 			.collect(toList());
 	}

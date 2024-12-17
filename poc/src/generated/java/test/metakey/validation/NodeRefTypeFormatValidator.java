@@ -1,4 +1,4 @@
-package metakey.validation;
+package test.metakey.validation;
 
 import com.google.common.collect.Lists;
 import com.rosetta.model.lib.expression.ComparisonResult;
@@ -7,7 +7,7 @@ import com.rosetta.model.lib.validation.ValidationResult;
 import com.rosetta.model.lib.validation.ValidationResult.ValidationType;
 import com.rosetta.model.lib.validation.Validator;
 import java.util.List;
-import metakey.NodeRef;
+import test.metakey.NodeRef;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.rosetta.model.lib.validation.ValidationResult.failure;

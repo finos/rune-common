@@ -1,5 +1,6 @@
-package metakey;
+package test.metakey;
 
+import annotations.RuneDataType;
 import annotations.RuneMetaType;
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -14,8 +15,8 @@ import com.rosetta.model.lib.process.Processor;
 import com.rosetta.model.metafields.MetaFields;
 import java.util.Objects;
 
-import metakey.A.ABuilderImpl;
-import metakey.meta.AMeta;
+import test.metakey.A.ABuilderImpl;
+import test.metakey.meta.AMeta;
 
 import static java.util.Optional.ofNullable;
 
@@ -23,6 +24,7 @@ import static java.util.Optional.ofNullable;
  * @version 0.0.0
  */
 @RosettaDataType(value="A", builder= ABuilderImpl.class, version="0.0.0")
+@RuneDataType(value="A", model = "test", builder= ABuilderImpl.class, version="0.0.0")
 public interface A extends RosettaModelObject, GlobalKey {
 
 	AMeta metaData = new AMeta();

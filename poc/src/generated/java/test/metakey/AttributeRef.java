@@ -1,5 +1,6 @@
-package metakey;
+package test.metakey;
 
+import annotations.RuneDataType;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -16,11 +17,9 @@ import com.rosetta.model.metafields.FieldWithMetaDate.FieldWithMetaDateBuilder;
 import com.rosetta.model.metafields.ReferenceWithMetaDate;
 import com.rosetta.model.metafields.ReferenceWithMetaDate.ReferenceWithMetaDateBuilder;
 import java.util.Objects;
-import metakey.AttributeRef;
-import metakey.AttributeRef.AttributeRefBuilder;
-import metakey.AttributeRef.AttributeRefBuilderImpl;
-import metakey.AttributeRef.AttributeRefImpl;
-import metakey.meta.AttributeRefMeta;
+
+import test.metakey.AttributeRef.AttributeRefBuilderImpl;
+import test.metakey.meta.AttributeRefMeta;
 
 import static java.util.Optional.ofNullable;
 
@@ -28,6 +27,7 @@ import static java.util.Optional.ofNullable;
  * @version 0.0.0
  */
 @RosettaDataType(value="AttributeRef", builder= AttributeRefBuilderImpl.class, version="0.0.0")
+@RuneDataType(value="AttributeRef", model = "test", builder= AttributeRefBuilderImpl.class, version="0.0.0")
 public interface AttributeRef extends RosettaModelObject {
 
 	AttributeRefMeta metaData = new AttributeRefMeta();

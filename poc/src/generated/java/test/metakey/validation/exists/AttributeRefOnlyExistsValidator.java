@@ -1,4 +1,4 @@
-package metakey.validation.exists;
+package test.metakey.validation.exists;
 
 import com.google.common.collect.ImmutableMap;
 import com.rosetta.model.lib.path.RosettaPath;
@@ -11,7 +11,7 @@ import com.rosetta.model.metafields.ReferenceWithMetaDate;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import metakey.AttributeRef;
+import test.metakey.AttributeRef;
 
 import static com.rosetta.model.lib.validation.ValidationResult.failure;
 import static com.rosetta.model.lib.validation.ValidationResult.success;

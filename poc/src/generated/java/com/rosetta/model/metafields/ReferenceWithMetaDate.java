@@ -1,5 +1,6 @@
 package com.rosetta.model.metafields;
 
+import annotations.RuneAttribute;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -110,12 +111,14 @@ public interface ReferenceWithMetaDate extends RosettaModelObject, ReferenceWith
 		
 		@Override
 		@RosettaAttribute("globalReference")
+		@RuneAttribute("@ref")
 		public String getGlobalReference() {
 			return globalReference;
 		}
 		
 		@Override
 		@RosettaAttribute("externalReference")
+		@RuneAttribute("@ref:external")
 		public String getExternalReference() {
 			return externalReference;
 		}
@@ -199,12 +202,14 @@ public interface ReferenceWithMetaDate extends RosettaModelObject, ReferenceWith
 		
 		@Override
 		@RosettaAttribute("globalReference")
+		@RuneAttribute("@ref")
 		public String getGlobalReference() {
 			return globalReference;
 		}
 		
 		@Override
 		@RosettaAttribute("externalReference")
+		@RuneAttribute("@ref:external")
 		public String getExternalReference() {
 			return externalReference;
 		}
@@ -236,12 +241,14 @@ public interface ReferenceWithMetaDate extends RosettaModelObject, ReferenceWith
 		}
 		@Override
 		@RosettaAttribute("globalReference")
+		@RuneAttribute("@ref")
 		public ReferenceWithMetaDateBuilder setGlobalReference(String globalReference) {
 			this.globalReference = globalReference==null?null:globalReference;
 			return this;
 		}
 		@Override
 		@RosettaAttribute("externalReference")
+		@RuneAttribute("@ref:external")
 		public ReferenceWithMetaDateBuilder setExternalReference(String externalReference) {
 			this.externalReference = externalReference==null?null:externalReference;
 			return this;

@@ -1,6 +1,6 @@
-package metakey;
+package test.metakey;
 
-import annotations.Model;
+import annotations.RuneDataType;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -12,8 +12,8 @@ import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import java.util.Objects;
 
-import metakey.Root.RootBuilderImpl;
-import metakey.meta.RootMeta;
+import test.metakey.Root.RootBuilderImpl;
+import test.metakey.meta.RootMeta;
 
 import static java.util.Optional.ofNullable;
 
@@ -21,7 +21,7 @@ import static java.util.Optional.ofNullable;
  * @version 0.0.0
  */
 @RosettaDataType(value="Root", builder= RootBuilderImpl.class, version="0.0.0")
-@Model("test")
+@RuneDataType(value="Root", model = "test", builder= RootBuilderImpl.class, version="0.0.0")
 public interface Root extends RosettaModelObject {
 
 	RootMeta metaData = new RootMeta();

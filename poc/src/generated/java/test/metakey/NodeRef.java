@@ -1,5 +1,6 @@
-package metakey;
+package test.metakey;
 
+import annotations.RuneDataType;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -10,14 +11,11 @@ import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import java.util.Objects;
-import metakey.A;
-import metakey.NodeRef;
-import metakey.NodeRef.NodeRefBuilder;
-import metakey.NodeRef.NodeRefBuilderImpl;
-import metakey.NodeRef.NodeRefImpl;
-import metakey.meta.NodeRefMeta;
-import metakey.metafields.ReferenceWithMetaA;
-import metakey.metafields.ReferenceWithMetaA.ReferenceWithMetaABuilder;
+
+import test.metakey.NodeRef.NodeRefBuilderImpl;
+import test.metakey.meta.NodeRefMeta;
+import test.metakey.metafields.ReferenceWithMetaA;
+import test.metakey.metafields.ReferenceWithMetaA.ReferenceWithMetaABuilder;
 
 import static java.util.Optional.ofNullable;
 
@@ -25,6 +23,7 @@ import static java.util.Optional.ofNullable;
  * @version 0.0.0
  */
 @RosettaDataType(value="NodeRef", builder= NodeRefBuilderImpl.class, version="0.0.0")
+@RuneDataType(value="NodeRef", model = "test", builder= NodeRefBuilderImpl.class, version="0.0.0")
 public interface NodeRef extends RosettaModelObject {
 
 	NodeRefMeta metaData = new NodeRefMeta();

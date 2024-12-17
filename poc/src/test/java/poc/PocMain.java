@@ -1,7 +1,6 @@
 package poc;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,10 +15,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.google.inject.Injector;
-import com.regnosys.rosetta.RosettaStandaloneSetup;
-import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
-import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
+//import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.rosetta.model.lib.annotations.RosettaEnum;
 import com.rosetta.model.lib.annotations.RosettaEnumValue;
 import com.rosetta.model.lib.records.Date;
@@ -28,11 +24,9 @@ import com.rosetta.model.lib.records.DateImpl;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.function.BiFunction;
 
-import com.rosetta.model.metafields.MetaFields;
-import metakey.Root;
+import test.metakey.Root;
 
 public class PocMain {
 
@@ -43,33 +37,47 @@ public class PocMain {
 //        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
 //        helper.writeClasses(generateCode, "poc");
 
-        System.out.println("Old world serialisation:");
-        ObjectMapper oldMapper = RosettaObjectMapperCreator.forJSON().create();
+//        System.out.println("Old world serialisation:");
+//        ObjectMapper oldMapper = RosettaObjectMapperCreator.forJSON().create();
+//
+//        String oldJson = oldFormatMetaKeyJson();
+//
+//        System.out.println("Before:");
+//        System.out.println(oldJson);
+//        System.out.println("\n\n");
+//
+//        Root oldRoot = oldMapper.readValue(oldJson, Root.class);
+//
+//        System.out.println("After:");
+//        System.out.println(oldMapper.writerWithDefaultPrettyPrinter().writeValueAsString(oldRoot));
 
-        String oldJson = oldFormatMetaKeyJson();
+        System.out.println("\n\n********************** NodeRef");
+        ObjectMapper nodeRefMapper = create();
+
+        String metaKeyJson = metaKeyJson();
 
         System.out.println("Before:");
-        System.out.println(oldJson);
+        System.out.println(metaKeyJson);
         System.out.println("\n\n");
 
-        Root oldRoot = oldMapper.readValue(oldJson, Root.class);
+        Root nodeRefRoot = nodeRefMapper.readValue(metaKeyJson, Root.class);
 
         System.out.println("After:");
-        System.out.println(oldMapper.writerWithDefaultPrettyPrinter().writeValueAsString(oldRoot));
+        System.out.println(nodeRefMapper.writerWithDefaultPrettyPrinter().writeValueAsString(nodeRefRoot));
 
-        System.out.println("\n\n**********************");
-        ObjectMapper objectMapper = create();
+        System.out.println("\n\n********************** AttrRef");
+        ObjectMapper attrRefMapper = create();
 
-        String json = metaKeyJson();
+        String attrKeyJson = metaAttributeJson();
 
         System.out.println("Before:");
-        System.out.println(json);
+        System.out.println(attrKeyJson);
         System.out.println("\n\n");
 
-        Root root = objectMapper.readValue(json, Root.class);
+        Root attrRefRoot = attrRefMapper.readValue(attrKeyJson, Root.class);
 
         System.out.println("After:");
-        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root));
+        System.out.println(attrRefMapper.writerWithDefaultPrettyPrinter().writeValueAsString(attrRefRoot));
     }
 
 
@@ -272,7 +280,7 @@ public class PocMain {
 
     static String metaKeyJson() {
         return "{\n" +
-                "  \"@model\": \"test.metakey\",\n" +
+                "  \"@model\": \"test\",\n" +
                 "  \"@type\": \"test.metakey.Root\",\n" +
                 "  \"@version\": \"0.0.0\",\n" +
                 "  \"nodeRef\": {\n" +
@@ -282,7 +290,26 @@ public class PocMain {
                 "      \"fieldA\": \"foo\"\n" +
                 "    },\n" +
                 "    \"aReference\": {\n" +
-                "      \"@reference\": \"someKey\",\n" +
+                "      \"@ref\": \"someKey\",\n" +
+                "      \"@ref:external\": \"someExternalKey\"\n" +
+                "    }\n" +
+                "  }\n" +
+                "}";
+    }
+
+    static String metaAttributeJson() {
+        return "{\n" +
+                "  \"@model\": \"test\",\n" +
+                "  \"@type\": \"test.metakey.Root\",\n" +
+                "  \"@version\": \"0.0.0\",\n" +
+                "  \"attributeRef\": {\n" +
+                "    \"dateField\": {\n" +
+                "      \"@key\": \"someKey\",\n" +
+                "      \"@key:external\": \"someExternalKey\",\n" +
+                "      \"@data\": \"2024-12-12\"\n" +
+                "    },\n" +
+                "    \"dateReference\": {\n" +
+                "      \"@ref\": \"someKey\",\n" +
                 "      \"@ref:external\": \"someExternalKey\"\n" +
                 "    }\n" +
                 "  }\n" +

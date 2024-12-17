@@ -1,5 +1,7 @@
 package com.rosetta.model.metafields;
 
+import annotations.RuneAttribute;
+import annotations.RuneMetaType;
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.GlobalKey.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -92,12 +94,14 @@ public interface FieldWithMetaDate extends RosettaModelObject, FieldWithMeta<Dat
 		
 		@Override
 		@RosettaAttribute("value")
+		@RuneAttribute("@data")
 		public Date getValue() {
 			return value;
 		}
 		
 		@Override
 		@RosettaAttribute("meta")
+		@RuneMetaType
 		public MetaFields getMeta() {
 			return meta;
 		}
@@ -159,12 +163,14 @@ public interface FieldWithMetaDate extends RosettaModelObject, FieldWithMeta<Dat
 	
 		@Override
 		@RosettaAttribute("value")
+		@RuneAttribute("@data")
 		public Date getValue() {
 			return value;
 		}
 		
 		@Override
 		@RosettaAttribute("meta")
+		@RuneMetaType
 		public MetaFields.MetaFieldsBuilder getMeta() {
 			return meta;
 		}
@@ -184,12 +190,14 @@ public interface FieldWithMetaDate extends RosettaModelObject, FieldWithMeta<Dat
 		
 		@Override
 		@RosettaAttribute("value")
+		@RuneAttribute("@data")
 		public FieldWithMetaDateBuilder setValue(Date value) {
 			this.value = value==null?null:value;
 			return this;
 		}
 		@Override
 		@RosettaAttribute("meta")
+		@RuneMetaType
 		public FieldWithMetaDateBuilder setMeta(MetaFields meta) {
 			this.meta = meta==null?null:meta.toBuilder();
 			return this;

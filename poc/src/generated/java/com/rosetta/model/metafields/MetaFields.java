@@ -1,5 +1,6 @@
 package com.rosetta.model.metafields;
 
+import annotations.RuneAttribute;
 import com.google.common.collect.ImmutableList;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -115,12 +116,14 @@ public interface MetaFields extends RosettaModelObject, GlobalKeyFields, MetaDat
 		
 		@Override
 		@RosettaAttribute("globalKey")
+		@RuneAttribute("@key")
 		public String getGlobalKey() {
 			return globalKey;
 		}
 		
 		@Override
 		@RosettaAttribute("externalKey")
+		@RuneAttribute("@key:external")
 		public String getExternalKey() {
 			return externalKey;
 		}
@@ -204,12 +207,14 @@ public interface MetaFields extends RosettaModelObject, GlobalKeyFields, MetaDat
 		
 		@Override
 		@RosettaAttribute("globalKey")
+		@RuneAttribute("@key")
 		public String getGlobalKey() {
 			return globalKey;
 		}
 		
 		@Override
 		@RosettaAttribute("externalKey")
+		@RuneAttribute("@key:external")
 		public String getExternalKey() {
 			return externalKey;
 		}
@@ -241,12 +246,14 @@ public interface MetaFields extends RosettaModelObject, GlobalKeyFields, MetaDat
 		}
 		@Override
 		@RosettaAttribute("globalKey")
+		@RuneAttribute("@key")
 		public MetaFieldsBuilder setGlobalKey(String globalKey) {
 			this.globalKey = globalKey==null?null:globalKey;
 			return this;
 		}
 		@Override
 		@RosettaAttribute("externalKey")
+		@RuneAttribute("@key:external")
 		public MetaFieldsBuilder setExternalKey(String externalKey) {
 			this.externalKey = externalKey==null?null:externalKey;
 			return this;

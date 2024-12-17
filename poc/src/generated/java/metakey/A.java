@@ -1,8 +1,7 @@
 package metakey;
 
-import annotations.RuneUnwrapped;
+import annotations.RuneMetaType;
 import com.rosetta.model.lib.GlobalKey;
-import com.rosetta.model.lib.GlobalKey.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -14,10 +13,8 @@ import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import com.rosetta.model.metafields.MetaFields;
 import java.util.Objects;
-import metakey.A;
-import metakey.A.ABuilder;
+
 import metakey.A.ABuilderImpl;
-import metakey.A.AImpl;
 import metakey.meta.AMeta;
 
 import static java.util.Optional.ofNullable;
@@ -97,7 +94,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("meta")
-		@RuneUnwrapped
+		@RuneMetaType
 		public MetaFields getMeta() {
 			return meta;
 		}
@@ -165,7 +162,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("meta")
-		@RuneUnwrapped
+		@RuneMetaType
 		public MetaFields.MetaFieldsBuilder getMeta() {
 			return meta;
 		}
@@ -191,7 +188,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		}
 		@Override
 		@RosettaAttribute("meta")
-		@RuneUnwrapped
+		@RuneMetaType
 		public ABuilder setMeta(MetaFields meta) {
 			this.meta = meta==null?null:meta.toBuilder();
 			return this;

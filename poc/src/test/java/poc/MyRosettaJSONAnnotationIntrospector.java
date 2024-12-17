@@ -1,8 +1,8 @@
 package poc;
 
-import annotations.RuneUnwrapped;
+import annotations.RuneAttribute;
+import annotations.RuneMetaType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
@@ -44,7 +44,9 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
 
     @Override
     public PropertyName findNameForSerialization(Annotated a) {
-        if (a.hasAnnotation(RosettaAttribute.class)) {
+        if (a.hasAnnotation(RuneAttribute.class)) {
+            return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
+        } else if (a.hasAnnotation(RosettaAttribute.class)) {
             return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
         }
         return super.findNameForSerialization(a);
@@ -52,7 +54,9 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
 
     @Override
     public PropertyName findNameForDeserialization(Annotated a) {
-        if (a.hasAnnotation(RosettaAttribute.class)) {
+        if (a.hasAnnotation(RuneAttribute.class)) {
+            return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
+        } else if (a.hasAnnotation(RosettaAttribute.class)) {
             return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
         }
         return super.findNameForDeserialization(a);
@@ -86,13 +90,13 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
 
     @Override
     public NameTransformer findUnwrappingNameTransformer(AnnotatedMember member) {
-        RuneUnwrapped ann = _findAnnotation(member, RuneUnwrapped.class);
+        RuneMetaType ann = _findAnnotation(member, RuneMetaType.class);
         // if not enabled, just means annotation is not enabled; not necessarily
         // that unwrapping should not be done (relevant when using chained introspectors)
         if (ann == null) {
             return super.findUnwrappingNameTransformer(member);
         }
-        return new MetaNameTransformer();
+        return  NameTransformer.NOP;
     }
 
     @Deprecated
@@ -123,23 +127,4 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
         return Version.unknownVersion();
     }
 
-    static class MetaNameTransformer extends NameTransformer {
-        @Override
-        public String transform(String input) {
-            switch (input) {
-                case "globalKey": return "@key";
-                case "externalKey": return "@key:external";
-                default: return input;
-            }
-        }
-
-        @Override
-        public String reverse(String transformed) {
-            switch (transformed) {
-                case "@key": return "globalKey";
-                case "@key:external": return "externalKey";
-                default: return transformed;
-            }
-        }
-    }
 }

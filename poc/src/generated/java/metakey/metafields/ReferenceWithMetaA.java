@@ -1,5 +1,6 @@
 package metakey.metafields;
 
+import annotations.RuneAttribute;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -111,15 +112,15 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		}
 		
 		@Override
-		//@RosettaAttribute("globalReference")
-		@RosettaAttribute("@reference")
+		@RosettaAttribute("globalReference")
+		@RuneAttribute("@reference")
 		public String getGlobalReference() {
 			return globalReference;
 		}
 		
 		@Override
-		//@RosettaAttribute("externalReference")
-		@RosettaAttribute("@ref:external")
+		@RosettaAttribute("externalReference")
+		@RuneAttribute("@ref:external")
 		public String getExternalReference() {
 			return externalReference;
 		}
@@ -215,15 +216,15 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		}
 		
 		@Override
-		//@RosettaAttribute("globalReference")
-		@RosettaAttribute("@reference")
+		@RosettaAttribute("globalReference")
+		@RuneAttribute("@reference")
 		public String getGlobalReference() {
 			return globalReference;
 		}
 		
 		@Override
-		//@RosettaAttribute("externalReference")
-		@RosettaAttribute("@ref:external")
+		@RosettaAttribute("externalReference")
+		@RuneAttribute("@ref:external")
 		public String getExternalReference() {
 			return externalReference;
 		}
@@ -254,15 +255,15 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 			return this;
 		}
 		@Override
-		//@RosettaAttribute("globalReference")
-		@RosettaAttribute("@reference")
+		@RosettaAttribute("globalReference")
+		@RuneAttribute("@reference")
 		public ReferenceWithMetaABuilder setGlobalReference(String globalReference) {
 			this.globalReference = globalReference==null?null:globalReference;
 			return this;
 		}
 		@Override
-		//@RosettaAttribute("externalReference")
-		@RosettaAttribute("@ref:external")
+		@RosettaAttribute("externalReference")
+		@RuneAttribute("@ref:external")
 		public ReferenceWithMetaABuilder setExternalReference(String externalReference) {
 			this.externalReference = externalReference==null?null:externalReference;
 			return this;

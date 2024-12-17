@@ -1,13 +1,13 @@
 package poc;
 
+import annotations.RuneUnwrapped;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.introspect.*;
+import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
 
@@ -84,6 +84,17 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
         return findPropertyIgnorals(ann);
     }
 
+    @Override
+    public NameTransformer findUnwrappingNameTransformer(AnnotatedMember member) {
+        RuneUnwrapped ann = _findAnnotation(member, RuneUnwrapped.class);
+        // if not enabled, just means annotation is not enabled; not necessarily
+        // that unwrapping should not be done (relevant when using chained introspectors)
+        if (ann == null) {
+            return super.findUnwrappingNameTransformer(member);
+        }
+        return new MetaNameTransformer();
+    }
+
     @Deprecated
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
@@ -110,5 +121,25 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
     @Override
     public Version version() {
         return Version.unknownVersion();
+    }
+
+    static class MetaNameTransformer extends NameTransformer {
+        @Override
+        public String transform(String input) {
+            switch (input) {
+                case "globalKey": return "@key";
+                case "externalKey": return "@key:external";
+                default: return input;
+            }
+        }
+
+        @Override
+        public String reverse(String transformed) {
+            switch (transformed) {
+                case "@key": return "globalKey";
+                case "@key:external": return "externalKey";
+                default: return transformed;
+            }
+        }
     }
 }

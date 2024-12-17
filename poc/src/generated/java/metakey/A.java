@@ -1,5 +1,6 @@
 package metakey;
 
+import annotations.RuneUnwrapped;
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.GlobalKey.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -96,6 +97,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("meta")
+		@RuneUnwrapped
 		public MetaFields getMeta() {
 			return meta;
 		}
@@ -163,6 +165,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("meta")
+		@RuneUnwrapped
 		public MetaFields.MetaFieldsBuilder getMeta() {
 			return meta;
 		}
@@ -188,6 +191,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		}
 		@Override
 		@RosettaAttribute("meta")
+		@RuneUnwrapped
 		public ABuilder setMeta(MetaFields meta) {
 			this.meta = meta==null?null:meta.toBuilder();
 			return this;

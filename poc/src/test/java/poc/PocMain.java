@@ -1,6 +1,7 @@
 package poc;
 
 import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,7 +16,10 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.google.inject.Injector;
+import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.annotations.RosettaEnum;
 import com.rosetta.model.lib.annotations.RosettaEnumValue;
 import com.rosetta.model.lib.records.Date;
@@ -24,8 +28,10 @@ import com.rosetta.model.lib.records.DateImpl;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.function.BiFunction;
 
+import com.rosetta.model.metafields.MetaFields;
 import metakey.Root;
 
 public class PocMain {
@@ -33,7 +39,7 @@ public class PocMain {
     public static void main(String[] args) throws JsonProcessingException {
 //        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
 //        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
-//        CodeGeneratorTestHelper  helper = injector.getInstance(CodeGeneratorTestHelper.class);
+//        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
 //        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
 //        helper.writeClasses(generateCode, "poc");
 
@@ -61,7 +67,6 @@ public class PocMain {
         System.out.println("\n\n");
 
         Root root = objectMapper.readValue(json, Root.class);
-
 
         System.out.println("After:");
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root));

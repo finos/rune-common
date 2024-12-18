@@ -26,7 +26,7 @@ import com.rosetta.model.lib.annotations.RosettaEnum;
 import com.rosetta.model.lib.annotations.RosettaEnumValue;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
-import test.metakey.Root;
+import test.extension.Root;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -37,14 +37,53 @@ import java.util.function.BiFunction;
 public class PocExtensionMain {
 
     public static void main(String[] args) throws JsonProcessingException {
-        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
-        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
-        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
-        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
-        helper.writeClasses(generateCode, "poc");
+//        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
+//        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
+//        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
+//        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
+//        helper.writeClasses(generateCode, "poc");
 
+        System.out.println("\n\n********************** Extension Base");
+        ObjectMapper extensionBaseMapper = create();
 
+        String extensionBaseJson = extensionBaseJson();
 
+        System.out.println("Before:");
+        System.out.println(extensionBaseJson);
+        System.out.println("\n\n");
+
+        Root extensionBaseRoot = extensionBaseMapper.readValue(extensionBaseJson, Root.class);
+
+        System.out.println("After:");
+        System.out.println(extensionBaseMapper.writerWithDefaultPrettyPrinter().writeValueAsString(extensionBaseRoot));
+
+        System.out.println("\n\n********************** Extension Concreate");
+        ObjectMapper extensionConcreteMapper = create();
+
+        String extensionConcreteJson = extensionConcreteJson();
+
+        System.out.println("Before:");
+        System.out.println(extensionConcreteJson);
+        System.out.println("\n\n");
+
+        Root extensionConcreteRoot = extensionConcreteMapper.readValue(extensionConcreteJson, Root.class);
+
+        System.out.println("After:");
+        System.out.println(extensionConcreteMapper.writerWithDefaultPrettyPrinter().writeValueAsString(extensionConcreteRoot));
+
+        System.out.println("\n\n********************** Extension Polymorphic");
+        ObjectMapper extensionPolymorphicMapper = create();
+
+        String extensionPolymorphicJson = extensionPolymorphicJson();
+
+        System.out.println("Before:");
+        System.out.println(extensionPolymorphicJson);
+        System.out.println("\n\n");
+
+        Root extensionPolymorphicRoot = extensionPolymorphicMapper.readValue(extensionPolymorphicJson, Root.class);
+
+        System.out.println("After:");
+        System.out.println(extensionPolymorphicMapper.writerWithDefaultPrettyPrinter().writeValueAsString(extensionPolymorphicRoot));
     }
 
 
@@ -245,7 +284,40 @@ public class PocExtensionMain {
         }
     }
 
+    static String extensionBaseJson() {
+        return "{\n" +
+                "  \"@model\": \"test\",\n" +
+                "  \"@type\": \"test.extension.Root\",\n" +
+                "  \"@version\": \"0.0.0\",\n" +
+                "  \"typeA\": {\n" +
+                "    \"fieldA\": \"foo\"\n" +
+                "  }\n" +
+                "}";
+    }
 
+    static String extensionConcreteJson() {
+        return "{\n" +
+                "  \"@model\": \"test\",\n" +
+                "  \"@type\": \"test.extension.Root\",\n" +
+                "  \"@version\": \"0.0.0\",\n" +
+                "  \"typeB\": {\n" +
+                "    \"fieldB\": \"foo\"\n" +
+                "  }\n" +
+                "}";
+    }
+
+    static String extensionPolymorphicJson() {
+        return "{\n" +
+                "  \"@model\": \"test\",\n" +
+                "  \"@type\": \"test.extension.Root\",\n" +
+                "  \"@version\": \"0.0.0\",\n" +
+                "  \"typeA\": {\n" +
+                "    \"@type\": \"test.extension.B\",\n" +
+                "    \"fieldB\": \"foo\",\n" +
+                "    \"fieldA\": \"bar\"\n" +
+                "  }\n" +
+                "}";
+    }
 
     static String rosettaContents() {
         return "namespace extension\n" +

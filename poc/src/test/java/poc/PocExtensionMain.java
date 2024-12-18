@@ -10,8 +10,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -19,20 +17,12 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.google.inject.Injector;
-import com.regnosys.rosetta.RosettaStandaloneSetup;
-import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
-import com.rosetta.model.lib.annotations.RosettaEnum;
-import com.rosetta.model.lib.annotations.RosettaEnumValue;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 import test.extension.Root;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.function.BiFunction;
 
 public class PocExtensionMain {
 
@@ -168,119 +158,6 @@ public class PocExtensionMain {
         @Override
         public boolean equals(Object o) {
             return this == o;
-        }
-    }
-
-    static public class EnumAsStringBuilderIntrospector {
-
-        public void findEnumValues(AnnotatedClass enumType, Enum<?>[] enumValues, String[] names) {
-            for (AnnotatedField f : enumType.fields()) {
-                final String name = f.getName();
-                for (int i = 0, end = enumValues.length; i < end; ++i) {
-                    if (name.equals(enumValues[i].name())) {
-                        names[i] = enumValues[i].toString();
-                    }
-                }
-            }
-        }
-    }
-
-    static class RosettaEnumBuilderIntrospector {
-
-        private final EnumNameFunc enumNameFunc;
-        private final EnumAliasFunc enumAliasFunc;
-
-        public RosettaEnumBuilderIntrospector(boolean supportRosettaEnumValue) {
-            if (supportRosettaEnumValue) {
-                this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ? annotation.displayName() : annotation.value();
-            } else {
-                this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ? annotation.displayName() : javaEnumName;
-            }
-            this.enumAliasFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ?
-                    new String[]{javaEnumName, annotation.displayName(), annotation.value()} :
-                    new String[]{javaEnumName, annotation.value()};
-        }
-
-        public boolean isApplicable(AnnotatedClass enumType) {
-            return enumType.getAnnotation(RosettaEnum.class) != null;
-        }
-
-        public void findEnumValues(AnnotatedClass enumType, Enum<?>[] enumValues, String[] names) {
-            for (AnnotatedField f : enumType.fields()) {
-                if (f.hasAnnotation(RosettaEnumValue.class)) {
-                    RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
-                    final String name = f.getName();
-                    for (int i = 0, end = enumValues.length; i < end; ++i) {
-                        if (name.equals(enumValues[i].name())) {
-                            names[i] = enumNameFunc.apply(annotation, name);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        public void findEnumAliases(AnnotatedClass enumType, Enum<?>[] enumValues, String[][] aliasList) {
-            for (AnnotatedField f : enumType.fields()) {
-                if (f.hasAnnotation(RosettaEnumValue.class)) {
-                    RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
-                    final String name = f.getName();
-                    for (int i = 0, end = enumValues.length; i < end; ++i) {
-                        if (name.equals(enumValues[i].name())) {
-                            aliasList[i] = enumAliasFunc.apply(annotation, name);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-
-        interface EnumNameFunc extends BiFunction<RosettaEnumValue, String, String> {
-
-        }
-
-        interface EnumAliasFunc extends BiFunction<RosettaEnumValue, String, String[]> {
-
-        }
-    }
-
-    static class BeanUtil {
-
-        public static String getPropertyName(Method method) {
-            String methodName = method.getName();
-            String rawPropertyName = getSubstringIfPrefixMatches(methodName, "get");
-            if (rawPropertyName == null) {
-                rawPropertyName = getSubstringIfPrefixMatches(methodName, "set");
-            }
-
-            if (rawPropertyName == null) {
-                rawPropertyName = getSubstringIfPrefixMatches(methodName, "is");
-            }
-
-            if (rawPropertyName == null) {
-                rawPropertyName = getSubstringIfPrefixMatches(methodName, "add");
-            }
-
-            return toLowerCamelCase(rawPropertyName);
-        }
-
-        public static String toLowerCamelCase(String string) {
-            if (string == null) {
-                return null;
-            } else if (string.isEmpty()) {
-                return string;
-            } else if (string.length() > 1 && Character.isUpperCase(string.charAt(1)) && Character.isUpperCase(string.charAt(0))) {
-                return string;
-            } else {
-                char[] chars = string.toCharArray();
-                chars[0] = Character.toLowerCase(chars[0]);
-                return new String(chars);
-            }
-        }
-
-        private static String getSubstringIfPrefixMatches(String wholeString, String prefix) {
-            return wholeString.startsWith(prefix) ? wholeString.substring(prefix.length()) : null;
         }
     }
 

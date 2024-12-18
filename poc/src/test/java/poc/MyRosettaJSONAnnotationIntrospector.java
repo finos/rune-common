@@ -10,9 +10,13 @@ import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RosettaEnum;
+import com.rosetta.model.lib.annotations.RosettaEnumValue;
 
+import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -21,15 +25,15 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
 
     private static final long serialVersionUID = 1L;
 
-    private final PocMetaMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
+    private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
-    private final PocMetaMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
+    private final RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
 
     public MyRosettaJSONAnnotationIntrospector(boolean supportRosettaEnumValue) {
-        this(new PocMetaMain.EnumAsStringBuilderIntrospector(), new PocMetaMain.RosettaEnumBuilderIntrospector(supportRosettaEnumValue));
+        this(new EnumAsStringBuilderIntrospector(), new RosettaEnumBuilderIntrospector(supportRosettaEnumValue));
     }
 
-    public MyRosettaJSONAnnotationIntrospector(PocMetaMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, PocMetaMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+    public MyRosettaJSONAnnotationIntrospector(EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
@@ -116,7 +120,7 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
-                .map(m -> PocMetaMain.BeanUtil.getPropertyName(m.getAnnotated()))
+                .map(m -> BeanUtil.getPropertyName(m.getAnnotated()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
@@ -127,4 +131,116 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
         return Version.unknownVersion();
     }
 
+    static class RosettaEnumBuilderIntrospector {
+
+        private final EnumNameFunc enumNameFunc;
+        private final EnumAliasFunc enumAliasFunc;
+
+        public RosettaEnumBuilderIntrospector(boolean supportRosettaEnumValue) {
+            if (supportRosettaEnumValue) {
+                this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ? annotation.displayName() : annotation.value();
+            } else {
+                this.enumNameFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ? annotation.displayName() : javaEnumName;
+            }
+            this.enumAliasFunc = (annotation, javaEnumName) -> !annotation.displayName().isEmpty() ?
+                    new String[]{javaEnumName, annotation.displayName(), annotation.value()} :
+                    new String[]{javaEnumName, annotation.value()};
+        }
+
+        public boolean isApplicable(AnnotatedClass enumType) {
+            return enumType.getAnnotation(RosettaEnum.class) != null;
+        }
+
+        public void findEnumValues(AnnotatedClass enumType, Enum<?>[] enumValues, String[] names) {
+            for (AnnotatedField f : enumType.fields()) {
+                if (f.hasAnnotation(RosettaEnumValue.class)) {
+                    RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
+                    final String name = f.getName();
+                    for (int i = 0, end = enumValues.length; i < end; ++i) {
+                        if (name.equals(enumValues[i].name())) {
+                            names[i] = enumNameFunc.apply(annotation, name);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        public void findEnumAliases(AnnotatedClass enumType, Enum<?>[] enumValues, String[][] aliasList) {
+            for (AnnotatedField f : enumType.fields()) {
+                if (f.hasAnnotation(RosettaEnumValue.class)) {
+                    RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
+                    final String name = f.getName();
+                    for (int i = 0, end = enumValues.length; i < end; ++i) {
+                        if (name.equals(enumValues[i].name())) {
+                            aliasList[i] = enumAliasFunc.apply(annotation, name);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        interface EnumNameFunc extends BiFunction<RosettaEnumValue, String, String> {
+
+        }
+
+        interface EnumAliasFunc extends BiFunction<RosettaEnumValue, String, String[]> {
+
+        }
+    }
+
+    static class BeanUtil {
+
+        public static String getPropertyName(Method method) {
+            String methodName = method.getName();
+            String rawPropertyName = getSubstringIfPrefixMatches(methodName, "get");
+            if (rawPropertyName == null) {
+                rawPropertyName = getSubstringIfPrefixMatches(methodName, "set");
+            }
+
+            if (rawPropertyName == null) {
+                rawPropertyName = getSubstringIfPrefixMatches(methodName, "is");
+            }
+
+            if (rawPropertyName == null) {
+                rawPropertyName = getSubstringIfPrefixMatches(methodName, "add");
+            }
+
+            return toLowerCamelCase(rawPropertyName);
+        }
+
+        public static String toLowerCamelCase(String string) {
+            if (string == null) {
+                return null;
+            } else if (string.isEmpty()) {
+                return string;
+            } else if (string.length() > 1 && Character.isUpperCase(string.charAt(1)) && Character.isUpperCase(string.charAt(0))) {
+                return string;
+            } else {
+                char[] chars = string.toCharArray();
+                chars[0] = Character.toLowerCase(chars[0]);
+                return new String(chars);
+            }
+        }
+
+        private static String getSubstringIfPrefixMatches(String wholeString, String prefix) {
+            return wholeString.startsWith(prefix) ? wholeString.substring(prefix.length()) : null;
+        }
+    }
+
+    static public class EnumAsStringBuilderIntrospector {
+
+        public void findEnumValues(AnnotatedClass enumType, Enum<?>[] enumValues, String[] names) {
+            for (AnnotatedField f : enumType.fields()) {
+                final String name = f.getName();
+                for (int i = 0, end = enumValues.length; i < end; ++i) {
+                    if (name.equals(enumValues[i].name())) {
+                        names[i] = enumValues[i].toString();
+                    }
+                }
+            }
+        }
+    }
 }

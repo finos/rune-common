@@ -3,10 +3,14 @@ package poc;
 import annotations.RuneAttribute;
 import annotations.RuneMetaType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.*;
+import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
+import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
@@ -37,6 +41,24 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
+
+
+    @Override
+    protected StdTypeResolverBuilder _constructStdTypeResolverBuilder() {
+        return new MyStdTypeResolverBuilder();
+    }
+
+    @Override
+    protected TypeResolverBuilder<?> _constructStdTypeResolverBuilder(MapperConfig<?> config,
+                                                                      JsonTypeInfo.Value typeInfo, JavaType baseType) {
+        return new MyStdTypeResolverBuilder(typeInfo);
+    }
+
+    @Override
+    protected StdTypeResolverBuilder _constructNoTypeResolverBuilder() {
+        return MyStdTypeResolverBuilder.noTypeInfoBuilder();
+    }
+
 
     @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {

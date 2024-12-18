@@ -1,5 +1,10 @@
 package test.extension;
 
+import annotations.RuneAttribute;
+import annotations.RuneDataType;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.OptBoolean;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -21,7 +26,9 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 0.0.0
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "@type", visible = true, requireTypeIdForSubtypes = OptBoolean.FALSE)
 @RosettaDataType(value="A", builder=A.ABuilderImpl.class, version="0.0.0")
+@RuneDataType(value="A", model = "test", builder=A.ABuilderImpl.class, version="0.0.0")
 public interface A extends RosettaModelObject {
 
 	AMeta metaData = new AMeta();
@@ -45,6 +52,7 @@ public interface A extends RosettaModelObject {
 	}
 	
 	@Override
+	@RuneAttribute("@type")
 	default Class<? extends A> getType() {
 		return A.class;
 	}
@@ -70,6 +78,7 @@ public interface A extends RosettaModelObject {
 	}
 
 	/*********************** Immutable Implementation of A  ***********************/
+	@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "@type", visible = true, requireTypeIdForSubtypes = OptBoolean.FALSE)
 	class AImpl implements A {
 		private final String fieldA;
 		

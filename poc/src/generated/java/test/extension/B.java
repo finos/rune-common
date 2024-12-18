@@ -1,5 +1,9 @@
 package test.extension;
 
+import annotations.RuneAttribute;
+import annotations.RuneDataType;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.OptBoolean;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -25,7 +29,9 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 0.0.0
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "@type", visible = true, requireTypeIdForSubtypes = OptBoolean.FALSE)
 @RosettaDataType(value="B", builder=B.BBuilderImpl.class, version="0.0.0")
+@RuneDataType(value="B", model = "test", builder=B.BBuilderImpl.class, version="0.0.0")
 public interface B extends A {
 
 	BMeta metaData = new BMeta();
@@ -49,6 +55,7 @@ public interface B extends A {
 	}
 	
 	@Override
+	@RuneAttribute("@type")
 	default Class<? extends B> getType() {
 		return B.class;
 	}

@@ -32,7 +32,7 @@ public class PocExtensionMain {
 //        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
 //        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
 //        helper.writeClasses(generateCode, "poc");
-
+//
         System.out.println("\n\n********************** Extension Base");
         ObjectMapper extensionBaseMapper = create();
 
@@ -93,7 +93,9 @@ public class PocExtensionMain {
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
                 .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
+                .configure(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, false)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
+
                 //The next two lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
                 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with
 //                .setFilterProvider(new SimpleFilterProvider().addFilter("ReferenceFilter", new ReferenceFilter()))

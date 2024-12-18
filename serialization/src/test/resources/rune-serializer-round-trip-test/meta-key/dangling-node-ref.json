@@ -4,7 +4,7 @@
   "@version": "0.0.0",
   "nodeRef": {
     "aReference": {
-      "@reference": "someKey",
+      "@ref": "someKey",
       "@ref:external": "someExternalKey"
     }
   }

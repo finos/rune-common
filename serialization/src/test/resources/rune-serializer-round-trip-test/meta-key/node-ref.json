@@ -9,7 +9,7 @@
       "fieldA": "foo"
     },
     "aReference": {
-      "@reference": "someKey",
+      "@ref": "someKey",
       "@ref:external": "someExternalKey"
     }
   }

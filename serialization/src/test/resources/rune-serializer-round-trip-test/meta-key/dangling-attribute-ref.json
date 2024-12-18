@@ -4,7 +4,7 @@
   "@version": "0.0.0",
   "attributeRef": {
     "dateReference": {
-      "@reference": "someKey",
+      "@ref": "someKey",
       "@ref:external": "someExternalKey"
     }
   }

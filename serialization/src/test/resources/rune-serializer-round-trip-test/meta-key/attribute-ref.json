@@ -9,7 +9,7 @@
       "@data": "2024-12-12"
     },
     "dateReference": {
-      "@reference": "someKey",
+      "@ref": "someKey",
       "@ref:external": "someExternalKey"
     }
   }

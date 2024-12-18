@@ -28,7 +28,7 @@ import java.util.function.BiFunction;
 
 import test.metakey.Root;
 
-public class PocMain {
+public class PocMetaMain {
 
     public static void main(String[] args) throws JsonProcessingException {
 //        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();

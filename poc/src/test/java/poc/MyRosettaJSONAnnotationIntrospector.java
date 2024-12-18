@@ -21,15 +21,15 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
 
     private static final long serialVersionUID = 1L;
 
-    private final PocMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
+    private final PocMetaMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
-    private final PocMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
+    private final PocMetaMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
 
     public MyRosettaJSONAnnotationIntrospector(boolean supportRosettaEnumValue) {
-        this(new PocMain.EnumAsStringBuilderIntrospector(), new PocMain.RosettaEnumBuilderIntrospector(supportRosettaEnumValue));
+        this(new PocMetaMain.EnumAsStringBuilderIntrospector(), new PocMetaMain.RosettaEnumBuilderIntrospector(supportRosettaEnumValue));
     }
 
-    public MyRosettaJSONAnnotationIntrospector(PocMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, PocMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
+    public MyRosettaJSONAnnotationIntrospector(PocMetaMain.EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, PocMetaMain.RosettaEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
@@ -116,7 +116,7 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
-                .map(m -> PocMain.BeanUtil.getPropertyName(m.getAnnotated()))
+                .map(m -> PocMetaMain.BeanUtil.getPropertyName(m.getAnnotated()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }

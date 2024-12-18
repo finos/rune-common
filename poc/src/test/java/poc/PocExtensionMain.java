@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -93,8 +94,8 @@ public class PocExtensionMain {
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
                 .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
-                .configure(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, false)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
+                .setFilterProvider(new SimpleFilterProvider().addFilter("SubTypeFilter", new SubTypeFilter()))
 
                 //The next two lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
                 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with

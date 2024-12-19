@@ -86,7 +86,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
 
-    public SubstitutionMap findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member) {
+    public SubstitutionMap findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
         AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
         RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
         if (ann != null) {
@@ -100,7 +100,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                             .collect(Collectors.toMap(
                                     s -> {
                                         try {
-                                            return config.constructType(RosettaXMLAnnotationIntrospector.class.getClassLoader().loadClass(s.toString()));
+                                            return config.constructType(classLoader.loadClass(s.toString()));
                                         } catch (ClassNotFoundException e) {
                                             throw new RuntimeException(e);
                                         }

@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,23 +52,27 @@ public class RosettaXMLModule extends SimpleModule {
 
     private final ObjectMapper mapper;
 
+    private final ClassLoader classLoader;
 
-    public RosettaXMLModule(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
+
+    public RosettaXMLModule(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue, ClassLoader classLoader) {
         super(RosettaXMLModule.class.getSimpleName());
         this.mapper = mapper;
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.supportNativeEnumValue = supportNativeEnumValue;
+        this.classLoader = classLoader;
     }
 
     @Override
     public void setupModule(SetupContext context) {
         // Note: order is important. Each modifier is inserted to the front of the list of modifiers.
-        context.addBeanSerializerModifier(new RosettaBeanSerializerModifier());
+        final SubstitutionMapLoader substitutionMapLoader = new SubstitutionMapLoader(classLoader);
+        context.addBeanSerializerModifier(new RosettaBeanSerializerModifier(substitutionMapLoader));
         context.addBeanSerializerModifier(new XmlBeanSerializerModifier());
-        context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier());
+        context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier(substitutionMapLoader));
         context.addBeanDeserializerModifier(new XmlBeanDeserializerModifier(FromXmlParser.DEFAULT_UNNAMED_TEXT_PROPERTY));
 
-        context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(mapper, rosettaXMLConfiguration,supportNativeEnumValue));
+        context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(mapper, rosettaXMLConfiguration, supportNativeEnumValue));
 
         // Workaround, see https://github.com/REGnosys/rosetta-dsl/issues/663
         addDeserializer(LocalTime.class, new StdDeserializer<LocalTime>(LocalTime.class) {

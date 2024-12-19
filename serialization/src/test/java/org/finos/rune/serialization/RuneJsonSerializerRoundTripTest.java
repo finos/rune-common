@@ -32,7 +32,7 @@ public class RuneJsonSerializerRoundTripTest {
 
     @BeforeEach
     void setUp() {
-        runeJsonSerializer = new RuneJsonSerializerImpl();
+        runeJsonSerializer = new RuneJacksonJsonSerializer();
     }
 
     @ParameterizedTest(name = "{0} - {1}")

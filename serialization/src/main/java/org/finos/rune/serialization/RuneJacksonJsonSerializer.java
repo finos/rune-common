@@ -2,7 +2,7 @@ package org.finos.rune.serialization;
 
 import com.rosetta.model.lib.RosettaModelObject;
 
-public class RuneJsonSerializerImpl implements RuneJsonSerializer {
+public class RuneJacksonJsonSerializer implements RuneJsonSerializer {
     @Override
     public <T extends RosettaModelObject> String toJson(T runeObject) {
         return "{\n" +

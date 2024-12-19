@@ -31,7 +31,7 @@ public class RuneJsonSerializerErrorHandlingTest {
 
     @BeforeEach
     void setUp() {
-        runeJsonSerializer = new RuneJsonSerializerImpl();
+        runeJsonSerializer = new RuneJacksonJsonSerializer();
     }
 
 

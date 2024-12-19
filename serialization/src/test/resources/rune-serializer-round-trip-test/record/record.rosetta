@@ -1,0 +1,18 @@
+namespace record
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type RecordSingle:
+  dateType date (1..1)
+  dateTimeType dateTime (1..1)
+  zonedDateTimeType zonedDateTime (1..1)
+
+type RecordList:
+  dateType date (1..*)
+  dateTimeType dateTime (1..*)
+  zonedDateTimeType zonedDateTime (1..*)
+
+type Root:
+  [rootType]
+  recordSingle RecordSingle (0..1)
+  recordList RecordList (0..1)

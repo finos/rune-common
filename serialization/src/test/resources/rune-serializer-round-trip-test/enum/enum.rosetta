@@ -1,0 +1,19 @@
+namespace enumtypes
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+enum EnumType:
+  A
+  B
+  C
+
+type EnumSingle:
+  enumType EnumType (1..1)
+
+type EnumList:
+  enumType EnumType (1..*)
+
+type Root:
+  [rootType]
+  enumSingle EnumSingle (0..1)
+  enumList EnumList (0..1)

@@ -21,22 +21,12 @@ package com.regnosys.rosetta.common.serialisation.xml;
  */
 
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
-import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
-import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanPropertyWriter;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializer;
-import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerBase;
-import com.fasterxml.jackson.dataformat.xml.util.AnnotationUtil;
-import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
-import com.fasterxml.jackson.dataformat.xml.util.XmlInfo;
-import com.rosetta.model.lib.annotations.RosettaDataType;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Support for serialising substitution groups by replacing property writers
@@ -44,6 +34,12 @@ import java.util.Map;
  * property name based on the type of the value.
  */
 public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
+    private final SubstitutionMapLoader substitutionMapLoader;
+
+    public RosettaBeanSerializerModifier(SubstitutionMapLoader substitutionMapLoader) {
+        this.substitutionMapLoader = substitutionMapLoader;
+    }
+
     @Override
     public List<BeanPropertyWriter> changeProperties(SerializationConfig config,
                                                      BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
@@ -51,7 +47,7 @@ public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
         for (int i = 0, len = beanProperties.size(); i < len; ++i) {
             BeanPropertyWriter bpw = beanProperties.get(i);
             final AnnotatedMember member = bpw.getMember();
-            SubstitutionMap substitutionMap = findSubstitutionMap(config, intr, member);
+            SubstitutionMap substitutionMap = substitutionMapLoader.findSubstitutionMap(config, intr, member);
             if (substitutionMap != null) {
                 beanProperties.set(i, new SubstitutingBeanPropertyWriter(bpw, substitutionMap));
             }
@@ -59,20 +55,7 @@ public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
         return beanProperties;
     }
 
-    // TODO: move in common service
-    public static SubstitutionMap findSubstitutionMap(MapperConfig<?> config,
-                                                             AnnotationIntrospector ai,
-                                                             AnnotatedMember prop) {
-        for (AnnotationIntrospector intr : ai.allIntrospectors()) {
-            if (intr instanceof RosettaXMLAnnotationIntrospector) {
-                SubstitutionMap sm = ((RosettaXMLAnnotationIntrospector) intr).findSubstitutionMap(config, prop);
-                if (sm != null) {
-                    return sm;
-                }
-            }
-        }
-        return null;
-    }
+
 
     @Override
     public JsonSerializer<?> modifySerializer(SerializationConfig config,

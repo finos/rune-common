@@ -1,13 +1,14 @@
 package test.metakey.metafields;
 
-import annotations.RuneAttribute;
-import annotations.RuneDataType;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.meta.BasicRosettaMetaData;
 import com.rosetta.model.lib.meta.Reference;
+import com.rosetta.model.lib.meta.Reference.ReferenceBuilder;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
@@ -17,6 +18,7 @@ import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import java.util.Objects;
 import test.metakey.A;
+import test.metakey.A.ABuilder;
 
 import static java.util.Optional.ofNullable;
 
@@ -51,6 +53,7 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 	}
 	
 	@Override
+	@RuneAttribute("@type")
 	default Class<? extends ReferenceWithMetaA> getType() {
 		return ReferenceWithMetaA.class;
 	}
@@ -71,10 +74,12 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 
 	/*********************** Builder Interface  ***********************/
 	interface ReferenceWithMetaABuilder extends ReferenceWithMetaA, RosettaModelObjectBuilder, ReferenceWithMetaBuilder<A> {
-		A.ABuilder getOrCreateValue();
-		A.ABuilder getValue();
-		Reference.ReferenceBuilder getOrCreateReference();
-		Reference.ReferenceBuilder getReference();
+		ABuilder getOrCreateValue();
+		@Override
+		ABuilder getValue();
+		ReferenceBuilder getOrCreateReference();
+		@Override
+		ReferenceBuilder getReference();
 		ReferenceWithMetaABuilder setValue(A value);
 		ReferenceWithMetaABuilder setGlobalReference(String globalReference);
 		ReferenceWithMetaABuilder setExternalReference(String externalReference);
@@ -82,10 +87,10 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 
 		@Override
 		default void process(RosettaPath path, BuilderProcessor processor) {
-			processRosetta(path.newSubPath("value"), processor, A.ABuilder.class, getValue());
+			processRosetta(path.newSubPath("value"), processor, ABuilder.class, getValue());
 			processor.processBasic(path.newSubPath("globalReference"), String.class, getGlobalReference(), this, AttributeMeta.META);
 			processor.processBasic(path.newSubPath("externalReference"), String.class, getExternalReference(), this, AttributeMeta.META);
-			processRosetta(path.newSubPath("reference"), processor, Reference.ReferenceBuilder.class, getReference());
+			processRosetta(path.newSubPath("reference"), processor, ReferenceBuilder.class, getReference());
 		}
 		
 
@@ -108,6 +113,7 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		
 		@Override
 		@RosettaAttribute("value")
+		@RuneAttribute("@data")
 		public A getValue() {
 			return value;
 		}
@@ -128,6 +134,7 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		
 		@Override
 		@RosettaAttribute("address")
+		@RuneAttribute("@ref:scoped")
 		public Reference getReference() {
 			return reference;
 		}
@@ -189,23 +196,21 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 	/*********************** Builder Implementation of ReferenceWithMetaA  ***********************/
 	class ReferenceWithMetaABuilderImpl implements ReferenceWithMetaABuilder {
 	
-		protected A.ABuilder value;
+		protected ABuilder value;
 		protected String globalReference;
 		protected String externalReference;
-		protected Reference.ReferenceBuilder reference;
-	
-		public ReferenceWithMetaABuilderImpl() {
-		}
-	
+		protected ReferenceBuilder reference;
+		
 		@Override
 		@RosettaAttribute("value")
-		public A.ABuilder getValue() {
+		@RuneAttribute("@data")
+		public ABuilder getValue() {
 			return value;
 		}
 		
 		@Override
-		public A.ABuilder getOrCreateValue() {
-			A.ABuilder result;
+		public ABuilder getOrCreateValue() {
+			ABuilder result;
 			if (value!=null) {
 				result = value;
 			}
@@ -232,13 +237,14 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		
 		@Override
 		@RosettaAttribute("address")
-		public Reference.ReferenceBuilder getReference() {
+		@RuneAttribute("@ref:scoped")
+		public ReferenceBuilder getReference() {
 			return reference;
 		}
 		
 		@Override
-		public Reference.ReferenceBuilder getOrCreateReference() {
-			Reference.ReferenceBuilder result;
+		public ReferenceBuilder getOrCreateReference() {
+			ReferenceBuilder result;
 			if (reference!=null) {
 				result = reference;
 			}
@@ -251,28 +257,33 @@ public interface ReferenceWithMetaA extends RosettaModelObject, ReferenceWithMet
 		
 		@Override
 		@RosettaAttribute("value")
-		public ReferenceWithMetaABuilder setValue(A value) {
-			this.value = value==null?null:value.toBuilder();
+		@RuneAttribute("@data")
+		public ReferenceWithMetaABuilder setValue(A _value) {
+			this.value = _value == null ? null : _value.toBuilder();
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("globalReference")
 		@RuneAttribute("@ref")
-		public ReferenceWithMetaABuilder setGlobalReference(String globalReference) {
-			this.globalReference = globalReference==null?null:globalReference;
+		public ReferenceWithMetaABuilder setGlobalReference(String _globalReference) {
+			this.globalReference = _globalReference == null ? null : _globalReference;
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("externalReference")
 		@RuneAttribute("@ref:external")
-		public ReferenceWithMetaABuilder setExternalReference(String externalReference) {
-			this.externalReference = externalReference==null?null:externalReference;
+		public ReferenceWithMetaABuilder setExternalReference(String _externalReference) {
+			this.externalReference = _externalReference == null ? null : _externalReference;
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("address")
-		public ReferenceWithMetaABuilder setReference(Reference reference) {
-			this.reference = reference==null?null:reference.toBuilder();
+		@RuneAttribute("@ref:scoped")
+		public ReferenceWithMetaABuilder setReference(Reference _reference) {
+			this.reference = _reference == null ? null : _reference.toBuilder();
 			return this;
 		}
 		

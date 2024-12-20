@@ -1,7 +1,5 @@
 package poc;
 
-import annotations.RuneAttribute;
-import annotations.RuneMetaType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.Version;
@@ -12,10 +10,7 @@ import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
-import com.rosetta.model.lib.annotations.RosettaAttribute;
-import com.rosetta.model.lib.annotations.RosettaDataType;
-import com.rosetta.model.lib.annotations.RosettaEnum;
-import com.rosetta.model.lib.annotations.RosettaEnumValue;
+import com.rosetta.model.lib.annotations.*;
 
 import java.lang.reflect.Method;
 import java.util.Objects;

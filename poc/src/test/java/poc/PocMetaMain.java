@@ -1,5 +1,6 @@
 package poc;
 
+import annotations.RossetaModelObjectMixin;
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -15,22 +17,27 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 //import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.google.inject.Injector;
+import com.regnosys.rosetta.RosettaStandaloneSetup;
+import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 
 import test.metakey.Root;
 
 public class PocMetaMain {
 
     public static void main(String[] args) throws JsonProcessingException {
-//        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
-//        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
-//        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
-//        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
-//        helper.writeClasses(generateCode, "poc");
+        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
+        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
+        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
+        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
+        helper.writeClasses(generateCode, "poc");
 
 //        System.out.println("Old world serialisation:");
 //        ObjectMapper oldMapper = RosettaObjectMapperCreator.forJSON().create();
@@ -92,6 +99,8 @@ public class PocMetaMain {
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
                 .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
+                .setFilterProvider(new SimpleFilterProvider().addFilter("SubTypeFilter", new SubTypeFilter()))
+                .addMixIn(RosettaModelObject.class, RossetaModelObjectMixin.class)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
                 //The next two lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
                 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with

@@ -1,12 +1,12 @@
 package poc;
 
-import annotations.RuneDataType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
+import com.rosetta.model.lib.annotations.RuneDataType;
 
 public class MyStdTypeResolverBuilder extends StdTypeResolverBuilder {
 

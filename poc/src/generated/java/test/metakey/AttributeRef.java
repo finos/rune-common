@@ -1,10 +1,11 @@
 package test.metakey;
 
-import annotations.RuneDataType;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -52,10 +53,10 @@ public interface AttributeRef extends RosettaModelObject {
 	}
 	
 	@Override
+	@RuneAttribute("@type")
 	default Class<? extends AttributeRef> getType() {
 		return AttributeRef.class;
 	}
-	
 	
 	@Override
 	default void process(RosettaPath path, Processor processor) {
@@ -67,13 +68,15 @@ public interface AttributeRef extends RosettaModelObject {
 	/*********************** Builder Interface  ***********************/
 	interface AttributeRefBuilder extends AttributeRef, RosettaModelObjectBuilder {
 		FieldWithMetaDateBuilder getOrCreateDateField();
+		@Override
 		FieldWithMetaDateBuilder getDateField();
 		ReferenceWithMetaDateBuilder getOrCreateDateReference();
+		@Override
 		ReferenceWithMetaDateBuilder getDateReference();
-		AttributeRefBuilder setDateField(FieldWithMetaDate dateField0);
-		AttributeRefBuilder setDateFieldValue(Date dateField1);
-		AttributeRefBuilder setDateReference(ReferenceWithMetaDate dateReference0);
-		AttributeRefBuilder setDateReferenceValue(Date dateReference1);
+		AttributeRefBuilder setDateField(FieldWithMetaDate dateField);
+		AttributeRefBuilder setDateFieldValue(Date dateField);
+		AttributeRefBuilder setDateReference(ReferenceWithMetaDate dateReference);
+		AttributeRefBuilder setDateReferenceValue(Date dateReference);
 
 		@Override
 		default void process(RosettaPath path, BuilderProcessor processor) {
@@ -97,12 +100,14 @@ public interface AttributeRef extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("dateField")
+		@RuneAttribute("dateField")
 		public FieldWithMetaDate getDateField() {
 			return dateField;
 		}
 		
 		@Override
 		@RosettaAttribute("dateReference")
+		@RuneAttribute("dateReference")
 		public ReferenceWithMetaDate getDateReference() {
 			return dateReference;
 		}
@@ -158,12 +163,10 @@ public interface AttributeRef extends RosettaModelObject {
 	
 		protected FieldWithMetaDateBuilder dateField;
 		protected ReferenceWithMetaDateBuilder dateReference;
-	
-		public AttributeRefBuilderImpl() {
-		}
-	
+		
 		@Override
 		@RosettaAttribute("dateField")
+		@RuneAttribute("dateField")
 		public FieldWithMetaDateBuilder getDateField() {
 			return dateField;
 		}
@@ -183,6 +186,7 @@ public interface AttributeRef extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("dateReference")
+		@RuneAttribute("dateReference")
 		public ReferenceWithMetaDateBuilder getDateReference() {
 			return dateReference;
 		}
@@ -202,24 +206,29 @@ public interface AttributeRef extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("dateField")
-		public AttributeRefBuilder setDateField(FieldWithMetaDate dateField) {
-			this.dateField = dateField==null?null:dateField.toBuilder();
+		@RuneAttribute("dateField")
+		public AttributeRefBuilder setDateField(FieldWithMetaDate _dateField) {
+			this.dateField = _dateField == null ? null : _dateField.toBuilder();
 			return this;
 		}
+		
 		@Override
-		public AttributeRefBuilder setDateFieldValue(Date dateField) {
-			this.getOrCreateDateField().setValue(dateField);
+		public AttributeRefBuilder setDateFieldValue(Date _dateField) {
+			this.getOrCreateDateField().setValue(_dateField);
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("dateReference")
-		public AttributeRefBuilder setDateReference(ReferenceWithMetaDate dateReference) {
-			this.dateReference = dateReference==null?null:dateReference.toBuilder();
+		@RuneAttribute("dateReference")
+		public AttributeRefBuilder setDateReference(ReferenceWithMetaDate _dateReference) {
+			this.dateReference = _dateReference == null ? null : _dateReference.toBuilder();
 			return this;
 		}
+		
 		@Override
-		public AttributeRefBuilder setDateReferenceValue(Date dateReference) {
-			this.getOrCreateDateReference().setValue(dateReference);
+		public AttributeRefBuilder setDateReferenceValue(Date _dateReference) {
+			this.getOrCreateDateReference().setValue(_dateReference);
 			return this;
 		}
 		

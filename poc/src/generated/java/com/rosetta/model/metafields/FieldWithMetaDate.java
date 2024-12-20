@@ -1,13 +1,13 @@
 package com.rosetta.model.metafields;
 
-import annotations.RuneAttribute;
-import annotations.RuneMetaType;
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.GlobalKey.GlobalKeyBuilder;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+import com.rosetta.model.lib.annotations.RuneMetaType;
 import com.rosetta.model.lib.meta.BasicRosettaMetaData;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.FieldWithMeta.FieldWithMetaBuilder;

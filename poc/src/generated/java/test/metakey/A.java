@@ -1,18 +1,20 @@
 package test.metakey;
 
-import annotations.RuneDataType;
-import annotations.RuneMetaType;
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+import com.rosetta.model.lib.annotations.RuneDataType;
+import com.rosetta.model.lib.annotations.RuneMetaType;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import com.rosetta.model.metafields.MetaFields;
+import com.rosetta.model.metafields.MetaFields.MetaFieldsBuilder;
 import java.util.Objects;
 
 import test.metakey.A.ABuilderImpl;
@@ -49,10 +51,10 @@ public interface A extends RosettaModelObject, GlobalKey {
 	}
 	
 	@Override
+	@RuneAttribute("@type")
 	default Class<? extends A> getType() {
 		return A.class;
 	}
-	
 	
 	@Override
 	default void process(RosettaPath path, Processor processor) {
@@ -62,16 +64,17 @@ public interface A extends RosettaModelObject, GlobalKey {
 	
 
 	/*********************** Builder Interface  ***********************/
-	interface ABuilder extends A, RosettaModelObjectBuilder {
-		MetaFields.MetaFieldsBuilder getOrCreateMeta();
-		MetaFields.MetaFieldsBuilder getMeta();
+	interface ABuilder extends A, RosettaModelObjectBuilder, GlobalKeyBuilder {
+		MetaFieldsBuilder getOrCreateMeta();
+		@Override
+		MetaFieldsBuilder getMeta();
 		ABuilder setFieldA(String fieldA);
 		ABuilder setMeta(MetaFields meta);
 
 		@Override
 		default void process(RosettaPath path, BuilderProcessor processor) {
 			processor.processBasic(path.newSubPath("fieldA"), String.class, getFieldA(), this);
-			processRosetta(path.newSubPath("meta"), processor, MetaFields.MetaFieldsBuilder.class, getMeta());
+			processRosetta(path.newSubPath("meta"), processor, MetaFieldsBuilder.class, getMeta());
 		}
 		
 
@@ -90,6 +93,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("fieldA")
+		@RuneAttribute("fieldA")
 		public String getFieldA() {
 			return fieldA;
 		}
@@ -148,16 +152,14 @@ public interface A extends RosettaModelObject, GlobalKey {
 	}
 
 	/*********************** Builder Implementation of A  ***********************/
-	class ABuilderImpl implements ABuilder, GlobalKeyBuilder {
+	class ABuilderImpl implements ABuilder {
 	
 		protected String fieldA;
-		protected MetaFields.MetaFieldsBuilder meta;
-	
-		public ABuilderImpl() {
-		}
-	
+		protected MetaFieldsBuilder meta;
+		
 		@Override
 		@RosettaAttribute("fieldA")
+		@RuneAttribute("fieldA")
 		public String getFieldA() {
 			return fieldA;
 		}
@@ -165,13 +167,13 @@ public interface A extends RosettaModelObject, GlobalKey {
 		@Override
 		@RosettaAttribute("meta")
 		@RuneMetaType
-		public MetaFields.MetaFieldsBuilder getMeta() {
+		public MetaFieldsBuilder getMeta() {
 			return meta;
 		}
 		
 		@Override
-		public MetaFields.MetaFieldsBuilder getOrCreateMeta() {
-			MetaFields.MetaFieldsBuilder result;
+		public MetaFieldsBuilder getOrCreateMeta() {
+			MetaFieldsBuilder result;
 			if (meta!=null) {
 				result = meta;
 			}
@@ -184,15 +186,17 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("fieldA")
-		public ABuilder setFieldA(String fieldA) {
-			this.fieldA = fieldA==null?null:fieldA;
+		@RuneAttribute("fieldA")
+		public ABuilder setFieldA(String _fieldA) {
+			this.fieldA = _fieldA == null ? null : _fieldA;
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("meta")
 		@RuneMetaType
-		public ABuilder setMeta(MetaFields meta) {
-			this.meta = meta==null?null:meta.toBuilder();
+		public ABuilder setMeta(MetaFields _meta) {
+			this.meta = _meta == null ? null : _meta.toBuilder();
 			return this;
 		}
 		

@@ -1,10 +1,11 @@
 package test.metakey;
 
-import annotations.RuneDataType;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
@@ -12,6 +13,8 @@ import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import java.util.Objects;
 
+import test.metakey.AttributeRef.AttributeRefBuilder;
+import test.metakey.NodeRef.NodeRefBuilder;
 import test.metakey.Root.RootBuilderImpl;
 import test.metakey.meta.RootMeta;
 
@@ -46,10 +49,10 @@ public interface Root extends RosettaModelObject {
 	}
 	
 	@Override
+	@RuneAttribute("@type")
 	default Class<? extends Root> getType() {
 		return Root.class;
 	}
-	
 	
 	@Override
 	default void process(RosettaPath path, Processor processor) {
@@ -60,17 +63,19 @@ public interface Root extends RosettaModelObject {
 
 	/*********************** Builder Interface  ***********************/
 	interface RootBuilder extends Root, RosettaModelObjectBuilder {
-		NodeRef.NodeRefBuilder getOrCreateNodeRef();
-		NodeRef.NodeRefBuilder getNodeRef();
-		AttributeRef.AttributeRefBuilder getOrCreateAttributeRef();
-		AttributeRef.AttributeRefBuilder getAttributeRef();
+		NodeRefBuilder getOrCreateNodeRef();
+		@Override
+		NodeRefBuilder getNodeRef();
+		AttributeRefBuilder getOrCreateAttributeRef();
+		@Override
+		AttributeRefBuilder getAttributeRef();
 		RootBuilder setNodeRef(NodeRef nodeRef);
 		RootBuilder setAttributeRef(AttributeRef attributeRef);
 
 		@Override
 		default void process(RosettaPath path, BuilderProcessor processor) {
-			processRosetta(path.newSubPath("nodeRef"), processor, NodeRef.NodeRefBuilder.class, getNodeRef());
-			processRosetta(path.newSubPath("attributeRef"), processor, AttributeRef.AttributeRefBuilder.class, getAttributeRef());
+			processRosetta(path.newSubPath("nodeRef"), processor, NodeRefBuilder.class, getNodeRef());
+			processRosetta(path.newSubPath("attributeRef"), processor, AttributeRefBuilder.class, getAttributeRef());
 		}
 		
 
@@ -89,12 +94,14 @@ public interface Root extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("nodeRef")
+		@RuneAttribute("nodeRef")
 		public NodeRef getNodeRef() {
 			return nodeRef;
 		}
 		
 		@Override
 		@RosettaAttribute("attributeRef")
+		@RuneAttribute("attributeRef")
 		public AttributeRef getAttributeRef() {
 			return attributeRef;
 		}
@@ -148,21 +155,19 @@ public interface Root extends RosettaModelObject {
 	/*********************** Builder Implementation of Root  ***********************/
 	class RootBuilderImpl implements RootBuilder {
 	
-		protected NodeRef.NodeRefBuilder nodeRef;
-		protected AttributeRef.AttributeRefBuilder attributeRef;
-	
-		public RootBuilderImpl() {
-		}
-	
+		protected NodeRefBuilder nodeRef;
+		protected AttributeRefBuilder attributeRef;
+		
 		@Override
 		@RosettaAttribute("nodeRef")
-		public NodeRef.NodeRefBuilder getNodeRef() {
+		@RuneAttribute("nodeRef")
+		public NodeRefBuilder getNodeRef() {
 			return nodeRef;
 		}
 		
 		@Override
-		public NodeRef.NodeRefBuilder getOrCreateNodeRef() {
-			NodeRef.NodeRefBuilder result;
+		public NodeRefBuilder getOrCreateNodeRef() {
+			NodeRefBuilder result;
 			if (nodeRef!=null) {
 				result = nodeRef;
 			}
@@ -175,13 +180,14 @@ public interface Root extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("attributeRef")
-		public AttributeRef.AttributeRefBuilder getAttributeRef() {
+		@RuneAttribute("attributeRef")
+		public AttributeRefBuilder getAttributeRef() {
 			return attributeRef;
 		}
 		
 		@Override
-		public AttributeRef.AttributeRefBuilder getOrCreateAttributeRef() {
-			AttributeRef.AttributeRefBuilder result;
+		public AttributeRefBuilder getOrCreateAttributeRef() {
+			AttributeRefBuilder result;
 			if (attributeRef!=null) {
 				result = attributeRef;
 			}
@@ -194,14 +200,17 @@ public interface Root extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("nodeRef")
-		public RootBuilder setNodeRef(NodeRef nodeRef) {
-			this.nodeRef = nodeRef==null?null:nodeRef.toBuilder();
+		@RuneAttribute("nodeRef")
+		public RootBuilder setNodeRef(NodeRef _nodeRef) {
+			this.nodeRef = _nodeRef == null ? null : _nodeRef.toBuilder();
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("attributeRef")
-		public RootBuilder setAttributeRef(AttributeRef attributeRef) {
-			this.attributeRef = attributeRef==null?null:attributeRef.toBuilder();
+		@RuneAttribute("attributeRef")
+		public RootBuilder setAttributeRef(AttributeRef _attributeRef) {
+			this.attributeRef = _attributeRef == null ? null : _attributeRef.toBuilder();
 			return this;
 		}
 		

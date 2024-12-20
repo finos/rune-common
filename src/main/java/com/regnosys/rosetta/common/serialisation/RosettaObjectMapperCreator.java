@@ -87,24 +87,28 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
         return new RosettaObjectMapperCreator(new RosettaXMLModule(base, config, supportRosettaEnumValue, classLoader), base);
     }
 
+    public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
+        return forXML(config, RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream, ClassLoader classLoader) throws IOException {
-        ObjectMapper xmlConfigurationMapper = new ObjectMapper()
-                .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
-        RosettaXMLConfiguration config = xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
+        final RosettaXMLConfiguration config = getRosettaXMLConfiguration(configInputStream);
         return forXML(config, classLoader);
     }
 
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {
-        ObjectMapper xmlConfigurationMapper = new ObjectMapper()
-                .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
-        RosettaXMLConfiguration config = xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
-        return forXML(config, RosettaObjectMapperCreator.class.getClassLoader());
+        return forXML(configInputStream, RosettaObjectMapperCreator.class.getClassLoader());
     }
 
     public static RosettaObjectMapperCreator forXML() {
         return forXML(new RosettaXMLConfiguration(Collections.emptyMap()), RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
+    private static RosettaXMLConfiguration getRosettaXMLConfiguration(InputStream configInputStream) throws IOException {
+        ObjectMapper xmlConfigurationMapper = new ObjectMapper()
+                .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
+                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
+        return xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
     }
 
     @Override

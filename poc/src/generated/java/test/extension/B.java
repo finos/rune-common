@@ -1,8 +1,5 @@
 package test.extension;
 
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.OptBoolean;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
@@ -14,14 +11,7 @@ import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
-import test.extension.A;
-import test.extension.A.ABuilder;
-import test.extension.A.ABuilderImpl;
-import test.extension.A.AImpl;
-import test.extension.B;
-import test.extension.B.BBuilder;
 import test.extension.B.BBuilderImpl;
-import test.extension.B.BImpl;
 import test.extension.meta.BMeta;
 import java.util.Objects;
 
@@ -30,10 +20,8 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 0.0.0
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "@type", visible = true, requireTypeIdForSubtypes = OptBoolean.FALSE)
-@RosettaDataType(value="B", builder=B.BBuilderImpl.class, version="0.0.0")
-@RuneDataType(value="B", model = "test", builder=B.BBuilderImpl.class, version="0.0.0")
-@JsonFilter("SubTypeFilter")
+@RosettaDataType(value="B", builder= BBuilderImpl.class, version="0.0.0")
+@RuneDataType(value="B", model="test", builder= BBuilderImpl.class, version="0.0.0")
 public interface B extends A {
 
 	BMeta metaData = new BMeta();
@@ -62,7 +50,6 @@ public interface B extends A {
 		return B.class;
 	}
 	
-	
 	@Override
 	default void process(RosettaPath path, Processor processor) {
 		processor.processBasic(path.newSubPath("fieldA"), String.class, getFieldA(), this);
@@ -71,7 +58,8 @@ public interface B extends A {
 	
 
 	/*********************** Builder Interface  ***********************/
-	interface BBuilder extends B, A.ABuilder {
+	interface BBuilder extends B, ABuilder {
+		@Override
 		BBuilder setFieldA(String fieldA);
 		BBuilder setFieldB(String fieldB);
 
@@ -86,7 +74,7 @@ public interface B extends A {
 	}
 
 	/*********************** Immutable Implementation of B  ***********************/
-	class BImpl extends A.AImpl implements B {
+	class BImpl extends AImpl implements B {
 		private final String fieldB;
 		
 		protected BImpl(BBuilder builder) {
@@ -96,6 +84,7 @@ public interface B extends A {
 		
 		@Override
 		@RosettaAttribute("fieldB")
+		@RuneAttribute("fieldB")
 		public String getFieldB() {
 			return fieldB;
 		}
@@ -145,29 +134,30 @@ public interface B extends A {
 	}
 
 	/*********************** Builder Implementation of B  ***********************/
-	class BBuilderImpl extends A.ABuilderImpl  implements BBuilder {
+	class BBuilderImpl extends ABuilderImpl implements BBuilder {
 	
 		protected String fieldB;
-	
-		public BBuilderImpl() {
-		}
-	
+		
 		@Override
 		@RosettaAttribute("fieldB")
+		@RuneAttribute("fieldB")
 		public String getFieldB() {
 			return fieldB;
 		}
 		
 		@Override
 		@RosettaAttribute("fieldA")
-		public BBuilder setFieldA(String fieldA) {
-			this.fieldA = fieldA==null?null:fieldA;
+		@RuneAttribute("fieldA")
+		public BBuilder setFieldA(String _fieldA) {
+			this.fieldA = _fieldA == null ? null : _fieldA;
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("fieldB")
-		public BBuilder setFieldB(String fieldB) {
-			this.fieldB = fieldB==null?null:fieldB;
+		@RuneAttribute("fieldB")
+		public BBuilder setFieldB(String _fieldB) {
+			this.fieldB = _fieldB == null ? null : _fieldB;
 			return this;
 		}
 		

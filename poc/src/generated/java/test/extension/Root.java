@@ -4,17 +4,16 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
-import test.extension.A;
-import test.extension.B;
-import test.extension.Root;
-import test.extension.Root.RootBuilder;
+import test.extension.A.ABuilder;
+import test.extension.B.BBuilder;
 import test.extension.Root.RootBuilderImpl;
-import test.extension.Root.RootImpl;
 import test.extension.meta.RootMeta;
 import java.util.Objects;
 
@@ -23,7 +22,8 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 0.0.0
  */
-@RosettaDataType(value="Root", builder=Root.RootBuilderImpl.class, version="0.0.0")
+@RosettaDataType(value="Root", builder= RootBuilderImpl.class, version="0.0.0")
+@RuneDataType(value="Root", model="test", builder= RootBuilderImpl.class, version="0.0.0")
 public interface Root extends RosettaModelObject {
 
 	RootMeta metaData = new RootMeta();
@@ -48,10 +48,10 @@ public interface Root extends RosettaModelObject {
 	}
 	
 	@Override
+	@RuneAttribute("@type")
 	default Class<? extends Root> getType() {
 		return Root.class;
 	}
-	
 	
 	@Override
 	default void process(RosettaPath path, Processor processor) {
@@ -62,17 +62,19 @@ public interface Root extends RosettaModelObject {
 
 	/*********************** Builder Interface  ***********************/
 	interface RootBuilder extends Root, RosettaModelObjectBuilder {
-		A.ABuilder getOrCreateTypeA();
-		A.ABuilder getTypeA();
-		B.BBuilder getOrCreateTypeB();
-		B.BBuilder getTypeB();
+		ABuilder getOrCreateTypeA();
+		@Override
+		ABuilder getTypeA();
+		BBuilder getOrCreateTypeB();
+		@Override
+		BBuilder getTypeB();
 		RootBuilder setTypeA(A typeA);
 		RootBuilder setTypeB(B typeB);
 
 		@Override
 		default void process(RosettaPath path, BuilderProcessor processor) {
-			processRosetta(path.newSubPath("typeA"), processor, A.ABuilder.class, getTypeA());
-			processRosetta(path.newSubPath("typeB"), processor, B.BBuilder.class, getTypeB());
+			processRosetta(path.newSubPath("typeA"), processor, ABuilder.class, getTypeA());
+			processRosetta(path.newSubPath("typeB"), processor, BBuilder.class, getTypeB());
 		}
 		
 
@@ -91,12 +93,14 @@ public interface Root extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("typeA")
+		@RuneAttribute("typeA")
 		public A getTypeA() {
 			return typeA;
 		}
 		
 		@Override
 		@RosettaAttribute("typeB")
+		@RuneAttribute("typeB")
 		public B getTypeB() {
 			return typeB;
 		}
@@ -150,21 +154,19 @@ public interface Root extends RosettaModelObject {
 	/*********************** Builder Implementation of Root  ***********************/
 	class RootBuilderImpl implements RootBuilder {
 	
-		protected A.ABuilder typeA;
-		protected B.BBuilder typeB;
-	
-		public RootBuilderImpl() {
-		}
-	
+		protected ABuilder typeA;
+		protected BBuilder typeB;
+		
 		@Override
 		@RosettaAttribute("typeA")
-		public A.ABuilder getTypeA() {
+		@RuneAttribute("typeA")
+		public ABuilder getTypeA() {
 			return typeA;
 		}
 		
 		@Override
-		public A.ABuilder getOrCreateTypeA() {
-			A.ABuilder result;
+		public ABuilder getOrCreateTypeA() {
+			ABuilder result;
 			if (typeA!=null) {
 				result = typeA;
 			}
@@ -177,13 +179,14 @@ public interface Root extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("typeB")
-		public B.BBuilder getTypeB() {
+		@RuneAttribute("typeB")
+		public BBuilder getTypeB() {
 			return typeB;
 		}
 		
 		@Override
-		public B.BBuilder getOrCreateTypeB() {
-			B.BBuilder result;
+		public BBuilder getOrCreateTypeB() {
+			BBuilder result;
 			if (typeB!=null) {
 				result = typeB;
 			}
@@ -196,14 +199,17 @@ public interface Root extends RosettaModelObject {
 		
 		@Override
 		@RosettaAttribute("typeA")
-		public RootBuilder setTypeA(A typeA) {
-			this.typeA = typeA==null?null:typeA.toBuilder();
+		@RuneAttribute("typeA")
+		public RootBuilder setTypeA(A _typeA) {
+			this.typeA = _typeA == null ? null : _typeA.toBuilder();
 			return this;
 		}
+		
 		@Override
 		@RosettaAttribute("typeB")
-		public RootBuilder setTypeB(B typeB) {
-			this.typeB = typeB==null?null:typeB.toBuilder();
+		@RuneAttribute("typeB")
+		public RootBuilder setTypeB(B _typeB) {
+			this.typeB = _typeB == null ? null : _typeB.toBuilder();
 			return this;
 		}
 		

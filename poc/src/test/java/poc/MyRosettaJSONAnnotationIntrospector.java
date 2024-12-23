@@ -2,6 +2,7 @@ package poc;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyName;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.annotations.*;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.Set;
@@ -47,6 +49,20 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
     protected TypeResolverBuilder<?> _constructStdTypeResolverBuilder(MapperConfig<?> config,
                                                                       JsonTypeInfo.Value typeInfo, JavaType baseType) {
         return new MyStdTypeResolverBuilder(typeInfo);
+    }
+
+    @Override
+    public JsonTypeInfo.Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated ann) {
+        RuneDataType t = _findAnnotation(ann, RuneDataType.class);
+        if (t != null) {
+            return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
+                    JsonTypeInfo.As.EXISTING_PROPERTY,
+                    "@type",
+                    JsonTypeInfo.class,
+                    true,
+                    false);
+        }
+        return super.findPolymorphicTypeInfo(config, ann);
     }
 
     @Override

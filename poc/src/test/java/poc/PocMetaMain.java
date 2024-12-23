@@ -33,11 +33,11 @@ import test.metakey.Root;
 public class PocMetaMain {
 
     public static void main(String[] args) throws JsonProcessingException {
-        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
-        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
-        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
-        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
-        helper.writeClasses(generateCode, "poc");
+//        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
+//        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
+//        CodeGeneratorTestHelper helper = injector.getInstance(CodeGeneratorTestHelper.class);
+//        HashMap<String, String> generateCode = helper.generateCode(rosettaContents());
+//        helper.writeClasses(generateCode, "poc");
 
 //        System.out.println("Old world serialisation:");
 //        ObjectMapper oldMapper = RosettaObjectMapperCreator.forJSON().create();

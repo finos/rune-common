@@ -11,7 +11,7 @@ public class SubTypeFilter extends SimpleBeanPropertyFilter {
     public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
         String name = writer.getName();
         if (name.equals("@type")) {
-            if (pojo.getClass().getSuperclass().toString().equals("java.lang.Object")) {
+            if (!pojo.getClass().getSuperclass().getCanonicalName().equals(Object.class.getCanonicalName())) {
                 writer.serializeAsField(pojo, jgen, provider);
             }
 

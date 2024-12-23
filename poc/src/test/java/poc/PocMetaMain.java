@@ -1,6 +1,6 @@
 package poc;
 
-import annotations.RossetaModelObjectMixin;
+import annotations.RosettaModelObjectMixin;
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -17,16 +17,12 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 //import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
-import com.google.inject.Injector;
-import com.regnosys.rosetta.RosettaStandaloneSetup;
-import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.HashMap;
 
 import test.metakey.Root;
 
@@ -100,7 +96,7 @@ public class PocMetaMain {
                 .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
                 .setFilterProvider(new SimpleFilterProvider().addFilter("SubTypeFilter", new SubTypeFilter()))
-                .addMixIn(RosettaModelObject.class, RossetaModelObjectMixin.class)
+                .addMixIn(RosettaModelObject.class, RosettaModelObjectMixin.class)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
                 //The next two lines add in a filter that excludes the value from a serialised ReferenceWith object if the reference is set
                 //the tests for these are in the rosetta-translate project where we have actual rosettaObjects to play with

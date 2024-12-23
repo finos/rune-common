@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.serialisation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,7 +74,8 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
         // parallel structure for RosettaJSONModule
         return new RosettaObjectMapperCreator(new RosettaJSONModule(supportRosettaEnumValue), base);
     }
-    public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
+
+    public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config, ClassLoader classLoader) {
         boolean supportRosettaEnumValue = true;
 
         // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
@@ -84,17 +85,31 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
         ObjectMapper base = new XmlMapper.Builder(baseXML)
                 .defaultUseWrapper(false) // TODO: enable default wrapping after this issue is resolved: https://github.com/FasterXML/jackson-databind/issues/4595
                 .build();
-        return new RosettaObjectMapperCreator(new RosettaXMLModule(base, config, supportRosettaEnumValue), base);
+        return new RosettaObjectMapperCreator(new RosettaXMLModule(base, config, supportRosettaEnumValue, classLoader), base);
     }
+
+    public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
+        return forXML(config, RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
+    public static RosettaObjectMapperCreator forXML(InputStream configInputStream, ClassLoader classLoader) throws IOException {
+        final RosettaXMLConfiguration config = getRosettaXMLConfiguration(configInputStream);
+        return forXML(config, classLoader);
+    }
+
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream) throws IOException {
+        return forXML(configInputStream, RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
+    public static RosettaObjectMapperCreator forXML() {
+        return forXML(new RosettaXMLConfiguration(Collections.emptyMap()), RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
+    private static RosettaXMLConfiguration getRosettaXMLConfiguration(InputStream configInputStream) throws IOException {
         ObjectMapper xmlConfigurationMapper = new ObjectMapper()
                 .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
-        RosettaXMLConfiguration config = xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
-        return forXML(config);
-    }
-    public static RosettaObjectMapperCreator forXML() {
-        return forXML(new RosettaXMLConfiguration(Collections.emptyMap()));
+        return xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
     }
 
     @Override

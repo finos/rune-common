@@ -29,13 +29,18 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.regnosys.rosetta.common.serialisation.xml.RosettaBeanSerializerModifier.findSubstitutionMap;
 
 /**
  * Support for deserialising substitution groups by adding additional properties
  * to the `BeanDeserializerBuilder` for each additional name of a substitution.
  */
 public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
+    private final SubstitutionMapLoader substitutionMapLoader;
+
+    public RosettaBeanDeserializerModifier(SubstitutionMapLoader substitutionMapLoader) {
+        this.substitutionMapLoader = substitutionMapLoader;
+    }
+
     @Override
     public BeanDeserializerBuilder updateBuilder(DeserializationConfig config,
                                                  BeanDescription beanDesc, BeanDeserializerBuilder builder) {
@@ -46,7 +51,7 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
             SettableBeanProperty prop = builder.findProperty(propName);
 
             AnnotatedMember acc = prop.getMember();
-            SubstitutionMap substitutionMap = findSubstitutionMap(config, intr, acc);
+            SubstitutionMap substitutionMap = substitutionMapLoader.findSubstitutionMap(config, intr, acc);
             if (substitutionMap != null) {
                 for (JavaType substitutedType : substitutionMap.getTypes()) {
                     String substitutedName = substitutionMap.getName(substitutedType);

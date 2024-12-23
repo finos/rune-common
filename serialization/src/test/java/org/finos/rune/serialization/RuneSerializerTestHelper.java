@@ -19,11 +19,12 @@ public class RuneSerializerTestHelper {
     @SuppressWarnings("unchecked")
     public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String groupName,
                                                                                             List<Path> rosettaPaths,
-                                                                                            CodeGeneratorTestHelper helper) {
+                                                                                            CodeGeneratorTestHelper helper, DynamicCompiledClassLoader dynamicCompiledClassLoader) {
         String[] rosettaFileContents = rosettaPaths.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
         HashMap<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
-        Class<?> aClass = compiledCode.get(groupName + ".Root");
+        dynamicCompiledClassLoader.setCompiledCode(compiledCode);
+        Class<?> aClass = compiledCode.get("test." + groupName + ".Root");
         return (Class<T>) aClass;
     }
 

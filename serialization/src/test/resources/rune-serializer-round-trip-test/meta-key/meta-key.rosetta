@@ -1,4 +1,4 @@
-namespace metakey
+namespace test.metakey
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

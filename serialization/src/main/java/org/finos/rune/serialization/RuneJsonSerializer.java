@@ -7,6 +7,6 @@ public interface RuneJsonSerializer {
 
     <T extends RosettaModelObject> String toJson(T runeObject);
 
-    <T extends RosettaModelObject> T fromJson(Class<T> type, String runeJson);
+    <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type);
 
 }

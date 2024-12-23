@@ -1,5 +1,6 @@
 package org.finos.rune.serialization;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RuneJsonSerializerRoundTripTest {
     public static final String TEST_TYPE = "rune-serializer-round-trip-test";
+    private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     private RuneJsonSerializer runeJsonSerializer;
 
     private static CodeGeneratorTestHelper helper;
@@ -28,17 +30,20 @@ public class RuneJsonSerializerRoundTripTest {
         RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
         Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
         helper = injector.getInstance(CodeGeneratorTestHelper.class);
+        dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
     }
 
     @BeforeEach
     void setUp() {
         runeJsonSerializer = new RuneJacksonJsonSerializer();
+        ObjectMapper objectMapper = ((RuneJacksonJsonSerializer) runeJsonSerializer).getObjectMapper();
+        objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
     }
 
     @ParameterizedTest(name = "{0} - {1}")
     @MethodSource("testCases")
     public void testSerializationRoundTrip(String group, String testCaseName, Class<? extends RosettaModelObject> rosettaRootType, String jsonString) {
-        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(rosettaRootType, jsonString);
+        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(jsonString, rosettaRootType);
         String serializedjsonString = runeJsonSerializer.toJson(deserializedObject);
         assertEquals(jsonString, serializedjsonString, testCaseName + ": Serialization round trip failed");
     }
@@ -48,7 +53,7 @@ public class RuneJsonSerializerRoundTripTest {
                 .flatMap(groupPath -> {
                             List<Path> rosettas = listFiles(groupPath, ".rosetta");
                             String groupName = groupPath.getFileName().toString();
-                            Class<RosettaModelObject> rootDataType = generateCompileAndGetRootDataType(groupName, rosettas, helper);
+                    Class<RosettaModelObject> rootDataType = generateCompileAndGetRootDataType(groupName, rosettas, helper, dynamicCompiledClassLoader);
 
                             return listFiles(groupPath, ".json").stream()
                                     .map(jsonPath -> Arguments.of(

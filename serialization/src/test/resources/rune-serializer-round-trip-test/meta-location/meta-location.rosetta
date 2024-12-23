@@ -1,4 +1,4 @@
-namespace metalocation
+namespace test.metalocation
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

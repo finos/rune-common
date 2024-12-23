@@ -1,4 +1,4 @@
-namespace metascheme
+namespace test.metascheme
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

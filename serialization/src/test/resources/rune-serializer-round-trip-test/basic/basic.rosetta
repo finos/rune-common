@@ -1,4 +1,4 @@
-namespace basic
+namespace test.basic
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

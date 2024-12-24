@@ -286,7 +286,8 @@ public interface BasicList extends RosettaModelObject {
 			return this;
 		}
 		
-		@Override 
+		@Override
+		@RuneAttribute("booleanTypes")
 		public BasicListBuilder setBooleanTypes(List<Boolean> booleanTypess) {
 			if (booleanTypess == null) {
 				this.booleanTypes = new ArrayList<>();
@@ -313,7 +314,7 @@ public interface BasicList extends RosettaModelObject {
 			return this;
 		}
 		
-		@Override 
+		@Override
 		public BasicListBuilder addNumberTypes(List<BigDecimal> numberTypess) {
 			if (numberTypess != null) {
 				for (final BigDecimal toAdd : numberTypess) {
@@ -323,7 +324,8 @@ public interface BasicList extends RosettaModelObject {
 			return this;
 		}
 		
-		@Override 
+		@Override
+		@RuneAttribute("numberTypes")
 		public BasicListBuilder setNumberTypes(List<BigDecimal> numberTypess) {
 			if (numberTypess == null) {
 				this.numberTypes = new ArrayList<>();
@@ -360,7 +362,8 @@ public interface BasicList extends RosettaModelObject {
 			return this;
 		}
 		
-		@Override 
+		@Override
+		@RuneAttribute("parameterisedNumberTypes")
 		public BasicListBuilder setParameterisedNumberTypes(List<BigDecimal> parameterisedNumberTypess) {
 			if (parameterisedNumberTypess == null) {
 				this.parameterisedNumberTypes = new ArrayList<>();
@@ -397,7 +400,8 @@ public interface BasicList extends RosettaModelObject {
 			return this;
 		}
 		
-		@Override 
+		@Override
+		@RuneAttribute("stringTypes")
 		public BasicListBuilder setStringTypes(List<String> stringTypess) {
 			if (stringTypess == null) {
 				this.stringTypes = new ArrayList<>();
@@ -423,8 +427,8 @@ public interface BasicList extends RosettaModelObject {
 			getIndex(this.timeTypes, _idx, () -> _timeTypes);
 			return this;
 		}
-		
-		@Override 
+
+		@Override
 		public BasicListBuilder addTimeTypes(List<LocalTime> timeTypess) {
 			if (timeTypess != null) {
 				for (final LocalTime toAdd : timeTypess) {
@@ -433,8 +437,9 @@ public interface BasicList extends RosettaModelObject {
 			}
 			return this;
 		}
-		
-		@Override 
+
+		@Override
+		@RuneAttribute("timeTypes")
 		public BasicListBuilder setTimeTypes(List<LocalTime> timeTypess) {
 			if (timeTypess == null) {
 				this.timeTypes = new ArrayList<>();
@@ -444,7 +449,7 @@ public interface BasicList extends RosettaModelObject {
 			}
 			return this;
 		}
-		
+
 		@Override
 		public BasicList build() {
 			return new BasicListImpl(this);

@@ -20,13 +20,15 @@ package org.finos.rune.mapper.json;
  * ==============
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.*;
+import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
@@ -82,8 +84,8 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
 
     @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {
-        if (ac.hasAnnotation(RosettaDataType.class)) {
-            return ac.getAnnotation(RosettaDataType.class).builder();
+        if (ac.hasAnnotation(RuneDataType.class)) {
+            return ac.getAnnotation(RuneDataType.class).builder();
         }
         return super.findPOJOBuilder(ac);
     }
@@ -92,8 +94,6 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
     public PropertyName findNameForSerialization(Annotated a) {
         if (a.hasAnnotation(RuneAttribute.class)) {
             return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
-        } else if (a.hasAnnotation(RosettaAttribute.class)) {
-            return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
         }
         return super.findNameForSerialization(a);
     }
@@ -102,8 +102,6 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
     public PropertyName findNameForDeserialization(Annotated a) {
         if (a.hasAnnotation(RuneAttribute.class)) {
             return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
-        } else if (a.hasAnnotation(RosettaAttribute.class)) {
-            return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
         }
         return super.findNameForDeserialization(a);
     }

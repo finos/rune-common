@@ -5,7 +5,9 @@
   "typeA": {
     "b": {
       "@key:scoped": "someLocation",
-      "fieldB": "foo"
+      "@data": {
+        "fieldB": "foo"
+      }
     }
   },
   "bAddress": {

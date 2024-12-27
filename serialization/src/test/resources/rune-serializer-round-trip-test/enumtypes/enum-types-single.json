@@ -1,6 +1,6 @@
 {
-  "@model": "test.enum",
-  "@type": "test.enum.Root",
+  "@model": "test.enumtypes",
+  "@type": "test.enumtypes.Root",
   "@version": "0.0.0",
   "enumSingle": {
     "enumType": "A"

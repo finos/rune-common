@@ -21,10 +21,17 @@ package org.finos.rune.serialization;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Injector;
+import com.google.inject.*;
+import com.google.inject.util.Modules;
+import com.regnosys.rosetta.RosettaRuntimeModule;
 import com.regnosys.rosetta.RosettaStandaloneSetup;
+import com.regnosys.rosetta.config.RosettaConfiguration;
+import com.regnosys.rosetta.config.RosettaGeneratorsConfiguration;
+import com.regnosys.rosetta.config.RosettaModelConfiguration;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.process.PostProcessor;
+import org.eclipse.xtext.common.TerminalsStandaloneSetup;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +39,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -48,7 +56,20 @@ public class RuneJsonSerializerRoundTripTest {
     @BeforeAll
     static void beforeAll() {
         RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
-        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
+        TerminalsStandaloneSetup.doSetup();
+
+        Module module = Modules.override(new RosettaRuntimeModule()).with(new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(RosettaConfiguration.class).toInstance(new RosettaConfiguration(
+                        new RosettaModelConfiguration("test"),
+                        new ArrayList<>(),
+                        new RosettaGeneratorsConfiguration()
+                ));
+            }
+        });
+        Injector injector = Guice.createInjector(module);
+        rosettaStandaloneSetup.register(injector);
         helper = injector.getInstance(CodeGeneratorTestHelper.class);
         dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
     }

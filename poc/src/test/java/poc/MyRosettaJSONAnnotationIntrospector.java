@@ -73,8 +73,8 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
 
     @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {
-        if (ac.hasAnnotation(RosettaDataType.class)) {
-            return ac.getAnnotation(RosettaDataType.class).builder();
+        if (ac.hasAnnotation(RuneDataType.class)) {
+            return ac.getAnnotation(RuneDataType.class).builder();
         }
         return super.findPOJOBuilder(ac);
     }

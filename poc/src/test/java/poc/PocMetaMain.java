@@ -63,19 +63,19 @@ public class PocMetaMain {
         System.out.println("After:");
         System.out.println(nodeRefMapper.writerWithDefaultPrettyPrinter().writeValueAsString(nodeRefRoot));
 
-        System.out.println("\n\n********************** AttrRef");
-        ObjectMapper attrRefMapper = create();
-
-        String attrKeyJson = metaAttributeJson();
-
-        System.out.println("Before:");
-        System.out.println(attrKeyJson);
-        System.out.println("\n\n");
-
-        Root attrRefRoot = attrRefMapper.readValue(attrKeyJson, Root.class);
-
-        System.out.println("After:");
-        System.out.println(attrRefMapper.writerWithDefaultPrettyPrinter().writeValueAsString(attrRefRoot));
+//        System.out.println("\n\n********************** AttrRef");
+//        ObjectMapper attrRefMapper = create();
+//
+//        String attrKeyJson = metaAttributeJson();
+//
+//        System.out.println("Before:");
+//        System.out.println(attrKeyJson);
+//        System.out.println("\n\n");
+//
+//        Root attrRefRoot = attrRefMapper.readValue(attrKeyJson, Root.class);
+//
+//        System.out.println("After:");
+//        System.out.println(attrRefMapper.writerWithDefaultPrettyPrinter().writeValueAsString(attrRefRoot));
     }
 
 
@@ -95,6 +95,7 @@ public class PocMetaMain {
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
                 .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
+                .configure(SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS, false)
                 .setFilterProvider(new SimpleFilterProvider().addFilter("SubTypeFilter", new SubTypeFilter()))
                 .addMixIn(RosettaModelObject.class, RosettaModelObjectMixin.class)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)

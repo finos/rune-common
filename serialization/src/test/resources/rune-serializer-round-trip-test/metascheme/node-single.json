@@ -4,6 +4,11 @@
   "@version": "0.0.0",
   "typeA": {
     "@scheme": "https://www.example.com/scheme",
-    "fieldA": "foo"
+    "@data": {
+      "fieldA": {
+        "@data": "foo",
+        "@scheme": "https://www.example.com/scheme"
+      }
+    }
   }
 }

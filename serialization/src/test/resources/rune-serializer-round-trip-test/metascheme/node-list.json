@@ -4,16 +4,31 @@
   "@version": "0.0.0",
   "typeAList": [
     {
-      "@scheme": "https://www.example.com/scheme1",
-      "fieldA": "foo"
+      "@scheme": "https://www.example.com/scheme",
+      "@data": {
+        "fieldA": {
+          "@scheme": "https://www.example.com/scheme1",
+          "@data": "foo"
+        }
+      }
     },
     {
-      "@scheme": "https://www.example.com/scheme2",
-      "fieldA": "bar"
+      "@scheme": "https://www.example.com/scheme",
+      "@data": {
+        "fieldA": {
+          "@scheme": "https://www.example.com/scheme2",
+          "@data": "bar"
+        }
+      }
     },
     {
-      "@scheme": "https://www.example.com/scheme3",
-      "fieldA": "baz"
+      "@scheme": "https://www.example.com/scheme",
+      "@data": {
+        "fieldA": {
+          "@scheme": "https://www.example.com/scheme2",
+          "@data": "baz"
+        }
+      }
     }
   ]
 }

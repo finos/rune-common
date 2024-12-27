@@ -22,9 +22,14 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
+import org.apache.commons.io.file.PathUtils;
 import test.metascheme.Root;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 
 public class PocMetaSchemeMain {
@@ -141,15 +146,16 @@ public class PocMetaSchemeMain {
     }
 
     static String metaSchemeNodeSingle() {
-        return "{\n" +
-                "  \"@model\": \"test.metascheme\",\n" +
-                "  \"@type\": \"test.metascheme.Root\",\n" +
-                "  \"@version\": \"0.0.0\",\n" +
-                "  \"typeA\": {\n" +
-                "    \"@scheme\": \"https://www.example.com/scheme\",\n" +
-                "    \"fieldA\": \"foo\"\n" +
-                "  }\n" +
-                "}";
+        return readAsString(Paths.get("./serialization/src/test/resources/rune-serializer-round-trip-test/meta-scheme/node-single.json"));
+
+    }
+
+    public static String readAsString(Path jsonPath) {
+        try {
+            return new String(Files.readAllBytes(jsonPath));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
 

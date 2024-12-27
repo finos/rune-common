@@ -2,8 +2,9 @@
   "@model": "test.choicetype",
   "@type": "test.choicetype.Root",
   "@version": "0.0.0",
-  "choiceMixed": {
-    "@type": "test.choicetype.B",
-    "fieldB": "foo"
+  "choiceData": {
+    "A": {
+      "fieldA": "foo"
+    }
   }
 }

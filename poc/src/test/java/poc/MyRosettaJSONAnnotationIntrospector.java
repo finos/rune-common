@@ -83,9 +83,8 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
     public PropertyName findNameForSerialization(Annotated a) {
         if (a.hasAnnotation(RuneAttribute.class)) {
             return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
-        } else if (a.hasAnnotation(RosettaAttribute.class)) {
-            return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
         }
+
         return super.findNameForSerialization(a);
     }
 
@@ -93,9 +92,8 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
     public PropertyName findNameForDeserialization(Annotated a) {
         if (a.hasAnnotation(RuneAttribute.class)) {
             return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
-        } else if (a.hasAnnotation(RosettaAttribute.class)) {
-            return new PropertyName(a.getAnnotation(RosettaAttribute.class).value());
         }
+
         return super.findNameForDeserialization(a);
     }
 

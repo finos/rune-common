@@ -100,6 +100,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("meta")
+		@RuneAttribute("meta")
 		@RuneMetaType
 		public MetaFields getMeta() {
 			return meta;
@@ -166,6 +167,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("meta")
+		@RuneAttribute("meta")
 		@RuneMetaType
 		public MetaFieldsBuilder getMeta() {
 			return meta;
@@ -194,6 +196,7 @@ public interface A extends RosettaModelObject, GlobalKey {
 		
 		@Override
 		@RosettaAttribute("meta")
+		@RuneAttribute("meta")
 		@RuneMetaType
 		public ABuilder setMeta(MetaFields _meta) {
 			this.meta = _meta == null ? null : _meta.toBuilder();

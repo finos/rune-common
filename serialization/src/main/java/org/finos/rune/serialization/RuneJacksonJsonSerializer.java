@@ -22,8 +22,13 @@ package org.finos.rune.serialization;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.annotations.RuneDataType;
 import org.finos.rune.mapper.RuneJacksonObjectMapper;
+
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
 
 public class RuneJacksonJsonSerializer implements RuneJsonSerializer {
 
@@ -40,11 +45,30 @@ public class RuneJacksonJsonSerializer implements RuneJsonSerializer {
     @Override
     public <T extends RosettaModelObject> String toJson(T runeObject) {
         try {
+            ObjectNode objectNode = addTopLevelMeta(runeObject);
             return objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(runeObject);
+                    .writeValueAsString(objectNode);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private <T extends RosettaModelObject> ObjectNode addTopLevelMeta(T runeObject) {
+        Class<? extends RosettaModelObject> runeType = runeObject.getType();
+        return Arrays.stream(runeType.getAnnotations())
+                .filter(allAnnotations -> allAnnotations.annotationType().equals(RuneDataType.class)).findFirst().map(a -> {
+                    RuneDataType runeDataType = (RuneDataType) a;
+                    ObjectNode modifiedNode = objectMapper.valueToTree(runeObject);
+
+                    return modifiedNode.put("@model", runeDataType.model())
+                            .put("@type", runeType.getCanonicalName())
+                            .put("@version", runeDataType.version());
+
+                }).orElse(objectMapper.valueToTree(runeObject));
+    }
+
+    private static ObjectNode addField(ObjectNode objectNode, String fieldName, String fieldValue) {
+        return objectNode.put(fieldName, fieldValue);
     }
 
     @Override

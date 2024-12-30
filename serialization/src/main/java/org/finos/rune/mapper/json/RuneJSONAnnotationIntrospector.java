@@ -80,6 +80,23 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
         return super.findPolymorphicTypeInfo(config, ann);
     }
 
+    //TODO: find out why this isn't working
+    @Override
+    public String[] findSerializationPropertyOrder(AnnotatedClass ac) {
+        if (ac.hasAnnotation(RuneDataType.class)) {
+            return new String[]{"@model", "@type", "@version", "@scheme"};
+        }
+        return super.findSerializationPropertyOrder(ac);
+    }
+
+    @Override
+    public Boolean findSerializationSortAlphabetically(Annotated ann) {
+        if (ann.hasAnnotation(RuneDataType.class)) {
+            return Boolean.TRUE;
+        }
+        return super.findSerializationSortAlphabetically(ann);
+    }
+
     @Override
     protected StdTypeResolverBuilder _constructNoTypeResolverBuilder() {
         return RuneStdTypeResolverBuilder.noTypeInfoBuilder();

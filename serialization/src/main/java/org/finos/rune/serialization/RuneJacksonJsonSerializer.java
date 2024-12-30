@@ -27,7 +27,6 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import org.finos.rune.mapper.RuneJacksonObjectMapper;
 
-import java.lang.annotation.Annotation;
 import java.util.Arrays;
 
 public class RuneJacksonJsonSerializer implements RuneJsonSerializer {

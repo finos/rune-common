@@ -4,16 +4,16 @@
   "@version": "0.0.0",
   "enumTypeList": [
     {
-      "@scheme": "https://www.example.com/scheme1",
-      "@data": "A"
+      "@data": "A",
+      "@scheme": "https://www.example.com/scheme1"
     },
     {
-      "@scheme": "https://www.example.com/scheme2",
-      "@data": "B"
+      "@data": "B",
+      "@scheme": "https://www.example.com/scheme2"
     },
     {
-      "@scheme": "https://www.example.com/scheme3",
-      "@data": "C"
+      "@data": "C",
+      "@scheme": "https://www.example.com/scheme3"
     }
   ]
 }

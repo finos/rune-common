@@ -22,7 +22,6 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.model.lib.records.DateImpl;
-import org.apache.commons.io.file.PathUtils;
 import test.metascheme.Root;
 
 import java.io.IOException;
@@ -42,19 +41,27 @@ public class PocMetaSchemeMain {
 //        helper.writeClasses(generateCode, "poc");
 
 
-        System.out.println("\n\n********************** Meta Scheme Node Single");
-        ObjectMapper metaSchemeNodeSingleMapper = create();
+        runTest("Meta Scheme Node Single", metaSchemeNodeSingle());
 
-        String metaSchemeNodeSingleJson = metaSchemeNodeSingle();
+        runTest("Meta Scheme Node List", metaSchemeNodeList());
+
+        runTest("Meta Scheme Enum Single", metaSchemeEnumSingle());
+
+        runTest("Meta Scheme Enum List", metaSchemeEnumList());
+    }
+
+    private static void runTest(String name, String inputJson) throws JsonProcessingException {
+        System.out.println("\n\n********************** " + name);
+        ObjectMapper mapper = create();
 
         System.out.println("Before:");
-        System.out.println(metaSchemeNodeSingleJson);
+        System.out.println(inputJson);
         System.out.println("\n\n");
 
-        Root metaSchemeNodeSingleRoot = metaSchemeNodeSingleMapper.readValue(metaSchemeNodeSingleJson, Root.class);
+        Root root = mapper.readValue(inputJson, Root.class);
 
         System.out.println("After:");
-        System.out.println(metaSchemeNodeSingleMapper.writerWithDefaultPrettyPrinter().writeValueAsString(metaSchemeNodeSingleRoot));
+        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root));
     }
 
 
@@ -148,6 +155,18 @@ public class PocMetaSchemeMain {
     static String metaSchemeNodeSingle() {
         return readAsString(Paths.get("./serialization/src/test/resources/rune-serializer-round-trip-test/meta-scheme/node-single.json"));
 
+    }
+
+    static String metaSchemeNodeList() {
+        return readAsString(Paths.get("./serialization/src/test/resources/rune-serializer-round-trip-test/meta-scheme/node-list.json"));
+    }
+
+    static String metaSchemeEnumSingle() {
+        return readAsString(Paths.get("./serialization/src/test/resources/rune-serializer-round-trip-test/meta-scheme/enum-single.json"));
+    }
+
+    static String metaSchemeEnumList() {
+        return readAsString(Paths.get("./serialization/src/test/resources/rune-serializer-round-trip-test/meta-scheme/enum-list.json"));
     }
 
     public static String readAsString(Path jsonPath) {

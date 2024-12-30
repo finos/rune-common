@@ -103,6 +103,7 @@ public interface FieldWithMetaA extends RosettaModelObject, FieldWithMeta<A>, Gl
 		@Override
 		@RosettaAttribute("value")
 		@RuneAttribute("@data")
+		@RuneMetaType  //need to add meta type to all @data fields that are not basic types
 		public A getValue() {
 			return value;
 		}
@@ -170,10 +171,11 @@ public interface FieldWithMetaA extends RosettaModelObject, FieldWithMeta<A>, Gl
 		@Override
 		@RosettaAttribute("value")
 		@RuneAttribute("@data")
+		@RuneMetaType
 		public ABuilder getValue() {
 			return value;
 		}
-		
+
 		@Override
 		public ABuilder getOrCreateValue() {
 			ABuilder result;
@@ -183,10 +185,10 @@ public interface FieldWithMetaA extends RosettaModelObject, FieldWithMeta<A>, Gl
 			else {
 				result = value = A.builder();
 			}
-			
+
 			return result;
 		}
-		
+
 		@Override
 		@RosettaAttribute("meta")
 		@RuneAttribute("meta")
@@ -211,6 +213,7 @@ public interface FieldWithMetaA extends RosettaModelObject, FieldWithMeta<A>, Gl
 		@Override
 		@RosettaAttribute("value")
 		@RuneAttribute("@data")
+		@RuneMetaType
 		public FieldWithMetaABuilder setValue(A _value) {
 			this.value = _value == null ? null : _value.toBuilder();
 			return this;

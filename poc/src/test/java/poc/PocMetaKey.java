@@ -26,7 +26,7 @@ import java.time.LocalDate;
 
 import test.metakey.Root;
 
-public class PocMetaMain {
+public class PocMetaKey {
 
     public static void main(String[] args) throws JsonProcessingException {
 //        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();

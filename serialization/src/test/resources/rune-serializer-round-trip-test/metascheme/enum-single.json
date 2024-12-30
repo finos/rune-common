@@ -3,7 +3,7 @@
   "@type": "test.metascheme.Root",
   "@version": "0.0.0",
   "enumType": {
-    "@scheme": "https://www.example.com/scheme",
-    "@data": "A"
+    "@data": "A",
+    "@scheme": "https://www.example.com/scheme"
   }
 }

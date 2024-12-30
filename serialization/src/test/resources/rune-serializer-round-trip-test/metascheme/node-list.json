@@ -4,31 +4,25 @@
   "@version": "0.0.0",
   "typeAList": [
     {
-      "@scheme": "https://www.example.com/scheme",
-      "@data": {
-        "fieldA": {
-          "@scheme": "https://www.example.com/scheme1",
-          "@data": "foo"
-        }
-      }
+      "fieldA": {
+        "@scheme": "https://www.example.com/scheme1",
+        "@data": "foo"
+      },
+      "@scheme": "https://www.example.com/scheme-outer1"
     },
     {
-      "@scheme": "https://www.example.com/scheme",
-      "@data": {
-        "fieldA": {
-          "@scheme": "https://www.example.com/scheme2",
-          "@data": "bar"
-        }
-      }
+      "fieldA": {
+        "@scheme": "https://www.example.com/scheme2",
+        "@data": "bar"
+      },
+      "@scheme": "https://www.example.com/scheme-outer2"
     },
     {
-      "@scheme": "https://www.example.com/scheme",
-      "@data": {
-        "fieldA": {
-          "@scheme": "https://www.example.com/scheme2",
-          "@data": "baz"
-        }
-      }
+      "fieldA": {
+        "@scheme": "https://www.example.com/scheme3",
+        "@data": "baz"
+      },
+      "@scheme": "https://www.example.com/scheme-outer3"
     }
   ]
 }

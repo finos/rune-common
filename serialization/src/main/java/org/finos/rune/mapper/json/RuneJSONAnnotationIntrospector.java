@@ -144,20 +144,15 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
 
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
-        return findPropertyIgnorals(a);
-    }
-
-    @Override
-    public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
-        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RuneDataType.class)) {
-            AnnotatedClass acc = (AnnotatedClass) ac;
+        if (a instanceof AnnotatedClass && a.hasAnnotation(RuneDataType.class)) {
+            AnnotatedClass acc = (AnnotatedClass) a;
             Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RuneAttribute.class));
             Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RuneAttribute.class));
             ignored.removeAll(includes);
             return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
         }
 
-        return JsonIgnoreProperties.Value.empty();
+        return super.findPropertyIgnoralByName(config, a);
     }
 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

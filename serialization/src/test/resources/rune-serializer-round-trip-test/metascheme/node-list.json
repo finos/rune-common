@@ -5,22 +5,22 @@
   "typeAList": [
     {
       "fieldA": {
-        "@scheme": "https://www.example.com/scheme1",
-        "@data": "foo"
+        "@data": "foo",
+        "@scheme": "https://www.example.com/scheme1"
       },
       "@scheme": "https://www.example.com/scheme-outer1"
     },
     {
       "fieldA": {
-        "@scheme": "https://www.example.com/scheme2",
-        "@data": "bar"
+        "@data": "bar",
+        "@scheme": "https://www.example.com/scheme2"
       },
       "@scheme": "https://www.example.com/scheme-outer2"
     },
     {
       "fieldA": {
-        "@scheme": "https://www.example.com/scheme3",
-        "@data": "baz"
+        "@data": "baz",
+        "@scheme": "https://www.example.com/scheme3"
       },
       "@scheme": "https://www.example.com/scheme-outer3"
     }

@@ -20,19 +20,23 @@ package org.finos.rune.mapper.json;
  * ==============
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.annotations.*;
+
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
@@ -138,6 +142,31 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
         return  NameTransformer.NOP;
     }
 
+    @Override
+    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
+        return findPropertyIgnorals(a);
+    }
+
+    @Override
+    public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
+        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RuneDataType.class)) {
+            AnnotatedClass acc = (AnnotatedClass) ac;
+            Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RuneAttribute.class));
+            Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RuneAttribute.class));
+            ignored.removeAll(includes);
+            return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
+        }
+
+        return JsonIgnoreProperties.Value.empty();
+    }
+
+    private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
+        return StreamSupport.stream(acc.memberMethods().spliterator(), false)
+                .filter(filter)
+                .map(m -> RuneBeanUtil.getPropertyName(m.getAnnotated()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
 
     @Override
     public Version version() {

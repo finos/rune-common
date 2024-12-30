@@ -27,14 +27,14 @@ import org.finos.rune.mapper.RuneJacksonObjectMapper;
 
 public class RuneJacksonJsonSerializer implements RuneJsonSerializer {
 
-    private final RuneJacksonObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     public RuneJacksonJsonSerializer() {
         objectMapper = new RuneJacksonObjectMapper();
     }
 
-    public ObjectMapper getObjectMapper() {
-        return objectMapper;
+    public RuneJacksonJsonSerializer(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @Override

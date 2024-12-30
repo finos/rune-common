@@ -1,8 +1,8 @@
 {
-  "@model": "test.extension",
-  "@type": "test.extension.Root",
-  "@version": "0.0.0",
-  "typeA": {
-    "fieldA": "foo"
-  }
+  "typeA" : {
+    "fieldA" : "foo"
+  },
+  "@model" : "test",
+  "@type" : "test.extension.Root",
+  "@version" : "0.0.0"
 }

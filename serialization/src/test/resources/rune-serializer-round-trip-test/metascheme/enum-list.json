@@ -1,19 +1,15 @@
 {
-  "@model": "test.metascheme",
-  "@type": "test.metascheme.Root",
-  "@version": "0.0.0",
-  "enumTypeList": [
-    {
-      "@data": "A",
-      "@scheme": "https://www.example.com/scheme1"
-    },
-    {
-      "@data": "B",
-      "@scheme": "https://www.example.com/scheme2"
-    },
-    {
-      "@data": "C",
-      "@scheme": "https://www.example.com/scheme3"
-    }
-  ]
+  "enumTypeList" : [ {
+    "@data" : "A",
+    "@scheme" : "https://www.example.com/scheme1"
+  }, {
+    "@data" : "B",
+    "@scheme" : "https://www.example.com/scheme2"
+  }, {
+    "@data" : "C",
+    "@scheme" : "https://www.example.com/scheme3"
+  } ],
+  "@model" : "test",
+  "@type" : "test.metascheme.Root",
+  "@version" : "0.0.0"
 }

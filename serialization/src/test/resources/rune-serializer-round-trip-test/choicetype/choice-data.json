@@ -1,10 +1,10 @@
 {
-  "@model": "test.choicetype",
-  "@type": "test.choicetype.Root",
-  "@version": "0.0.0",
-  "choiceData": {
-    "A": {
-      "fieldA": "foo"
+  "choiceData" : {
+    "A" : {
+      "fieldA" : "foo"
     }
-  }
+  },
+  "@model" : "test",
+  "@type" : "test.choicetype.Root",
+  "@version" : "0.0.0"
 }

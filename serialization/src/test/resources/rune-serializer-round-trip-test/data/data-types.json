@@ -1,22 +1,16 @@
 {
-  "@model": "test.data",
-  "@type": "test.data.Root",
-  "@version": "0.0.0",
-  "a": {
-    "b": [
-      {
-        "c": null
-      },
-      {
-        "c": {
-          "field": "foo"
-        }
-      },
-      {
-        "c": {
-          "field": "bar"
-        }
+  "a" : {
+    "b" : [ { }, {
+      "c" : {
+        "field" : "foo"
       }
-    ]
-  }
+    }, {
+      "c" : {
+        "field" : "bar"
+      }
+    } ]
+  },
+  "@model" : "test",
+  "@type" : "test.data.Root",
+  "@version" : "0.0.0"
 }

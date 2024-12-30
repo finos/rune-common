@@ -20,7 +20,7 @@ type BasicList:
   booleanTypes boolean (1..*)
   numberTypes number (1..*)
   parameterisedNumberTypes ParameterisedNumberType (1..*)
-  parameterisedStringType ParameterisedStringType (1..*)
+  parameterisedStringTypes ParameterisedStringType (1..*)
   stringTypes string (1..*)
   timeTypes time (1..*)
 

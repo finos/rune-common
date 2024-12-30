@@ -1,16 +1,16 @@
 {
-  "@model": "test.metakey",
-  "@type": "test.metakey.Root",
-  "@version": "0.0.0",
-  "nodeRef": {
-    "typeA": {
-      "@key": "someKey",
-      "@key:external": "someExternalKey",
-      "fieldA": "foo"
+  "nodeRef" : {
+    "aReference" : {
+      "@ref" : "someKey",
+      "@ref:external" : "someExternalKey"
     },
-    "aReference": {
-      "@ref": "someKey",
-      "@ref:external": "someExternalKey"
+    "typeA" : {
+      "fieldA" : "foo",
+      "@key" : "someKey",
+      "@key:external" : "someExternalKey"
     }
-  }
+  },
+  "@model" : "test",
+  "@type" : "test.metakey.Root",
+  "@version" : "0.0.0"
 }

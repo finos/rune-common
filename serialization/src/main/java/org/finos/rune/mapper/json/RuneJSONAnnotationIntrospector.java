@@ -84,7 +84,7 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
     @Override
     public String[] findSerializationPropertyOrder(AnnotatedClass ac) {
         if (ac.hasAnnotation(RuneDataType.class)) {
-            return new String[]{"@model", "@type", "@version", "@scheme"};
+            return new String[]{"@model", "@type", "@version", "@scheme", "@key", "@key:external", "@key:scoped", "@ref", "ref:external", "@ref:scoped"};
         }
         return super.findSerializationPropertyOrder(ac);
     }

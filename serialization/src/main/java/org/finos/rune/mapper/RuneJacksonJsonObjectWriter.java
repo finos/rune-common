@@ -13,6 +13,27 @@ import com.rosetta.model.lib.annotations.RuneDataType;
 
 import java.util.Arrays;
 
+/**
+ * A custom {@link ObjectWriter} implementation for the Rune DSL.
+ * <p>
+ * This writer extends Jackson's {@link ObjectWriter} to provide JSON serialization
+ * tailored to the Rune DSL. It ensures that serialized objects include metadata
+ * at the top level and maintain a structure that is easy to read and closely aligned
+ * with the DSL's format.
+ * </p>
+ *
+ * <h2>Usage:</h2>
+ * This writer is used internally by the {@link RuneJacksonJsonObjectMapper} and
+ * is not typically instantiated directly. Instead, it is accessed through the
+ * configured {@link ObjectMapper}.
+ * <pre>
+ * RuneJacksonJsonObjectMapper objectMapper = new RuneJacksonJsonObjectMapper();
+ * String json = objectMapper.writeValueAsString(runeObject);
+ * </pre>
+ *
+ * @see ObjectWriter
+ * @see RuneJacksonJsonObjectMapper
+ */
 public class RuneJacksonJsonObjectWriter extends ObjectWriter {
     private final ObjectMapper mapper;
 

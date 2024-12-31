@@ -25,6 +25,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJacksonJsonObjectMapper;
 
+/**
+ * A Jackson-based implementation of the {@link RuneJsonSerializer} interface
+ * for serializing and deserializing Rune DSL objects to and from JSON.
+ * <p>
+ * This class uses a custom-configured {@link ObjectMapper} to handle JSON
+ * serialization and deserialization. By default, it employs a {@link RuneJacksonJsonObjectMapper},
+ * but a pre-configured {@code ObjectMapper} can also be injected via the constructor
+ * to customize behavior.
+ * </p>
+ *
+ * <h2>Usage:</h2>
+ * <pre>
+ * // Default ObjectMapper
+ * RuneJacksonJsonSerializer serializer = new RuneJacksonJsonSerializer();
+ *
+ * // Custom ObjectMapper
+ * ObjectMapper customMapper = new ObjectMapper();
+ * RuneJacksonJsonSerializer customSerializer = new RuneJacksonJsonSerializer(customMapper);
+ * </pre>
+ *
+ * @see RuneJsonSerializer
+ * @see com.fasterxml.jackson.databind.ObjectMapper
+ * @see com.fasterxml.jackson.core.JsonProcessingException
+ */
 public class RuneJacksonJsonSerializer implements RuneJsonSerializer {
 
     private final ObjectMapper objectMapper;

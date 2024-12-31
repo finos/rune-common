@@ -39,6 +39,28 @@ import org.finos.rune.mapper.filters.SubTypeFilter;
 import org.finos.rune.mapper.json.RuneJSONModule;
 import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
 
+/**
+ * A custom {@link ObjectMapper} designed for the Rune DSL.
+ * <p>
+ * This class provides JSON serialization and deserialization that closely
+ * aligns with the structure of the Rune DSL, ensuring that the serialized
+ * output is both human-readable and faithful to the DSL's design.
+ * </p>
+ *
+ * <p>
+ * By tailoring the serialization format, this mapper makes the JSON output
+ * intuitive for developers and domain experts working with the Rune DSL,
+ * while maintaining compatibility with standard JSON processing tools.
+ * </p>
+ *
+ * <h2>Usage:</h2>
+ * <pre>
+ * RuneJacksonJsonObjectMapper objectMapper = new RuneJacksonJsonObjectMapper();
+ * String json = objectMapper.writeValueAsString(runeObject);
+ * </pre>
+ *
+ * @see ObjectMapper
+ */
 public class RuneJacksonJsonObjectMapper extends ObjectMapper {
     public RuneJacksonJsonObjectMapper() {
         super(create());

@@ -34,7 +34,7 @@ import com.regnosys.rosetta.config.RosettaModelConfiguration;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.eclipse.xtext.common.TerminalsStandaloneSetup;
-import org.finos.rune.mapper.RuneJacksonObjectMapper;
+import org.finos.rune.mapper.RuneJacksonJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,7 +65,7 @@ public class RuneJsonSerializerRoundTripTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper objectMapper = new RuneJacksonObjectMapper();
+        ObjectMapper objectMapper = new RuneJacksonJsonObjectMapper();
         objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
         runeJsonSerializer = new RuneJacksonJsonSerializer(objectMapper);
     }

@@ -23,14 +23,14 @@ package org.finos.rune.serialization;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rosetta.model.lib.RosettaModelObject;
-import org.finos.rune.mapper.RuneJacksonObjectMapper;
+import org.finos.rune.mapper.RuneJacksonJsonObjectMapper;
 
 public class RuneJacksonJsonSerializer implements RuneJsonSerializer {
 
     private final ObjectMapper objectMapper;
 
     public RuneJacksonJsonSerializer() {
-        objectMapper = new RuneJacksonObjectMapper();
+        objectMapper = new RuneJacksonJsonObjectMapper();
     }
 
     public RuneJacksonJsonSerializer(ObjectMapper objectMapper) {

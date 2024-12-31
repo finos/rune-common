@@ -39,24 +39,24 @@ import org.finos.rune.mapper.filters.SubTypeFilter;
 import org.finos.rune.mapper.json.RuneJSONModule;
 import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
 
-public class RuneJacksonObjectMapper extends ObjectMapper {
-    public RuneJacksonObjectMapper() {
+public class RuneJacksonJsonObjectMapper extends ObjectMapper {
+    public RuneJacksonJsonObjectMapper() {
         super(create());
     }
 
     @Override
     protected ObjectWriter _newWriter(SerializationConfig config) {
-        return new RuneJacksonObjectWriter(this, config);
+        return new RuneJacksonJsonObjectWriter(this, config);
     }
 
     @Override
     protected ObjectWriter _newWriter(SerializationConfig config, FormatSchema schema) {
-        return new RuneJacksonObjectWriter(this, config, schema);
+        return new RuneJacksonJsonObjectWriter(this, config, schema);
     }
 
     @Override
     protected ObjectWriter _newWriter(SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
-        return new RuneJacksonObjectWriter(this, config, rootType, pp);
+        return new RuneJacksonJsonObjectWriter(this, config, rootType, pp);
     }
 
     private static ObjectMapper create() {

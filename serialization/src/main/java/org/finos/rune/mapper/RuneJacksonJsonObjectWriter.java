@@ -13,21 +13,21 @@ import com.rosetta.model.lib.annotations.RuneDataType;
 
 import java.util.Arrays;
 
-public class RuneJacksonObjectWriter extends ObjectWriter {
+public class RuneJacksonJsonObjectWriter extends ObjectWriter {
     private final ObjectMapper mapper;
 
 
-    protected RuneJacksonObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
+    protected RuneJacksonJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
         super(mapper, config, s);
         this.mapper = mapper;
     }
 
-    public RuneJacksonObjectWriter(ObjectMapper mapper, SerializationConfig config) {
+    public RuneJacksonJsonObjectWriter(ObjectMapper mapper, SerializationConfig config) {
         super(mapper, config);
         this.mapper = mapper;
     }
 
-    protected RuneJacksonObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
+    protected RuneJacksonJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
         super(mapper, config, rootType, pp);
         this.mapper = mapper;
     }

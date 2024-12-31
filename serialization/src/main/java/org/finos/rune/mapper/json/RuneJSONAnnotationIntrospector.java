@@ -30,7 +30,9 @@ import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
-import com.rosetta.model.lib.annotations.*;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+import com.rosetta.model.lib.annotations.RuneDataType;
+import com.rosetta.model.lib.annotations.RuneMetaType;
 
 import java.util.Objects;
 import java.util.Set;
@@ -38,6 +40,41 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+/**
+ * Custom Jackson annotation introspector for handling serialization and deserialization
+ * of classes annotated with {@link RuneDataType}, {@link RuneAttribute}, and {@link RuneMetaType}.
+ *
+ * <p>This introspector modifies Jackson's default behavior to:
+ * <ul>
+ *   <li>Enable alphabetic property sorting for {@link RuneDataType} annotated classes.</li>
+ *   <li>Support custom polymorphic type resolution for {@link RuneDataType} annotations.</li>
+ *   <li>Provide custom name mapping for serialization and deserialization based on {@link RuneAttribute}.</li>
+ *   <li>Handle property unwrapping for {@link RuneMetaType} annotations.</li>
+ *   <li>Define property inclusion/exclusion rules for {@link RuneDataType} classes.</li>
+ * </ul>
+ *
+ * <p>This class overrides several key methods in {@link JacksonAnnotationIntrospector}
+ * to integrate these custom behaviors.
+ *
+ * <p>Key functionality includes:
+ * <ul>
+ *   <li>Polymorphic type resolution for {@link RuneDataType} using custom {@link StdTypeResolverBuilder}.</li>
+ *   <li>Explicit handling of property ordering limitations documented in
+ *       <a href="https://github.com/FasterXML/jackson-databind/issues/1670">jackson-databind issue 1670</a>.</li>
+ *   <li>Integration with {@link RuneAttribute} to control property name mapping for
+ *       serialization and deserialization.</li>
+ *   <li>Support for unwrapping of properties with {@link RuneMetaType} using a no-operation
+ *       {@link NameTransformer}.</li>
+ * </ul>
+ *
+ * <p>This implementation is part of the Rune Common library and adheres to the Apache License 2.0.
+ *
+ * @see JacksonAnnotationIntrospector
+ * @see StdTypeResolverBuilder
+ * @see RuneDataType
+ * @see RuneAttribute
+ * @see RuneMetaType
+ */
 public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
 
@@ -66,15 +103,17 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
         return super.findPolymorphicTypeInfo(config, ann);
     }
 
-    //TODO: find out why this isn't working
-    @Override
-    public String[] findSerializationPropertyOrder(AnnotatedClass ac) {
-        if (ac.hasAnnotation(RuneDataType.class)) {
-            return new String[]{"@model", "@type", "@version", "@scheme", "@key", "@key:external", "@key:scoped", "@ref", "ref:external", "@ref:scoped"};
-        }
-        return super.findSerializationPropertyOrder(ac);
-    }
-
+    /**
+     * Enables alphabetic sorting for properties of classes annotated with {@link RuneDataType}.
+     *
+     * <p>Currently, only alphabetic ordering of properties is supported. Ideally, explicit
+     * ordering could be achieved by overriding the parent method:
+     * <pre>{@code String[] findSerializationPropertyOrder(AnnotatedClass ac)}</pre>.
+     *
+     * <p>However, due to a limitation in Jackson, the property ordering logic does not work
+     * in conjunction with unwrapping logic. This issue is documented in the following ticket:
+     * <a href="https://github.com/FasterXML/jackson-databind/issues/1670">jackson-databind issue 1670</a>.
+     */
     @Override
     public Boolean findSerializationSortAlphabetically(Annotated ann) {
         if (ann.hasAnnotation(RuneDataType.class)) {

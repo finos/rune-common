@@ -41,20 +41,6 @@ import java.util.stream.StreamSupport;
 public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
 
-    private final RuneEnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
-
-    private final RuneEnumBuilderIntrospector rosettaEnumBuilderIntrospector;
-
-    public RuneJSONAnnotationIntrospector(boolean supportRosettaEnumValue) {
-        this(new RuneEnumAsStringBuilderIntrospector(), new RuneEnumBuilderIntrospector(supportRosettaEnumValue));
-    }
-
-    public RuneJSONAnnotationIntrospector(RuneEnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector, RuneEnumBuilderIntrospector rosettaEnumBuilderIntrospector) {
-        this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
-        this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
-    }
-
-
     @Override
     protected StdTypeResolverBuilder _constructStdTypeResolverBuilder() {
         return new RuneStdTypeResolverBuilder();
@@ -98,12 +84,6 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
     }
 
     @Override
-    protected StdTypeResolverBuilder _constructNoTypeResolverBuilder() {
-        return RuneStdTypeResolverBuilder.noTypeInfoBuilder();
-    }
-
-
-    @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {
         if (ac.hasAnnotation(RuneDataType.class)) {
             return ac.getAnnotation(RuneDataType.class).builder();
@@ -125,27 +105,6 @@ public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospecto
             return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
         }
         return super.findNameForDeserialization(a);
-    }
-
-    @Override
-    public String[] findEnumValues(MapperConfig<?> config, AnnotatedClass enumType,
-                                   Enum<?>[] enumValues, String[] names) {
-        if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
-            rosettaEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
-        } else {
-            enumAsStringBuilderIntrospector.findEnumValues(enumType, enumValues, names);
-        }
-        return names;
-    }
-
-    @Override
-    public void findEnumAliases(MapperConfig<?> config, AnnotatedClass enumType,
-                                Enum<?>[] enumValues, String[][] aliasList) {
-        if (rosettaEnumBuilderIntrospector.isApplicable(enumType)) {
-            rosettaEnumBuilderIntrospector.findEnumAliases(enumType, enumValues, aliasList);
-        } else {
-            super.findEnumAliases(config, enumType, enumValues, aliasList);
-        }
     }
 
     @Override

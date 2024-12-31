@@ -29,17 +29,15 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 public class RuneJSONModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
-    private final boolean supportRosettaEnumValue;
 
-    public RuneJSONModule(boolean supportRosettaEnumValue) {
+    public RuneJSONModule() {
         super(PackageVersion.VERSION);
-        this.supportRosettaEnumValue = supportRosettaEnumValue;
     }
 
     @Override
     public void setupModule(SetupContext context) {
         super.setupModule(context);
-        context.insertAnnotationIntrospector(new RuneJSONAnnotationIntrospector(supportRosettaEnumValue));
+        context.insertAnnotationIntrospector(new RuneJSONAnnotationIntrospector());
     }
 
     @Override

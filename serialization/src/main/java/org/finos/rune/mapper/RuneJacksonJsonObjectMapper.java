@@ -89,7 +89,7 @@ public class RuneJacksonJsonObjectMapper extends ObjectMapper {
                 .registerModule(new Jdk8Module())
                 .registerModule(new JavaTimeModule())
                 .registerModule(new RuneDateModule())
-                .registerModule(new RuneJSONModule(true))
+                .registerModule(new RuneJSONModule())
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)

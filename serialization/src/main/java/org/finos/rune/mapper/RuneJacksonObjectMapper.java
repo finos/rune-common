@@ -23,10 +23,10 @@ package org.finos.rune.mapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -42,6 +42,21 @@ import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
 public class RuneJacksonObjectMapper extends ObjectMapper {
     public RuneJacksonObjectMapper() {
         super(create());
+    }
+
+    @Override
+    protected ObjectWriter _newWriter(SerializationConfig config) {
+        return new RuneJacksonObjectWriter(this, config);
+    }
+
+    @Override
+    protected ObjectWriter _newWriter(SerializationConfig config, FormatSchema schema) {
+        return new RuneJacksonObjectWriter(this, config, schema);
+    }
+
+    @Override
+    protected ObjectWriter _newWriter(SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
+        return new RuneJacksonObjectWriter(this, config, rootType, pp);
     }
 
     private static ObjectMapper create() {

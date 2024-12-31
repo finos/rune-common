@@ -1,4 +1,4 @@
-package org.finos.rune.mapper.json;
+package org.finos.rune.mapper.introspector;
 
 /*-
  * ==============

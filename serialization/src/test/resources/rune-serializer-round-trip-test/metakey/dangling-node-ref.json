@@ -1,11 +1,11 @@
 {
+  "@model" : "test",
+  "@type" : "test.metakey.Root",
+  "@version" : "0.0.0",
   "nodeRef" : {
     "aReference" : {
       "@ref" : "someKey",
       "@ref:external" : "someExternalKey"
     }
-  },
-  "@model" : "test",
-  "@type" : "test.metakey.Root",
-  "@version" : "0.0.0"
+  }
 }

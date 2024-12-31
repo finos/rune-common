@@ -1,4 +1,7 @@
 {
+  "@model" : "test",
+  "@type" : "test.data.Root",
+  "@version" : "0.0.0",
   "a" : {
     "b" : [ { }, {
       "c" : {
@@ -9,8 +12,5 @@
         "field" : "bar"
       }
     } ]
-  },
-  "@model" : "test",
-  "@type" : "test.data.Root",
-  "@version" : "0.0.0"
+  }
 }

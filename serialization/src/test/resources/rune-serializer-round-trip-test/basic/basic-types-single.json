@@ -1,4 +1,7 @@
 {
+  "@model" : "test",
+  "@type" : "test.basic.Root",
+  "@version" : "0.0.0",
   "basicSingle" : {
     "booleanType" : true,
     "numberType" : 123.456,
@@ -6,8 +9,5 @@
     "parameterisedStringType" : "abcDEF",
     "stringType" : "foo",
     "timeType" : "12:00:00"
-  },
-  "@model" : "test",
-  "@type" : "test.basic.Root",
-  "@version" : "0.0.0"
+  }
 }

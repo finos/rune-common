@@ -1,10 +1,10 @@
 {
+  "@model" : "test",
+  "@type" : "test.record.Root",
+  "@version" : "0.0.0",
   "recordSingle" : {
     "dateTimeType" : "2024-12-12T11:18:58",
     "dateType" : "2024-12-10",
     "zonedDateTimeType" : "2024-12-12T11:18:57Z"
-  },
-  "@model" : "test",
-  "@type" : "test.record.Root",
-  "@version" : "0.0.0"
+  }
 }

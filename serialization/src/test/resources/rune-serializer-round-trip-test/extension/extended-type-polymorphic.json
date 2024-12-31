@@ -1,10 +1,10 @@
 {
+  "@model" : "test",
+  "@type" : "test.extension.Root",
+  "@version" : "0.0.0",
   "typeA" : {
     "@type" : "test.extension.B",
     "fieldA" : "bar",
     "fieldB" : "foo"
-  },
-  "@model" : "test",
-  "@type" : "test.extension.Root",
-  "@version" : "0.0.0"
+  }
 }

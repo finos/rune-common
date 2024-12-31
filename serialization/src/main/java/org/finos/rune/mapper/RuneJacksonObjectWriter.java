@@ -48,11 +48,14 @@ public class RuneJacksonObjectWriter extends ObjectWriter {
         return Arrays.stream(runeType.getAnnotations())
                 .filter(allAnnotations -> allAnnotations.annotationType().equals(RuneDataType.class)).findFirst().map(a -> {
                     RuneDataType runeDataType = (RuneDataType) a;
-                    ObjectNode modifiedNode = mapper.valueToTree(runeObject);
-
-                    return modifiedNode.put("@model", runeDataType.model())
+                    ObjectNode modifiedNode = mapper.createObjectNode();
+                    modifiedNode = modifiedNode.put("@model", runeDataType.model())
                             .put("@type", runeType.getCanonicalName())
                             .put("@version", runeDataType.version());
+
+                    ObjectNode originalNode = mapper.valueToTree(runeObject);
+                    modifiedNode.setAll(originalNode);
+                    return modifiedNode;
 
                 }).orElse(mapper.valueToTree(runeObject));
     }

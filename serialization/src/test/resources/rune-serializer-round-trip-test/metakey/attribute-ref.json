@@ -1,4 +1,7 @@
 {
+  "@model" : "test",
+  "@type" : "test.metakey.Root",
+  "@version" : "0.0.0",
   "attributeRef" : {
     "dateField" : {
       "@data" : "2024-12-12",
@@ -9,8 +12,5 @@
       "@ref" : "someKey",
       "@ref:external" : "someExternalKey"
     }
-  },
-  "@model" : "test",
-  "@type" : "test.metakey.Root",
-  "@version" : "0.0.0"
+  }
 }

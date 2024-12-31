@@ -1,8 +1,8 @@
 {
-  "enumSingle" : {
-    "enumType" : "A"
-  },
   "@model" : "test",
   "@type" : "test.enumtypes.Root",
-  "@version" : "0.0.0"
+  "@version" : "0.0.0",
+  "enumSingle" : {
+    "enumType" : "A"
+  }
 }

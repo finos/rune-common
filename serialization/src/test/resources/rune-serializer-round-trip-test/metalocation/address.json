@@ -1,4 +1,7 @@
 {
+  "@model" : "test",
+  "@type" : "test.metalocation.Root",
+  "@version" : "0.0.0",
   "bAddress" : {
     "@ref:scoped" : "someLocation"
   },
@@ -7,8 +10,5 @@
       "fieldB" : "foo",
       "@key:scoped" : "someLocation"
     }
-  },
-  "@model" : "test",
-  "@type" : "test.metalocation.Root",
-  "@version" : "0.0.0"
+  }
 }

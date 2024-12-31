@@ -1,4 +1,7 @@
 {
+  "@model" : "test",
+  "@type" : "test.metascheme.Root",
+  "@version" : "0.0.0",
   "typeAList" : [ {
     "fieldA" : {
       "@data" : "foo",
@@ -17,8 +20,5 @@
       "@scheme" : "https://www.example.com/scheme3"
     },
     "@scheme" : "https://www.example.com/scheme-outer3"
-  } ],
-  "@model" : "test",
-  "@type" : "test.metascheme.Root",
-  "@version" : "0.0.0"
+  } ]
 }

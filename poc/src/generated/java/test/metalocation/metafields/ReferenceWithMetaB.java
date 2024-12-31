@@ -137,6 +137,7 @@ public interface ReferenceWithMetaB extends RosettaModelObject, ReferenceWithMet
 		@Override
 		@RosettaAttribute("address")
 		@RuneAttribute("@ref:scoped")
+		@RuneMetaType
 		public Reference getReference() {
 			return reference;
 		}
@@ -241,6 +242,7 @@ public interface ReferenceWithMetaB extends RosettaModelObject, ReferenceWithMet
 		@Override
 		@RosettaAttribute("address")
 		@RuneAttribute("@ref:scoped")
+		@RuneMetaType
 		public ReferenceBuilder getReference() {
 			return reference;
 		}
@@ -286,6 +288,7 @@ public interface ReferenceWithMetaB extends RosettaModelObject, ReferenceWithMet
 		@Override
 		@RosettaAttribute("address")
 		@RuneAttribute("@ref:scoped")
+		@RuneMetaType
 		public ReferenceWithMetaBBuilder setReference(Reference _reference) {
 			this.reference = _reference == null ? null : _reference.toBuilder();
 			return this;

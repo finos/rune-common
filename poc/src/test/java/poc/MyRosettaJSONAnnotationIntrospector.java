@@ -137,10 +137,10 @@ class MyRosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospector 
     @Deprecated
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
-        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
+        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RuneDataType.class)) {
             AnnotatedClass acc = (AnnotatedClass) ac;
-            Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
-            Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+            Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RuneAttribute.class));
+            Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RuneAttribute.class));
             ignored.removeAll(includes);
             return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
         }

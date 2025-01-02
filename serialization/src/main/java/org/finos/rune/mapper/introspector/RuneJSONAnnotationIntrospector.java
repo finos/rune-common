@@ -67,8 +67,6 @@ import java.util.stream.StreamSupport;
  *       {@link NameTransformer}.</li>
  * </ul>
  *
- * <p>This implementation is part of the Rune Common library and adheres to the Apache License 2.0.
- *
  * @see JacksonAnnotationIntrospector
  * @see StdTypeResolverBuilder
  * @see RuneDataType

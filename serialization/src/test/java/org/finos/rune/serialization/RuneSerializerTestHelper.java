@@ -20,14 +20,26 @@ package org.finos.rune.serialization;
  * ==============
  */
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.util.Modules;
+import com.regnosys.rosetta.RosettaRuntimeModule;
+import com.regnosys.rosetta.RosettaStandaloneSetup;
+import com.regnosys.rosetta.config.RosettaConfiguration;
+import com.regnosys.rosetta.config.RosettaGeneratorsConfiguration;
+import com.regnosys.rosetta.config.RosettaModelConfiguration;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
+import org.eclipse.xtext.common.TerminalsStandaloneSetup;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +47,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RuneSerializerTestHelper {
+
+    public static final String TEST_MODEL_NAME = "serialization";
 
     @SuppressWarnings("unchecked")
     public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String groupName,
@@ -44,7 +58,7 @@ public class RuneSerializerTestHelper {
         HashMap<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-        Class<?> aClass = compiledCode.get("test." + groupName + ".Root");
+        Class<?> aClass = compiledCode.get(TEST_MODEL_NAME + ".test." + groupName + ".Root");
         return (Class<T>) aClass;
     }
 
@@ -80,5 +94,24 @@ public class RuneSerializerTestHelper {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public static Injector setupInjector() {
+        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
+        TerminalsStandaloneSetup.doSetup();
+
+        Module module = Modules.override(new RosettaRuntimeModule()).with(new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(RosettaConfiguration.class).toInstance(new RosettaConfiguration(
+                        new RosettaModelConfiguration(TEST_MODEL_NAME),
+                        new ArrayList<>(),
+                        new RosettaGeneratorsConfiguration()
+                ));
+            }
+        });
+        Injector injector = Guice.createInjector(module);
+        rosettaStandaloneSetup.register(injector);
+        return injector;
     }
 }

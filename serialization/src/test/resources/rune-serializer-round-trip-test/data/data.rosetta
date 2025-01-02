@@ -1,4 +1,4 @@
-namespace test.data
+namespace serialization.test.data
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

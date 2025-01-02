@@ -1,6 +1,6 @@
 {
-  "@model" : "test",
-  "@type" : "test.metascheme.Root",
+  "@model" : "serialization",
+  "@type" : "serialization.test.metascheme.Root",
   "@version" : "0.0.0",
   "enumType" : {
     "@data" : "A",

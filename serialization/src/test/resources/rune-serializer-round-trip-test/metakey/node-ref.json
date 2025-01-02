@@ -1,6 +1,6 @@
 {
-  "@model" : "test",
-  "@type" : "test.metakey.Root",
+  "@model" : "serialization",
+  "@type" : "serialization.test.metakey.Root",
   "@version" : "0.0.0",
   "nodeRef" : {
     "aReference" : {

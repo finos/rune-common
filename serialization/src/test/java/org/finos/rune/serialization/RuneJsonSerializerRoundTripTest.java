@@ -21,19 +21,9 @@ package org.finos.rune.serialization;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.util.Modules;
-import com.regnosys.rosetta.RosettaRuntimeModule;
-import com.regnosys.rosetta.RosettaStandaloneSetup;
-import com.regnosys.rosetta.config.RosettaConfiguration;
-import com.regnosys.rosetta.config.RosettaGeneratorsConfiguration;
-import com.regnosys.rosetta.config.RosettaModelConfiguration;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
-import org.eclipse.xtext.common.TerminalsStandaloneSetup;
 import org.finos.rune.mapper.RuneJacksonJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +32,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -94,25 +83,6 @@ public class RuneJsonSerializerRoundTripTest {
                                     ));
                         }
                 );
-    }
-
-    private static Injector setupInjector() {
-        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
-        TerminalsStandaloneSetup.doSetup();
-
-        Module module = Modules.override(new RosettaRuntimeModule()).with(new AbstractModule() {
-            @Override
-            protected void configure() {
-                bind(RosettaConfiguration.class).toInstance(new RosettaConfiguration(
-                        new RosettaModelConfiguration("test"),
-                        new ArrayList<>(),
-                        new RosettaGeneratorsConfiguration()
-                ));
-            }
-        });
-        Injector injector = Guice.createInjector(module);
-        rosettaStandaloneSetup.register(injector);
-        return injector;
     }
 
 }

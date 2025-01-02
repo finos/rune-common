@@ -1,9 +1,9 @@
 {
-  "@model" : "test",
-  "@type" : "test.extension.Root",
+  "@model" : "serialization",
+  "@type" : "serialization.test.extension.Root",
   "@version" : "0.0.0",
   "typeB" : {
-    "@type" : "test.extension.B",
+    "@type" : "serialization.test.extension.B",
     "fieldB" : "foo"
   }
 }

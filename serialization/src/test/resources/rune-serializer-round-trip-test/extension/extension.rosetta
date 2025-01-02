@@ -1,4 +1,4 @@
-namespace test.extension
+namespace serialization.test.extension
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

@@ -1,6 +1,6 @@
 {
-  "@model" : "test",
-  "@type" : "test.enumtypes.Root",
+  "@model" : "serialization",
+  "@type" : "serialization.test.enumtypes.Root",
   "@version" : "0.0.0",
   "enumSingle" : {
     "enumType" : "A"

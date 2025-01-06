@@ -25,21 +25,25 @@
         <version>5</version>
     </parent>
 
-    <name>Rosetta Common</name>
+    <name>Rune Common Parent</name>
+    <modules>
+        <module>common</module>
+        <module>serialization</module>
+    </modules>
     <groupId>com.regnosys</groupId>
-    <artifactId>rosetta-common</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>rune-common-parent</artifactId>
+    <packaging>pom</packaging>
     <version>0.0.0.main-SNAPSHOT</version>
-    <url>https://github.com/REGnosys/rosetta-common</url>
+    <url>https://github.com/finos/rune-common</url>
 
     <scm>
-        <developerConnection>scm:git:https://github.com/REGnosys/rosetta-common</developerConnection>
-        <connection>scm:git:git://github.com/REGnosys/rosetta-common.git</connection>
+        <developerConnection>scm:git:https://github.com/finos/rune-common</developerConnection>
+        <connection>scm:git:git://github.com/finos/rune-common.git</connection>
         <tag>HEAD</tag>
-        <url>https://github.com/REGnosys/rosetta-common</url>
+        <url>https://github.com/finos/rune-common</url>
     </scm>
 
-    <description>Rune Common is a java library that is utilised by Rosetta Code Generators and models expressed in the Rosetta DSL.</description>
+    <description>Rune Common is a java library that is utilised by Rune Code Generators and models expressed in the Rune DSL.</description>
 
     <organization>
         <name>REGnosys</name>
@@ -87,14 +91,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[17,18)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rosetta.dsl.version>9.25.0</rosetta.dsl.version>
+        <rosetta.dsl.version>9.26.0</rosetta.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>10</stagingTimeoutInMinutes>
 
-        <!-- Also to be changed in rosetta-products->persistence -->
         <jackson.version>2.17.1</jackson.version>
         <guice.version>5.0.1</guice.version>
         <guava.version>32.0.1-jre</guava.version>
@@ -273,6 +276,13 @@
                 <version>${slf4j-api.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.eclipse.xtext</groupId>
                 <artifactId>xtext-dev-bom</artifactId>
                 <version>${xtext.version}</version>
@@ -294,13 +304,6 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
@@ -312,73 +315,26 @@
                 <version>${logback.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>com.regnosys.rosetta</groupId>
+                <artifactId>com.regnosys.rosetta.tests</artifactId>
+                <version>${rosetta.dsl.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.eclipse.jdt</groupId>
+                        <artifactId>org.eclipse.jdt.core</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.lib</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-parameter-names</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-blackbird</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-joda</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
         </dependency>
         <!-- test -->
         <dependency>
@@ -409,17 +365,10 @@
         <dependency>
             <groupId>com.regnosys.rosetta</groupId>
             <artifactId>com.regnosys.rosetta.tests</artifactId>
-            <version>${rosetta.dsl.version}</version>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.jdt</groupId>
-                    <artifactId>org.eclipse.jdt.core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
-
+    
     <build>
         <plugins>
             <plugin>
@@ -491,101 +440,6 @@
                 <configuration>
                     <release>${maven.compiler.release}</release>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>${exec-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>import-test-xsd-schema</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>com.regnosys.rosetta.tools.modelimport.XsdImportMain</mainClass>
-                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
-                            <arguments>
-                                <argument>-config-path</argument>
-                                <argument>${project.basedir}/src/test/resources/xml-serialisation/schema/import-config.yml</argument>
-                                <argument>-rosetta-output-path</argument>
-                                <argument>${project.build.testOutputDirectory}/xml-serialisation/rosetta</argument>
-                                <argument>-xml-config-output-path</argument>
-                                <argument>${project.build.testOutputDirectory}/xml-serialisation/xml-config.json</argument>
-                            </arguments>
-                            <includePluginDependencies>true</includePluginDependencies>
-                        </configuration>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.regnosys.rosetta</groupId>
-                        <artifactId>com.regnosys.rosetta.tools</artifactId>
-                        <version>${rosetta.dsl.version}</version>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>com.regnosys.rosetta</groupId>
-                                <artifactId>com.regnosys.rosetta.ide</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>com.regnosys.rosetta</groupId>
-                        <artifactId>com.regnosys.rosetta.xcore</artifactId>
-                        <version>${rosetta.dsl.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>rosetta-maven-plugin</artifactId>
-                <version>${rosetta.dsl.version}</version>
-                <executions>
-                    <execution>
-                        <id>generate-xsd-based-sources</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>testGenerate</goal>
-                        </goals>
-                        <configuration>
-                            <addOutputDirectoriesToCompileSourceRoots>false</addOutputDirectoriesToCompileSourceRoots>
-                            <sourceRoots>
-                                <sourceRoot>${project.build.testOutputDirectory}/xml-serialisation/rosetta</sourceRoot>
-                            </sourceRoots>
-                            <classPathLookupFilter>.*com\.regnosys\.rosetta.*</classPathLookupFilter>
-                            <languages>
-                                <language>
-                                    <setup>com.regnosys.rosetta.RosettaStandaloneSetup</setup>
-                                    <outputConfigurations>
-                                        <outputConfiguration>
-                                            <outputDirectory>${project.build.testOutputDirectory}/xml-serialisation/java</outputDirectory>
-                                        </outputConfiguration>
-                                    </outputConfigurations>
-                                </language>
-                            </languages>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${build-helper-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>add-generated-test-sources</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${project.build.testOutputDirectory}/xml-serialisation/java</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

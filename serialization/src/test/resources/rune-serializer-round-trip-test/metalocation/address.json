@@ -1,0 +1,14 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.metalocation.Root",
+  "@version" : "0.0.0",
+  "typeA" : {
+    "b" : {
+      "fieldB" : "foo",
+      "@key:scoped" : "someLocation"
+    }
+  },
+  "bAddress" : {
+    "@ref:scoped" : "someLocation"
+  }
+}

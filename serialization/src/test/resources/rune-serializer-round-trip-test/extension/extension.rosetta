@@ -1,0 +1,16 @@
+namespace serialization.test.extension
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+
+type A:
+  fieldA string (1..1)
+
+type B extends A:
+  fieldB string (1..1)
+
+type Root:
+  [rootType]
+  typeA A (0..1)
+  typeB B (0..1)
+

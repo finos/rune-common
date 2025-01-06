@@ -1,0 +1,12 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.metascheme.Root",
+  "@version" : "0.0.0",
+  "typeA" : {
+    "fieldA" : {
+      "@data" : "foo",
+      "@scheme" : "https://www.example.com/scheme1"
+    },
+    "@scheme" : "https://www.example.com/scheme2"
+  }
+}

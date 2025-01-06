@@ -1,0 +1,8 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.enumtypes.Root",
+  "@version" : "0.0.0",
+  "enumList" : {
+    "enumType" : [ "A", "B", "C", "B" ]
+  }
+}

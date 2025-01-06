@@ -1,0 +1,15 @@
+namespace parameterised
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+typeAlias ParameterisedNumberType:
+	number(digits: 3, fractionalDigits: 2)
+
+typeAlias ParameterisedStringType:
+    string(minLength: 1, maxLength: 2, pattern: "[a-zA-Z]")
+
+type Root:
+  [rootType]
+  parameterisedNumber ParameterisedNumberType (0..1)
+  parameterisedString ParameterisedStringType (0..1)
+    

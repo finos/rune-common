@@ -1,0 +1,28 @@
+namespace serialization.test.choicetype
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+choice ChoiceBasic:
+  string
+  number
+
+type A:
+  fieldA string (1..1)
+
+type B:
+  fieldB string (1..1)
+
+choice ChoiceData:
+  A
+  B
+
+choice ChoiceMixed:
+  A
+  B
+  string
+
+type Root:
+  [rootType]
+  choiceBasic ChoiceBasic (0..1)
+  choiceData ChoiceData (0..1)
+  choiceMixed ChoiceMixed (0..1)

@@ -1,0 +1,24 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.metascheme.Root",
+  "@version" : "0.0.0",
+  "typeAList" : [ {
+    "fieldA" : {
+      "@data" : "foo",
+      "@scheme" : "https://www.example.com/scheme1"
+    },
+    "@scheme" : "https://www.example.com/scheme-outer1"
+  }, {
+    "fieldA" : {
+      "@data" : "bar",
+      "@scheme" : "https://www.example.com/scheme2"
+    },
+    "@scheme" : "https://www.example.com/scheme-outer2"
+  }, {
+    "fieldA" : {
+      "@data" : "baz",
+      "@scheme" : "https://www.example.com/scheme3"
+    },
+    "@scheme" : "https://www.example.com/scheme-outer3"
+  } ]
+}

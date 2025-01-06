@@ -1,0 +1,31 @@
+namespace serialization.test.basic
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+typeAlias ParameterisedNumberType:
+	number(digits: 18, fractionalDigits: 2)
+
+typeAlias ParameterisedStringType:
+    string(minLength: 1, maxLength: 20, pattern: "[a-zA-Z]")
+
+type BasicSingle:
+  booleanType boolean (1..1)
+  numberType number (1..1)
+  parameterisedNumberType ParameterisedNumberType (1..1)
+  parameterisedStringType ParameterisedStringType (1..1)
+  stringType string (1..1)
+  timeType time (1..1)
+
+type BasicList:
+  booleanTypes boolean (1..*)
+  numberTypes number (1..*)
+  parameterisedNumberTypes ParameterisedNumberType (1..*)
+  parameterisedStringTypes ParameterisedStringType (1..*)
+  stringTypes string (1..*)
+  timeTypes time (1..*)
+
+type Root:
+  [rootType]
+  basicSingle BasicSingle (0..1)
+  basicList BasicList (0..1)
+    

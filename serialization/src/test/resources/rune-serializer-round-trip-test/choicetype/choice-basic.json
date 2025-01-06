@@ -1,0 +1,8 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.choicetype.Root",
+  "@version" : "0.0.0",
+  "choiceBasic" : {
+    "string" : "foo"
+  }
+}

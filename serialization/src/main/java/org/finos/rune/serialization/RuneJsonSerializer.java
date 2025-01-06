@@ -22,11 +22,30 @@ package org.finos.rune.serialization;
 
 import com.rosetta.model.lib.RosettaModelObject;
 
-// JacksonRuneJsonSerializer (impl) new up
+/**
+ * High-level API for serializing and deserializing objects in the Rune DSL.
+ * This interface defines methods for converting objects to and from JSON format,
+ * ensuring the resulting JSON aligns with the structure and semantics of the Rune DSL.
+ */
 public interface RuneJsonSerializer {
 
+    /**
+     * Serializes a given Rune DSL object to a JSON string.
+     *
+     * @param <T>        the type of the Rune DSL object, extending {@link RosettaModelObject}
+     * @param runeObject the object to serialize
+     * @return a JSON string representation of the given object
+     */
     <T extends RosettaModelObject> String toJson(T runeObject);
 
+    /**
+     * Deserializes a JSON string into a Rune DSL object of the specified type.
+     *
+     * @param <T>     the type of the Rune DSL object, extending {@link RosettaModelObject}
+     * @param runeJson the JSON string to deserialize
+     * @param type     the class of the desired object type
+     * @return an instance of the specified type populated with data from the JSON string
+     */
     <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type);
 
 }

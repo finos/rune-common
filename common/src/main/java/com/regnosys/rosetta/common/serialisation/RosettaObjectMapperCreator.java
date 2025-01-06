@@ -71,7 +71,6 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     public static RosettaObjectMapperCreator forJSON() {
         boolean supportRosettaEnumValue = true;
         ObjectMapper base = new ObjectMapper();
-        // parallel structure for RosettaJSONModule
         return new RosettaObjectMapperCreator(new RosettaJSONModule(supportRosettaEnumValue), base);
     }
 

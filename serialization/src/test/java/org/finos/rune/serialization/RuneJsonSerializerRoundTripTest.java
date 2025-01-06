@@ -20,6 +20,7 @@ package org.finos.rune.serialization;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
@@ -41,9 +42,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RuneJsonSerializerRoundTripTest {
     public static final String TEST_TYPE = "rune-serializer-round-trip-test";
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
-    private RuneJsonSerializer runeJsonSerializer;
 
     private static CodeGeneratorTestHelper helper;
+    private ObjectMapper objectMapper;
 
     @BeforeAll
     static void beforeAll() {
@@ -54,16 +55,15 @@ public class RuneJsonSerializerRoundTripTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper objectMapper = new RuneJsonObjectMapper();
+        objectMapper = new RuneJsonObjectMapper();
         objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
-        runeJsonSerializer = new RuneJacksonJsonSerializer(objectMapper);
     }
 
     @ParameterizedTest(name = "{0} - {1}")
     @MethodSource("testCases")
     public void testSerializationRoundTrip(String group, String testCaseName, Class<? extends RosettaModelObject> rosettaRootType, String jsonString) {
-        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(jsonString, rosettaRootType);
-        String serializedjsonString = runeJsonSerializer.toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(jsonString, rosettaRootType);
+        String serializedjsonString = toJson(deserializedObject);
         assertEquals(jsonString, serializedjsonString, testCaseName + ": Serialization round trip failed");
     }
 
@@ -85,4 +85,20 @@ public class RuneJsonSerializerRoundTripTest {
                 );
     }
 
+    private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) {
+        try {
+            return objectMapper.readValue(runeJson, type);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T extends RosettaModelObject> String toJson(T runeObject) {
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(runeObject);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

@@ -20,11 +20,13 @@ package org.finos.rune.serialization;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
+import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -41,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Disabled
 public class RuneJsonSerializerErrorHandlingTest {
     public static final String TEST_TYPE = "rune-serializer-error-handling-test";
-    private RuneJsonSerializer runeJsonSerializer;
+    private ObjectMapper objectMapper;
 
     private static CodeGeneratorTestHelper helper;
 
@@ -54,7 +56,7 @@ public class RuneJsonSerializerErrorHandlingTest {
 
     @BeforeEach
     void setUp() {
-        runeJsonSerializer = new RuneJacksonJsonSerializer();
+        objectMapper = new RuneJsonObjectMapper();
     }
 
 
@@ -64,10 +66,10 @@ public class RuneJsonSerializerErrorHandlingTest {
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "cardinality.rosetta");
         String json = readAsString(getFile(groupPath, "too-many-elements.json"));
 
-        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(json, rootDataType);
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
 
         RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
-            runeJsonSerializer.toJson(deserializedObject);
+            toJson(deserializedObject);
         });
 
         assertEquals("Attribute contained more than the allowed number of elements", runtimeException.getMessage());
@@ -79,10 +81,10 @@ public class RuneJsonSerializerErrorHandlingTest {
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
         String json = readAsString(getFile(groupPath, "number-fraction-too-large.json"));
 
-        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(json, rootDataType);
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
 
         RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
-            runeJsonSerializer.toJson(deserializedObject);
+            toJson(deserializedObject);
         });
 
         assertEquals("Number contained more than the allowed number of digits", runtimeException.getMessage());
@@ -94,10 +96,10 @@ public class RuneJsonSerializerErrorHandlingTest {
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
         String json = readAsString(getFile(groupPath, "number-too-large.json"));
 
-        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(json, rootDataType);
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
 
         RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
-            runeJsonSerializer.toJson(deserializedObject);
+            toJson(deserializedObject);
         });
 
         assertEquals("Number contained more than the allowed number of digits", runtimeException.getMessage());
@@ -109,10 +111,10 @@ public class RuneJsonSerializerErrorHandlingTest {
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
         String json = readAsString(getFile(groupPath, "string-illegal-pattern.json"));
 
-        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(json, rootDataType);
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
 
         RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
-            runeJsonSerializer.toJson(deserializedObject);
+            toJson(deserializedObject);
         });
 
         assertEquals("String does not match the required pattern", runtimeException.getMessage());
@@ -124,10 +126,10 @@ public class RuneJsonSerializerErrorHandlingTest {
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "parameterised.rosetta");
         String json = readAsString(getFile(groupPath, "string-too-large.json"));
 
-        RosettaModelObject deserializedObject = runeJsonSerializer.fromJson(json, rootDataType);
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
 
         RuntimeException runtimeException = assertThrows(RuntimeException.class, () -> {
-            runeJsonSerializer.toJson(deserializedObject);
+            toJson(deserializedObject);
         });
 
         assertEquals("String exceeds the maximum length", runtimeException.getMessage());
@@ -141,5 +143,22 @@ public class RuneJsonSerializerErrorHandlingTest {
         Path rosetta = getFile(groupPath, fileName);
         String groupName = groupPath.getFileName().toString();
         return generateCompileAndGetRootDataType(groupName, Collections.singletonList(rosetta), helper, new DynamicCompiledClassLoader());
+    }
+
+    private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) {
+        try {
+            return objectMapper.readValue(runeJson, type);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T extends RosettaModelObject> String toJson(T runeObject) {
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(runeObject);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

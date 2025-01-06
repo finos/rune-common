@@ -61,24 +61,24 @@ import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
  *
  * @see ObjectMapper
  */
-public class RuneJacksonJsonObjectMapper extends ObjectMapper {
-    public RuneJacksonJsonObjectMapper() {
+public class RuneJsonObjectMapper extends ObjectMapper {
+    public RuneJsonObjectMapper() {
         super(create());
     }
 
     @Override
     protected ObjectWriter _newWriter(SerializationConfig config) {
-        return new RuneJacksonJsonObjectWriter(this, config);
+        return new RuneJsonObjectWriter(this, config);
     }
 
     @Override
     protected ObjectWriter _newWriter(SerializationConfig config, FormatSchema schema) {
-        return new RuneJacksonJsonObjectWriter(this, config, schema);
+        return new RuneJsonObjectWriter(this, config, schema);
     }
 
     @Override
     protected ObjectWriter _newWriter(SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
-        return new RuneJacksonJsonObjectWriter(this, config, rootType, pp);
+        return new RuneJsonObjectWriter(this, config, rootType, pp);
     }
 
     private static ObjectMapper create() {

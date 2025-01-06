@@ -23,14 +23,14 @@ package org.finos.rune.serialization;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rosetta.model.lib.RosettaModelObject;
-import org.finos.rune.mapper.RuneJacksonJsonObjectMapper;
+import org.finos.rune.mapper.RuneJsonObjectMapper;
 
 /**
  * A Jackson-based implementation of the {@link RuneJsonSerializer} interface
  * for serializing and deserializing Rune DSL objects to and from JSON.
  * <p>
  * This class uses a custom-configured {@link ObjectMapper} to handle JSON
- * serialization and deserialization. By default, it employs a {@link RuneJacksonJsonObjectMapper},
+ * serialization and deserialization. By default, it employs a {@link RuneJsonObjectMapper},
  * but a pre-configured {@code ObjectMapper} can also be injected via the constructor
  * to customize behavior.
  * </p>
@@ -54,7 +54,7 @@ public class RuneJacksonJsonSerializer implements RuneJsonSerializer {
     private final ObjectMapper objectMapper;
 
     public RuneJacksonJsonSerializer() {
-        objectMapper = new RuneJacksonJsonObjectMapper();
+        objectMapper = new RuneJsonObjectMapper();
     }
 
     public RuneJacksonJsonSerializer(ObjectMapper objectMapper) {

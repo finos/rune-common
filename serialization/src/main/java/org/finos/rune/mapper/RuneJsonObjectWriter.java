@@ -43,7 +43,7 @@ import java.util.Arrays;
  * </p>
  *
  * <h2>Usage:</h2>
- * This writer is used internally by the {@link RuneJacksonJsonObjectMapper} and
+ * This writer is used internally by the {@link RuneJsonObjectMapper} and
  * is not typically instantiated directly. Instead, it is accessed through the
  * configured {@link ObjectMapper}.
  * <pre>
@@ -52,23 +52,23 @@ import java.util.Arrays;
  * </pre>
  *
  * @see ObjectWriter
- * @see RuneJacksonJsonObjectMapper
+ * @see RuneJsonObjectMapper
  */
-public class RuneJacksonJsonObjectWriter extends ObjectWriter {
+public class RuneJsonObjectWriter extends ObjectWriter {
     private final ObjectMapper mapper;
 
 
-    protected RuneJacksonJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
+    protected RuneJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
         super(mapper, config, s);
         this.mapper = mapper;
     }
 
-    public RuneJacksonJsonObjectWriter(ObjectMapper mapper, SerializationConfig config) {
+    public RuneJsonObjectWriter(ObjectMapper mapper, SerializationConfig config) {
         super(mapper, config);
         this.mapper = mapper;
     }
 
-    protected RuneJacksonJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
+    protected RuneJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
         super(mapper, config, rootType, pp);
         this.mapper = mapper;
     }

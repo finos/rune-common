@@ -3,7 +3,7 @@
   "@type" : "serialization.test.extension.Root",
   "@version" : "0.0.0",
   "typeB" : {
-    "@type" : "serialization.test.extension.B",
-    "fieldB" : "foo"
+    "fieldB" : "foo",
+    "@type" : "serialization.test.extension.B"
   }
 }

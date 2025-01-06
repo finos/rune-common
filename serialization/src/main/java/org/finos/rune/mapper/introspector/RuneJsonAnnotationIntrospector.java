@@ -101,25 +101,6 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         return super.findPolymorphicTypeInfo(config, ann);
     }
 
-    /**
-     * Enables alphabetic sorting for properties of classes annotated with {@link RuneDataType}.
-     *
-     * <p>Currently, only alphabetic ordering of properties is supported. Ideally, explicit
-     * ordering could be achieved by overriding the parent method:
-     * <pre>{@code String[] findSerializationPropertyOrder(AnnotatedClass ac)}</pre>.
-     *
-     * <p>However, due to a limitation in Jackson, the property ordering logic does not work
-     * in conjunction with unwrapping logic. This issue is documented in the following ticket:
-     * <a href="https://github.com/FasterXML/jackson-databind/issues/1670">jackson-databind issue 1670</a>.
-     */
-    @Override
-    public Boolean findSerializationSortAlphabetically(Annotated ann) {
-        if (ann.hasAnnotation(RuneDataType.class)) {
-            return Boolean.TRUE;
-        }
-        return super.findSerializationSortAlphabetically(ann);
-    }
-
     @Override
     public Class<?> findPOJOBuilder(AnnotatedClass ac) {
         if (ac.hasAnnotation(RuneDataType.class)) {

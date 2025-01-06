@@ -3,14 +3,14 @@
   "@type" : "serialization.test.metakey.Root",
   "@version" : "0.0.0",
   "nodeRef" : {
-    "aReference" : {
-      "@ref" : "someKey",
-      "@ref:external" : "someExternalKey"
-    },
     "typeA" : {
       "fieldA" : "foo",
       "@key" : "someKey",
       "@key:external" : "someExternalKey"
+    },
+    "aReference" : {
+      "@ref" : "someKey",
+      "@ref:external" : "someExternalKey"
     }
   }
 }

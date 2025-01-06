@@ -73,7 +73,7 @@ import java.util.stream.StreamSupport;
  * @see RuneAttribute
  * @see RuneMetaType
  */
-public class RuneJSONAnnotationIntrospector extends JacksonAnnotationIntrospector {
+public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
 
     @Override

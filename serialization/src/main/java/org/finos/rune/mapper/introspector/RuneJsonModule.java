@@ -26,18 +26,18 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 /**
  * Using a module class to append our annotation introspector with a minimal fuss
  */
-public class RuneJSONModule extends SimpleModule {
+public class RuneJsonModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
 
-    public RuneJSONModule() {
+    public RuneJsonModule() {
         super(PackageVersion.VERSION);
     }
 
     @Override
     public void setupModule(SetupContext context) {
         super.setupModule(context);
-        context.insertAnnotationIntrospector(new RuneJSONAnnotationIntrospector());
+        context.insertAnnotationIntrospector(new RuneJsonAnnotationIntrospector());
     }
 
     @Override

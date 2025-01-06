@@ -36,7 +36,7 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.date.RuneDateModule;
 import org.finos.rune.mapper.filters.SubTypeFilter;
-import org.finos.rune.mapper.introspector.RuneJSONModule;
+import org.finos.rune.mapper.introspector.RuneJsonModule;
 import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
 
 /**
@@ -89,7 +89,7 @@ public class RuneJacksonJsonObjectMapper extends ObjectMapper {
                 .registerModule(new Jdk8Module())
                 .registerModule(new JavaTimeModule())
                 .registerModule(new RuneDateModule())
-                .registerModule(new RuneJSONModule())
+                .registerModule(new RuneJsonModule())
                 .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)

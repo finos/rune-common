@@ -35,7 +35,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.date.RuneDateModule;
-import org.finos.rune.mapper.filters.SubTypeFilter;
+import org.finos.rune.mapper.filters.SubtypeFilter;
 import org.finos.rune.mapper.introspector.RuneJsonModule;
 import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
 
@@ -98,7 +98,7 @@ public class RuneJsonObjectMapper extends ObjectMapper {
                 .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
                 .configure(SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS, false)
-                .setFilterProvider(new SimpleFilterProvider().addFilter("SubTypeFilter", new SubTypeFilter()))
+                .setFilterProvider(new SimpleFilterProvider().addFilter("SubTypeFilter", new SubtypeFilter()))
                 .addMixIn(RosettaModelObject.class, RosettaModelObjectMixin.class)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
                 .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.PUBLIC_ONLY);

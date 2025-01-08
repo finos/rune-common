@@ -33,6 +33,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.google.common.annotations.Beta;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.date.RuneDateModule;
 import org.finos.rune.mapper.filters.SubtypeFilter;
@@ -59,8 +60,12 @@ import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
  * String json = objectMapper.writeValueAsString(runeObject);
  * </pre>
  *
+ * IMPORTANT NOTE: This class is not yet production ready and is still under
+ * development please use {@code RosettaObjectMapper} in the mean time
+ *
  * @see ObjectMapper
  */
+@Beta
 public class RuneJsonObjectMapper extends ObjectMapper {
     public RuneJsonObjectMapper() {
         super(create());

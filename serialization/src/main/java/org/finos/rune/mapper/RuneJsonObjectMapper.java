@@ -61,7 +61,7 @@ import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
  * </pre>
  *
  * IMPORTANT NOTE: This class is not yet production ready and is still under
- * development please use {@code RosettaObjectMapper} in the mean time
+ * development please use {@code RosettaObjectMapper} in the meantime
  *
  * @see ObjectMapper
  */

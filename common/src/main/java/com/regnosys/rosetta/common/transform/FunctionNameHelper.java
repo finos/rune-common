@@ -81,6 +81,10 @@ public class FunctionNameHelper {
         return readableId(simpleName);
     }
 
+    public String readableFunctionName(String functionSimpleName){
+        return readableFunctionNameFromId(readableId(functionSimpleName));
+    }
+
     private String readableId(String simpleName) {
 
         String sanitise = simpleName
@@ -98,10 +102,6 @@ public class FunctionNameHelper {
         return CaseFormat.UPPER_CAMEL
                 .converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(functionName);
-    }
-
-    public String readableFunctionName(String functionSimpleName){
-        return readableFunctionNameFromId(readableId(functionSimpleName));
     }
 
     private String readableFunctionNameFromId(String readableId) {

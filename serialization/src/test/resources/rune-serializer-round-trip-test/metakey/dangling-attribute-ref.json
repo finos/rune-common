@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.metakey.Root",
+  "@type" : "serialization.test.roundtrip.metakey.Root",
   "@version" : "0.0.0",
   "attributeRef" : {
     "dateReference" : {

@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.metalocation.Root",
+  "@type" : "serialization.test.roundtrip.metalocation.Root",
   "@version" : "0.0.0",
   "bAddress" : {
     "@ref:scoped" : "someLocation"

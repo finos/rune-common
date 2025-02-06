@@ -1,4 +1,4 @@
-namespace serialization.test.roundtripfail.parameterised
+namespace serialization.test.fail.parameterised
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

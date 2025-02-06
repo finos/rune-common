@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.roundtrip.choicetype.Root",
+  "@type" : "serialization.test.pass.choicetype.Root",
   "@version" : "0.0.0",
   "choiceMixed" : {
     "B" : {

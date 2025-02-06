@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 public class RuneSerializerTestHelper {
 
     public static final String TEST_MODEL_NAME = "serialization";
+    public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.pass.";
 
     @SuppressWarnings("unchecked")
     public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String groupName,
@@ -58,7 +59,7 @@ public class RuneSerializerTestHelper {
         HashMap<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-        Class<?> aClass = compiledCode.get(TEST_MODEL_NAME + ".test." + groupName + ".Root");
+        Class<?> aClass = compiledCode.get(NAMESPACE_PREFIX + groupName + ".Root");
         return (Class<T>) aClass;
     }
 

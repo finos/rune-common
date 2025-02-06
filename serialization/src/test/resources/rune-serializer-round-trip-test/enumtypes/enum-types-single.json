@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.roundtrip.enumtypes.Root",
+  "@type" : "serialization.test.pass.enumtypes.Root",
   "@version" : "0.0.0",
   "enumSingle" : {
     "enumType" : "A"

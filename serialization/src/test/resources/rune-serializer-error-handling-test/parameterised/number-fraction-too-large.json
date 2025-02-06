@@ -1,6 +1,6 @@
 {
   "@model": "serialization",
-  "@type": "serialization.test.roundtripfail.parameterised.Root",
+  "@type": "serialization.test.fail.parameterised.Root",
   "@version": "0.0.0",
   "parameterisedNumber": 1.23456789
 }

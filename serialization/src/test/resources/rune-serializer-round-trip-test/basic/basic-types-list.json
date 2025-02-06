@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.basic.Root",
+  "@type" : "serialization.test.roundtrip.basic.Root",
   "@version" : "0.0.0",
   "basicList" : {
     "booleanTypes" : [ true, false, true ],

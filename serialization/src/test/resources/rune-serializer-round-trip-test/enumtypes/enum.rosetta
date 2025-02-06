@@ -1,4 +1,4 @@
-namespace serialization.test.enumtypes
+namespace serialization.test.roundtrip.enumtypes
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

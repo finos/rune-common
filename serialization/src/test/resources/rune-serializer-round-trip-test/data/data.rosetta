@@ -1,5 +1,4 @@
-namespace serialization.test.data
-
+namespace serialization.test.roundtrip.data
 annotation rootType: <"Mark a type as a root of the rosetta model">
 
 type A:

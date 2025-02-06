@@ -31,11 +31,11 @@ public class RuneEnumBuilderIntrospector {
         processEnumAnnotations(enumType, enumValues, enumAliasFunc, aliasList);
     }
 
-    private void processEnumAnnotations(
+    private <T> void processEnumAnnotations(
             AnnotatedClass enumType,
             Enum<?>[] enumValues,
-            BiFunction<RosettaEnumValue, String, ?> mapper,
-            Object[] results
+            BiFunction<RosettaEnumValue, String, T> mapper,
+            T[] results
     ) {
         for (AnnotatedField f : enumType.fields()) {
             if (f.hasAnnotation(RosettaEnumValue.class)) {

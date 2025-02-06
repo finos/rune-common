@@ -1,9 +1,9 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.pass.metakey.Root",
+  "@type" : "serialization.test.fail.metakey.Root",
   "@version" : "0.0.0",
-  "attributeRef" : {
-    "dateReference" : {
+  "nodeRef" : {
+    "aReference" : {
       "@ref" : "someKey",
       "@ref:external" : "someExternalKey"
     }

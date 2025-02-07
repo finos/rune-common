@@ -1,0 +1,10 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.metakey.Root",
+  "@version" : "0.0.0",
+  "attributeRef" : {
+    "dateField" : {
+      "@data" : "2024-12-12"
+    }
+  }
+}

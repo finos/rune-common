@@ -41,9 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RuneJsonSerializerRoundTripTest {
     public static final String TEST_TYPE = "rune-serializer-round-trip-test";
-    private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
-
+    private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     private static CodeGeneratorTestHelper helper;
     private ObjectMapper objectMapper;
 

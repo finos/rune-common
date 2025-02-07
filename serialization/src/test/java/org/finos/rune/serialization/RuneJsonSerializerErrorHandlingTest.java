@@ -43,21 +43,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Disabled
 public class RuneJsonSerializerErrorHandlingTest {
     public static final String TEST_TYPE = "rune-serializer-error-handling-test";
-    private ObjectMapper objectMapper;
     public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.failing.";
+    private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
+    private ObjectMapper objectMapper;
 
     private static CodeGeneratorTestHelper helper;
 
     @BeforeAll
     static void beforeAll() {
-        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
-        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
+        Injector injector = setupInjector();
         helper = injector.getInstance(CodeGeneratorTestHelper.class);
+        helper = injector.getInstance(CodeGeneratorTestHelper.class);
+        dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
     }
 
     @BeforeEach
     void setUp() {
         objectMapper = new RuneJsonObjectMapper();
+        objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
     }
 
 
@@ -143,7 +146,7 @@ public class RuneJsonSerializerErrorHandlingTest {
     private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath, String fileName) {
         Path rosetta = getFile(groupPath, fileName);
         String groupName = groupPath.getFileName().toString();
-        return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, Collections.singletonList(rosetta), helper, new DynamicCompiledClassLoader());
+        return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, Collections.singletonList(rosetta), helper, dynamicCompiledClassLoader);
     }
 
     private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) {

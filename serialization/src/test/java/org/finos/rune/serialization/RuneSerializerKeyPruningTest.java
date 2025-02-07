@@ -20,23 +20,87 @@ package org.finos.rune.serialization;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
+import com.rosetta.model.lib.RosettaModelObject;
+import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+
+import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@Disabled
 public class RuneSerializerKeyPruningTest {
-    public static final String TEST_TYPE = "rune-serializer-error-handling-test";
+    public static final String TEST_TYPE = "rune-serializer-key-pruning-test";
+    public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
+    private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     private ObjectMapper objectMapper;
 
     private static CodeGeneratorTestHelper helper;
 
     @BeforeAll
     static void beforeAll() {
-        RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
-        Injector injector = rosettaStandaloneSetup.createInjectorAndDoEMFRegistration();
+        Injector injector = setupInjector();
         helper = injector.getInstance(CodeGeneratorTestHelper.class);
+        dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
+    }
+
+    @BeforeEach
+    void setUp() {
+        objectMapper = new RuneJsonObjectMapper();
+        objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
+
+    }
+
+    @Test
+    void testMetaIdOnObjectWithNoReferenceToItIsPruned() {
+        Path groupPath = getGroupPath("metakey");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
+        String input = readAsString(getFile(groupPath, "node-key-without-ref-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
+        String result = toJson(deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "node-key-without-ref-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath, String fileName) {
+        Path rosetta = getFile(groupPath, fileName);
+        String groupName = groupPath.getFileName().toString();
+        return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, Collections.singletonList(rosetta), helper, dynamicCompiledClassLoader);
+    }
+
+    private Path getGroupPath(String groupName) {
+        return  Paths.get("src/test/resources").resolve(TEST_TYPE).resolve(groupName);
+    }
+
+    private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) {
+        try {
+            return objectMapper.readValue(runeJson, type);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private <T extends RosettaModelObject> String toJson(T runeObject) {
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(runeObject);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

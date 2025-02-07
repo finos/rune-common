@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class RuneJsonSerializerErrorHandlingTest {
     public static final String TEST_TYPE = "rune-serializer-error-handling-test";
     private ObjectMapper objectMapper;
+    public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.failing.";
 
     private static CodeGeneratorTestHelper helper;
 
@@ -142,7 +143,7 @@ public class RuneJsonSerializerErrorHandlingTest {
     private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath, String fileName) {
         Path rosetta = getFile(groupPath, fileName);
         String groupName = groupPath.getFileName().toString();
-        return generateCompileAndGetRootDataType(groupName, Collections.singletonList(rosetta), helper, new DynamicCompiledClassLoader());
+        return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, Collections.singletonList(rosetta), helper, new DynamicCompiledClassLoader());
     }
 
     private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) {

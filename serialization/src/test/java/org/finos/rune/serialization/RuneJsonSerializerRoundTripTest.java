@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RuneJsonSerializerRoundTripTest {
     public static final String TEST_TYPE = "rune-serializer-round-trip-test";
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
+    public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
 
     private static CodeGeneratorTestHelper helper;
     private ObjectMapper objectMapper;
@@ -72,7 +73,7 @@ public class RuneJsonSerializerRoundTripTest {
                 .flatMap(groupPath -> {
                             List<Path> rosettas = listFiles(groupPath, ".rosetta");
                             String groupName = groupPath.getFileName().toString();
-                    Class<RosettaModelObject> rootDataType = generateCompileAndGetRootDataType(groupName, rosettas, helper, dynamicCompiledClassLoader);
+                    Class<RosettaModelObject> rootDataType = generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, rosettas, helper, dynamicCompiledClassLoader);
 
                             return listFiles(groupPath, ".json").stream()
                                     .map(jsonPath -> Arguments.of(

@@ -76,6 +76,13 @@ import java.util.stream.StreamSupport;
 public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
 
+    private final RuneEnumBuilderIntrospector runeEnumBuilderIntrospector;
+
+    public RuneJsonAnnotationIntrospector() {
+        runeEnumBuilderIntrospector = new RuneEnumBuilderIntrospector();
+    }
+
+
     @Override
     protected StdTypeResolverBuilder _constructStdTypeResolverBuilder() {
         return new RuneStdTypeResolverBuilder();
@@ -147,6 +154,26 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         }
 
         return super.findPropertyIgnoralByName(config, a);
+    }
+
+    @Override
+    public String[] findEnumValues(MapperConfig<?> config, AnnotatedClass enumType,
+                                   Enum<?>[] enumValues, String[] names) {
+        if (runeEnumBuilderIntrospector.isApplicable(enumType)) {
+            runeEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
+            return names;
+        }
+        return super.findEnumValues(config, enumType, enumValues, names);
+    }
+
+    @Override
+    public void findEnumAliases(MapperConfig<?> config, AnnotatedClass enumType,
+                                Enum<?>[] enumValues, String[][] aliasList) {
+        if (runeEnumBuilderIntrospector.isApplicable(enumType)) {
+            runeEnumBuilderIntrospector.findEnumAliases(enumType, enumValues, aliasList);
+        } else {
+            super.findEnumAliases(config, enumType, enumValues, aliasList);
+        }
     }
 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

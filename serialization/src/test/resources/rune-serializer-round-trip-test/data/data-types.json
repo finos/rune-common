@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.data.Root",
+  "@type" : "serialization.test.passing.data.Root",
   "@version" : "0.0.0",
   "a" : {
     "b" : [ { }, {

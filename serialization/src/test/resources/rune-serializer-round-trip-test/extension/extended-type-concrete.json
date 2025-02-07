@@ -1,9 +1,10 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.extension.Root",
+  "@type" : "serialization.test.passing.extension.Root",
   "@version" : "0.0.0",
   "typeB" : {
+    "fieldA" : "bar",
     "fieldB" : "foo",
-    "@type" : "serialization.test.extension.B"
+    "@type" : "serialization.test.passing.extension.B"
   }
 }

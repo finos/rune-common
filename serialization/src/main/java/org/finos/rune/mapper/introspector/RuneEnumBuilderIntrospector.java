@@ -29,6 +29,16 @@ import java.util.function.BiFunction;
 
 //TODO: migrate all the Rosetta enum annotations to Rune annotations
 public class RuneEnumBuilderIntrospector {
+    /*
+     * TODO:
+     *  The ENUM_ANNOTATION & ENUM_VALUE_ANNOTATION are marker annotations in our generated
+     * POJOs that allow us to introspect Enumerations and transform their values correctly. All
+     * serialisation annotations need to migrate away from using the Rosetta annotations to Rune ones.
+     * The following two annotations need to be marked as deprecated in the DSL and the POJO generators
+     * need to generate the replacement RuneEnum and RuneEnumValue annotations.
+     */
+    public static final Class<RosettaEnum> ENUM_ANNOTATION = RosettaEnum.class;
+    public static final Class<RosettaEnumValue> ENUM_VALUE_ANNOTATION = RosettaEnumValue.class;
     private final EnumNameFunc enumNameFunc;
     private final EnumAliasFunc enumAliasFunc;
 
@@ -40,7 +50,7 @@ public class RuneEnumBuilderIntrospector {
     }
 
     public boolean isApplicable(AnnotatedClass enumType) {
-        return enumType.getAnnotation(RosettaEnum.class) != null;
+        return enumType.getAnnotation(ENUM_ANNOTATION) != null;
     }
 
     public void findEnumValues(AnnotatedClass enumType, Enum<?>[] enumValues, String[] names) {
@@ -58,8 +68,8 @@ public class RuneEnumBuilderIntrospector {
             T[] results
     ) {
         for (AnnotatedField f : enumType.fields()) {
-            if (f.hasAnnotation(RosettaEnumValue.class)) {
-                RosettaEnumValue annotation = f.getAnnotation(RosettaEnumValue.class);
+            if (f.hasAnnotation(ENUM_VALUE_ANNOTATION)) {
+                RosettaEnumValue annotation = f.getAnnotation(ENUM_VALUE_ANNOTATION);
                 final String name = f.getName();
                 for (int i = 0, end = enumValues.length; i < end; ++i) {
                     if (name.equals(enumValues[i].name())) {

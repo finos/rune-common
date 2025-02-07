@@ -1,4 +1,4 @@
-namespace serialization.test.fail.metakey
+namespace serialization.test.failing.metakey
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

@@ -47,19 +47,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RuneSerializerTestHelper {
-
     public static final String TEST_MODEL_NAME = "serialization";
-    public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
 
     @SuppressWarnings("unchecked")
-    public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String groupName,
+    public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String namespacePrefix, String groupName,
                                                                                             List<Path> rosettaPaths,
-                                                                                            CodeGeneratorTestHelper helper, DynamicCompiledClassLoader dynamicCompiledClassLoader) {
+                                                                                            CodeGeneratorTestHelper helper,
+                                                                                            DynamicCompiledClassLoader dynamicCompiledClassLoader) {
         String[] rosettaFileContents = rosettaPaths.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
         HashMap<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-        Class<?> aClass = compiledCode.get(NAMESPACE_PREFIX + groupName + ".Root");
+        Class<?> aClass = compiledCode.get(namespacePrefix + groupName + ".Root");
         return (Class<T>) aClass;
     }
 

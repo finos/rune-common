@@ -1,4 +1,4 @@
-namespace serialization.test.fail.cardinality
+namespace serialization.test.failing.cardinality
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

@@ -163,10 +163,9 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
                                    Enum<?>[] enumValues, String[] names) {
         if (runeEnumBuilderIntrospector.isApplicable(enumType)) {
             runeEnumBuilderIntrospector.findEnumValues(enumType, enumValues, names);
-        } else {
-            runeEnumAsStringBuilderIntrospector.findEnumValues(enumType, enumValues, names);
+            return names;
         }
-        return names;
+        return super.findEnumValues(config, enumType, enumValues, names);
     }
 
     @Override

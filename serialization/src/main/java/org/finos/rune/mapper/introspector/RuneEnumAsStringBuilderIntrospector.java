@@ -22,7 +22,7 @@ package org.finos.rune.mapper.introspector;
 
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
-
+//TODO: check if this is needed, don't think it is
 public class RuneEnumAsStringBuilderIntrospector {
 
     public void findEnumValues(AnnotatedClass enumType, Enum<?>[] enumValues, String[] names) {

@@ -77,11 +77,9 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     private static final long serialVersionUID = 1L;
 
     private final RuneEnumBuilderIntrospector runeEnumBuilderIntrospector;
-    private final RuneEnumAsStringBuilderIntrospector runeEnumAsStringBuilderIntrospector;
 
     public RuneJsonAnnotationIntrospector() {
         runeEnumBuilderIntrospector = new RuneEnumBuilderIntrospector();
-        runeEnumAsStringBuilderIntrospector = new RuneEnumAsStringBuilderIntrospector();
     }
 
 

@@ -1,4 +1,4 @@
-namespace serialization.test.pass.metalocation
+namespace serialization.test.passing.metalocation
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

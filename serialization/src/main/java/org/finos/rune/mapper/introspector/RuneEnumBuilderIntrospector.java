@@ -27,7 +27,6 @@ import com.rosetta.model.lib.annotations.RosettaEnumValue;
 
 import java.util.function.BiFunction;
 
-//TODO: migrate all the Rosetta enum annotations to Rune annotations
 public class RuneEnumBuilderIntrospector {
     /*
      * TODO:

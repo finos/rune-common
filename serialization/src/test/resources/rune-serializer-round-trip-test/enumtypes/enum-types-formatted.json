@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.pass.enumtypes.Root",
+  "@type" : "serialization.test.passing.enumtypes.Root",
   "@version" : "0.0.0",
   "enumFormatted" : {
     "enumType" : "SomeEnumValue1"

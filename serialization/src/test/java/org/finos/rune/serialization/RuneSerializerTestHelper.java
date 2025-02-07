@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 public class RuneSerializerTestHelper {
 
     public static final String TEST_MODEL_NAME = "serialization";
-    public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.pass.";
+    public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
 
     @SuppressWarnings("unchecked")
     public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String groupName,

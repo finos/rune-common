@@ -1,4 +1,4 @@
-namespace serialization.test.pass.basic
+namespace serialization.test.passing.basic
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 

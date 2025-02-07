@@ -1,6 +1,6 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.pass.metalocation.Root",
+  "@type" : "serialization.test.passing.metalocation.Root",
   "@version" : "0.0.0",
   "typeA" : {
     "b" : {

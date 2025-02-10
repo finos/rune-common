@@ -28,6 +28,7 @@ import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -108,6 +109,21 @@ public class RuneSerializerKeyPruningTest {
         String result = toJson(deserializedObject);
 
         assertEquals(input, result);
+    }
+
+    @Disabled
+    @Test
+    void testDuplicateReferenceGlobalIsPruned() {
+        Path groupPath = getGroupPath("metakey");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
+        String input = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
+        String result = toJson(deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-expected.json"));
+
+        assertEquals(expected, result);
     }
 
     private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath, String fileName) {

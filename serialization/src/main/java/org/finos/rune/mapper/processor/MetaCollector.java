@@ -21,27 +21,24 @@ package org.finos.rune.mapper.processor;
  */
 
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.Processor;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-public class GlobalReferenceCollector implements Processor {
-    private final Set<GlobalReferenceRecord> globalReferences = new HashSet<>();
+public class MetaCollector implements Processor {
+    private final List<CollectorStrategy> collectorStrategies;
+
+    public MetaCollector(List<CollectorStrategy> collectorStrategies) {
+        this.collectorStrategies = collectorStrategies;
+    }
 
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, R instance, RosettaModelObject parent, AttributeMeta... metas) {
-        if (instance instanceof ReferenceWithMeta) {
-            @SuppressWarnings("unchecked")
-            ReferenceWithMeta<R> reference = (ReferenceWithMeta<R>) instance;
-            Class<?> referenceValueType = reference.getValueType();
-            String referenceKeyValue = reference.getGlobalReference();
-            globalReferences.add(new GlobalReferenceRecord(referenceValueType, referenceKeyValue));
+        for (CollectorStrategy collectorStrategy : collectorStrategies) {
+            collectorStrategy.collect(instance);
         }
         return true;
     }
@@ -72,10 +69,6 @@ public class GlobalReferenceCollector implements Processor {
         for (T instance : instances) {
             processBasic(path, rosettaType, instance, parent, metas);
         }
-    }
-
-    public Set<GlobalReferenceRecord> getGlobalReferences() {
-        return globalReferences;
     }
 
     @Override

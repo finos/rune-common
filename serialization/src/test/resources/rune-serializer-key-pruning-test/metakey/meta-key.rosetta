@@ -20,4 +20,5 @@ type AttributeRef:
 type Root:
   [rootType]
   nodeRef NodeRef (0..1)
+  nodeRefs NodeRef (0..*)
   attributeRef AttributeRef (0..1)

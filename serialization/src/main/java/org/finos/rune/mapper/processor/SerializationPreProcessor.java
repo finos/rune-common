@@ -26,23 +26,24 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 
 import java.util.List;
-import java.util.Set;
 
 public class SerializationPreProcessor {
 
     public <T extends RosettaModelObject> T process(T rosettaModelObject) {
         RosettaPath path = RosettaPath.valueOf(rosettaModelObject.getType().getSimpleName());
-        GlobalReferenceCollector globalReferenceCollector = new GlobalReferenceCollector();
-        rosettaModelObject.process(path, globalReferenceCollector);
-        Set<GlobalReferenceRecord> globalReferences = globalReferenceCollector.getGlobalReferences();
 
-        GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferences);
+        GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
+        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(globalReferenceCollectorStrategy);
+        MetaCollector metaCollector = new MetaCollector(collectorStrategies);
+        rosettaModelObject.process(path, metaCollector);
+
+        GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferenceCollectorStrategy.getGlobalReferences());
         EmptyAttributePruningStrategy emptyAttributePruningStrategy = new EmptyAttributePruningStrategy();
         List<PruningStrategy> pruningStrategyList = Lists.newArrayList(globalKeyPruningStrategy, emptyAttributePruningStrategy);
-
         PreSerializationPruner preSerializationPruner = new PreSerializationPruner(pruningStrategyList);
         RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
         builder.process(path, preSerializationPruner);
+
         return buildAndCast(builder);
     }
 

@@ -1,0 +1,53 @@
+{
+  "@model": "serialization",
+  "@type": "serialization.test.passing.metakey.Root",
+  "@version": "0.0.0",
+  "nodeRefs": [
+    {
+      "typeA": {
+        "fieldA": "foo1",
+        "@key": "someKey",
+        "@key:external": "someExternalKey"
+      },
+      "aReference": {
+        "@ref": "someKey",
+        "@ref:external": "someExternalKey"
+      }
+    },
+    {
+      "typeA": {
+        "fieldA": "foo2",
+        "@key": "someKey",
+        "@key:scoped": "someScopedKey"
+      },
+      "aReference": {
+        "@ref": "someKey",
+        "@ref:scoped": "someScopedKey"
+      }
+    },
+    {
+      "typeA": {
+        "fieldA": "foo3",
+        "@key:external": "someExternalKey",
+        "@key:scoped": "someScopedKey"
+      },
+      "aReference": {
+        "@ref:external": "someExternalKey",
+        "@ref:scoped": "someScopedKey"
+      }
+    },
+    {
+      "typeA": {
+        "fieldA": "foo4",
+        "@key": "someKey",
+        "@key:external": "someExternalKey",
+        "@key:scoped": "someScopedKey"
+      },
+      "aReference": {
+        "@ref": "someKey",
+        "@ref:external": "someExternalKey",
+        "@ref:scoped": "someScopedKey"
+      }
+    }
+  ]
+}

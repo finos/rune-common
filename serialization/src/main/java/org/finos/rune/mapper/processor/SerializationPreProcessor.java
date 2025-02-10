@@ -1,4 +1,4 @@
-package org.finos.rune.mapper.pruning;
+package org.finos.rune.mapper.processor;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -6,7 +6,7 @@ import com.rosetta.model.lib.path.RosettaPath;
 
 import java.util.Set;
 
-public class UnreferencedKeyProcessor {
+public class SerializationPreProcessor {
 
     public <T extends RosettaModelObject> T process(T rosettaModelObject) {
         RosettaPath path = RosettaPath.valueOf(rosettaModelObject.getType().getSimpleName());

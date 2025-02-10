@@ -1,4 +1,4 @@
-package org.finos.rune.mapper.pruning;
+package org.finos.rune.mapper.processor;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;

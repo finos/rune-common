@@ -1,4 +1,4 @@
-package org.finos.rune.mapper.pruning;
+package org.finos.rune.mapper.processor;
 
 public class GlobalReferenceRecord {
     public final Class<?> referenceOnType;

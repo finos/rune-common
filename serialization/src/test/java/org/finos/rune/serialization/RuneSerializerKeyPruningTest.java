@@ -26,9 +26,9 @@ import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
+import org.finos.rune.mapper.processor.SerializationPreProcessor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -38,7 +38,6 @@ import java.util.Collections;
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled
 public class RuneSerializerKeyPruningTest {
     public static final String TEST_TYPE = "rune-serializer-key-pruning-test";
     public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
@@ -46,6 +45,7 @@ public class RuneSerializerKeyPruningTest {
     private ObjectMapper objectMapper;
 
     private static CodeGeneratorTestHelper helper;
+    private SerializationPreProcessor serializationPreProcessor;
 
     @BeforeAll
     static void beforeAll() {
@@ -59,6 +59,8 @@ public class RuneSerializerKeyPruningTest {
         objectMapper = new RuneJsonObjectMapper();
         objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
 
+        //TODO: put this in the mapper
+        serializationPreProcessor = new SerializationPreProcessor();
     }
 
     @Test
@@ -95,6 +97,7 @@ public class RuneSerializerKeyPruningTest {
 
     private <T extends RosettaModelObject> String toJson(T runeObject) {
         try {
+            serializationPreProcessor.process(runeObject);
             return objectMapper.writerWithDefaultPrettyPrinter()
                     .writeValueAsString(runeObject);
         } catch (JsonProcessingException e) {

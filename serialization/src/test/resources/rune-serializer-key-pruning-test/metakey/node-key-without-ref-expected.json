@@ -4,7 +4,9 @@
   "@version" : "0.0.0",
   "nodeRef" : {
     "typeA" : {
-      "fieldA" : "foo"
+      "fieldA" : "foo",
+      "@key:external" : "someExternalKey"
+
     }
   }
 }

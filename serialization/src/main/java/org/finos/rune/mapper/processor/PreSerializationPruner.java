@@ -21,24 +21,27 @@ public class PreSerializationPruner implements BuilderProcessor {
 
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-        pruneGlobalKeys(rosettaType, builder);
-        pruneEmptyAttributes(builder);
+        if (builder != null) {
+            pruneGlobalKeys(rosettaType, builder);
+            pruneEmptyAttributes(builder);
+        }
         return true;
     }
 
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, List<? extends RosettaModelObjectBuilder> builders, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
+        System.err.println("PreSerializationPruner processRosetta collection");
         return false;
     }
 
     @Override
     public <T> void processBasic(RosettaPath path, Class<T> rosettaType, T instance, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-
+        System.err.println("PreSerializationPruner processBasic");
     }
 
     @Override
     public <T> void processBasic(RosettaPath path, Class<T> rosettaType, Collection<? extends T> instances, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-
+        System.err.println("PreSerializationPruner processBasic collection");
     }
 
     @Override

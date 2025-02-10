@@ -5,6 +5,7 @@
   "nodeRef" : {
     "typeA" : {
       "fieldA" : "foo",
+      "@key": "someKey",
       "@key:external" : "someExternalKey"
     }
   }

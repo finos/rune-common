@@ -25,8 +25,9 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
 import org.finos.rune.mapper.processor.collector.CollectorStrategy;
+import org.finos.rune.mapper.processor.collector.KeyCollectorStrategy;
 import org.finos.rune.mapper.processor.collector.GlobalReferenceCollectorStrategy;
-import org.finos.rune.mapper.processor.collector.MetaCollector;
+import org.finos.rune.mapper.processor.collector.PreSerializationCollector;
 import org.finos.rune.mapper.processor.pruner.EmptyAttributePruningStrategy;
 import org.finos.rune.mapper.processor.pruner.GlobalKeyPruningStrategy;
 import org.finos.rune.mapper.processor.pruner.PreSerializationPruner;
@@ -40,9 +41,11 @@ public class SerializationPreProcessor {
         RosettaPath path = RosettaPath.valueOf(rosettaModelObject.getType().getSimpleName());
 
         GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
-        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(globalReferenceCollectorStrategy);
-        MetaCollector metaCollector = new MetaCollector(collectorStrategies);
-        rosettaModelObject.process(path, metaCollector);
+        KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
+
+        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(globalReferenceCollectorStrategy, keyCollectorStrategy);
+        PreSerializationCollector preSerializationCollector = new PreSerializationCollector(collectorStrategies);
+        rosettaModelObject.process(path, preSerializationCollector);
 
         GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferenceCollectorStrategy.getGlobalReferences());
         EmptyAttributePruningStrategy emptyAttributePruningStrategy = new EmptyAttributePruningStrategy();

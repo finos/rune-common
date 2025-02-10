@@ -28,10 +28,10 @@ import com.rosetta.model.lib.process.Processor;
 import java.util.Collection;
 import java.util.List;
 
-public class MetaCollector implements Processor {
+public class PreSerializationCollector implements Processor {
     private final List<CollectorStrategy> collectorStrategies;
 
-    public MetaCollector(List<CollectorStrategy> collectorStrategies) {
+    public PreSerializationCollector(List<CollectorStrategy> collectorStrategies) {
         this.collectorStrategies = collectorStrategies;
     }
 

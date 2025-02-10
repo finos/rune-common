@@ -97,9 +97,9 @@ public class RuneSerializerKeyPruningTest {
 
     private <T extends RosettaModelObject> String toJson(T runeObject) {
         try {
-            serializationPreProcessor.process(runeObject);
+            T processed = serializationPreProcessor.process(runeObject);
             return objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(runeObject);
+                    .writeValueAsString(processed);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

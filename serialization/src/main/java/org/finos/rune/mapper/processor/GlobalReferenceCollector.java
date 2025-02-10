@@ -42,7 +42,7 @@ public class GlobalReferenceCollector implements Processor {
 
     @Override
     public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance, RosettaModelObject parent, AttributeMeta... metas) {
-        System.err.println("GlobalReferenceCollector processBasic");
+
     }
 
     @Override

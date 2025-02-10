@@ -6,7 +6,6 @@
     "typeA" : {
       "fieldA" : "foo",
       "@key:external" : "someExternalKey"
-
     }
   }
 }

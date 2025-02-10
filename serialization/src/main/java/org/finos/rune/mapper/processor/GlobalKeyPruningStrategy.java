@@ -34,6 +34,7 @@ public class GlobalKeyPruningStrategy implements PruningStrategy {
         this.globalReferences = globalReferences;
     }
 
+    @Override
     public void prune(RosettaModelObjectBuilder builder) {
         if (builder instanceof GlobalKey.GlobalKeyBuilder) {
             GlobalKey.GlobalKeyBuilder globalKeyBuilder = (GlobalKey.GlobalKeyBuilder) builder;

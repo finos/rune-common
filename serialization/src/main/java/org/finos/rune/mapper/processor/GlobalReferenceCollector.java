@@ -28,17 +28,18 @@ public class GlobalReferenceCollector implements Processor {
 
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, List<? extends R> instance, RosettaModelObject parent, AttributeMeta... metas) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        System.err.println("processRosetta");
+        return false;
     }
 
     @Override
     public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance, RosettaModelObject parent, AttributeMeta... metas) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        System.err.println("processBasic");
     }
 
     @Override
     public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, Collection<? extends T> instance, RosettaModelObject parent, AttributeMeta... metas) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        System.err.println("processBasic collection");
     }
 
     public Set<GlobalReferenceRecord> getGlobalReferences() {

@@ -14,9 +14,9 @@ public class SerializationPreProcessor {
         rosettaModelObject.process(path, globalReferenceCollector);
 
         Set<GlobalReferenceRecord> globalReferences = globalReferenceCollector.getGlobalReferences();
-        GlobalKeyPruner globalKeyPruner = new GlobalKeyPruner(globalReferences);
+        PreSerializationPruner preSerializationPruner = new PreSerializationPruner(globalReferences);
         RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
-        builder.process(path, globalKeyPruner);
+        builder.process(path, preSerializationPruner);
         return buildAndCast(builder);
     }
 

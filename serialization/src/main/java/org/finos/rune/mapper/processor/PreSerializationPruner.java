@@ -24,14 +24,16 @@ public class PreSerializationPruner implements BuilderProcessor {
         if (builder != null) {
             pruneGlobalKeys(rosettaType, builder);
             pruneEmptyAttributes(builder);
+            return true;
         }
-        return true;
+        return false;
     }
 
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, List<? extends RosettaModelObjectBuilder> builders, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
-        if (builders == null)
+        if (builders == null) {
             return false;
+        }
         boolean result = true;
         for (int i = 0; i < builders.size(); i++) {
             RosettaModelObjectBuilder builder = builders.get(i);
@@ -66,7 +68,7 @@ public class PreSerializationPruner implements BuilderProcessor {
             GlobalKeyFields.GlobalKeyFieldsBuilder globalKeyFields = globalKeyBuilder.getMeta();
             String globalKey = globalKeyFields.getGlobalKey();
             if (globalKey != null) {
-                GlobalReferenceRecord globalReferenceRecord = new GlobalReferenceRecord(rosettaType, globalKey);
+                GlobalReferenceRecord globalReferenceRecord = new GlobalReferenceRecord(builder.getType(), globalKey);
                 if (!globalReferences.contains(globalReferenceRecord)) {
                     globalKeyFields.setGlobalKey(null);
                 }

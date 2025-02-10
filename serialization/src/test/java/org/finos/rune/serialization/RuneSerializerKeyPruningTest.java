@@ -27,9 +27,7 @@ import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.finos.rune.mapper.processor.SerializationPreProcessor;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,22 +43,18 @@ public class RuneSerializerKeyPruningTest {
     private ObjectMapper objectMapper;
 
     private static CodeGeneratorTestHelper helper;
-    private SerializationPreProcessor serializationPreProcessor;
 
     @BeforeAll
     static void beforeAll() {
         Injector injector = setupInjector();
         helper = injector.getInstance(CodeGeneratorTestHelper.class);
-        dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
     }
 
     @BeforeEach
     void setUp() {
         objectMapper = new RuneJsonObjectMapper();
+        dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
         objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
-
-        //TODO: put this in the mapper
-        serializationPreProcessor = new SerializationPreProcessor();
     }
 
     @Test
@@ -75,6 +69,18 @@ public class RuneSerializerKeyPruningTest {
         String expected = readAsString(getFile(groupPath, "node-key-without-ref-expected.json"));
 
         assertEquals(expected, result);
+    }
+
+    @Test
+    void testMetaIdOnObjectWithReferenceIsNotPruned() {
+        Path groupPath = getGroupPath("metakey");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
+        String input = readAsString(getFile(groupPath, "node-key-with-ref.json"));
+
+        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
+        String result = toJson(deserializedObject);
+
+        assertEquals(input, result);
     }
 
     private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath, String fileName) {
@@ -97,9 +103,8 @@ public class RuneSerializerKeyPruningTest {
 
     private <T extends RosettaModelObject> String toJson(T runeObject) {
         try {
-            T processed = serializationPreProcessor.process(runeObject);
             return objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(processed);
+                    .writeValueAsString(runeObject);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

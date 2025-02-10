@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneDataType;
+import org.finos.rune.mapper.processor.SerializationPreProcessor;
 
 import java.util.Arrays;
 
@@ -56,28 +57,32 @@ import java.util.Arrays;
  */
 public class RuneJsonObjectWriter extends ObjectWriter {
     private final ObjectMapper mapper;
+    private final SerializationPreProcessor serializationPreProcessor;
 
 
     protected RuneJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
         super(mapper, config, s);
         this.mapper = mapper;
+        serializationPreProcessor = new SerializationPreProcessor();
     }
 
     public RuneJsonObjectWriter(ObjectMapper mapper, SerializationConfig config) {
         super(mapper, config);
         this.mapper = mapper;
+        serializationPreProcessor = new SerializationPreProcessor();
     }
 
     protected RuneJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
         super(mapper, config, rootType, pp);
         this.mapper = mapper;
+        serializationPreProcessor = new SerializationPreProcessor();
     }
 
     @Override
     public String writeValueAsString(Object value) throws JsonProcessingException {
         if (value instanceof RosettaModelObject) {
-            RosettaModelObject rosettaModelObject = (RosettaModelObject) value;
-            ObjectNode objectNode = addTopLevelMeta(rosettaModelObject);
+            RosettaModelObject processed = serializationPreProcessor.process((RosettaModelObject) value);
+            ObjectNode objectNode = addTopLevelMeta(processed);
             return super.writeValueAsString(objectNode);
         }
 

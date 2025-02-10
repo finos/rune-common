@@ -3,7 +3,7 @@
   "@type" : "serialization.test.passing.data.Root",
   "@version" : "0.0.0",
   "a" : {
-    "b" : [ { }, {
+    "b" : [ {
       "c" : {
         "field" : "foo"
       }

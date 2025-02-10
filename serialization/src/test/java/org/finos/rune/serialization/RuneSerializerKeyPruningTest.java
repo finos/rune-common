@@ -26,8 +26,9 @@ import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
-import org.finos.rune.mapper.processor.SerializationPreProcessor;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -58,7 +59,7 @@ public class RuneSerializerKeyPruningTest {
     }
 
     @Test
-    void testMetaIdOnObjectWithNoReferenceToItIsPruned() {
+    void testMetaKeyOnObjectWithNoReferenceToItIsPruned() {
         Path groupPath = getGroupPath("metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-without-ref-input.json"));
@@ -72,10 +73,36 @@ public class RuneSerializerKeyPruningTest {
     }
 
     @Test
-    void testMetaIdOnObjectWithReferenceIsNotPruned() {
+    void testMetaKeyOnObjectWithReferenceIsNotPruned() {
         Path groupPath = getGroupPath("metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-ref.json"));
+
+        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
+        String result = toJson(deserializedObject);
+
+        assertEquals(input, result);
+    }
+
+    @Test
+    void testMetaIdOnAttributeWithNoReferenceToItIsPruned() {
+        Path groupPath = getGroupPath("metakey");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
+        String input = readAsString(getFile(groupPath, "attribute-key-without-ref-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
+        String result = toJson(deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "attribute-key-without-ref-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testMetaIdOnAttributeWithReferenceIsNotPruned() {
+        Path groupPath = getGroupPath("metakey");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
+        String input = readAsString(getFile(groupPath, "attribute-key-with-ref.json"));
 
         RosettaModelObject deserializedObject = fromJson(input, rootDataType);
         String result = toJson(deserializedObject);

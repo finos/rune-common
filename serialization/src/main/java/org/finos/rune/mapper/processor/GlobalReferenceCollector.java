@@ -42,7 +42,7 @@ public class GlobalReferenceCollector implements Processor {
 
     @Override
     public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance, RosettaModelObject parent, AttributeMeta... metas) {
-
+        //No references on basic types on their corresponding wrapper type
     }
 
     @Override

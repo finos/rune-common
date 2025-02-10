@@ -24,35 +24,38 @@ import com.google.common.collect.Lists;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
-import org.finos.rune.mapper.processor.collector.CollectorStrategy;
-import org.finos.rune.mapper.processor.collector.KeyCollectorStrategy;
-import org.finos.rune.mapper.processor.collector.GlobalReferenceCollectorStrategy;
-import org.finos.rune.mapper.processor.collector.PreSerializationCollector;
-import org.finos.rune.mapper.processor.pruner.EmptyAttributePruningStrategy;
-import org.finos.rune.mapper.processor.pruner.GlobalKeyPruningStrategy;
-import org.finos.rune.mapper.processor.pruner.PreSerializationPruner;
-import org.finos.rune.mapper.processor.pruner.PruningStrategy;
+import org.finos.rune.mapper.processor.collector.*;
+import org.finos.rune.mapper.processor.pruner.*;
 
 import java.util.List;
+import java.util.Set;
 
 public class SerializationPreProcessor {
 
     public <T extends RosettaModelObject> T process(T rosettaModelObject) {
         RosettaPath path = RosettaPath.valueOf(rosettaModelObject.getType().getSimpleName());
 
+        // Collect global references and key information
         GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
         KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
-
         List<CollectorStrategy> collectorStrategies = Lists.newArrayList(globalReferenceCollectorStrategy, keyCollectorStrategy);
         PreSerializationCollector preSerializationCollector = new PreSerializationCollector(collectorStrategies);
         rosettaModelObject.process(path, preSerializationCollector);
+        Set<GlobalReferenceRecord> globalReferences = globalReferenceCollectorStrategy.getGlobalReferences();
+        KeyLookupService keyLookupService = keyCollectorStrategy.getKeyLookupService();
 
-        GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferenceCollectorStrategy.getGlobalReferences());
+        // Prune References
+        ReferencePruningStrategy referencePruningStrategy = new ReferencePruningStrategy(keyLookupService);
+        PreSerializationPruner referencePruning = new PreSerializationPruner(Lists.newArrayList(referencePruningStrategy));
+        RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
+        builder.process(path, referencePruning);
+
+        // Prune keys and attributes
+        GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferences);
         EmptyAttributePruningStrategy emptyAttributePruningStrategy = new EmptyAttributePruningStrategy();
         List<PruningStrategy> pruningStrategyList = Lists.newArrayList(globalKeyPruningStrategy, emptyAttributePruningStrategy);
-        PreSerializationPruner preSerializationPruner = new PreSerializationPruner(pruningStrategyList);
-        RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
-        builder.process(path, preSerializationPruner);
+        PreSerializationPruner keyAndAttributePruning = new PreSerializationPruner(pruningStrategyList);
+        builder.process(path, keyAndAttributePruning);
 
         return buildAndCast(builder);
     }

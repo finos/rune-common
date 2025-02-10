@@ -3,6 +3,7 @@ package org.finos.rune.mapper.processor.collector;
 import org.finos.rune.mapper.processor.KeyRecord;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class KeyLookupService {
     private final Map<KeyRecord, Object> globalKeyToValueObjectMap;
@@ -25,6 +26,23 @@ public class KeyLookupService {
                 return externalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
             case ADDRESS:
                 return addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
+            default:
+                throw new IllegalArgumentException("Unknown key type: " + keyType);
+        }
+    }
+
+    public boolean higherPrecedenceKeyExists(KeyType keyType, Class<?> keyOnType, String keyReferenceValue) {
+        switch (keyType) {
+            case GLOBAL_KEY:
+                Object globalKeyObject = globalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
+                return Objects.equals(globalKeyObject, addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue))) ||
+                        Objects.equals(globalKeyObject, externalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue)));
+            case EXTERNAL_KEY:
+                Object externalKeyObject = externalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
+                return Objects.equals(externalKeyObject, addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue)));
+            case ADDRESS:
+                Object addressObject = addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
+                return Objects.nonNull(addressObject);
             default:
                 throw new IllegalArgumentException("Unknown key type: " + keyType);
         }

@@ -113,7 +113,7 @@ public class RuneSerializerKeyPruningTest {
 
     @Disabled
     @Test
-    void testDuplicateReferenceGlobalIsPruned() {
+    void testDuplicateReferencesArePruned() {
         Path groupPath = getGroupPath("metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-input.json"));

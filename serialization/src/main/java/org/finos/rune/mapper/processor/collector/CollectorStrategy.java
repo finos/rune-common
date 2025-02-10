@@ -1,4 +1,4 @@
-package org.finos.rune.mapper.processor;
+package org.finos.rune.mapper.processor.collector;
 
 import com.rosetta.model.lib.RosettaModelObject;
 

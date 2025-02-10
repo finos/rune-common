@@ -24,6 +24,13 @@ import com.google.common.collect.Lists;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
+import org.finos.rune.mapper.processor.collector.CollectorStrategy;
+import org.finos.rune.mapper.processor.collector.GlobalReferenceCollectorStrategy;
+import org.finos.rune.mapper.processor.collector.MetaCollector;
+import org.finos.rune.mapper.processor.pruner.EmptyAttributePruningStrategy;
+import org.finos.rune.mapper.processor.pruner.GlobalKeyPruningStrategy;
+import org.finos.rune.mapper.processor.pruner.PreSerializationPruner;
+import org.finos.rune.mapper.processor.pruner.PruningStrategy;
 
 import java.util.List;
 

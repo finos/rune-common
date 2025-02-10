@@ -1,7 +1,8 @@
-package org.finos.rune.mapper.processor;
+package org.finos.rune.mapper.processor.collector;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
+import org.finos.rune.mapper.processor.GlobalReferenceRecord;
 
 import java.util.HashSet;
 import java.util.Set;

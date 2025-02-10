@@ -1,4 +1,4 @@
-package org.finos.rune.mapper.processor;
+package org.finos.rune.mapper.processor.pruner;
 
 /*-
  * ==============
@@ -24,6 +24,7 @@ import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
+import org.finos.rune.mapper.processor.GlobalReferenceRecord;
 
 import java.util.Set;
 

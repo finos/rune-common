@@ -2,7 +2,7 @@
   "@model" : "serialization",
   "@type" : "serialization.test.passing.enumtypes.Root",
   "@version" : "0.0.0",
-  "enumSingle" : {
-    "enumType" : "A"
+  "enumFormatted" : {
+    "enumType" : "SomeEnumValue1"
   }
 }

@@ -19,7 +19,7 @@ public class GlobalReferenceCollector implements Processor {
         if (instance instanceof ReferenceWithMeta) {
             @SuppressWarnings("unchecked")
             ReferenceWithMeta<R> reference = (ReferenceWithMeta<R>) instance;
-            Class<?> referenceValueType = getReferenceValueType(instance);
+            Class<?> referenceValueType = reference.getValueType();
             String referenceKeyValue = reference.getGlobalReference();
             globalReferences.add(new GlobalReferenceRecord(referenceValueType, referenceKeyValue));
         }
@@ -48,12 +48,5 @@ public class GlobalReferenceCollector implements Processor {
     @Override
     public Report report() {
         throw new UnsupportedOperationException("Report not supported for UnreferencedKeyCollector");
-    }
-
-    private Class<?> getReferenceValueType(RosettaModelObject rosettaModelObject) {
-        if (rosettaModelObject instanceof ReferenceWithMeta) {
-            return ((ReferenceWithMeta<?>) rosettaModelObject).getValueType();
-        }
-        return rosettaModelObject.getType();
     }
 }

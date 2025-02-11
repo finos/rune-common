@@ -4,11 +4,13 @@ import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
+import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.metafields.MetaFields;
 import org.finos.rune.mapper.processor.KeyRecord;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
 
@@ -33,10 +35,14 @@ public class KeyCollectorStrategy implements CollectorStrategy {
                         .ifPresent(ek -> externalKeyToValueObjectMap.put(new KeyRecord(valueClass, ek), value));
 
                 ofNullable(globalKey.getMeta())
-                        .filter(meta -> meta instanceof MetaFields)
-                        .map(meta -> (MetaFields)meta)
-                        .map(MetaFields::getAddress)
-                        .map(addr -> addressToValueObjectMap.put(new KeyRecord(valueClass, addr), value));
+                        .map(GlobalKeyFields::getKey)
+                        .ifPresent(keys ->
+                                keys.stream()
+                                        .map(Key::getKeyValue)
+                                        .filter(Objects::nonNull)
+                                        .forEach(kv -> addressToValueObjectMap.put(new KeyRecord(valueClass, kv), value))
+                        );
+
             }
         }
 

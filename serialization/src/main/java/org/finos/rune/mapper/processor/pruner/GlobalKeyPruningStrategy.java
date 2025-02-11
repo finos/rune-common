@@ -39,12 +39,14 @@ public class GlobalKeyPruningStrategy implements PruningStrategy {
     public void prune(RosettaModelObjectBuilder builder) {
         if (builder instanceof GlobalKey.GlobalKeyBuilder) {
             GlobalKey.GlobalKeyBuilder globalKeyBuilder = (GlobalKey.GlobalKeyBuilder) builder;
-            GlobalKeyFields.GlobalKeyFieldsBuilder globalKeyFields = globalKeyBuilder.getMeta();
-            String globalKey = globalKeyFields.getGlobalKey();
-            if (globalKey != null) {
-                GlobalReferenceRecord globalReferenceRecord = new GlobalReferenceRecord(getType(builder), globalKey);
-                if (!globalReferences.contains(globalReferenceRecord)) {
-                    globalKeyFields.setGlobalKey(null);
+            if (globalKeyBuilder.getMeta() != null) {
+                GlobalKeyFields.GlobalKeyFieldsBuilder globalKeyFields = globalKeyBuilder.getMeta();
+                String globalKey = globalKeyFields.getGlobalKey();
+                if (globalKey != null) {
+                    GlobalReferenceRecord globalReferenceRecord = new GlobalReferenceRecord(getType(builder), globalKey);
+                    if (!globalReferences.contains(globalReferenceRecord)) {
+                        globalKeyFields.setGlobalKey(null);
+                    }
                 }
             }
         }

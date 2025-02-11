@@ -24,6 +24,7 @@
     "someField" : "foo3",
     "dateField" : {
       "@data" : "2024-12-12",
+      "@key:external" : "someExternalKey",
       "@key:scoped" : "someScopedKey"
     },
     "dateReference" : {
@@ -33,6 +34,7 @@
     "someField" : "foo4",
     "dateField" : {
       "@data" : "2024-12-12",
+      "@key:external" : "someExternalKey",
       "@key:scoped" : "someScopedKey"
     },
     "dateReference" : {

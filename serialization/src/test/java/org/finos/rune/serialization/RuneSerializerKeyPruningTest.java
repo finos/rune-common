@@ -28,7 +28,6 @@ import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -111,7 +110,6 @@ public class RuneSerializerKeyPruningTest {
         assertEquals(input, result);
     }
 
-    @Disabled
     @Test
     void testDuplicateReferencesArePruned() {
         Path groupPath = getGroupPath("metakey");

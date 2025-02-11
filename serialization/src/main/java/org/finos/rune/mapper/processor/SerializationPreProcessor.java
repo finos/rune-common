@@ -36,19 +36,25 @@ public class SerializationPreProcessor {
         RosettaPath path = RosettaPath.valueOf(rosettaModelObject.getType().getSimpleName());
 
         // Collect global references and key information
-        GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
         KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
-        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(globalReferenceCollectorStrategy, keyCollectorStrategy);
-        PreSerializationCollector preSerializationCollector = new PreSerializationCollector(collectorStrategies);
-        rosettaModelObject.process(path, preSerializationCollector);
-        Set<GlobalReferenceRecord> globalReferences = globalReferenceCollectorStrategy.getGlobalReferences();
+        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(keyCollectorStrategy);
+        PreSerializationCollector keyLookupCollector = new PreSerializationCollector(collectorStrategies);
+        rosettaModelObject.process(path, keyLookupCollector);
         KeyLookupService keyLookupService = keyCollectorStrategy.getKeyLookupService();
+
+        RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
 
         // Prune References
         ReferencePruningStrategy referencePruningStrategy = new ReferencePruningStrategy(keyLookupService);
         PreSerializationPruner referencePruning = new PreSerializationPruner(Lists.newArrayList(referencePruningStrategy));
-        RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
         builder.process(path, referencePruning);
+
+        // Collect global refs after ref pruning
+        GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
+        PreSerializationCollector globalReferenceCollector = new PreSerializationCollector(Lists.newArrayList(globalReferenceCollectorStrategy));
+        builder.process(path, globalReferenceCollector);
+        Set<GlobalReferenceRecord> globalReferences = globalReferenceCollectorStrategy.getGlobalReferences();
+
 
         // Prune keys and attributes
         GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferences);

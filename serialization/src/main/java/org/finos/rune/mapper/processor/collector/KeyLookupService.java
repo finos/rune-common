@@ -31,23 +31,6 @@ public class KeyLookupService {
         }
     }
 
-    public boolean higherPrecedenceKeyExists(KeyType keyType, Class<?> keyOnType, String keyReferenceValue) {
-        switch (keyType) {
-            case GLOBAL_KEY:
-                Object globalKeyObject = globalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
-                return Objects.equals(globalKeyObject, addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue))) ||
-                        Objects.equals(globalKeyObject, externalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue)));
-            case EXTERNAL_KEY:
-                Object externalKeyObject = externalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
-                return Objects.equals(externalKeyObject, addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue)));
-            case ADDRESS:
-                Object addressObject = addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
-                return Objects.nonNull(addressObject);
-            default:
-                throw new IllegalArgumentException("Unknown key type: " + keyType);
-        }
-    }
-
     public enum KeyType {
         GLOBAL_KEY, EXTERNAL_KEY, ADDRESS
     }

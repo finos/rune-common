@@ -4,6 +4,8 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import org.finos.rune.mapper.processor.collector.KeyLookupService;
 
+import java.util.Optional;
+
 public class ReferencePruningStrategy implements PruningStrategy {
     private final KeyLookupService keyLookupService;
 
@@ -17,19 +19,38 @@ public class ReferencePruningStrategy implements PruningStrategy {
             ReferenceWithMeta.ReferenceWithMetaBuilder<?> referenceWithMetaBuilder = (ReferenceWithMeta.ReferenceWithMetaBuilder<?>) builder;
             Class<?> referenceValueType = referenceWithMetaBuilder.getValueType();
 
+            // for each ref (address, external and global) lookup and valueType perform keyLookupService.getReferencedObject() and store the value object
+            // then check precedence by comparing value object
+
+            Optional<Object> addressReferencedObject = Optional.empty();
+            if (referenceWithMetaBuilder.getReference() != null && referenceWithMetaBuilder.getReference().getReference() != null) {
+                String addressRef = referenceWithMetaBuilder.getReference().getReference();
+                addressReferencedObject = Optional.ofNullable(keyLookupService.getReferencedObject(KeyLookupService.KeyType.ADDRESS, referenceValueType, addressRef));
+            }
+
+            Optional<Object> externalReferencedObject = Optional.empty();
             if (referenceWithMetaBuilder.getExternalReference() != null) {
                 String externalReference = referenceWithMetaBuilder.getExternalReference();
-                boolean higherPrecedenceKeyExists = keyLookupService.higherPrecedenceKeyExists(KeyLookupService.KeyType.EXTERNAL_KEY, referenceValueType, externalReference);
-                if (higherPrecedenceKeyExists) {
+                externalReferencedObject = Optional.ofNullable(keyLookupService.getReferencedObject(KeyLookupService.KeyType.EXTERNAL_KEY, referenceValueType, externalReference));
+
+                if (externalReferencedObject.isPresent() && addressReferencedObject.isPresent()
+                        && externalReferencedObject.get().equals(addressReferencedObject.get())) {
                     referenceWithMetaBuilder.setExternalReference(null);
                 }
             }
 
-            if (referenceWithMetaBuilder.getReference() != null) {
+            Optional<Object> globalReferencedObject;
+            if (referenceWithMetaBuilder.getGlobalReference() != null) {
                 String globalReference = referenceWithMetaBuilder.getGlobalReference();
-                boolean higherPrecedenceKeyExists = keyLookupService.higherPrecedenceKeyExists(KeyLookupService.KeyType.GLOBAL_KEY, referenceValueType, globalReference);
-                if (higherPrecedenceKeyExists) {
-                    referenceWithMetaBuilder.setGlobalReference(null);
+                globalReferencedObject = Optional.ofNullable(keyLookupService.getReferencedObject(KeyLookupService.KeyType.GLOBAL_KEY, referenceValueType, globalReference));
+
+                if (globalReferencedObject.isPresent()) {
+                    if (addressReferencedObject.isPresent() &&  addressReferencedObject.get().equals(globalReferencedObject.get())) {
+                        referenceWithMetaBuilder.setGlobalReference(null);
+                    }
+                    if (externalReferencedObject.isPresent() && externalReferencedObject.get().equals(globalReferencedObject.get())) {
+                        referenceWithMetaBuilder.setGlobalReference(null);
+                    }
                 }
             }
         }

@@ -132,7 +132,7 @@ public class RuneSerializerKeyPruningTest {
      * This doesn't affect any of the sample sets in the cdm but we should get the deserializer to ignore any of the @type properties at the top level type
      *
      * 2. If you remove the @type this test will run but it will fail as the @key does not get pruned. This is because the GlobalKeyPruningStrategy is not able to see the top level
-     * key as instead of being of type GlobalKey it is just a MetaField.
+     * key as instead of being of type GlobalKey it is an instance of GlobalFieldKeys.
      */
     @Disabled
     @Test

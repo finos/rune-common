@@ -2,40 +2,44 @@
   "@model": "serialization",
   "@type": "serialization.test.passing.metakey.Root",
   "@version": "0.0.0",
-  "nodeRefs": [
+  "attributeRefs": [
     {
-      "typeA": {
-        "fieldA": "foo1",
+      "someField": "foo1",
+      "dateField": {
+        "@data": "2024-12-12",
         "@key:external": "someExternalKey"
       },
-      "aReference": {
+      "dataReference": {
         "@ref:external": "someExternalKey"
       }
     },
     {
-      "typeA": {
-        "fieldA": "foo2",
+      "someField": "foo2",
+      "dateField": {
+        "@data": "2024-12-12",
         "@key:scoped": "someScopedKey"
       },
-      "aReference": {
+      "dataReference": {
         "@ref:scoped": "someScopedKey"
       }
     },
     {
-      "typeA": {
-        "fieldA": "foo3",
+      "someField": "foo3",
+      "dateField": {
+        "@data": "2024-12-12",
         "@key:scoped": "someScopedKey"
       },
-      "aReference": {
+      "dataReference": {
         "@ref:scoped": "someScopedKey"
       }
     },
     {
-      "typeA": {
-        "fieldA": "foo3",
+      "someField": "foo4",
+      "dateField": {
+        "@data": "2024-12-12",
         "@key:scoped": "someScopedKey"
       },
-      "aReference": {
+      "dataReference": {
         "@ref:scoped": "someScopedKey"
       }
     }

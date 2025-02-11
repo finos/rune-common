@@ -38,7 +38,7 @@ public class SerializationPreProcessor {
         RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
 
         // Collect key information for all key types
-        KeyLookupService keyLookupService = getKeyInformationAllKeyTypes(builder, path);
+        KeyLookupService keyLookupService = getKeyInformationForAllKeyTypes(builder, path);
 
         // Prune References
         pruneDuplicateReferences(keyLookupService, builder, path);
@@ -73,7 +73,7 @@ public class SerializationPreProcessor {
         builder.process(path, referencePruning);
     }
 
-    private KeyLookupService getKeyInformationAllKeyTypes(RosettaModelObjectBuilder builder, RosettaPath path) {
+    private KeyLookupService getKeyInformationForAllKeyTypes(RosettaModelObjectBuilder builder, RosettaPath path) {
         KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
         List<CollectorStrategy> collectorStrategies = Lists.newArrayList(keyCollectorStrategy);
         PreSerializationCollector keyLookupCollector = new PreSerializationCollector(collectorStrategies);

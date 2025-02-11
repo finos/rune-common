@@ -59,7 +59,7 @@ public class PreSerializationCollector implements Processor {
 
     @Override
     public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance, RosettaModelObject parent, AttributeMeta... metas) {
-        //No references on basic types on their corresponding wrapper type
+        //No references on basic types, they exist instead on their corresponding wrapper type
     }
 
     @Override

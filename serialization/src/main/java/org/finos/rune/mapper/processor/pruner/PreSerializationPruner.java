@@ -40,7 +40,7 @@ public class PreSerializationPruner implements BuilderProcessor {
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<R> rosettaType, RosettaModelObjectBuilder builder, RosettaModelObjectBuilder parent, AttributeMeta... metas) {
         if (builder != null) {
             for (PruningStrategy pruningStrategy : pruningStrategies) {
-                pruningStrategy.prune(path, builder);
+                pruningStrategy.prune(builder);
             }
             return true;
         }

@@ -25,7 +25,6 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
-import com.rosetta.model.lib.path.RosettaPath;
 import org.finos.rune.mapper.processor.KeyRecord;
 
 import java.util.HashMap;
@@ -40,7 +39,7 @@ public class KeyCollectorStrategy implements CollectorStrategy {
     private final Map<KeyRecord, Object> addressToValueObjectMap = new HashMap<>();
 
     @Override
-    public <R extends RosettaModelObject> void collect(RosettaPath path, R instance) {
+    public <R extends RosettaModelObject> void collect(R instance) {
         if (instance instanceof GlobalKey) {
             GlobalKey globalKey = (GlobalKey) instance;
             Object value = getValue(instance);

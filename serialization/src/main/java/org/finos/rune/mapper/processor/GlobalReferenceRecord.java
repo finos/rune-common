@@ -25,14 +25,12 @@ import com.rosetta.model.lib.path.RosettaPath;
 import java.util.Objects;
 
 public class GlobalReferenceRecord {
-    public final RosettaPath rosettaPath;
     public final Class<?> referenceOnType;
     public final String referenceKeyValue;
 
-    public GlobalReferenceRecord(RosettaPath rosettaPath, Class<?> referenceOnType, String referenceKeyValue) {
+    public GlobalReferenceRecord(Class<?> referenceOnType, String referenceKeyValue) {
         this.referenceOnType = referenceOnType;
         this.referenceKeyValue = referenceKeyValue;
-        this.rosettaPath = rosettaPath;
     }
 
     @Override

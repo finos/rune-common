@@ -28,6 +28,11 @@ import org.finos.rune.mapper.processor.GlobalReferenceRecord;
 
 import java.util.Set;
 
+/**
+ * A pruning strategy that removes invalid global keys from a {@link RosettaModelObjectBuilder}.
+ * This strategy ensures that only global keys present in the provided reference set are retained.
+ * If a global key is not found in the reference set, it is cleared.
+ */
 public class GlobalKeyPruningStrategy implements PruningStrategy {
     private final Set<GlobalReferenceRecord> globalReferences;
 

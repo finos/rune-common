@@ -28,6 +28,7 @@ import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -120,6 +121,30 @@ public class RuneSerializerKeyPruningTest {
         String result = toJson(deserializedObject);
 
         String expected = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    /*
+     * TODO:
+     * There are two things to fix here
+     * 1. When the top level type is actually a meta type and you have an @type in your json at the top level that doesn't match that it breaks deserialization.
+     * This doesn't affect any of the sample sets in the cdm but we should get the deserializer to ignore any of the @type properties at the top level type
+     *
+     * 2. If you remove the @type this test will run but it will fail as the @key does not get pruned. This is because the GlobalKeyPruningStrategy is not able to see the top level
+     * key as instead of being of type GlobalKey it is just a MetaField.
+     */
+    @Disabled
+    @Test
+    void testRedundantGlobalKeyIsPrunedFromRootObject() {
+        Path groupPath = getGroupPath("metakey");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-root-key.rosetta");
+        String input = readAsString(getFile(groupPath, "node-key-with-redundant-key-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
+        String result = toJson(deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "node-key-with-redundant-key-expected.json"));
 
         assertEquals(expected, result);
     }

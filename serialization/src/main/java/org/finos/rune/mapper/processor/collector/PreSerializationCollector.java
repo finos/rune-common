@@ -28,6 +28,11 @@ import com.rosetta.model.lib.process.Processor;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * A processor that applies a set of {@link CollectorStrategy} instances to collect relevant data
+ * before serialization. Each strategy extracts information from Rosetta model objects to
+ * support downstream processing.
+ */
 public class PreSerializationCollector implements Processor {
     private final List<CollectorStrategy> collectorStrategies;
 

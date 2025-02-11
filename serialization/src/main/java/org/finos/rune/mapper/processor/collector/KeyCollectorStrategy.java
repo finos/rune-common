@@ -26,6 +26,7 @@ import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import org.finos.rune.mapper.processor.KeyRecord;
+import org.finos.rune.mapper.processor.pruner.ReferencePruningStrategy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,37 @@ import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * A strategy implementation for collecting key-related information from instances of {@link RosettaModelObject}.
+ * This class processes instances of {@link GlobalKey} and extracts global, external, and address keys from the
+ * associated metadata, storing the corresponding values in different maps based on the type of key.
+ * <p>
+ * The strategy creates and maintains three separate mappings:
+ * <ul>
+ *   <li>{@link #globalKeyToValueObjectMap}: Maps global keys to their associated values.</li>
+ *   <li>{@link #externalKeyToValueObjectMap}: Maps external keys to their associated values.</li>
+ *   <li>{@link #addressToValueObjectMap}: Maps address keys to their associated values.</li>
+ * </ul>
+ * These mappings are used by the {@link KeyLookupService} in {@link ReferencePruningStrategy} to resolve
+ * references and ensure proper reference precedence during pruning operations. The collected global key information
+ * is used to compare and clear redundant references based on precedence:
+ * <ol>
+ *   <li>ADDRESS (highest precedence)</li>
+ *   <li>EXTERNAL</li>
+ *   <li>GLOBAL (lowest precedence)</li>
+ * </ol>
+ * </p>
+ * <p>
+ * The collected key-value mappings help ensure that only the most relevant references (higher precedence) are kept
+ * while lower-precedence references pointing to the same object are removed.
+ * </p>
+ *
+ * @see RosettaModelObject
+ * @see GlobalKey
+ * @see KeyRecord
+ * @see KeyLookupService
+ * @see ReferencePruningStrategy
+ */
 public class KeyCollectorStrategy implements CollectorStrategy {
     private final Map<KeyRecord, Object> globalKeyToValueObjectMap = new HashMap<>();
     private final Map<KeyRecord, Object> externalKeyToValueObjectMap = new HashMap<>();

@@ -23,10 +23,24 @@ package org.finos.rune.mapper.processor.collector;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import org.finos.rune.mapper.processor.GlobalReferenceRecord;
+import org.finos.rune.mapper.processor.pruner.GlobalKeyPruningStrategy;
 
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * A strategy implementation for collecting global references from instances of {@link RosettaModelObject}.
+ * Specifically, this class processes instances of {@link ReferenceWithMeta} and extracts the global reference
+ * along with its value type, storing them in a set of {@link GlobalReferenceRecord}.
+ * <p>
+ * The collected global reference information will be used in later serialization processing to remove any
+ * unreferenced global keys in the {@link GlobalKeyPruningStrategy}, ensuring only valid keys are retained.
+ * </p>
+ *
+ * @see RosettaModelObject
+ * @see ReferenceWithMeta
+ * @see GlobalReferenceRecord
+ */
 public class GlobalReferenceCollectorStrategy implements CollectorStrategy {
     private final Set<GlobalReferenceRecord> globalReferences = new HashSet<>();
 

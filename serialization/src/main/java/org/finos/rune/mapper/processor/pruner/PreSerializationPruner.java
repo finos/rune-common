@@ -29,6 +29,11 @@ import com.rosetta.model.lib.process.BuilderProcessor;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * A processor that applies a series of {@link PruningStrategy} implementations to prune
+ * unnecessary data from a {@link RosettaModelObjectBuilder} before serialization.
+ * This ensures that only relevant data is retained in the final serialized output.
+ */
 public class PreSerializationPruner implements BuilderProcessor {
     private final List<PruningStrategy> pruningStrategies;
 

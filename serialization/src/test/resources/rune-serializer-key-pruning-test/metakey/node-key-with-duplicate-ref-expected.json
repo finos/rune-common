@@ -9,7 +9,7 @@
         "@data": "2024-12-12",
         "@key:external": "someExternalKey"
       },
-      "dataReference": {
+      "dateReference": {
         "@ref:external": "someExternalKey"
       }
     },
@@ -19,7 +19,7 @@
         "@data": "2024-12-12",
         "@key:scoped": "someScopedKey"
       },
-      "dataReference": {
+      "dateReference": {
         "@ref:scoped": "someScopedKey"
       }
     },
@@ -29,7 +29,7 @@
         "@data": "2024-12-12",
         "@key:scoped": "someScopedKey"
       },
-      "dataReference": {
+      "dateReference": {
         "@ref:scoped": "someScopedKey"
       }
     },
@@ -39,7 +39,7 @@
         "@data": "2024-12-12",
         "@key:scoped": "someScopedKey"
       },
-      "dataReference": {
+      "dateReference": {
         "@ref:scoped": "someScopedKey"
       }
     }

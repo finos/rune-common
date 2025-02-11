@@ -129,7 +129,7 @@ public class RuneSerializerKeyPruningTest {
      * TODO:
      * There are two things to fix here
      * 1. When the top level type is actually a meta type and you have an @type in your json at the top level that doesn't match that it breaks deserialization.
-     * This doesn't affect any of the sample sets in the cdm but we should get the deserializer to ignore any of the @type properties at the top level type
+     * We should get the deserializer to ignore any of the @type properties at the top level of the JSON to be deserialized
      *
      * 2. If you remove the @type this test will run but it will fail as the @key does not get pruned. This is because the GlobalKeyPruningStrategy is not able to see the top level
      * key as instead of being of type GlobalKey it is an instance of GlobalFieldKeys.

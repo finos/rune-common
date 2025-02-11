@@ -1,47 +1,42 @@
 {
-  "@model": "serialization",
-  "@type": "serialization.test.passing.metakey.Root",
-  "@version": "0.0.0",
-  "attributeRefs": [
-    {
-      "someField": "foo1",
-      "dateField": {
-        "@data": "2024-12-12",
-        "@key:external": "someExternalKey"
-      },
-      "dateReference": {
-        "@ref:external": "someExternalKey"
-      }
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.metakey.Root",
+  "@version" : "0.0.0",
+  "attributeRefs" : [ {
+    "someField" : "foo1",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:external" : "someExternalKey"
     },
-    {
-      "someField": "foo2",
-      "dateField": {
-        "@data": "2024-12-12",
-        "@key:scoped": "someScopedKey"
-      },
-      "dateReference": {
-        "@ref:scoped": "someScopedKey"
-      }
-    },
-    {
-      "someField": "foo3",
-      "dateField": {
-        "@data": "2024-12-12",
-        "@key:scoped": "someScopedKey"
-      },
-      "dateReference": {
-        "@ref:scoped": "someScopedKey"
-      }
-    },
-    {
-      "someField": "foo4",
-      "dateField": {
-        "@data": "2024-12-12",
-        "@key:scoped": "someScopedKey"
-      },
-      "dateReference": {
-        "@ref:scoped": "someScopedKey"
-      }
+    "dateReference" : {
+      "@ref:external" : "someExternalKey"
     }
-  ]
+  }, {
+    "someField" : "foo2",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:scoped" : "someScopedKey"
+    },
+    "dateReference" : {
+      "@ref:scoped" : "someScopedKey"
+    }
+  }, {
+    "someField" : "foo3",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:scoped" : "someScopedKey"
+    },
+    "dateReference" : {
+      "@ref:scoped" : "someScopedKey"
+    }
+  }, {
+    "someField" : "foo4",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:scoped" : "someScopedKey"
+    },
+    "dateReference" : {
+      "@ref:scoped" : "someScopedKey"
+    }
+  } ]
 }

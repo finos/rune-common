@@ -40,7 +40,8 @@ public class SerializationPreProcessor {
         // Collect key information for all key types
         KeyLookupService keyLookupService = getKeyInformationForAllKeyTypes(builder, path);
 
-        // Prune References
+        // Prune duplicate References in order of precedence from highest to lowest value: address highest, then external, finally global.
+        // Note that to be a duplicate two references must resolve to the same object in the structure
         pruneDuplicateReferences(keyLookupService, builder, path);
 
         // Collect global references has to be done after ref pruning as global references can be pruned

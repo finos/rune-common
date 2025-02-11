@@ -26,6 +26,16 @@ import org.finos.rune.mapper.processor.collector.KeyLookupService;
 
 import java.util.Optional;
 
+/**
+ * A pruning strategy that removes redundant references from a {@link RosettaModelObjectBuilder}.
+ * This strategy checks for references of type ADDRESS, EXTERNAL, and GLOBAL, and ensures that lower-precedence
+ * references are cleared if they resolve to the same object as a higher-precedence reference.
+ *
+ * The precedence of references is as follows:
+ * 1. ADDRESS (highest precedence)
+ * 2. EXTERNAL
+ * 3. GLOBAL (lowest precedence)
+ */
 public class ReferencePruningStrategy implements PruningStrategy {
     private final KeyLookupService keyLookupService;
 

@@ -5,11 +5,9 @@
   "attributeRef" : {
     "dateField" : {
       "@data" : "2024-12-12",
-      "@key" : "someKey",
       "@key:external" : "someExternalKey"
     },
     "dateReference" : {
-      "@ref" : "someKey",
       "@ref:external" : "someExternalKey"
     }
   }

@@ -21,10 +21,11 @@ package org.finos.rune.mapper.processor.pruner;
  */
 
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.path.RosettaPath;
 
 public class EmptyAttributePruningStrategy implements PruningStrategy {
     @Override
-    public void prune(RosettaModelObjectBuilder builder) {
+    public void prune(RosettaPath path, RosettaModelObjectBuilder builder) {
         builder.prune();
     }
 }

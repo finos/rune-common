@@ -2,6 +2,7 @@ package org.finos.rune.mapper.processor.pruner;
 
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
+import com.rosetta.model.lib.path.RosettaPath;
 import org.finos.rune.mapper.processor.collector.KeyLookupService;
 
 import java.util.Optional;
@@ -14,7 +15,7 @@ public class ReferencePruningStrategy implements PruningStrategy {
     }
 
     @Override
-    public void prune(RosettaModelObjectBuilder builder) {
+    public void prune(RosettaPath path, RosettaModelObjectBuilder builder) {
         if (builder instanceof ReferenceWithMeta.ReferenceWithMetaBuilder) {
             ReferenceWithMeta.ReferenceWithMetaBuilder<?> referenceWithMetaBuilder = (ReferenceWithMeta.ReferenceWithMetaBuilder<?>) builder;
             Class<?> referenceValueType = referenceWithMetaBuilder.getValueType();

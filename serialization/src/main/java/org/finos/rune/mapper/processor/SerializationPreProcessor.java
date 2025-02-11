@@ -35,7 +35,7 @@ public class SerializationPreProcessor {
     public <T extends RosettaModelObject> T process(T rosettaModelObject) {
         RosettaPath path = RosettaPath.valueOf(rosettaModelObject.getType().getSimpleName());
 
-        // Collect global references and key information
+        // Collect global key information
         KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
         List<CollectorStrategy> collectorStrategies = Lists.newArrayList(keyCollectorStrategy);
         PreSerializationCollector keyLookupCollector = new PreSerializationCollector(collectorStrategies);
@@ -49,7 +49,7 @@ public class SerializationPreProcessor {
         PreSerializationPruner referencePruning = new PreSerializationPruner(Lists.newArrayList(referencePruningStrategy));
         builder.process(path, referencePruning);
 
-        // Collect global refs after ref pruning
+        // Collect global references after ref pruning
         GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
         PreSerializationCollector globalReferenceCollector = new PreSerializationCollector(Lists.newArrayList(globalReferenceCollectorStrategy));
         builder.process(path, globalReferenceCollector);

@@ -21,7 +21,8 @@ package org.finos.rune.mapper.processor.pruner;
  */
 
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.path.RosettaPath;
 
 public interface PruningStrategy {
-    void prune(RosettaModelObjectBuilder builder);
+    void prune(RosettaPath path, RosettaModelObjectBuilder builder);
 }

@@ -22,6 +22,24 @@ package org.finos.rune.mapper.processor.collector;
 
 import com.rosetta.model.lib.RosettaModelObject;
 
+/**
+ * A strategy interface for collecting and introspecting data from a {@link RosettaModelObject}.
+ * <p>
+ * Implementations of this interface define custom logic to traverse a given model object
+ * and extract relevant information. This follows the Strategy design pattern, allowing
+ * different collection behaviors to be applied dynamically based on the use case.
+ * </p>
+ *
+ * <p>Typical use cases include:</p>
+ * <ul>
+ *     <li>Collecting information about keys and references in the model</li>
+ *     <li>Gathering specific data points from the model</li>
+ *     <li>Validating or analyzing object structures</li>
+ *     <li>Building summaries or reports based on model contents</li>
+ * </ul>
+ *
+ * @see RosettaModelObject
+ */
 public interface CollectorStrategy {
     <R extends RosettaModelObject> void collect(R instance);
 }

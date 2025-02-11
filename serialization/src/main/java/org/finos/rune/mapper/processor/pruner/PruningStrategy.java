@@ -22,6 +22,25 @@ package org.finos.rune.mapper.processor.pruner;
 
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
+/**
+ * A strategy interface for pruning elements from a {@link RosettaModelObjectBuilder}.
+ * <p>
+ * Implementations of this interface define custom pruning logic that removes
+ * unnecessary or invalid elements from the builder object before finalizing the model.
+ * This follows the Strategy design pattern, allowing different pruning behaviors
+ * to be applied dynamically.
+ * </p>
+ *
+ * <p>Typical use cases include:</p>
+ * <ul>
+ *     <li>Removing redundant keys</li>
+ *     <li>Removing duplicate references</li>
+ *     <li>Removing default or uninitialized values</li>
+ *     <li>Eliminating redundant data</li>
+ * </ul>
+ *
+ * @see RosettaModelObjectBuilder
+ */
 public interface PruningStrategy {
     void prune(RosettaModelObjectBuilder builder);
 }

@@ -35,35 +35,50 @@ public class SerializationPreProcessor {
     public <T extends RosettaModelObject> T process(T rosettaModelObject) {
         RosettaPath path = RosettaPath.valueOf(rosettaModelObject.getType().getSimpleName());
 
-        // Collect key information for all key types
-        KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
-        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(keyCollectorStrategy);
-        PreSerializationCollector keyLookupCollector = new PreSerializationCollector(collectorStrategies);
-        rosettaModelObject.process(path, keyLookupCollector);
-        KeyLookupService keyLookupService = keyCollectorStrategy.getKeyLookupService();
-
         RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
 
+        // Collect key information for all key types
+        KeyLookupService keyLookupService = getKeyInformationAllKeyTypes(builder, path);
+
         // Prune References
-        ReferencePruningStrategy referencePruningStrategy = new ReferencePruningStrategy(keyLookupService);
-        PreSerializationPruner referencePruning = new PreSerializationPruner(Lists.newArrayList(referencePruningStrategy));
-        builder.process(path, referencePruning);
+        pruneDuplicateReferences(keyLookupService, builder, path);
 
-        // Collect global references after ref pruning
-        GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
-        PreSerializationCollector globalReferenceCollector = new PreSerializationCollector(Lists.newArrayList(globalReferenceCollectorStrategy));
-        builder.process(path, globalReferenceCollector);
-        Set<GlobalReferenceRecord> globalReferences = globalReferenceCollectorStrategy.getGlobalReferences();
-
+        // Collect global references has to be done after ref pruning as global references can be pruned
+        Set<GlobalReferenceRecord> globalReferences = getSetOfAllGlobalReferences(builder, path);
 
         // Prune global keys that no longer have existing references and prune empty attributes
+        pruneGlobalKeysAndEmptyAttributes(globalReferences, builder, path);
+
+        return buildAndCast(builder);
+    }
+
+    private void pruneGlobalKeysAndEmptyAttributes(Set<GlobalReferenceRecord> globalReferences, RosettaModelObjectBuilder builder, RosettaPath path) {
         GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferences);
         List<PruningStrategy> pruningStrategyList = Lists.newArrayList(globalKeyPruningStrategy);
         PreSerializationPruner keyAndAttributePruning = new PreSerializationPruner(pruningStrategyList);
         builder.process(path, keyAndAttributePruning);
         builder.prune();
+    }
 
-        return buildAndCast(builder);
+    private Set<GlobalReferenceRecord> getSetOfAllGlobalReferences(RosettaModelObjectBuilder builder, RosettaPath path) {
+        GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
+        PreSerializationCollector globalReferenceCollector = new PreSerializationCollector(Lists.newArrayList(globalReferenceCollectorStrategy));
+        builder.process(path, globalReferenceCollector);
+        return globalReferenceCollectorStrategy.getGlobalReferences();
+    }
+
+    private void pruneDuplicateReferences(KeyLookupService keyLookupService, RosettaModelObjectBuilder builder, RosettaPath path) {
+        ReferencePruningStrategy referencePruningStrategy = new ReferencePruningStrategy(keyLookupService);
+        PreSerializationPruner referencePruning = new PreSerializationPruner(Lists.newArrayList(referencePruningStrategy));
+        builder.process(path, referencePruning);
+    }
+
+    private KeyLookupService getKeyInformationAllKeyTypes(RosettaModelObjectBuilder builder, RosettaPath path) {
+        KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
+        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(keyCollectorStrategy);
+        PreSerializationCollector keyLookupCollector = new PreSerializationCollector(collectorStrategies);
+        builder.process(path, keyLookupCollector);
+        return keyCollectorStrategy.getKeyLookupService();
     }
 
     @SuppressWarnings("unchecked")

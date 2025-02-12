@@ -53,12 +53,12 @@ public class RuneJsonSerializerErrorHandlingTest {
     static void beforeAll() {
         Injector injector = setupInjector();
         helper = injector.getInstance(CodeGeneratorTestHelper.class);
-        dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
     }
 
     @BeforeEach
     void setUp() {
         objectMapper = new RuneJsonObjectMapper();
+        dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
         objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
     }
 

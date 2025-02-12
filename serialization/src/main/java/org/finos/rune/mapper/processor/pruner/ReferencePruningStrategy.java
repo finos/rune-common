@@ -81,17 +81,17 @@ public class ReferencePruningStrategy implements PruningStrategy {
 
     private void addReferencedObject(Set<Object> referencedObjects, String reference,
                                      KeyLookupService.KeyType keyType, Class<?> valueType) {
-        Optional<Object> referencedObject = getReferencedObject(keyType, valueType, reference);
+        Optional<Object> referencedObject = lookupReferencedObject(keyType, valueType, reference);
         referencedObject.ifPresent(referencedObjects::add);
     }
 
     private boolean isReferencedObjectAlreadyIncluded(Set<Object> referencedObjects, String reference,
                                                       KeyLookupService.KeyType keyType, Class<?> valueType) {
-        Optional<Object> referencedObject = getReferencedObject(keyType, valueType, reference);
+        Optional<Object> referencedObject = lookupReferencedObject(keyType, valueType, reference);
         return referencedObject.isPresent() && referencedObjects.contains(referencedObject.get());
     }
 
-    private Optional<Object> getReferencedObject(KeyLookupService.KeyType keyType, Class<?> valueType, String reference) {
+    private Optional<Object> lookupReferencedObject(KeyLookupService.KeyType keyType, Class<?> valueType, String reference) {
         return Optional.ofNullable(reference != null ? keyLookupService.getReferencedObject(keyType, valueType, reference) : null);
     }
 }

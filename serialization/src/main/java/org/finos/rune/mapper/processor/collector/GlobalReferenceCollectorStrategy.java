@@ -34,7 +34,7 @@ import java.util.Set;
  * along with its value type, storing them in a set of {@link GlobalReferenceRecord}.
  * <p>
  * The collected global reference information will be used in later serialization processing to remove any
- * unreferenced global keys in the {@link GlobalKeyPruningStrategy}, ensuring only valid keys are retained.
+ * unreferenced global keys ensuring only valid keys are retained.
  * </p>
  *
  * @see RosettaModelObject

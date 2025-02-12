@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.annotations.RuneMetaType;
+import com.rosetta.model.metafields.MetaFields;
 
 import java.util.Objects;
 import java.util.Set;
@@ -97,7 +98,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     @Override
     public JsonTypeInfo.Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated ann) {
         RuneDataType t = _findAnnotation(ann, RuneDataType.class);
-        if (t != null) {
+        if (t != null  && !isAnnotatedTypeMetaFields(ann)) {
             return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
                     JsonTypeInfo.As.EXISTING_PROPERTY,
                     "@type",
@@ -176,12 +177,16 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         }
     }
 
-    private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
+    private Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
                 .map(m -> RuneBeanUtil.getPropertyName(m.getAnnotated()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    private boolean isAnnotatedTypeMetaFields(Annotated ann) {
+        return ann.getType().getRawClass() == MetaFields.class;
     }
 
     @Override

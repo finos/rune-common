@@ -1,0 +1,23 @@
+namespace serialization.test.passing.metakey
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type A:
+  [metadata key]
+  fieldA string (1..1)
+
+type NodeRef:
+  typeA A (0..1)
+  aReference A (0..1)
+    [metadata reference]
+
+type AttributeRef:
+  dateField date (0..1)
+    [metadata id]
+  dateReference date (0..1)
+    [metadata reference]
+
+type Root:
+  [rootType]
+  nodeRef NodeRef (0..1)
+  attributeRef AttributeRef (0..1)

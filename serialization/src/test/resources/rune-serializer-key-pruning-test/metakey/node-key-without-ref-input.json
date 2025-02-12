@@ -5,10 +5,8 @@
   "nodeRef" : {
     "typeA" : {
       "fieldA" : "foo",
+      "@key": "someKey",
       "@key:external" : "someExternalKey"
-    },
-    "aReference" : {
-      "@ref:external" : "someExternalKey"
     }
   }
 }

@@ -1,0 +1,53 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.metakey.Root",
+  "@version" : "0.0.0",
+  "attributeRefs" : [ {
+    "someField" : "foo1",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:external" : "someExternalKey1"
+    },
+    "dateReference" : {
+      "@ref:external" : "someExternalKey1"
+    }
+  }, {
+    "someField" : "foo2",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:scoped" : "someScopedKey2"
+    },
+    "dateReference" : {
+      "@ref:scoped" : "someScopedKey2"
+    }
+  }, {
+    "someField" : "foo3",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:external" : "someExternalKey3",
+      "@key:scoped" : "someScopedKey3"
+    },
+    "dateReference" : {
+      "@ref:scoped" : "someScopedKey3"
+    }
+  }, {
+    "someField" : "foo4",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key:external" : "someExternalKey4",
+      "@key:scoped" : "someScopedKey4"
+    },
+    "dateReference" : {
+      "@ref:scoped" : "someScopedKey4"
+    }
+  }, {
+    "someField" : "foo5",
+    "dateField" : {
+      "@data" : "2024-12-12",
+      "@key" : "someKey5"
+    },
+    "dateReference" : {
+      "@ref" : "someKey5"
+    }
+  } ]
+}

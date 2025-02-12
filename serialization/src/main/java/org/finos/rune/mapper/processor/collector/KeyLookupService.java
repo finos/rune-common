@@ -23,7 +23,6 @@ package org.finos.rune.mapper.processor.collector;
 import org.finos.rune.mapper.processor.KeyRecord;
 
 import java.util.Map;
-import java.util.Objects;
 
 public class KeyLookupService {
     private final Map<KeyRecord, Object> globalKeyToValueObjectMap;
@@ -38,14 +37,14 @@ public class KeyLookupService {
         this.addressToValueObjectMap = addressToValueObjectMap;
     }
 
-    public Object getReferencedObject(KeyType keyType, Class<?> keyOnType, String keyReferenceValue) {
+    public Object getReferencedObject(KeyType keyType, Class<?> keyOnType, String id) {
         switch (keyType) {
             case GLOBAL_KEY:
-                return globalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
+                return globalKeyToValueObjectMap.get(new KeyRecord(keyOnType, id));
             case EXTERNAL_KEY:
-                return externalKeyToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
+                return externalKeyToValueObjectMap.get(new KeyRecord(keyOnType, id));
             case ADDRESS:
-                return addressToValueObjectMap.get(new KeyRecord(keyOnType, keyReferenceValue));
+                return addressToValueObjectMap.get(new KeyRecord(keyOnType, id));
             default:
                 throw new IllegalArgumentException("Unknown key type: " + keyType);
         }

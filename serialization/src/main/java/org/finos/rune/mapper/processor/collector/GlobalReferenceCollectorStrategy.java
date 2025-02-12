@@ -45,10 +45,9 @@ public class GlobalReferenceCollectorStrategy implements CollectorStrategy {
     private final Set<GlobalReferenceRecord> globalReferences = new HashSet<>();
 
     @Override
-    public <R extends RosettaModelObject> void collect(R instance) {
+    public void collect(RosettaModelObject instance) {
         if (instance instanceof ReferenceWithMeta) {
-            @SuppressWarnings("unchecked")
-            ReferenceWithMeta<R> reference = (ReferenceWithMeta<R>) instance;
+            ReferenceWithMeta<?> reference = (ReferenceWithMeta<?>) instance;
             if (reference.getGlobalReference() != null) {
                 Class<?> referenceValueType = reference.getValueType();
                 String referenceKeyValue = reference.getGlobalReference();

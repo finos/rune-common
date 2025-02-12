@@ -71,7 +71,7 @@ public class KeyCollectorStrategy implements CollectorStrategy {
     private final Map<KeyRecord, Object> addressToValueObjectMap = new HashMap<>();
 
     @Override
-    public <R extends RosettaModelObject> void collect(R instance) {
+    public void collect(RosettaModelObject instance) {
         if (instance instanceof GlobalKey) {
             GlobalKey globalKey = (GlobalKey) instance;
             Object value = getValue(instance);

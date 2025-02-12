@@ -38,7 +38,7 @@ import java.util.Collections;
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RuneSerializerKeyPruningTest {
+public class RuneSerializerPruningTest {
     public static final String TEST_TYPE = "rune-serializer-key-pruning-test";
     public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;

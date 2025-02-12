@@ -24,7 +24,9 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import org.finos.rune.mapper.processor.collector.KeyLookupService;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A pruning strategy that removes redundant references from a {@link RosettaModelObjectBuilder}.
@@ -45,46 +47,51 @@ public class ReferencePruningStrategy implements PruningStrategy {
 
     @Override
     public void prune(RosettaModelObjectBuilder builder) {
-        if (builder instanceof ReferenceWithMeta.ReferenceWithMetaBuilder) {
-            ReferenceWithMeta.ReferenceWithMetaBuilder<?> referenceWithMetaBuilder = (ReferenceWithMeta.ReferenceWithMetaBuilder<?>) builder;
-            Class<?> referenceValueType = referenceWithMetaBuilder.getValueType();
-
-            // for each ref (address, external and global) lookup and valueType perform keyLookupService.getReferencedObject() and store the value object
-            // then check precedence by comparing value object
-
-            Optional<Object> addressReferencedObject = Optional.empty();
-            if (referenceWithMetaBuilder.getReference() != null && referenceWithMetaBuilder.getReference().getReference() != null) {
-                String addressRef = referenceWithMetaBuilder.getReference().getReference();
-                addressReferencedObject = Optional.ofNullable(keyLookupService.getReferencedObject(KeyLookupService.KeyType.ADDRESS, referenceValueType, addressRef));
-            }
-
-            Optional<Object> externalReferencedObject = Optional.empty();
-            if (referenceWithMetaBuilder.getExternalReference() != null) {
-                String externalReference = referenceWithMetaBuilder.getExternalReference();
-                externalReferencedObject = Optional.ofNullable(keyLookupService.getReferencedObject(KeyLookupService.KeyType.EXTERNAL_KEY, referenceValueType, externalReference));
-
-                if (externalReferencedObject.isPresent() && addressReferencedObject.isPresent()
-                        && externalReferencedObject.get().equals(addressReferencedObject.get())) {
-                    referenceWithMetaBuilder.setExternalReference(null);
-                }
-            }
-
-            Optional<Object> globalReferencedObject;
-            if (referenceWithMetaBuilder.getGlobalReference() != null) {
-                String globalReference = referenceWithMetaBuilder.getGlobalReference();
-                globalReferencedObject = Optional.ofNullable(keyLookupService.getReferencedObject(KeyLookupService.KeyType.GLOBAL_KEY, referenceValueType, globalReference));
-
-                if (globalReferencedObject.isPresent()) {
-                    if (addressReferencedObject.isPresent() &&  addressReferencedObject.get().equals(globalReferencedObject.get())) {
-                        referenceWithMetaBuilder.setGlobalReference(null);
-                    }
-                    if (externalReferencedObject.isPresent() && externalReferencedObject.get().equals(globalReferencedObject.get())) {
-                        referenceWithMetaBuilder.setGlobalReference(null);
-                    }
-                }
-            }
+        if (!(builder instanceof ReferenceWithMeta.ReferenceWithMetaBuilder)) {
+            return;
         }
+
+        ReferenceWithMeta.ReferenceWithMetaBuilder<?> referenceWithMetaBuilder =
+                (ReferenceWithMeta.ReferenceWithMetaBuilder<?>) builder;
+        Class<?> referenceValueType = referenceWithMetaBuilder.getValueType();
+
+        Set<Object> referencedObjects = new HashSet<>();
+
+        String reference = referenceWithMetaBuilder.getReference() != null ?
+                referenceWithMetaBuilder.getReference().getReference() : null;
+
+        addReferencedObject(referencedObjects,
+                reference,
+                KeyLookupService.KeyType.ADDRESS, referenceValueType);
+
+        if (isReferencedObjectAlreadyIncluded(referencedObjects, referenceWithMetaBuilder.getExternalReference(),
+                KeyLookupService.KeyType.EXTERNAL_KEY, referenceValueType)) {
+            referenceWithMetaBuilder.setExternalReference(null);
+        } else {
+            addReferencedObject(referencedObjects, referenceWithMetaBuilder.getExternalReference(),
+                    KeyLookupService.KeyType.EXTERNAL_KEY, referenceValueType);
+        }
+
+        if (isReferencedObjectAlreadyIncluded(referencedObjects, referenceWithMetaBuilder.getGlobalReference(),
+                KeyLookupService.KeyType.GLOBAL_KEY, referenceValueType)) {
+            referenceWithMetaBuilder.setGlobalReference(null);
+        }
+
     }
 
+    private void addReferencedObject(Set<Object> referencedObjects, String reference,
+                                     KeyLookupService.KeyType keyType, Class<?> valueType) {
+        Optional<Object> referencedObject = getReferencedObject(keyType, valueType, reference);
+        referencedObject.ifPresent(referencedObjects::add);
+    }
 
+    private boolean isReferencedObjectAlreadyIncluded(Set<Object> referencedObjects, String reference,
+                                                      KeyLookupService.KeyType keyType, Class<?> valueType) {
+        Optional<Object> referencedObject = getReferencedObject(keyType, valueType, reference);
+        return referencedObject.isPresent() && referencedObjects.contains(referencedObject.get());
+    }
+
+    private Optional<Object> getReferencedObject(KeyLookupService.KeyType keyType, Class<?> valueType, String reference) {
+        return Optional.ofNullable(reference != null ? keyLookupService.getReferencedObject(keyType, valueType, reference) : null);
+    }
 }

@@ -37,7 +37,7 @@ public class SerializationPreProcessor {
 
         RosettaModelObjectBuilder builder = rosettaModelObject.toBuilder();
 
-        // Collect key information for all key types
+        // Collect key information for all key types this is used by the reference de-duplication strategy later
         KeyLookupService keyLookupService = getKeyInformationForAllKeyTypes(builder, path);
 
         // Prune duplicate References in order of precedence from highest to lowest value: address highest, then external, finally global.
@@ -45,7 +45,7 @@ public class SerializationPreProcessor {
         pruneDuplicateReferences(keyLookupService, builder, path);
 
         // Collect global references has to be done after ref pruning as global references can be pruned
-        Set<GlobalReferenceRecord> globalReferences = getSetOfAllGlobalReferences(builder, path);
+        Set<GlobalReferenceRecord> globalReferences = getAllGlobalReferences(builder, path);
 
         // Prune global keys that no longer have existing references and prune empty attributes
         pruneGlobalKeysAndEmptyAttributes(globalReferences, builder, path);
@@ -55,29 +55,27 @@ public class SerializationPreProcessor {
 
     private void pruneGlobalKeysAndEmptyAttributes(Set<GlobalReferenceRecord> globalReferences, RosettaModelObjectBuilder builder, RosettaPath path) {
         GlobalKeyPruningStrategy globalKeyPruningStrategy = new GlobalKeyPruningStrategy(globalReferences);
-        List<PruningStrategy> pruningStrategyList = Lists.newArrayList(globalKeyPruningStrategy);
-        PreSerializationPruner keyAndAttributePruning = new PreSerializationPruner(pruningStrategyList);
+        PreSerializationPruner keyAndAttributePruning = new PreSerializationPruner(globalKeyPruningStrategy);
         builder.process(path, keyAndAttributePruning);
         builder.prune();
     }
 
-    private Set<GlobalReferenceRecord> getSetOfAllGlobalReferences(RosettaModelObjectBuilder builder, RosettaPath path) {
+    private Set<GlobalReferenceRecord> getAllGlobalReferences(RosettaModelObjectBuilder builder, RosettaPath path) {
         GlobalReferenceCollectorStrategy globalReferenceCollectorStrategy = new GlobalReferenceCollectorStrategy();
-        PreSerializationCollector globalReferenceCollector = new PreSerializationCollector(Lists.newArrayList(globalReferenceCollectorStrategy));
+        PreSerializationCollector globalReferenceCollector = new PreSerializationCollector(globalReferenceCollectorStrategy);
         builder.process(path, globalReferenceCollector);
         return globalReferenceCollectorStrategy.getGlobalReferences();
     }
 
     private void pruneDuplicateReferences(KeyLookupService keyLookupService, RosettaModelObjectBuilder builder, RosettaPath path) {
         ReferencePruningStrategy referencePruningStrategy = new ReferencePruningStrategy(keyLookupService);
-        PreSerializationPruner referencePruning = new PreSerializationPruner(Lists.newArrayList(referencePruningStrategy));
+        PreSerializationPruner referencePruning = new PreSerializationPruner(referencePruningStrategy);
         builder.process(path, referencePruning);
     }
 
     private KeyLookupService getKeyInformationForAllKeyTypes(RosettaModelObjectBuilder builder, RosettaPath path) {
         KeyCollectorStrategy keyCollectorStrategy = new KeyCollectorStrategy();
-        List<CollectorStrategy> collectorStrategies = Lists.newArrayList(keyCollectorStrategy);
-        PreSerializationCollector keyLookupCollector = new PreSerializationCollector(collectorStrategies);
+        PreSerializationCollector keyLookupCollector = new PreSerializationCollector(keyCollectorStrategy);
         builder.process(path, keyLookupCollector);
         return keyCollectorStrategy.getKeyLookupService();
     }

@@ -20,6 +20,7 @@ package org.finos.rune.mapper.processor.pruner;
  * ==============
  */
 
+import com.google.common.collect.Lists;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
@@ -37,8 +38,8 @@ import java.util.List;
 public class PreSerializationPruner implements BuilderProcessor {
     private final List<PruningStrategy> pruningStrategies;
 
-    public PreSerializationPruner(List<PruningStrategy> pruningStrategies) {
-        this.pruningStrategies = pruningStrategies;
+    public PreSerializationPruner(PruningStrategy... pruningStrategies) {
+        this.pruningStrategies = Lists.newArrayList(pruningStrategies);
     }
 
     @Override

@@ -20,28 +20,26 @@ package org.finos.rune.mapper.processor;
  * ==============
  */
 
-import com.rosetta.model.lib.path.RosettaPath;
-
 import java.util.Objects;
 
 public class GlobalReferenceRecord {
     public final Class<?> referenceOnType;
-    public final String referenceKeyValue;
+    public final String id;
 
-    public GlobalReferenceRecord(Class<?> referenceOnType, String referenceKeyValue) {
+    public GlobalReferenceRecord(Class<?> referenceOnType, String id) {
         this.referenceOnType = referenceOnType;
-        this.referenceKeyValue = referenceKeyValue;
+        this.id = id;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         GlobalReferenceRecord that = (GlobalReferenceRecord) o;
-        return Objects.equals(referenceOnType, that.referenceOnType) && Objects.equals(referenceKeyValue, that.referenceKeyValue);
+        return Objects.equals(referenceOnType, that.referenceOnType) && Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(referenceOnType, referenceKeyValue);
+        return Objects.hash(referenceOnType, id);
     }
 }

@@ -24,22 +24,22 @@ import java.util.Objects;
 
 public class KeyRecord {
     public final Class<?> keyOnType;
-    public final String keyReferenceValue;
+    public final String id;
 
-    public KeyRecord(Class<?> keyOnType, String keyReferenceValue) {
+    public KeyRecord(Class<?> keyOnType, String id) {
         this.keyOnType = keyOnType;
-        this.keyReferenceValue = keyReferenceValue;
+        this.id = id;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         KeyRecord keyRecord = (KeyRecord) o;
-        return Objects.equals(keyOnType, keyRecord.keyOnType) && Objects.equals(keyReferenceValue, keyRecord.keyReferenceValue);
+        return Objects.equals(keyOnType, keyRecord.keyOnType) && Objects.equals(id, keyRecord.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(keyOnType, keyReferenceValue);
+        return Objects.hash(keyOnType, id);
     }
 }

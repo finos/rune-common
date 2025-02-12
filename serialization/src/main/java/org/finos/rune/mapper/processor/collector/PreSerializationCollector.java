@@ -20,6 +20,7 @@ package org.finos.rune.mapper.processor.collector;
  * ==============
  */
 
+import com.google.common.collect.Lists;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
@@ -36,8 +37,8 @@ import java.util.List;
 public class PreSerializationCollector implements Processor {
     private final List<CollectorStrategy> collectorStrategies;
 
-    public PreSerializationCollector(List<CollectorStrategy> collectorStrategies) {
-        this.collectorStrategies = collectorStrategies;
+    public PreSerializationCollector(CollectorStrategy... collectorStrategies) {
+        this.collectorStrategies = Lists.newArrayList(collectorStrategies);
     }
 
     @Override

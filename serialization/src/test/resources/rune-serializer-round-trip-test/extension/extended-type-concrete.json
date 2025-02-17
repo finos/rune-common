@@ -4,7 +4,6 @@
   "@version" : "0.0.0",
   "typeB" : {
     "fieldA" : "bar",
-    "fieldB" : "foo",
-    "@type" : "serialization.test.passing.extension.B"
+    "fieldB" : "foo"
   }
 }

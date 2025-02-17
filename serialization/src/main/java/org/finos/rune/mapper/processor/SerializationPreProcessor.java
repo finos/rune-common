@@ -20,14 +20,17 @@ package org.finos.rune.mapper.processor;
  * ==============
  */
 
-import com.google.common.collect.Lists;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.path.RosettaPath;
-import org.finos.rune.mapper.processor.collector.*;
-import org.finos.rune.mapper.processor.pruner.*;
+import org.finos.rune.mapper.processor.collector.GlobalReferenceCollectorStrategy;
+import org.finos.rune.mapper.processor.collector.KeyCollectorStrategy;
+import org.finos.rune.mapper.processor.collector.KeyLookupService;
+import org.finos.rune.mapper.processor.collector.PreSerializationCollector;
+import org.finos.rune.mapper.processor.pruner.GlobalKeyPruningStrategy;
+import org.finos.rune.mapper.processor.pruner.PreSerializationPruner;
+import org.finos.rune.mapper.processor.pruner.ReferencePruningStrategy;
 
-import java.util.List;
 import java.util.Set;
 
 public class SerializationPreProcessor {

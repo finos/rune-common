@@ -43,6 +43,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static com.rosetta.model.lib.RuneNameConstants.*;
+
 /**
  * Custom Jackson annotation introspector for handling serialization and deserialization
  * of classes annotated with {@link RuneDataType}, {@link RuneAttribute}, and {@link RuneMetaType}.
@@ -78,7 +80,7 @@ import java.util.stream.StreamSupport;
  */
 public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
-    public static final ArrayList<String> SERIALIZATION_PROPERTY_ORDER = Lists.newArrayList("meta", "@ref", "@ref:external", "@ref:scoped", "@data");
+    private static final ArrayList<String> SERIALIZATION_PROPERTY_ORDER = Lists.newArrayList(META, REFERENCE, EXTERNAL_REFERENCE, SCOPED_REFERENCE, DATA);
 
     private final RuneEnumBuilderIntrospector runeEnumBuilderIntrospector;
 

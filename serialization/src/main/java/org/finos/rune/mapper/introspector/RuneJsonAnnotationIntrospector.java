@@ -177,6 +177,14 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         }
     }
 
+    @Override
+    public String[] findSerializationPropertyOrder(AnnotatedClass ac) {
+        if (ac.hasAnnotation(RuneDataType.class)) {
+            return new String[] {"meta", "@ref:scoped", "@ref", "@ref:external", "@ref:scoped", "@data"};
+        }
+        return super.findSerializationPropertyOrder(ac);
+    }
+
     private Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)

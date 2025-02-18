@@ -4,8 +4,8 @@
   "@version" : "0.0.0",
   "typeA" : {
     "b" : {
-      "fieldB" : "foo",
-      "@key:scoped" : "someLocation"
+      "@key:scoped" : "someLocation",
+      "fieldB" : "foo"
     }
   },
   "bAddress" : {

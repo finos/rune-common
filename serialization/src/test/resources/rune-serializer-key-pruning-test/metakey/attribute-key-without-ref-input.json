@@ -4,9 +4,9 @@
   "@version" : "0.0.0",
   "attributeRef" : {
     "dateField" : {
-      "@data" : "2024-12-12",
       "@key" : "someKey",
-      "@key:external" : "someExternalKey"
+      "@key:external" : "someExternalKey",
+      "@data" : "2024-12-12"
     }
   }
 }

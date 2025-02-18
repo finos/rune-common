@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import org.finos.rune.mapper.processor.SerializationPreProcessor;
 
@@ -85,13 +84,13 @@ public class RuneJsonObjectWriter extends ObjectWriter {
     public String writeValueAsString(Object value) throws JsonProcessingException {
         if (value instanceof RosettaModelObject) {
             RosettaModelObject processed = serializationPreProcessor.process((RosettaModelObject) value);
-            return super.writeValueAsString(createTopLevelHeaderrsWrapper(processed));
+            return super.writeValueAsString(createTopLevelHeadersWrapper(processed));
         }
 
         return super.writeValueAsString(value);
     }
 
-    private Object createTopLevelHeaderrsWrapper(RosettaModelObject rosettaModelObject) {
+    private Object createTopLevelHeadersWrapper(RosettaModelObject rosettaModelObject) {
         Class<? extends RosettaModelObject> runeType = rosettaModelObject.getType();
         Optional<TopLevel> result = Arrays.stream(runeType.getAnnotations())
                 .filter(allAnnotations -> allAnnotations.annotationType().equals(RuneDataType.class)).findFirst().map(a -> {

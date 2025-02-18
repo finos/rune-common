@@ -30,11 +30,13 @@ import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
+import com.google.common.collect.Lists;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.annotations.RuneMetaType;
 import com.rosetta.model.metafields.MetaFields;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -76,6 +78,7 @@ import java.util.stream.StreamSupport;
  */
 public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
+    public static final ArrayList<String> SERIALIZATION_PROPERTY_ORDER = Lists.newArrayList("meta", "@ref", "@ref:external", "@ref:scoped", "@data");
 
     private final RuneEnumBuilderIntrospector runeEnumBuilderIntrospector;
 
@@ -180,7 +183,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     @Override
     public String[] findSerializationPropertyOrder(AnnotatedClass ac) {
         if (ac.hasAnnotation(RuneDataType.class)) {
-            return new String[] {"meta", "@ref:scoped", "@ref", "@ref:external", "@ref:scoped", "@data"};
+            return SERIALIZATION_PROPERTY_ORDER.toArray(new String[0]);
         }
         return super.findSerializationPropertyOrder(ac);
     }

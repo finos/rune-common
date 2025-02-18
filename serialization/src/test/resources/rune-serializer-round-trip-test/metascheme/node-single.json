@@ -3,10 +3,10 @@
   "@type" : "serialization.test.passing.metascheme.Root",
   "@version" : "0.0.0",
   "typeA" : {
+    "@scheme" : "https://www.example.com/scheme2",
     "fieldA" : {
-      "@data" : "foo",
-      "@scheme" : "https://www.example.com/scheme1"
-    },
-    "@scheme" : "https://www.example.com/scheme2"
+      "@scheme" : "https://www.example.com/scheme1",
+      "@data" : "foo"
+    }
   }
 }

@@ -32,10 +32,15 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
     public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
         String name = writer.getName();
         if (name.equals("@type")) {
-            if (!pojo.getClass().getSuperclass().getCanonicalName().equals(Object.class.getCanonicalName())) {
-                writer.serializeAsField(pojo, jgen, provider);
-            }
-
+            /*
+                TODO: find a better way to add json type fields.
+                The below approach doesn't work and adds @type in too many places. An alternative approach
+                may be to stop generating @type in the POJOs and only add them where needed in
+                the RuneJsonAnnotationIntrospector by overriding findAndAddVirtualProperties
+             */
+//            if (!pojo.getClass().getSuperclass().getCanonicalName().equals(Object.class.getCanonicalName())) {
+//                writer.serializeAsField(pojo, jgen, provider);
+//            }
             return;
         }
         super.serializeAsField(pojo, jgen, provider, writer);

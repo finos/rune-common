@@ -91,7 +91,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
         if (ann != null) {
             ModelSymbolId id = createModelSymbolId(ac, ann.value());
-            List<ModelSymbolId> substitutions = rosettaXMLConfiguration.getSubstitutionsForType(id);
+            List<ModelSymbolId> substitutions = getAttributeXMLConfiguration(config, member)
+                    .flatMap(AttributeXMLConfiguration::getSubstitutionGroup)
+                    .map(rosettaXMLConfiguration::getSubstitutionsFor)
+                    .orElse(Collections.emptyList());
             if (substitutions.isEmpty()) {
                 return null;
             }

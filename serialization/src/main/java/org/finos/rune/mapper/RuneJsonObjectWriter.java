@@ -9,9 +9,9 @@ package org.finos.rune.mapper;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -92,8 +92,10 @@ public class RuneJsonObjectWriter extends ObjectWriter {
 
     private Object createTopLevelHeadersWrapper(RosettaModelObject rosettaModelObject) {
         Class<? extends RosettaModelObject> runeType = rosettaModelObject.getType();
-        Optional<TopLevel> result = Arrays.stream(runeType.getAnnotations())
-                .filter(allAnnotations -> allAnnotations.annotationType().equals(RuneDataType.class)).findFirst().map(a -> {
+        return Arrays.stream(runeType.getAnnotations())
+                .filter(allAnnotations -> allAnnotations.annotationType().equals(RuneDataType.class))
+                .findFirst()
+                .<Object>map(a -> {
                     RuneDataType runeDataType = (RuneDataType) a;
                     TopLevel topLevel = new TopLevel();
                     topLevel.setModel(runeDataType.model());
@@ -101,9 +103,7 @@ public class RuneJsonObjectWriter extends ObjectWriter {
                     topLevel.setVersion(runeDataType.version());
                     topLevel.setRosettaModelObject(rosettaModelObject);
                     return topLevel;
-                });
-
-        return result.isPresent() ? result.get() : rosettaModelObject;
+                }).orElse(rosettaModelObject);
     }
 
     private static class TopLevel {

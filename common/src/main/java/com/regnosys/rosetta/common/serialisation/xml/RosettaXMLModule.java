@@ -23,6 +23,7 @@ package com.regnosys.rosetta.common.serialisation.xml;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -33,9 +34,7 @@ import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerModifier;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
 import java.io.IOException;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -45,6 +44,7 @@ import java.time.format.DateTimeParseException;
 public class RosettaXMLModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
+    private static final ZoneId UNKNOWN_ZONE = ZoneId.of("Unknown");
 
     private final RosettaXMLConfiguration rosettaXMLConfiguration;
 
@@ -91,6 +91,28 @@ public class RosettaXMLModule extends SimpleModule {
             @Override
             public void serialize(LocalTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
                 gen.writeString(DateTimeFormatter.ISO_TIME.format(OffsetTime.of(value, ZoneOffset.UTC)));
+            }
+        });
+
+        addDeserializer(ZonedDateTime.class, new StdDeserializer<ZonedDateTime>(ZonedDateTime.class) {
+            @Override
+            public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+                String dateTimeStr = p.readValueAs(String.class);
+                try {
+                    return DateTimeFormatter.ISO_ZONED_DATE_TIME.parse(dateTimeStr, ZonedDateTime::from);
+                } catch (Exception e) {
+                    return ZonedDateTime.of(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(dateTimeStr, LocalDateTime::from), UNKNOWN_ZONE);
+                }
+            }
+        });
+        addSerializer(ZonedDateTime.class, new StdSerializer<ZonedDateTime>(ZonedDateTime.class) {
+            @Override
+            public void serialize(ZonedDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+                if (value.getZone().equals(UNKNOWN_ZONE)) {
+                    gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                } else {
+                    gen.writeString(value.format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
+                }
             }
         });
 

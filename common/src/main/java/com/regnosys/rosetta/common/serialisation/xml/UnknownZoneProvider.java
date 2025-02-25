@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation;
+package com.regnosys.rosetta.common.serialisation.xml;
 
 /*-
  * ==============
@@ -26,6 +26,13 @@ import java.time.zone.ZoneRulesException;
 import java.time.zone.ZoneRulesProvider;
 import java.util.*;
 
+/**
+ * Registers support for a "Unknown" time zone, allowing for deserializing `ZonedDateTime` objects
+ * which do not have a timezone defined.
+ *
+ * This is to support the xsd:dateTime type, for which a timezone is optional.
+ * See https://www.datypic.com/sc/xsd/t-xsd_dateTime.html
+ */
 public class UnknownZoneProvider extends ZoneRulesProvider {
     private static final String UNKNOWN_ZONE_ID = "Unknown";
     private static final ZoneRules UNKNOWN_ZONE_RULES = ZoneRules.of(ZoneOffset.UTC);

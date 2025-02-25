@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.regnosys.rosetta.common.serialisation.mixin.DateExtended;
 import com.rosetta.model.lib.records.Date;
 
 import java.io.IOException;

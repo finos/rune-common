@@ -87,6 +87,12 @@ public class TestPackUtils {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName)));
     }
+    public static PipelineModel getPipelineModel(String upstreamPipelineId, List<PipelineModel> pipelineModels, String functionName) {
+        return pipelineModels.stream()
+                .filter(p -> p.getTransform().getFunction().equals(functionName) && p.getUpstreamPipelineId().equals(upstreamPipelineId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName)));
+    }
 
     public static List<TestPackModel> getTestPackModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {
         List<URL> testPackUrls = findPaths(resourcePath, classLoader, "test-pack-.*\\.json");

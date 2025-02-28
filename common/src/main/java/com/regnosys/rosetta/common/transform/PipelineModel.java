@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.transform;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ public class PipelineModel {
     private final String upstreamPipelineId;
     private final Serialisation inputSerialisation;
     private final Serialisation outputSerialisation;
+    private final String modelId;
 
     @JsonCreator
     public PipelineModel(@JsonProperty("id") String id,
@@ -40,13 +41,15 @@ public class PipelineModel {
                          @JsonProperty("transform") Transform transform,
                          @JsonProperty("upstreamPipelineId") String upstreamPipelineId,
                          @JsonProperty("inputSerialisation") Serialisation inputSerialisation,
-                         @JsonProperty("outputSerialisation") Serialisation outputSerialisation) {
+                         @JsonProperty("outputSerialisation") Serialisation outputSerialisation,
+                         @JsonProperty("modelId") String modelId) {
         this.id = id;
         this.name = name;
         this.transform = transform;
         this.upstreamPipelineId = upstreamPipelineId;
         this.inputSerialisation = inputSerialisation;
         this.outputSerialisation = outputSerialisation;
+        this.modelId = modelId;
     }
 
     public String getId() {
@@ -73,17 +76,21 @@ public class PipelineModel {
         return outputSerialisation;
     }
 
+    public String getModelId() {
+        return modelId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PipelineModel that = (PipelineModel) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(transform, that.transform) && Objects.equals(upstreamPipelineId, that.upstreamPipelineId) && Objects.equals(inputSerialisation, that.inputSerialisation) && Objects.equals(outputSerialisation, that.outputSerialisation);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(transform, that.transform) && Objects.equals(upstreamPipelineId, that.upstreamPipelineId) && Objects.equals(inputSerialisation, that.inputSerialisation) && Objects.equals(outputSerialisation, that.outputSerialisation) && Objects.equals(modelId, that.modelId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, transform, upstreamPipelineId, inputSerialisation, outputSerialisation);
+        return Objects.hash(id, name, transform, upstreamPipelineId, inputSerialisation, outputSerialisation, modelId);
     }
 
     @Override
@@ -95,6 +102,7 @@ public class PipelineModel {
                 ", upstreamPipelineId='" + upstreamPipelineId + '\'' +
                 ", inputSerialisation=" + inputSerialisation +
                 ", outputSerialisation=" + outputSerialisation +
+                ", modelId='" + modelId + '\'' +
                 '}';
     }
 

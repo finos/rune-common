@@ -42,6 +42,8 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -121,6 +123,26 @@ public class XmlSerialisationTest {
 
         // Test deserialisation
         TimeContainer actual = xmlMapper.readValue(xml, TimeContainer.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testZonedDateTimeWithUnknownTimezoneDeserialisation() throws JsonProcessingException {
+        ZonedDateTime expected = ZonedDateTime.of(2006, 4, 2, 15, 38, 0, 0, ZoneId.of("Unknown"));
+        String xml = "<ZonedDateTime>2006-04-02T15:38:00</ZonedDateTime>";
+
+        // Test deserialisation
+        ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testZonedDateTimeWithUnknownTimezoneSerialisation() throws JsonProcessingException {
+        String expected = "<ZonedDateTime>2006-04-02T15:38:00</ZonedDateTime>";
+        ZonedDateTime value = ZonedDateTime.of(2006, 4, 2, 15, 38, 0, 0, ZoneId.of("Unknown"));
+
+        // Test serialisation
+        String actual = xmlMapper.writeValueAsString(value);
         assertEquals(expected, actual);
     }
 

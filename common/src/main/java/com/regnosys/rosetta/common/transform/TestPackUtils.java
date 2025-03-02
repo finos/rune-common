@@ -84,31 +84,27 @@ public class TestPackUtils {
 
     //This will return a singular pipeline model with the function name in the list
     public static List<PipelineModel> getPipelineModel(List<PipelineModel> pipelineModels, String functionName) {
-            List<PipelineModel> filteredModels = pipelineModels.stream()
-                    .filter(p -> p.getTransform().getFunction().equals(functionName))
-                    .collect(Collectors.toList());
-            if (filteredModels.isEmpty()) {
-                throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
-            }
-            return filteredModels;
+        List<PipelineModel> filteredModels = pipelineModels.stream()
+                .filter(p -> p.getTransform().getFunction().equals(functionName))
+                .collect(Collectors.toList());
+        if (filteredModels.isEmpty()) {
+            throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
         }
+        return filteredModels;
+    }
 
     //This will return a list of pipeline models that match the function name and pipelineId
     public static List<PipelineModel> getPipelineModel(String pipelineId, List<PipelineModel> pipelineModels, String functionName) {
         //fallback to get the first pipeline model with the function name if pipelineId is not provided
         List<PipelineModel> filteredModels;
-        if(pipelineId == null) {
+        if (pipelineId == null) {
             filteredModels = getPipelineModel(pipelineModels, functionName);
         } else {
-        filteredModels = pipelineModels.stream()
-                .filter(p -> p.getTransform().getFunction().equals(functionName) && p.getId().equals(pipelineId))
-                .collect(Collectors.toList());
+            filteredModels = pipelineModels.stream()
+                    .filter(p -> p.getTransform().getFunction().equals(functionName) && p.getId().equals(pipelineId))
+                    .collect(Collectors.toList());
         }
-//        if (filteredModels.isEmpty()) {
-//            throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s and pipelineId %s", functionName, pipelineId));
-//        }
-        return filteredModels; //This could be empty
-//                .orElseThrow(() -> new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName)));
+        return filteredModels;
     }
 
     public static List<TestPackModel> getTestPackModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {

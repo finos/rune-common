@@ -22,7 +22,7 @@ package com.regnosys.rosetta.common.validation;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import com.regnosys.rosetta.common.util.SimpleProcessor;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.RosettaMetaData;

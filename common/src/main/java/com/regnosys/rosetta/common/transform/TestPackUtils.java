@@ -68,11 +68,10 @@ public class TestPackUtils {
                                                String outputType,
                                                String upstreamPipelineId,
                                                PipelineModel.Serialisation inputSerialisation,
-                                               PipelineModel.Serialisation outputSerialisation,
-                                               String modelId) {
+                                               PipelineModel.Serialisation outputSerialisation) {
         String pipelineId = createPipelineId(transformType, formattedFunctionName);
         PipelineModel.Transform transform = new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType);
-        return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation, modelId);
+        return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation);
     }
 
     public static List<PipelineModel> getPipelineModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {

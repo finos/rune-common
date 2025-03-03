@@ -33,7 +33,6 @@ public class PipelineModel {
     private final String upstreamPipelineId;
     private final Serialisation inputSerialisation;
     private final Serialisation outputSerialisation;
-    private final String modelId;
 
     @JsonCreator
     public PipelineModel(@JsonProperty("id") String id,
@@ -41,15 +40,13 @@ public class PipelineModel {
                          @JsonProperty("transform") Transform transform,
                          @JsonProperty("upstreamPipelineId") String upstreamPipelineId,
                          @JsonProperty("inputSerialisation") Serialisation inputSerialisation,
-                         @JsonProperty("outputSerialisation") Serialisation outputSerialisation,
-                         @JsonProperty("modelId") String modelId) {
+                         @JsonProperty("outputSerialisation") Serialisation outputSerialisation) {
         this.id = id;
         this.name = name;
         this.transform = transform;
         this.upstreamPipelineId = upstreamPipelineId;
         this.inputSerialisation = inputSerialisation;
         this.outputSerialisation = outputSerialisation;
-        this.modelId = modelId;
     }
 
     public String getId() {
@@ -76,21 +73,17 @@ public class PipelineModel {
         return outputSerialisation;
     }
 
-    public String getModelId() {
-        return modelId;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PipelineModel that = (PipelineModel) o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(transform, that.transform) && Objects.equals(upstreamPipelineId, that.upstreamPipelineId) && Objects.equals(inputSerialisation, that.inputSerialisation) && Objects.equals(outputSerialisation, that.outputSerialisation) && Objects.equals(modelId, that.modelId);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(transform, that.transform) && Objects.equals(upstreamPipelineId, that.upstreamPipelineId) && Objects.equals(inputSerialisation, that.inputSerialisation) && Objects.equals(outputSerialisation, that.outputSerialisation);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, transform, upstreamPipelineId, inputSerialisation, outputSerialisation, modelId);
+        return Objects.hash(id, name, transform, upstreamPipelineId, inputSerialisation, outputSerialisation);
     }
 
     @Override
@@ -102,7 +95,6 @@ public class PipelineModel {
                 ", upstreamPipelineId='" + upstreamPipelineId + '\'' +
                 ", inputSerialisation=" + inputSerialisation +
                 ", outputSerialisation=" + outputSerialisation +
-                ", modelId='" + modelId + '\'' +
                 '}';
     }
 

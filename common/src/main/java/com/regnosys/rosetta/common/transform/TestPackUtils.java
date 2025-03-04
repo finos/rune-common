@@ -48,16 +48,22 @@ public class TestPackUtils {
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");
     public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.TRANSLATE.getResourcePath()).resolve("config");
 
-    public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
-        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName), testPackName, sampleModels);
+    public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, String modelId, List<TestPackModel.SampleModel> sampleModels) {
+        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName, modelId), testPackName, sampleModels);
     }
 
     private static String createTestPackId(TransformType transformType, String formattedFunctionName, String testPackName) {
-        return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-").toLowerCase());
+        return String.format("test-pack-%s-%s-%s", 
+                transformType.name().toLowerCase(), 
+                formattedFunctionName, 
+                testPackName.replace(" ", "-").toLowerCase());
     }
 
-    private static String createPipelineId(TransformType transformType, String formattedFunctionName) {
-        return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
+    private static String createPipelineId(TransformType transformType, String formattedFunctionName, String modelId) {
+        return String.format("pipeline-%s-%s%s", 
+                transformType.name().toLowerCase(), 
+                formattedFunctionName, 
+                Optional.ofNullable(modelId).map(mId -> String.format("-%s", mId)).orElse(""));
     }
 
     public static PipelineModel createPipeline(TransformType transformType,
@@ -70,7 +76,7 @@ public class TestPackUtils {
                                                PipelineModel.Serialisation inputSerialisation,
                                                PipelineModel.Serialisation outputSerialisation,
                                                String modelId) {
-        String pipelineId = createPipelineId(transformType, formattedFunctionName);
+        String pipelineId = createPipelineId(transformType, formattedFunctionName, modelId);
         PipelineModel.Transform transform = new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType);
         return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation, modelId);
     }
@@ -82,29 +88,24 @@ public class TestPackUtils {
                 .collect(Collectors.toList());
     }
 
-    //This will return a singular pipeline model with the function name in the list
-    public static List<PipelineModel> getPipelineModel(List<PipelineModel> pipelineModels, String functionName) {
-        List<PipelineModel> filteredModels = pipelineModels.stream()
-                .filter(p -> p.getTransform().getFunction().equals(functionName))
-                .collect(Collectors.toList());
-        if (filteredModels.isEmpty()) {
-            throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
-        }
-        return filteredModels;
+    public static PipelineModel getPipelineModel(List<PipelineModel> pipelineModels, String functionName) {
+        return getPipelineModel(pipelineModels, functionName, null);
     }
 
     //This will return a list of pipeline models that match the function name and pipelineId
-    public static List<PipelineModel> getPipelineModel(String pipelineId, List<PipelineModel> pipelineModels, String functionName) {
+    public static PipelineModel getPipelineModel(List<PipelineModel> pipelineModels, String functionName, String modelId) {
         //fallback to get the first pipeline model with the function name if pipelineId is not provided
-        List<PipelineModel> filteredModels;
-        if (pipelineId == null) {
-            filteredModels = getPipelineModel(pipelineModels, functionName);
-        } else {
-            filteredModels = pipelineModels.stream()
-                    .filter(p -> p.getTransform().getFunction().equals(functionName) && p.getId().equals(pipelineId))
-                    .collect(Collectors.toList());
+        List<PipelineModel> pipelineModelsFunctionName = pipelineModels.stream()
+                .filter(p -> p.getTransform().getFunction().equals(functionName))
+                .collect(Collectors.toList());
+        if (pipelineModelsFunctionName.isEmpty()) {
+            throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
         }
-        return filteredModels;
+        return pipelineModelsFunctionName.stream()
+                .filter(p -> modelId != null && modelId.equals(p.getModelId())
+                        || modelId == null && p.getModelId() == null)
+                .findFirst()
+                .orElse(pipelineModelsFunctionName.get(0));
     }
 
     public static List<TestPackModel> getTestPackModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {

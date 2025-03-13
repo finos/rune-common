@@ -21,7 +21,6 @@ package com.regnosys.rosetta.common.util;
  */
 
 import com.regnosys.rosetta.common.transform.EvaluateFunctionNotFoundException;
-import com.regnosys.rosetta.common.transform.FunctionNameHelper;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -119,4 +118,35 @@ class FunctionNameHelperTest {
     void getReadableFunctionName(){
         assertEquals("Type Name", functionNameHelper.readableFunctionName("Project_TypeName"));
     }
+
+    @Test
+    void normaliseUserGenPipelineIDProjection() {
+        assertEquals("pipeline-projection-asic-test-two-trade-report-to-iso20022-two",
+            functionNameHelper.normaliseUserGenPipelineID("pipeline-projection-a-s-i-c-test-t-w-o-trade-report-to-iso20022-t-w-o"));
+    }
+
+    @Test
+    void normaliseUserGenPipelineIDReport() {
+        assertEquals("pipeline-report-reg-test-report-function",
+            functionNameHelper.normaliseUserGenPipelineID("pipeline-report-r-e-g-test-report-function"));
+    }
+
+    @Test
+    void normaliseUserGenPipelineIDProjectionWithExtraHyphens() {
+        assertEquals("pipeline-projection-asic-test-two-trade-report-to-iso20022-two",
+            functionNameHelper.normaliseUserGenPipelineID("pipeline--projection--r-e-g--t-e-s-t--trade--report--to--iso20022"));
+    }
+
+    @Test
+    void normaliseUserGenPipelineIDReportWithMixedCase() {
+        assertEquals("pipeline-report-reg-test-two-report-function",
+            functionNameHelper.normaliseUserGenPipelineID("pipeline-Report-R-E-G-Test-Report-Function"));
+    }
+
+    @Test
+    void normaliseUserGenPipelineIDWithNumbersAndSpecialChars() {
+        assertEquals("pipeline-projection-asic-test-two-trade-report-to-iso20022-two",
+            functionNameHelper.normaliseUserGenPipelineID("pipeline-projection-r-e-g-test-trade-report-to-iso20022-123!@#"));
+    }
+
 }

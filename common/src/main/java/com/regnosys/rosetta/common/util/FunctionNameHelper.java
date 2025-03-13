@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.transform;
+package com.regnosys.rosetta.common.util;
 
 /*-
  * ==============
@@ -22,6 +22,7 @@ package com.regnosys.rosetta.common.transform;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
+import com.regnosys.rosetta.common.transform.EvaluateFunctionNotFoundException;
 import com.rosetta.model.lib.annotations.RosettaReport;
 import com.rosetta.model.lib.functions.RosettaFunction;
 
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+//Test
 public class FunctionNameHelper {
 
     public Class<?> getInputClass(Class<? extends RosettaFunction> function) {
@@ -65,6 +67,39 @@ public class FunctionNameHelper {
                 .orElse(readableFunctionName(function));
     }
 
+
+    public String normaliseUserGenPipelineID(String pipelineID) {
+        StringBuilder normalizedID = new StringBuilder();
+        boolean lastCharWasHyphen = false;
+
+        for (char c : pipelineID.toCharArray()) {
+            if (Character.isLetterOrDigit(c)) {
+                normalizedID.append(Character.toLowerCase(c));
+                lastCharWasHyphen = false;
+            } else if ((c == '-' || c == '_') && !lastCharWasHyphen) {
+                normalizedID.append('-');
+                lastCharWasHyphen = true;
+            }
+        }
+
+        // Remove trailing hyphen if present
+        if (normalizedID.length() > 0 && normalizedID.charAt(normalizedID.length() - 1) == '-') {
+            normalizedID.setLength(normalizedID.length() - 1);
+        }
+
+        return convertHyphenatedAbbreviations(normalizedID.toString());
+    }
+
+    private String convertHyphenatedAbbreviations(String input) {
+        return input
+                .replaceAll("\\ba-s-i-c\\b", "asic")
+                .replaceAll("\\bm-a-s\\b", "mas")
+                .replaceAll("\\bc-s-a\\b", "csa")
+                .replaceAll("\\be-s-m-a-e-m-i-r\\b", "esma emir")
+                .replaceAll("\\bf-c-a\\b", "fca")
+                .replaceAll("\\bj-f-s-a\\b", "jfsa");
+    }
+
     public String capitalizeFirstLetter(String input) {
         if (input == null || input.isEmpty()) {
             return input;
@@ -81,11 +116,11 @@ public class FunctionNameHelper {
         return readableId(simpleName);
     }
 
-    public String readableFunctionName(String functionSimpleName){
+    public String readableFunctionName(String functionSimpleName) {
         return readableFunctionNameFromId(readableId(functionSimpleName));
     }
 
-    private String readableId(String simpleName) {
+    String readableId(String simpleName) {
 
         String sanitise = simpleName
                 .replace("Ingest_", "")
@@ -104,16 +139,17 @@ public class FunctionNameHelper {
                 .convert(functionName);
     }
 
-    private String readableFunctionNameFromId(String readableId) {
-        return Arrays.stream(readableId.split("-"))
-                .map(s -> s.substring(0, 1).toUpperCase() + s.substring(1))
-                .collect(Collectors.joining(" "));
-    }
 
     private String readableFunctionName(Class<? extends RosettaFunction> function) {
         String readableId = readableId(function);
 
         return readableFunctionNameFromId(readableId);
+    }
+
+    private String readableFunctionNameFromId(String readableId) {
+        return Arrays.stream(readableId.split("-"))
+                .map(s -> s.substring(0, 1).toUpperCase() + s.substring(1))
+                .collect(Collectors.joining(" "));
     }
 
     private String lowercaseConsecutiveUppercase(String input) {

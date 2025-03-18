@@ -57,8 +57,17 @@ public class RosettaXMLModule extends SimpleModule {
 
     private final ClassLoader classLoader;
 
-    private final ZoneId unknownZone;
+    private static final ZoneId UNKNOWN_ZONE;
 
+    static {
+        ZoneId unknown = null;
+        try {
+            unknown = ZoneId.of("Unknown");
+        } catch (Exception e) {
+            LOGGER.error("Failed to create ZoneId for 'Unknown'", e);
+        }
+        UNKNOWN_ZONE = unknown;
+    }
 
     public RosettaXMLModule(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue, ClassLoader classLoader) {
         super(RosettaXMLModule.class.getSimpleName());
@@ -66,7 +75,6 @@ public class RosettaXMLModule extends SimpleModule {
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.supportNativeEnumValue = supportNativeEnumValue;
         this.classLoader = classLoader;
-        this.unknownZone = getUnknownZoneId();
     }
 
     @Override
@@ -107,14 +115,14 @@ public class RosettaXMLModule extends SimpleModule {
                 try {
                     return DateTimeFormatter.ISO_ZONED_DATE_TIME.parse(dateTimeStr, ZonedDateTime::from);
                 } catch (Exception e) {
-                    return ZonedDateTime.of(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(dateTimeStr, LocalDateTime::from), unknownZone);
+                    return ZonedDateTime.of(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(dateTimeStr, LocalDateTime::from), UNKNOWN_ZONE);
                 }
             }
         });
         addSerializer(ZonedDateTime.class, new StdSerializer<ZonedDateTime>(ZonedDateTime.class) {
             @Override
             public void serialize(ZonedDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-                if (value.getZone().equals(unknownZone)) {
+                if (value.getZone().equals(UNKNOWN_ZONE)) {
                     gen.writeString(value.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
                 } else {
                     gen.writeString(value.format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
@@ -123,16 +131,5 @@ public class RosettaXMLModule extends SimpleModule {
         });
 
         super.setupModule(context);
-    }
-
-    private ZoneId getUnknownZoneId() {
-        ZoneId unknownZoneId = null;
-        try {
-            unknownZoneId = ZoneId.of("Unknown");
-        }
-        catch(Exception e){
-            LOGGER.error("Failed to create ZoneId for 'Unknown'", e);
-        }
-        return unknownZoneId;
     }
 }

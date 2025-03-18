@@ -22,6 +22,8 @@ package com.regnosys.rosetta.common.util;
 
 import com.regnosys.rosetta.common.transform.EvaluateFunctionNotFoundException;
 import com.regnosys.rosetta.common.transform.FunctionNameHelper;
+import com.regnosys.rosetta.common.transform.PipelineModel;
+import com.regnosys.rosetta.common.transform.TransformType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -119,4 +121,26 @@ class FunctionNameHelperTest {
     void getReadableFunctionName(){
         assertEquals("Type Name", functionNameHelper.readableFunctionName("Project_TypeName"));
     }
+
+    @Test
+    void testFormatNewPipelineFunctionNameForReports() {
+        
+
+        PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.REPORT, "com.example.REGTradeReportFunction", "inputType", "outputType");
+        PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.REPORT, "REGTradeReportFunction", "inputType", "outputType");
+
+        assertEquals("reg-trade-report-function", functionNameHelper.formatNewPipelineFunctionName(transform1.getType(), transform1.getFunction()));
+        assertEquals("reg-trade-report-function", functionNameHelper.formatNewPipelineFunctionName(transform2.getType(), transform2.getFunction()));
+    }
+    @Test
+    void testFormatNewPipelineFunctionNameForProjections() {
+
+        PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.PROJECTION, "Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
+        PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.PROJECTION, "com.example.Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
+
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.formatNewPipelineFunctionName(transform1.getType(), transform1.getFunction()));
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.formatNewPipelineFunctionName(transform2.getType(), transform2.getFunction()));
+    }
+    
+    
 }

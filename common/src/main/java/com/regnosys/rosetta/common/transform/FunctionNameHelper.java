@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import static com.google.common.base.CaseFormat.*;
 
 public class FunctionNameHelper {
 
@@ -99,7 +100,7 @@ public class FunctionNameHelper {
         String functionName = lowercaseConsecutiveUppercase(sanitise)
                 .replace(".", "");
 
-        return CaseFormat.UPPER_CAMEL
+        return UPPER_CAMEL
                 .converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(functionName);
     }
@@ -143,4 +144,44 @@ public class FunctionNameHelper {
         return result.toString();
     }
 
+
+
+    public String formatNewPipelineFunctionName(TransformType transformType, String functionQualifiedName) {
+        switch (transformType) {
+            case REPORT:
+                return formatReportFunctions(functionQualifiedName);
+            case PROJECTION:
+                return formatProjectionFunctions(functionQualifiedName);
+            default:
+                String withoutPackageName = functionQualifiedName.replaceAll(".*\\.(.*?)$", "$1");
+                return CaseFormat.UPPER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN).convert(withoutPackageName.replace("Project_", ""));
+        }
+    }
+
+    private String formatReportFunctions(String functionQualifiedName) {
+        String withoutPackageName = functionQualifiedName.replaceAll(".*\\.(.*?)$", "$1");
+
+        String firstPart = withoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$1").toLowerCase();
+        String restPart = withoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$2");
+
+        String hyphenatedRestPart = UPPER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN).convert(restPart);
+
+        return String.format("%s-%s", firstPart, hyphenatedRestPart.replaceAll("-+", "-").toLowerCase());
+    }
+
+    private String formatProjectionFunctions(String functionQualifiedName) {
+        String withoutPackageName = functionQualifiedName.substring(functionQualifiedName.lastIndexOf('.') + 1);
+
+        if (withoutPackageName.startsWith("Project_")) {
+            withoutPackageName = withoutPackageName.substring("Project_".length());
+        }
+
+        String normalized = withoutPackageName
+                .replaceAll("([a-z])([A-Z])", "$1-$2")
+                .replaceAll("_+", "-")
+                .replaceAll("([A-Z]+)([A-Z][a-z])", "$1-$2")
+                .toLowerCase();
+
+        return normalized.replaceAll("^-+|-+$", "");
+    }
 }

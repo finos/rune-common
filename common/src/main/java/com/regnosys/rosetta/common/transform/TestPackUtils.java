@@ -56,20 +56,21 @@ public class TestPackUtils {
         return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-").toLowerCase());
     }
 
-    private static String createPipelineId(TransformType transformType, String formattedFunctionName) {
+    private static String createPipelineId(TransformType transformType, String functionQualifiedName) {
+        FunctionNameHelper functionNameHelper = new FunctionNameHelper();
+        String formattedFunctionName = functionNameHelper.formatNewPipelineFunctionName(transformType, functionQualifiedName);
         return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
     }
 
     public static PipelineModel createPipeline(TransformType transformType,
                                                String functionQualifiedName,
                                                String displayName,
-                                               String formattedFunctionName,
                                                String inputType,
                                                String outputType,
                                                String upstreamPipelineId,
                                                PipelineModel.Serialisation inputSerialisation,
                                                PipelineModel.Serialisation outputSerialisation) {
-        String pipelineId = createPipelineId(transformType, formattedFunctionName);
+        String pipelineId = createPipelineId(transformType, functionQualifiedName);
         PipelineModel.Transform transform = new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType);
         return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation);
     }

@@ -87,9 +87,10 @@ public class FunctionNameHelper {
         return readableFunctionNameFromId(readableId(functionSimpleName));
     }
 
-    private String readableId(String simpleName) {
+    public String readableId(String simpleName) {
+        String simpleNameWithoutPackageName = simpleName.replaceAll(".*\\.(.*?)$", "$1");
 
-        String sanitise = simpleName
+        String sanitise = simpleNameWithoutPackageName
                 .replace("Ingest_", "")
                 .replace("Report_", "")
                 .replace("Function", "")
@@ -143,10 +144,5 @@ public class FunctionNameHelper {
             result.append(newChar);
         }
         return result.toString();
-    }
-
-    public String formatNewPipelineIdName(String functionQualifiedName) {
-        String functionQualifiedNameWithoutPackageName = functionQualifiedName.replaceAll(".*\\.(.*?)$", "$1");
-        return readableId(functionQualifiedNameWithoutPackageName);
     }
 }

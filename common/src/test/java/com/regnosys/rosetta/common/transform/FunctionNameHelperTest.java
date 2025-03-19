@@ -124,8 +124,8 @@ class FunctionNameHelperTest {
         PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.REPORT, "com.example.REGTradeReportFunction", "inputType", "outputType");
         PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.REPORT, "REGTradeReportFunction", "inputType", "outputType");
 
-        assertEquals("reg-trade-report", functionNameHelper.formatNewPipelineIdName(transform1.getFunction()));
-        assertEquals("reg-trade-report", functionNameHelper.formatNewPipelineIdName(transform2.getFunction()));
+        assertEquals("reg-trade-report", functionNameHelper.readableId(transform1.getFunction()));
+        assertEquals("reg-trade-report", functionNameHelper.readableId(transform2.getFunction()));
     }
 
     @Test
@@ -134,8 +134,8 @@ class FunctionNameHelperTest {
         PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.PROJECTION, "Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
         PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.PROJECTION, "com.example.Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
 
-        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.formatNewPipelineIdName(transform1.getFunction()));
-        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.formatNewPipelineIdName(transform2.getFunction()));
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId(transform1.getFunction()));
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId(transform2.getFunction()));
     }
 
 

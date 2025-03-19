@@ -147,41 +147,24 @@ public class FunctionNameHelper {
 
 
     public String formatNewPipelineFunctionName(TransformType transformType, String functionQualifiedName) {
+        String functionQualifiedNameWithoutPackageName = functionQualifiedName.replaceAll(".*\\.(.*?)$", "$1");
         switch (transformType) {
             case REPORT:
-                return formatReportFunctions(functionQualifiedName);
+                return formatReportFunctions(functionQualifiedNameWithoutPackageName);
             case PROJECTION:
-                return formatProjectionFunctions(functionQualifiedName);
+                return readableId(functionQualifiedNameWithoutPackageName);
             default:
-                String withoutPackageName = functionQualifiedName.replaceAll(".*\\.(.*?)$", "$1");
-                return CaseFormat.UPPER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN).convert(withoutPackageName.replace("Project_", ""));
+                return CaseFormat.UPPER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN).convert(functionQualifiedNameWithoutPackageName.replace("Project_", ""));
         }
     }
 
-    private String formatReportFunctions(String functionQualifiedName) {
-        String withoutPackageName = functionQualifiedName.replaceAll(".*\\.(.*?)$", "$1");
+    private String formatReportFunctions(String functionQualifiedNameWithoutPackageName) {
 
-        String firstPart = withoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$1").toLowerCase();
-        String restPart = withoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$2");
+        String firstPart = functionQualifiedNameWithoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$1").toLowerCase();
+        String restPart = functionQualifiedNameWithoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$2");
 
         String hyphenatedRestPart = UPPER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN).convert(restPart);
 
         return String.format("%s-%s", firstPart, hyphenatedRestPart.replaceAll("-+", "-").toLowerCase());
-    }
-
-    private String formatProjectionFunctions(String functionQualifiedName) {
-        String withoutPackageName = functionQualifiedName.substring(functionQualifiedName.lastIndexOf('.') + 1);
-
-        if (withoutPackageName.startsWith("Project_")) {
-            withoutPackageName = withoutPackageName.substring("Project_".length());
-        }
-
-        String normalized = withoutPackageName
-                .replaceAll("([a-z])([A-Z])", "$1-$2")
-                .replaceAll("_+", "-")
-                .replaceAll("([A-Z]+)([A-Z][a-z])", "$1-$2")
-                .toLowerCase();
-
-        return normalized.replaceAll("^-+|-+$", "");
     }
 }

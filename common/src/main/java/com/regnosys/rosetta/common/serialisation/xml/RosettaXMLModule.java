@@ -32,6 +32,8 @@ import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.fasterxml.jackson.dataformat.xml.deser.XmlBeanDeserializerModifier;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerModifier;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.*;
@@ -44,7 +46,8 @@ import java.time.format.DateTimeParseException;
 public class RosettaXMLModule extends SimpleModule {
 
     private static final long serialVersionUID = 1L;
-    private static final ZoneId UNKNOWN_ZONE = ZoneId.of("Unknown");
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RosettaXMLModule.class);
 
     private final RosettaXMLConfiguration rosettaXMLConfiguration;
 
@@ -54,6 +57,17 @@ public class RosettaXMLModule extends SimpleModule {
 
     private final ClassLoader classLoader;
 
+    private static final ZoneId UNKNOWN_ZONE;
+
+    static {
+        ZoneId unknown = null;
+        try {
+            unknown = ZoneId.of("Unknown");
+        } catch (Exception e) {
+            LOGGER.error("Failed to create ZoneId for 'Unknown'", e);
+        }
+        UNKNOWN_ZONE = unknown;
+    }
 
     public RosettaXMLModule(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue, ClassLoader classLoader) {
         super(RosettaXMLModule.class.getSimpleName());

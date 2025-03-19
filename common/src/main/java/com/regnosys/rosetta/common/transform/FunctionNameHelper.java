@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import static com.google.common.base.CaseFormat.*;
 
 public class FunctionNameHelper {
@@ -82,7 +83,7 @@ public class FunctionNameHelper {
         return readableId(simpleName);
     }
 
-    public String readableFunctionName(String functionSimpleName){
+    public String readableFunctionName(String functionSimpleName) {
         return readableFunctionNameFromId(readableId(functionSimpleName));
     }
 
@@ -144,27 +145,8 @@ public class FunctionNameHelper {
         return result.toString();
     }
 
-
-
-    public String formatNewPipelineFunctionName(TransformType transformType, String functionQualifiedName) {
+    public String formatNewPipelineIdName(String functionQualifiedName) {
         String functionQualifiedNameWithoutPackageName = functionQualifiedName.replaceAll(".*\\.(.*?)$", "$1");
-        switch (transformType) {
-            case REPORT:
-                return formatReportFunctions(functionQualifiedNameWithoutPackageName);
-            case PROJECTION:
-                return readableId(functionQualifiedNameWithoutPackageName);
-            default:
-                return CaseFormat.UPPER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN).convert(functionQualifiedNameWithoutPackageName.replace("Project_", ""));
-        }
-    }
-
-    private String formatReportFunctions(String functionQualifiedNameWithoutPackageName) {
-
-        String firstPart = functionQualifiedNameWithoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$1").toLowerCase();
-        String restPart = functionQualifiedNameWithoutPackageName.replaceAll("^([A-Z]+)([A-Z][a-z].*)$", "$2");
-
-        String hyphenatedRestPart = UPPER_CAMEL.converterTo(CaseFormat.LOWER_HYPHEN).convert(restPart);
-
-        return String.format("%s-%s", firstPart, hyphenatedRestPart.replaceAll("-+", "-").toLowerCase());
+        return readableId(functionQualifiedNameWithoutPackageName);
     }
 }

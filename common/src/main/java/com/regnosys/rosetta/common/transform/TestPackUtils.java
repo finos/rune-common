@@ -58,7 +58,7 @@ public class TestPackUtils {
 
     private static String createPipelineId(TransformType transformType, String functionQualifiedName) {
         FunctionNameHelper functionNameHelper = new FunctionNameHelper();
-        String formattedFunctionName = functionNameHelper.formatNewPipelineFunctionName(transformType, functionQualifiedName);
+        String formattedFunctionName = functionNameHelper.formatNewPipelineIdName(functionQualifiedName);
         return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
     }
 

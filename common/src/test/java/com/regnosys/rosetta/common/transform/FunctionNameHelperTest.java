@@ -20,13 +20,19 @@ package com.regnosys.rosetta.common.transform;
  * ==============
  */
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FunctionNameHelperTest {
 
-    private final FunctionNameHelper functionNameHelper = new FunctionNameHelper();
+    private FunctionNameHelper functionNameHelper;
+    
+    @BeforeEach
+    void setUp() {
+        functionNameHelper = new FunctionNameHelper();
+    }
 
     @Test
     void getInputType() {
@@ -79,13 +85,31 @@ class FunctionNameHelperTest {
     }
 
     @Test
-    void readableIdReport() {
+    void readableIdReportFromClass() {
         assertEquals("type2-to-type3", functionNameHelper.readableId(PipelineTestUtils.Report_Type_2ToType_3.class));
     }
 
     @Test
-    void readableIdProjection() {
+    void readableIdReportFromString() {
+        PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.REPORT, "com.example.REGTradeReportFunction", "inputType", "outputType");
+        assertEquals("reg-trade-report", functionNameHelper.readableId(transform1.getFunction()));
+        
+        PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.REPORT, "REGTradeReportFunction", "inputType", "outputType");
+        assertEquals("reg-trade-report", functionNameHelper.readableId(transform2.getFunction()));
+    }
+
+    @Test
+    void readableIdProjectionFromClass() {
         assertEquals("type3-to-type4", functionNameHelper.readableId(PipelineTestUtils.Project_Type_3ToType_4.class));
+    }
+
+    @Test
+    void readableIdProjectionFromString() {
+        PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.PROJECTION, "Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId(transform1.getFunction()));
+        
+        PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.PROJECTION, "com.example.Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId(transform2.getFunction()));
     }
 
     @Test
@@ -117,26 +141,4 @@ class FunctionNameHelperTest {
     void getReadableFunctionName() {
         assertEquals("Type Name", functionNameHelper.readableFunctionName("Project_TypeName"));
     }
-
-    @Test
-    void testFormatNewPipelineIdNameForReports() {
-
-        PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.REPORT, "com.example.REGTradeReportFunction", "inputType", "outputType");
-        PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.REPORT, "REGTradeReportFunction", "inputType", "outputType");
-
-        assertEquals("reg-trade-report", functionNameHelper.readableId(transform1.getFunction()));
-        assertEquals("reg-trade-report", functionNameHelper.readableId(transform2.getFunction()));
-    }
-
-    @Test
-    void testFormatNewPipelineIdNameForProjections() {
-
-        PipelineModel.Transform transform1 = new PipelineModel.Transform(TransformType.PROJECTION, "Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
-        PipelineModel.Transform transform2 = new PipelineModel.Transform(TransformType.PROJECTION, "com.example.Project_REGTradeTwoReportToIso20022", "inputType", "outputType");
-
-        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId(transform1.getFunction()));
-        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId(transform2.getFunction()));
-    }
-
-
 }

@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.CaseFormat.*;
+
 public class FunctionNameHelper {
 
     public Class<?> getInputClass(Class<? extends RosettaFunction> function) {
@@ -85,13 +87,14 @@ public class FunctionNameHelper {
         return readableId(simpleName);
     }
 
-    public String readableFunctionName(String functionSimpleName){
+    public String readableFunctionName(String functionSimpleName) {
         return readableFunctionNameFromId(readableId(functionSimpleName));
     }
 
-    private String readableId(String simpleName) {
+    public String readableId(String simpleName) {
+        String simpleNameWithoutPackageName = simpleName.replaceAll(".*\\.(.*?)$", "$1");
 
-        String sanitise = simpleName
+        String sanitise = simpleNameWithoutPackageName
                 .replace("Ingest_", "")
                 .replace("Report_", "")
                 .replace("Function", "")
@@ -103,7 +106,7 @@ public class FunctionNameHelper {
         String functionName = lowercaseConsecutiveUppercase(sanitise)
                 .replace(".", "");
 
-        return CaseFormat.UPPER_CAMEL
+        return UPPER_CAMEL
                 .converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(functionName);
     }
@@ -146,5 +149,4 @@ public class FunctionNameHelper {
         }
         return result.toString();
     }
-
 }

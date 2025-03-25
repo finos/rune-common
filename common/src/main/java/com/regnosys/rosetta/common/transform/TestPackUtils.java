@@ -48,37 +48,31 @@ public class TestPackUtils {
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");
     public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.TRANSLATE.getResourcePath()).resolve("config");
 
-    public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, String modelId, List<TestPackModel.SampleModel> sampleModels) {
-        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName, modelId), testPackName, sampleModels);
+    public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
+        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName), testPackName, sampleModels);
     }
 
     private static String createTestPackId(TransformType transformType, String formattedFunctionName, String testPackName) {
-        return String.format("test-pack-%s-%s-%s", 
-                transformType.name().toLowerCase(), 
-                formattedFunctionName, 
-                testPackName.replace(" ", "-").toLowerCase());
+        return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-").toLowerCase());
     }
 
-    private static String createPipelineId(TransformType transformType, String formattedFunctionName, String modelId) {
-        return String.format("pipeline-%s-%s%s", 
-                transformType.name().toLowerCase(), 
-                formattedFunctionName, 
-                Optional.ofNullable(modelId).map(mId -> String.format("-%s", mId)).orElse(""));
+    private static String createPipelineId(TransformType transformType, String functionQualifiedName) {
+        FunctionNameHelper functionNameHelper = new FunctionNameHelper();
+        String formattedFunctionName = functionNameHelper.readableId(functionQualifiedName);
+        return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
     }
 
     public static PipelineModel createPipeline(TransformType transformType,
                                                String functionQualifiedName,
                                                String displayName,
-                                               String formattedFunctionName,
                                                String inputType,
                                                String outputType,
                                                String upstreamPipelineId,
                                                PipelineModel.Serialisation inputSerialisation,
-                                               PipelineModel.Serialisation outputSerialisation,
-                                               String modelId) {
-        String pipelineId = createPipelineId(transformType, formattedFunctionName, modelId);
+                                               PipelineModel.Serialisation outputSerialisation) {
+        String pipelineId = createPipelineId(transformType, functionQualifiedName);
         PipelineModel.Transform transform = new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType);
-        return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation, modelId);
+        return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation, null);
     }
 
     public static List<PipelineModel> getPipelineModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {

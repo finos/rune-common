@@ -48,18 +48,18 @@ public class TestPackUtils {
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");
     public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.TRANSLATE.getResourcePath()).resolve("config");
 
-    public static TestPackModel createTestPack(String testPackName, TransformType transformType, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
-        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, formattedFunctionName), testPackName, sampleModels);
+    public static TestPackModel createTestPack(String testPackName, TransformType transformType, String modelId, String formattedFunctionName, List<TestPackModel.SampleModel> sampleModels) {
+        return new TestPackModel(createTestPackId(transformType, formattedFunctionName, testPackName), createPipelineId(transformType, modelId, formattedFunctionName), testPackName, sampleModels);
     }
 
     private static String createTestPackId(TransformType transformType, String formattedFunctionName, String testPackName) {
         return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-").toLowerCase());
     }
 
-    private static String createPipelineId(TransformType transformType, String functionQualifiedName) {
+    private static String createPipelineId(TransformType transformType, String modelId, String functionQualifiedName) {
         FunctionNameHelper functionNameHelper = new FunctionNameHelper();
         String formattedFunctionName = functionNameHelper.readableId(functionQualifiedName);
-        return String.format("pipeline-%s-%s", transformType.name().toLowerCase(), formattedFunctionName);
+        return String.format("pipeline-%s%s-%s", transformType.name().toLowerCase(), Optional.ofNullable(modelId).map(m -> "-" + m).orElse(""), formattedFunctionName);
     }
 
     public static PipelineModel createPipeline(TransformType transformType,
@@ -69,8 +69,9 @@ public class TestPackUtils {
                                                String outputType,
                                                String upstreamPipelineId,
                                                PipelineModel.Serialisation inputSerialisation,
-                                               PipelineModel.Serialisation outputSerialisation) {
-        String pipelineId = createPipelineId(transformType, functionQualifiedName);
+                                               PipelineModel.Serialisation outputSerialisation,
+                                               String modelId) {
+        String pipelineId = createPipelineId(transformType, functionQualifiedName, modelId);
         PipelineModel.Transform transform = new PipelineModel.Transform(transformType, functionQualifiedName, inputType, outputType);
         return new PipelineModel(pipelineId, displayName, transform, upstreamPipelineId, inputSerialisation, outputSerialisation, null);
     }

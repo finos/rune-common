@@ -83,7 +83,7 @@ public class TestPackUtils {
     }
 
     //This will return a singular pipeline model with the function name in the list
-    public static List<PipelineModel> getPipelineModel(List<PipelineModel> pipelineModels, String functionName) {
+    public static List<PipelineModel> filterPipelineModels(List<PipelineModel> pipelineModels, String functionName) {
         List<PipelineModel> filteredModels = pipelineModels.stream()
                 .filter(p -> p.getTransform().getFunction().equals(functionName))
                 .collect(Collectors.toList());
@@ -94,14 +94,14 @@ public class TestPackUtils {
     }
 
     //This will return a list of pipeline models that match the function name and pipelineId
-    public static List<PipelineModel> getPipelineModel(String pipelineId, List<PipelineModel> pipelineModels, String functionName) {
+    public static List<PipelineModel> filterPipelineModels(String modelId, List<PipelineModel> pipelineModels, String functionName) {
         //fallback to get the first pipeline model with the function name if pipelineId is not provided
         List<PipelineModel> filteredModels;
-        if (pipelineId == null) {
-            filteredModels = getPipelineModel(pipelineModels, functionName);
+        if (modelId == null) {
+            filteredModels = filterPipelineModels(pipelineModels, functionName);
         } else {
             filteredModels = pipelineModels.stream()
-                    .filter(p -> p.getTransform().getFunction().equals(functionName) && p.getId().equals(pipelineId))
+                    .filter(p -> p.getTransform().getFunction().equals(functionName) && p.getId().equals(modelId))
                     .collect(Collectors.toList());
         }
         return filteredModels;

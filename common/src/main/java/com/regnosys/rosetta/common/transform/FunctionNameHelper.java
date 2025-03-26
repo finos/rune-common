@@ -68,7 +68,9 @@ public class FunctionNameHelper {
     }
 
     public String getName(Class<? extends RosettaFunction> function, String modelId) {
-        return String.format("%s (%s)", getName(function), modelId);
+        return Optional.ofNullable(modelId)
+                .map(id -> String.format("%s (%s)", getName(function), id))
+                .orElse(getName(function));
     }
 
     public String capitalizeFirstLetter(String input) {

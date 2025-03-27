@@ -67,6 +67,12 @@ public class FunctionNameHelper {
                 .orElse(readableFunctionName(function));
     }
 
+    public String getName(Class<? extends RosettaFunction> function, String modelId) {
+        return Optional.ofNullable(modelId)
+                .map(id -> String.format("%s (%s)", getName(function), id))
+                .orElse(getName(function));
+    }
+
     public String capitalizeFirstLetter(String input) {
         if (input == null || input.isEmpty()) {
             return input;

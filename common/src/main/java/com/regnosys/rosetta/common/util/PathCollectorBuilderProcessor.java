@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated // this implementation does not count meta paths correctly, use PathCountProcessor instead
 public class PathCollectorBuilderProcessor implements Processor {
 
 	private final PathReport report = new PathReport();

@@ -141,7 +141,7 @@ class PathCountProcessorTest {
         assertTrue(collectedPaths.containsKey(valuePath));
         assertEquals(RATE, collectedPaths.get(valuePath));
 
-        RosettaPath externalKeyPath = RosettaPath.valueOf("meta.key(0).keyValue");
+        RosettaPath externalKeyPath = RosettaPath.valueOf("meta.location");
         assertTrue(collectedPaths.containsKey(externalKeyPath));
         assertEquals("location", collectedPaths.get(externalKeyPath));
     }

@@ -135,14 +135,13 @@ class PathCountProcessorTest {
 
         Map<RosettaPath, Object> collectedPaths = processor.report().getCollectedPaths();
         System.out.println(collectedPaths.keySet());
-        // we get location on two paths the legacy "meta.key(0).key" and "meta.location" path
-        assertEquals(3, collectedPaths.size());
+        assertEquals(2, collectedPaths.size());
         
         RosettaPath valuePath = RosettaPath.valueOf("value.rate");
         assertTrue(collectedPaths.containsKey(valuePath));
         assertEquals(RATE, collectedPaths.get(valuePath));
 
-        RosettaPath externalKeyPath = RosettaPath.valueOf("meta.key(0).keyValue");
+        RosettaPath externalKeyPath = RosettaPath.valueOf("meta.location");
         assertTrue(collectedPaths.containsKey(externalKeyPath));
         assertEquals("location", collectedPaths.get(externalKeyPath));
     }

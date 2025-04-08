@@ -47,12 +47,6 @@ public class PathCountProcessor extends SimpleProcessor {
                 report.collectedPaths.put(path.newSubPath("reference"), reference.getReference());
                 return false;
             }
-            // the Key type has an empty process method, so we have to collect it separately
-            if (instance instanceof Key) {
-                Key key = (Key) instance;
-                report.collectedPaths.put(path.newSubPath("keyValue"), key.getKeyValue());
-                return false;
-            }
             return true;
         }
         return false;

@@ -72,7 +72,7 @@ class PathCountProcessorTest {
         Map<RosettaPath, Object> collectedPaths = processor.report().getCollectedPaths();
         assertEquals(1, collectedPaths.size());
 
-        RosettaPath scopedReferencePath = RosettaPath.valueOf("resolvedPrice.reference.reference");
+        RosettaPath scopedReferencePath = RosettaPath.valueOf("resolvedPrice.reference.address");
         assertTrue(collectedPaths.containsKey(scopedReferencePath));
         assertEquals("address", collectedPaths.get(scopedReferencePath));
     }

@@ -40,16 +40,7 @@ public class PathCountProcessor extends SimpleProcessor {
 
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, R instance, RosettaModelObject parent, AttributeMeta... metas) {
-        if (instance != null && !isResolvedValueWithReference(instance, parent)) {
-            // the Reference type has an empty process method, so we have to collect it separately
-            if (instance instanceof Reference) {
-                Reference reference = (Reference) instance;
-                report.collectedPaths.put(path.newSubPath("reference"), reference.getReference());
-                return false;
-            }
-            return true;
-        }
-        return false;
+        return instance != null && !isResolvedValueWithReference(instance, parent);
     }
 
     @Override

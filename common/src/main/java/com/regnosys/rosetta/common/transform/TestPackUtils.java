@@ -162,4 +162,9 @@ public class TestPackUtils {
             throw new UncheckedIOException(String.format("Failed to read url %s", u), e);
         }
     }
+
+    public static PipelineModel.Serialisation getSerialisation(String xmlConfigPath) {
+        return xmlConfigPath == null ? null :
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.XML, xmlConfigPath);
+    }
 }

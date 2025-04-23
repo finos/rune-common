@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.CaseFormat.*;
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 
 public class FunctionNameHelper {
 
@@ -96,12 +96,7 @@ public class FunctionNameHelper {
     public String readableId(String simpleName) {
         String simpleNameWithoutPackageName = simpleName.replaceAll(".*\\.(.*?)$", "$1");
 
-        String sanitise = simpleNameWithoutPackageName
-                .replace("Ingest_", "")
-                .replace("Report_", "")
-                .replace("Function", "")
-                .replace("Enrich_", "")
-                .replace("Project_", "")
+        String sanitise = getSimpleNameWithoutPackageName(simpleNameWithoutPackageName)
                 .replace("-", ".")
                 .replace("_", ".");
 
@@ -111,6 +106,20 @@ public class FunctionNameHelper {
         return UPPER_CAMEL
                 .converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(functionName);
+    }
+
+    private static String getSimpleNameWithoutPackageName(String simpleNameWithoutPackageName) {
+        return simpleNameWithoutPackageName
+                .replace("Ingest_", "")
+                .replace("Ingest", "")
+                .replace("Report_", "")
+                .replace("Report", "")
+                .replace("Function", "")
+                .replace("Enrich_", "")
+                .replace("Enrich", "")
+                .replace("Project_", "")
+                .replace("Project", "");
+
     }
 
     private String readableFunctionNameFromId(String readableId) {

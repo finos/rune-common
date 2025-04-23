@@ -104,8 +104,8 @@ class FunctionNameHelperTest {
 
     @Test
     void readableIdReportFromString() {
-        assertEquals("reg-trade-report", functionNameHelper.readableId("com.example.REGTradeReportFunction"));
-        assertEquals("reg-trade-report", functionNameHelper.readableId("REGTradeReportFunction"));
+        assertEquals("reg-trade", functionNameHelper.readableId("com.example.REGTradeReportFunction"));
+        assertEquals("reg-trade", functionNameHelper.readableId("REGTradeReportFunction"));
     }
 
     @Test

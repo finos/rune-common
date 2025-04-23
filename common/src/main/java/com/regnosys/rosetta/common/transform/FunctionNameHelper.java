@@ -93,14 +93,14 @@ public class FunctionNameHelper {
         return readableFunctionNameFromId(readableId(functionSimpleName));
     }
 
-    public String readableId(String simpleName) {
-        String simpleNameWithoutPackageName = simpleName.replaceAll(".*\\.(.*?)$", "$1");
+    public String readableId(String name) {
+        String simpleName = name.replaceAll(".*\\.(.*?)$", "$1");
 
-        String sanitise = getSimpleNameWithoutPackageName(simpleNameWithoutPackageName)
+        String sanitisedName = getSanitisedName(simpleName)
                 .replace("-", ".")
                 .replace("_", ".");
 
-        String functionName = lowercaseConsecutiveUppercase(sanitise)
+        String functionName = lowercaseConsecutiveUppercase(sanitisedName)
                 .replace(".", "");
 
         return UPPER_CAMEL
@@ -108,8 +108,8 @@ public class FunctionNameHelper {
                 .convert(functionName);
     }
 
-    private static String getSimpleNameWithoutPackageName(String simpleNameWithoutPackageName) {
-        return simpleNameWithoutPackageName
+    private static String getSanitisedName(String simpleName) {
+        return simpleName
                 .replace("Ingest_", "")
                 .replace("Ingest", "")
                 .replace("Report_", "")

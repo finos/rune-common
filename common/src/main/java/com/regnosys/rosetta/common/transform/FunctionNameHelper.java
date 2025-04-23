@@ -111,14 +111,11 @@ public class FunctionNameHelper {
     private static String getSanitisedName(String simpleName) {
         return simpleName
                 .replace("Ingest_", "")
-                .replace("Ingest", "")
                 .replace("Report_", "")
-                .replace("Report", "")
+                .replace("ReportFunction", "")
                 .replace("Function", "")
                 .replace("Enrich_", "")
-                .replace("Enrich", "")
-                .replace("Project_", "")
-                .replace("Project", "");
+                .replace("Project_", "");
 
     }
 

@@ -20,7 +20,7 @@ package com.regnosys.rosetta.common.postprocess;
  * ==============
  */
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import com.regnosys.rosetta.common.hashing.*;
 import com.regnosys.rosetta.common.postprocess.qualify.QualifyProcessorStep;
 import com.rosetta.model.lib.RosettaModelObject;

@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.util;
+package com.regnosys.rosetta.common.transform;
 
 /*-
  * ==============
@@ -20,15 +20,20 @@ package com.regnosys.rosetta.common.util;
  * ==============
  */
 
-import com.regnosys.rosetta.common.transform.EvaluateFunctionNotFoundException;
-import com.regnosys.rosetta.common.transform.FunctionNameHelper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FunctionNameHelperTest {
 
-    private final FunctionNameHelper functionNameHelper = new FunctionNameHelper();
+    private FunctionNameHelper functionNameHelper;
+
+    @BeforeEach
+    void setUp() {
+        functionNameHelper = new FunctionNameHelper();
+    }
 
     @Test
     void getInputType() {
@@ -47,17 +52,17 @@ class FunctionNameHelperTest {
 
     @Test
     void getInputTypeNoEvaluate() {
-        assertThrows(EvaluateFunctionNotFoundException.class,  () -> functionNameHelper.getInputType(PipelineTestUtils.Report_Type_2ToType_3.class));
+        assertThrows(EvaluateFunctionNotFoundException.class, () -> functionNameHelper.getInputType(PipelineTestUtils.Report_Type_2ToType_3.class));
     }
 
     @Test
     void getOutputTypeNoEvaluate() {
-        assertThrows(EvaluateFunctionNotFoundException.class,  () -> functionNameHelper.getOutputType(PipelineTestUtils.Report_Type_2ToType_3.class));
+        assertThrows(EvaluateFunctionNotFoundException.class, () -> functionNameHelper.getOutputType(PipelineTestUtils.Report_Type_2ToType_3.class));
     }
 
     @Test
     void getFuncMethodNoEvaluate() {
-        assertThrows(EvaluateFunctionNotFoundException.class,  () -> functionNameHelper.getFuncMethod(PipelineTestUtils.Report_Type_2ToType_3.class));
+        assertThrows(EvaluateFunctionNotFoundException.class, () -> functionNameHelper.getFuncMethod(PipelineTestUtils.Report_Type_2ToType_3.class));
     }
 
     @Test
@@ -76,18 +81,42 @@ class FunctionNameHelperTest {
     }
 
     @Test
+    void readableIdIngestFromString() {
+        assertEquals("type1-to-type2", functionNameHelper.readableId("com.example.Ingest_Type_1ToType_2"));
+        assertEquals("type1-to-type2", functionNameHelper.readableId("Ingest_Type_1ToType_2"));
+    }
+    
+    @Test
     void readableIdEnrich() {
         assertEquals("type1-to-type2", functionNameHelper.readableId(PipelineTestUtils.Enrich_Type_1ToType_2.class));
     }
+    
+    @Test
+    void readableIdEnrichFromString() {
+        assertEquals("type1-to-type2", functionNameHelper.readableId("com.example.Enrich_Type_1ToType_2"));
+        assertEquals("type1-to-type2", functionNameHelper.readableId("Enrich_Type_1ToType_2"));
+    }
 
     @Test
-    void readableIdReport() {
+    void readableIdReportFromClass() {
         assertEquals("type2-to-type3", functionNameHelper.readableId(PipelineTestUtils.Report_Type_2ToType_3.class));
     }
 
     @Test
-    void readableIdProjection() {
+    void readableIdReportFromString() {
+        assertEquals("reg-trade", functionNameHelper.readableId("com.example.REGTradeReportFunction"));
+        assertEquals("reg-trade", functionNameHelper.readableId("REGTradeReportFunction"));
+    }
+
+    @Test
+    void readableIdProjectionFromClass() {
         assertEquals("type3-to-type4", functionNameHelper.readableId(PipelineTestUtils.Project_Type_3ToType_4.class));
+    }
+
+    @Test
+    void readableIdProjectionFromString() {
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId("Project_REGTradeTwoReportToIso20022"));
+        assertEquals("reg-trade-two-report-to-iso20022", functionNameHelper.readableId("com.example.Project_REGTradeTwoReportToIso20022"));
     }
 
     @Test
@@ -116,7 +145,7 @@ class FunctionNameHelperTest {
     }
 
     @Test
-    void getReadableFunctionName(){
+    void getReadableFunctionName() {
         assertEquals("Type Name", functionNameHelper.readableFunctionName("Project_TypeName"));
     }
 }

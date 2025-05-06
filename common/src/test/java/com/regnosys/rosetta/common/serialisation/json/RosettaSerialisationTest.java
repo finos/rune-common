@@ -173,6 +173,40 @@ public class RosettaSerialisationTest {
                 "com.rosetta.test.model.PriceQuantity");
     }
 
+    @Test
+    void overridingTypesCanDeserialize() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+        String rosetta =
+                "                    type A:\n" +
+                        "                b B (1..1)\n" +
+                        "            type B:\n" +
+                        "                c string (1..1)\n" +
+                        "            type BExtended extends B:\n" +
+                        "                d string (1..1)\n" +
+                        "            type AExtended extends A:\n" +
+                        "                override b BExtended (1..1)";
+
+        assertJsonSerialisation(mapper, rosetta, "{\"b\": {\"c\" : \"xxx\"}}", "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.AExtended");
+        assertJsonSerialisation(mapper, rosetta, "{\"b\": {\"c\" : \"xxx\"}}", "com.rosetta.test.model.AExtended");
+        assertJsonSerialisation(mapper, rosetta, "{\"b\": {\"c\" : \"xxx\", \"d\" : \"yyy\"}}", "com.rosetta.test.model.AExtended");
+    }
+
+    @Test
+    void overridingMultiCardinalityTypesCanDeserialize() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+        String rosetta =
+                "                    type A:\n" +
+                        "                attr int (0..*)\n" +
+                        "            type AExtended extends A:\n" +
+                        "                override attr int (0..1)";
+
+//        assertJsonSerialisation(mapper, rosetta, "{\"attr\": [1, 2, 3]}", "com.rosetta.test.model.A");
+//        assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper, rosetta, "{\"attr\": 42}", "com.rosetta.test.model.AExtended");
+//        assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.AExtended");
+    }
+
     private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String expectedJson, String fqClassName) throws JsonProcessingException {
         assertJsonSerialisation(mapper, rosetta, expectedJson, expectedJson, fqClassName);
     }

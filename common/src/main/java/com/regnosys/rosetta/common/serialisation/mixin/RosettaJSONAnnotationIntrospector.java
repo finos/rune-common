@@ -30,6 +30,7 @@ import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneAttribute;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -125,9 +126,33 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
-                .map(m -> BeanUtil.getPropertyName(m.getAnnotated()))
+                .map(m -> {
+                    RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
+                    if (attr != null && !attr.value().isEmpty()) {
+                        return attr.value();
+                    }
+                    return BeanUtil.getPropertyName(m.getAnnotated());
+                })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean hasIgnoreMarker(AnnotatedMember a) {
+        if (a instanceof AnnotatedMethod) {
+            AnnotatedMethod m = (AnnotatedMethod) a;
+             if (isSetter(m)) {
+                return !m.hasAnnotation(RosettaAttribute.class) && !m.hasAnnotation(RuneAttribute.class) || super.hasIgnoreMarker(a);
+             }
+        }
+        return super.hasIgnoreMarker(a);
+    }
+
+    private boolean isSetter(AnnotatedMethod m) {
+        return m.getParameterCount() == 1;
+    }
+    private boolean isMulticardinalitySetter(AnnotatedMethod m) {
+        return isSetter(m) && (m.getName().startsWith("add") || m.getName().startsWith("set") && List.class.equals(m.getParameterType(0).getRawClass()));
     }
 
     @Override

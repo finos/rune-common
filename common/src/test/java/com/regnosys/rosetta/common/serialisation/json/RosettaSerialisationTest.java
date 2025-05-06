@@ -201,10 +201,10 @@ public class RosettaSerialisationTest {
                         "            type AExtended extends A:\n" +
                         "                override attr int (0..1)";
 
-//        assertJsonSerialisation(mapper, rosetta, "{\"attr\": [1, 2, 3]}", "com.rosetta.test.model.A");
-//        assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper, rosetta, "{\"attr\": [1, 2, 3]}", "com.rosetta.test.model.A");
+        assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.A");
         assertJsonSerialisation(mapper, rosetta, "{\"attr\": 42}", "com.rosetta.test.model.AExtended");
-//        assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.AExtended");
+        assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.AExtended");
     }
 
     private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String expectedJson, String fqClassName) throws JsonProcessingException {

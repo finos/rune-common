@@ -140,19 +140,9 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     @Override
     public boolean hasIgnoreMarker(AnnotatedMember a) {
         if (a instanceof AnnotatedMethod) {
-            AnnotatedMethod m = (AnnotatedMethod) a;
-             if (isSetter(m)) {
-                return !m.hasAnnotation(RosettaAttribute.class) && !m.hasAnnotation(RuneAttribute.class) || super.hasIgnoreMarker(a);
-             }
+            return !a.hasAnnotation(RosettaAttribute.class) && !a.hasAnnotation(RuneAttribute.class) || super.hasIgnoreMarker(a);
         }
         return super.hasIgnoreMarker(a);
-    }
-
-    private boolean isSetter(AnnotatedMethod m) {
-        return m.getParameterCount() == 1;
-    }
-    private boolean isMulticardinalitySetter(AnnotatedMethod m) {
-        return isSetter(m) && (m.getName().startsWith("add") || m.getName().startsWith("set") && List.class.equals(m.getParameterType(0).getRawClass()));
     }
 
     @Override

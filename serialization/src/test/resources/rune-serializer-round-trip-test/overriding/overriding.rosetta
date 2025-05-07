@@ -1,6 +1,9 @@
 namespace serialization.test.passing.overriding
 annotation rootType: <"Mark a type as a root of the rosetta model">
 
+// NOTE: the serialization order seems to be wrong due to a Jackson bug: https://github.com/FasterXML/jackson-databind/issues/4712
+// This will be fixed once we upgrade to Jackson 2.28.0 or higher. Please remove this comment once that has been done.
+
 type Foo1:
     attr int (1..1)
     numberAttr number (0..1)

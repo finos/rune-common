@@ -22,16 +22,22 @@ package com.regnosys.rosetta.common.serialisation.mixin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.*;
 import com.regnosys.rosetta.common.serialisation.BackwardsCompatibleAnnotationIntrospector;
 import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -139,10 +145,56 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
 
     @Override
     public boolean hasIgnoreMarker(AnnotatedMember a) {
-        if (a instanceof AnnotatedMethod) {
-            return !a.hasAnnotation(RosettaAttribute.class) && !a.hasAnnotation(RuneAttribute.class) || super.hasIgnoreMarker(a);
+        if (a instanceof AnnotatedMethod && enclosingClassHasRosettaDataTypeAnnotation(a)) {
+            AnnotatedMethod m = (AnnotatedMethod) a;
+            return !m.hasAnnotation(RosettaAttribute.class) && !isSetMethodWithAnnotatedCorrespondingAddMethod(m) || super.hasIgnoreMarker(m);
         }
         return super.hasIgnoreMarker(a);
+    }
+
+    // Note: this method is for backwards compatibility because old DSL versions do not annotate
+    // multi-cardinality `set` methods with @RosettaAttribute. From DSL 9.51.0 and onwards, this
+    // method becomes obsolete. However, we can only drop it once Rosetta drops support for any
+    // models that rely on an older DSL version.
+    private boolean isSetMethodWithAnnotatedCorrespondingAddMethod(AnnotatedMethod m) {
+        if (m.getParameterCount() == 1 && m.getName().startsWith("set")) {
+            JavaType itemType = m.getParameterType(0).getContentType();
+            if (itemType != null) {
+                try {
+                    return m.getDeclaringClass()
+                            .getDeclaredMethod(m.getName().replaceFirst("set", "add"), itemType.getRawClass())
+                            .isAnnotationPresent(RosettaAttribute.class);
+                } catch (NoSuchMethodException ignored) {}
+            }
+        }
+        return false;
+    }
+    private boolean enclosingClassHasRosettaDataTypeAnnotation(AnnotatedMember a) {
+        Class<?> declaringClass = a.getDeclaringClass();
+        if (RosettaModelObject.class.isAssignableFrom(declaringClass)) {
+            Type returnType;
+            try {
+                returnType = declaringClass.getMethod("getType").getGenericReturnType();
+            } catch (NoSuchMethodException e) {
+                return false;
+            }
+            Class<?> pojoInterface = null;
+            if (returnType instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) returnType;
+                if (pt.getActualTypeArguments().length == 1) {
+                    Type type = pt.getActualTypeArguments()[0];
+                    if (type instanceof Class) {
+                        pojoInterface = (Class<?>) type;
+                    } else if (type instanceof WildcardType) {
+                        pojoInterface = (Class<?>) ((WildcardType) type).getUpperBounds()[0];
+                    }
+                }
+            }
+            if (pojoInterface != null) {
+                return pojoInterface.isAnnotationPresent(RosettaDataType.class);
+            }
+        }
+        return false;
     }
 
     @Override

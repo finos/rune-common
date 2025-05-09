@@ -20,11 +20,18 @@ package org.finos.rune.mapper.introspector;
  * ==============
  */
 
+import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+
 import java.lang.reflect.Method;
 
 public class RuneBeanUtil {
 
-    public static String getPropertyName(Method method) {
+    public static String getPropertyName(AnnotatedMethod method) {
+        RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
+        if (attribute != null && !attribute.value().isEmpty()) {
+            return attribute.value();
+        }
         String methodName = method.getName();
         String rawPropertyName = getSubstringIfPrefixMatches(methodName, "get");
         if (rawPropertyName == null) {

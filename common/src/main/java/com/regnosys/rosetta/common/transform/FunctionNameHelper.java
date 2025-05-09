@@ -52,7 +52,9 @@ public class FunctionNameHelper {
     public Method getFuncMethod(Class<? extends RosettaFunction> function) {
         try {
             List<Method> evaluateMethods = Arrays.stream(function.getMethods())
-                    .filter(x -> x.getName().equals("evaluate"))
+                    .filter(m -> m.getName().equals("evaluate"))
+                    .filter(m-> !m.isBridge())
+                    .filter(m-> !m.isSynthetic())
                     .collect(Collectors.toList());
             return Iterables.getLast(evaluateMethods);
         } catch (Exception ex) {

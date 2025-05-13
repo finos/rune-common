@@ -23,6 +23,11 @@ package com.regnosys.rosetta.common.transform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -85,12 +90,12 @@ class FunctionNameHelperTest {
         assertEquals("type1-to-type2", functionNameHelper.readableId("com.example.Ingest_Type_1ToType_2"));
         assertEquals("type1-to-type2", functionNameHelper.readableId("Ingest_Type_1ToType_2"));
     }
-    
+
     @Test
     void readableIdEnrich() {
         assertEquals("type1-to-type2", functionNameHelper.readableId(PipelineTestUtils.Enrich_Type_1ToType_2.class));
     }
-    
+
     @Test
     void readableIdEnrichFromString() {
         assertEquals("type1-to-type2", functionNameHelper.readableId("com.example.Enrich_Type_1ToType_2"));
@@ -148,4 +153,24 @@ class FunctionNameHelperTest {
     void getReadableFunctionName() {
         assertEquals("Type Name", functionNameHelper.readableFunctionName("Project_TypeName"));
     }
+
+    @Test
+    void shouldReturnOnlyOneFunction() {
+        Method funcMethod = functionNameHelper.getFuncMethod(PipelineTestUtils.TestReportFunction.class);
+        assertEquals("evaluate", funcMethod.getName());
+        Class<?>[] expected = new Class<?>[]{PipelineTestUtils.SpecificInput.class};
+        assertThat(funcMethod.getParameterTypes(), arrayContainingInAnyOrder(expected));
+        assertThat(funcMethod.getReturnType(), equalTo(PipelineTestUtils.SpecificOutput.class));
+    }
+
+    @Test
+    void shouldReturnTheCorrectInputTypeFromFunction() {
+        assertEquals("com.regnosys.rosetta.common.transform.PipelineTestUtils$SpecificInput", functionNameHelper.getInputType(PipelineTestUtils.TestReportFunction.class));
+    }
+
+    @Test
+    void shouldReturnTheCorrectOutputTypeFromFunction() {
+        assertEquals("com.regnosys.rosetta.common.transform.PipelineTestUtils$SpecificOutput", functionNameHelper.getOutputType(PipelineTestUtils.TestReportFunction.class));
+    }
+
 }

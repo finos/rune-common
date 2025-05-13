@@ -23,16 +23,21 @@ package com.regnosys.rosetta.common.serialisation.xml;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.deser.NullValueProvider;
 import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
 import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.deser.impl.NullsConstantProvider;
+import com.fasterxml.jackson.databind.deser.std.CollectionDeserializer;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A copy of {@code MethodProperty}, which is a final class,
@@ -41,7 +46,7 @@ import java.lang.reflect.Method;
  * This is necessary for deserialising substitution groups; see
  * {@code RosettaBeanDeserializerModifier}.
  */
-public class SubstitutedMethodProperty extends SettableBeanProperty {
+public class SubstitutingMethodProperty extends SettableBeanProperty {
     private static final long serialVersionUID = 1;
 
     protected final AnnotatedMethod _annotated;
@@ -57,67 +62,93 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
      */
     final protected boolean _skipNulls;
 
-    protected final JavaType _substitutedType;
+    protected final SubstitutionMap _substitutionMap;
 
-    public SubstitutedMethodProperty(MethodProperty src, JavaType substitutedType, AnnotatedMethod method) {
+    public SubstitutingMethodProperty(MethodProperty src, SubstitutionMap substitutionMap, AnnotatedMethod method) {
         super(src);
         _annotated = method;
         _setter = method.getAnnotated();
         _skipNulls = NullsConstantProvider.isSkipper(_nullProvider);
-        _substitutedType = substitutedType;
+        _substitutionMap = substitutionMap;
     }
 
-    protected SubstitutedMethodProperty(SubstitutedMethodProperty src, JsonDeserializer<?> deser,
+    protected SubstitutingMethodProperty(SubstitutingMethodProperty src, JsonDeserializer<?> deser,
                                          NullValueProvider nva) {
         super(src, deser, nva);
         _annotated = src._annotated;
         _setter = src._setter;
         _skipNulls = NullsConstantProvider.isSkipper(nva);
-        _substitutedType = src._substitutedType;
+        _substitutionMap = src._substitutionMap;
     }
 
-    protected SubstitutedMethodProperty(SubstitutedMethodProperty src, PropertyName newName) {
+    protected SubstitutingMethodProperty(SubstitutingMethodProperty src, PropertyName newName) {
         super(src, newName);
         _annotated = src._annotated;
         _setter = src._setter;
         _skipNulls = src._skipNulls;
-        _substitutedType = src._substitutedType;
+        _substitutionMap = src._substitutionMap;
     }
 
     /**
      * Constructor used for JDK Serialization when reading persisted object
      */
-    protected SubstitutedMethodProperty(SubstitutedMethodProperty src, Method m) {
+    protected SubstitutingMethodProperty(SubstitutingMethodProperty src, Method m) {
         super(src);
         _annotated = src._annotated;
         _setter = m;
         _skipNulls = src._skipNulls;
-        _substitutedType = src._substitutedType;
+        _substitutionMap = src._substitutionMap;
+    }
+
+    public SubstitutionMap getSubstitutionMap() {
+        return _substitutionMap;
     }
 
     @Override
-    public JavaType getType() {
-        return _substitutedType;
+    public List<PropertyName> findAliases(MapperConfig<?> config) {
+        return _substitutionMap.getTypes().stream()
+                .map(_substitutionMap::getName)
+                .map(PropertyName::new)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void assignIndex(int index) {
+        if (_propertyIndex != -1) {
+            return;
+        }
+        _propertyIndex = index;
     }
 
     @Override
     public SettableBeanProperty withName(PropertyName newName) {
-        return new SubstitutedMethodProperty(this, newName);
+        return new SubstitutingMethodProperty(this, newName);
     }
 
     @Override
-    public SettableBeanProperty withValueDeserializer(JsonDeserializer<?> deser) {
+    public SubstitutingMethodProperty withValueDeserializer(JsonDeserializer<?> deser) {
         if (_valueDeserializer == deser) {
             return this;
         }
+
+        if (deser instanceof SubstitutingCollectionDeserializer || deser instanceof SubstitutingDeserializer) {
+
+        } else if (deser instanceof CollectionDeserializer) {
+            deser = new SubstitutingCollectionDeserializer((CollectionDeserializer) deser, null);
+        } else if (deser instanceof StdDeserializer<?>) {
+            deser = new SubstitutingDeserializer(((StdDeserializer<?>)deser).getValueType(), null);
+        } else {
+            deser = new SubstitutingDeserializer(deser.handledType(), null);
+        }
+
         // 07-May-2019, tatu: As per [databind#2303], must keep VD/NVP in-sync if they were
         NullValueProvider nvp = (_valueDeserializer == _nullProvider) ? deser : _nullProvider;
-        return new SubstitutedMethodProperty(this, deser, nvp);
+        return new SubstitutingMethodProperty(this, deser, nvp);
     }
 
     @Override
     public SettableBeanProperty withNullProvider(NullValueProvider nva) {
-        return new SubstitutedMethodProperty(this, _valueDeserializer, nva);
+        return new SubstitutingMethodProperty(this, _valueDeserializer, nva);
     }
 
     @Override
@@ -245,6 +276,6 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
      */
 
     Object readResolve() {
-        return new SubstitutedMethodProperty(this, _annotated.getAnnotated());
+        return new SubstitutingMethodProperty(this, _annotated.getAnnotated());
     }
 }

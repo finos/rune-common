@@ -12,6 +12,13 @@
       "@key:external" : "childKey",
       "parentAttr" : 42
     },
+    "otherParentList" : [ {
+      "@key:external" : "otherChildKey1",
+      "parentAttr" : 1
+    }, {
+      "@key:external" : "otherChildKey2",
+      "parentAttr" : 2
+    } ],
     "stringAttr" : {
       "@scheme" : "Some scheme",
       "@data" : "Some string"

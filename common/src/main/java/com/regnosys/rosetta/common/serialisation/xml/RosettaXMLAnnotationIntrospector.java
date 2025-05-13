@@ -243,6 +243,12 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         if (isIgnorable) {
             return true;
         }
+//        if (a instanceof AnnotatedMethod && a.hasAnnotation(RosettaAttribute.class)) {
+//            AnnotatedMethod m = (AnnotatedMethod) a;
+//            if (m.getName().startsWith("set") && m.getParameterCount() == 1 && m.getParameterType(0).getRawClass().equals(List.class)) {
+//                return true;
+//            }
+//        }
         // Additionally, ignore any members that do not have the RosettaAttribute annotation
         // except for constructors, which are necessary for deserialisation.
         return !(a.hasAnnotation(RosettaAttribute.class) || a instanceof AnnotatedConstructor);

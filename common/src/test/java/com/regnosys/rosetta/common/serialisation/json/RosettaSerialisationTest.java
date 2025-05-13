@@ -32,7 +32,6 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RosettaDataType;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -209,7 +208,6 @@ public class RosettaSerialisationTest {
     }
 
     @Test
-    @Disabled // TODO: code generation issue
     void overridingMultiCardinalityTypesCanDeserialize() throws JsonProcessingException {
         ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =

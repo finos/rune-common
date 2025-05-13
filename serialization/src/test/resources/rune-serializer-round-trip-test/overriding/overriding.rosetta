@@ -9,6 +9,7 @@ type Foo1:
     numberAttr number (0..1)
     parent Parent (1..1)
     parentList Parent (0..10)
+    otherParentList Parent (0..*)
     stringAttr string (1..1)
         [metadata scheme]
 
@@ -17,6 +18,7 @@ type Foo2 extends Foo1:
     override parent Child (1..1)
     override parentList Child (1..1)
         [metadata reference]
+    override otherParentList Child (0..*)
     override stringAttr string(maxLength: 42) (1..1)
 
 type Foo3 extends Foo2:

@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.fasterxml.jackson.dataformat.xml.deser.XmlBeanDeserializerModifier;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerModifier;
+import com.google.common.collect.Lists;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,8 @@ import java.io.IOException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
+import java.util.List;
 
 /**
  * Using a module class to append our annotation introspector with a minimal fuss
@@ -58,6 +61,13 @@ public class RosettaXMLModule extends SimpleModule {
     private final ClassLoader classLoader;
 
     private static final ZoneId UNKNOWN_ZONE;
+
+    // Formatters for date + optional offset
+    private static final List<DateTimeFormatter> DATE_WITH_OFFSET_FORMATTERS = Lists.newArrayList(
+            DateTimeFormatter.ofPattern("yyyy-MM-ddXXX"),  // +01:00
+            DateTimeFormatter.ofPattern("yyyy-MM-ddXX"),   // +0100
+            DateTimeFormatter.ofPattern("yyyy-MM-ddX")     // +01 or Z
+    );
 
     static {
         ZoneId unknown = null;
@@ -112,11 +122,40 @@ public class RosettaXMLModule extends SimpleModule {
             @Override
             public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
                 String dateTimeStr = p.readValueAs(String.class);
+                // 1. Full ZonedDateTime (includes zone ID like [Europe/Paris])
                 try {
-                    return DateTimeFormatter.ISO_ZONED_DATE_TIME.parse(dateTimeStr, ZonedDateTime::from);
-                } catch (Exception e) {
-                    return ZonedDateTime.of(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(dateTimeStr, LocalDateTime::from), UNKNOWN_ZONE);
+                    return ZonedDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+                } catch (DateTimeParseException ignored) {}
+
+                // 2. OffsetDateTime (has offset but no zone ID)
+                try {
+                    return OffsetDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toZonedDateTime();
+                } catch (DateTimeParseException ignored) {}
+
+                // 3. LocalDateTime (date + time, no offset)
+                try {
+                    LocalDateTime ldt = LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    return ldt.atZone(UNKNOWN_ZONE);
+                } catch (DateTimeParseException ignored) {}
+
+                // 4. Date + offset (no time)
+                for (DateTimeFormatter formatter : DATE_WITH_OFFSET_FORMATTERS) {
+                    try {
+                        TemporalAccessor parsed = formatter.parse(dateTimeStr);
+                        LocalDate date = LocalDate.from(parsed);
+                        ZoneOffset offset = ZoneOffset.from(parsed);
+                        return date.atStartOfDay().atOffset(offset).toZonedDateTime();
+                    } catch (DateTimeParseException ignored) {}
                 }
+
+                // 5. LocalDate only (no time, no offset)
+                try {
+                    LocalDate date = LocalDate.parse(dateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE);
+                    return date.atStartOfDay(UNKNOWN_ZONE);
+                } catch (DateTimeParseException ignored) {}
+
+                // No match
+                throw new IllegalArgumentException("Unrecognized date/time format: " + dateTimeStr);
             }
         });
         addSerializer(ZonedDateTime.class, new StdSerializer<ZonedDateTime>(ZonedDateTime.class) {

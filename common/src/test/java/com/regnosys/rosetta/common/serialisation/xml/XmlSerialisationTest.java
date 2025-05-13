@@ -147,6 +147,56 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testZonedDateTimeWithUnknowTimeAndUnknownTimezoneDeserialisation() throws JsonProcessingException {
+        ZonedDateTime expected = ZonedDateTime.of(2006, 4, 2, 0, 0, 0, 0, ZoneId.of("Unknown"));
+        String xml = "<ZonedDateTime>2006-04-02</ZonedDateTime>";
+
+        // Test deserialisation
+        ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testZonedDateTimeWithUnknowTimeAndZuluTimezoneDeserialisation() throws JsonProcessingException {
+        ZonedDateTime expected = ZonedDateTime.of(2006, 4, 2, 0, 0, 0, 0, ZoneId.of("Z"));
+        String xml = "<ZonedDateTime>2006-04-02Z</ZonedDateTime>";
+
+        // Test deserialisation
+        ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testZonedDateTimeWithUnknowTimeAndStandardOffsetTimezoneDeserialisation() throws JsonProcessingException {
+        ZonedDateTime expected = ZonedDateTime.of(2006, 4, 2, 0, 0, 0, 0, ZoneId.of("+01:00"));
+        String xml = "<ZonedDateTime>2006-04-02+01:00</ZonedDateTime>";
+
+        // Test deserialisation
+        ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testZonedDateTimeWithUnknowTimeAndCompactOffsetTimezoneDeserialisation() throws JsonProcessingException {
+        ZonedDateTime expected = ZonedDateTime.of(2006, 4, 2, 0, 0, 0, 0, ZoneId.of("+0100"));
+        String xml = "<ZonedDateTime>2006-04-02+0100</ZonedDateTime>";
+
+        // Test deserialisation
+        ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testZonedDateTimeWithUnknowTimeAndShortOffsetTimezoneDeserialisation() throws JsonProcessingException {
+        ZonedDateTime expected = ZonedDateTime.of(2006, 4, 2, 0, 0, 0, 0, ZoneId.of("+01"));
+        String xml = "<ZonedDateTime>2006-04-02+01</ZonedDateTime>";
+
+        // Test deserialisation
+        ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void testMultiCardinalitySerialisation() throws IOException {
         // Construct a MultiCardinality object
         MulticardinalityContainer multicardinalityContainer = MulticardinalityContainer.builder()

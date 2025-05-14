@@ -35,14 +35,16 @@ import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
 import com.google.common.collect.Streams;
+import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.ConstantAttributePropertyWriter;
 import com.regnosys.rosetta.common.serialisation.mixin.EnumAsStringBuilderIntrospector;
 import com.regnosys.rosetta.common.serialisation.mixin.RosettaEnumBuilderIntrospector;
+import com.regnosys.rosetta.common.util.StringExtensions;
 import com.rosetta.model.lib.ModelSymbolId;
-import com.rosetta.model.lib.annotations.RosettaAttribute;
-import com.rosetta.model.lib.annotations.RosettaDataType;
-import com.rosetta.model.lib.annotations.RosettaEnum;
-import com.rosetta.model.lib.annotations.RosettaEnumValue;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.annotations.*;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
+import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import com.rosetta.util.DottedPath;
 import com.rosetta.util.serialisation.AttributeXMLConfiguration;
 import com.rosetta.util.serialisation.AttributeXMLRepresentation;
@@ -51,8 +53,10 @@ import com.rosetta.util.serialisation.TypeXMLConfiguration;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntrospector {
 
@@ -180,8 +184,27 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 .orElseGet(
                         () -> Optional.ofNullable(a.getAnnotation(RosettaAttribute.class))
                                 .map(rosettaAttrAnn -> PropertyName.construct(rosettaAttrAnn.value()))
-                                .orElseGet(() -> super._findXmlName(a))
+                                .orElseGet(() -> findLegacyName(a))
                 );
+    }
+
+    private PropertyName findLegacyName(Annotated a) {
+        if (a instanceof AnnotatedMethod) {
+            AnnotatedMethod am = (AnnotatedMethod) a;
+            if (am.getParameterCount() == 1) {
+                if (am.getName().startsWith("set") && RosettaModelObject.class.isAssignableFrom(am.getDeclaringClass())) {
+                    String firstLower = StringExtensions.toFirstLower(am.getName().substring(3));
+                    if (firstLower.equals("key") && GlobalKeyFields.class.isAssignableFrom(am.getDeclaringClass())) {
+                        firstLower = "location";
+                    }
+                    if (firstLower.equals("reference") && ReferenceWithMeta.class.isAssignableFrom(am.getDeclaringClass())) {
+                        firstLower = "address";
+                    }
+                    return new PropertyName(firstLower);
+                }
+            }
+        }
+        return super._findXmlName(a);
     }
 
     private boolean shouldUseDefaultPropertyName(MapperConfig<?> config, Annotated a) {
@@ -239,39 +262,65 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     protected boolean _isIgnorable(Annotated a) {
-        boolean isIgnorable= super._isIgnorable(a);
-        if (isIgnorable) {
-            return true;
-        }
-//        if (a instanceof AnnotatedMethod && a.hasAnnotation(RosettaAttribute.class)) {
-//            AnnotatedMethod m = (AnnotatedMethod) a;
-//            if (m.getName().startsWith("set") && m.getParameterCount() == 1 && m.getParameterType(0).getRawClass().equals(List.class)) {
-//                return true;
-//            }
-//        }
-        // Additionally, ignore any members that do not have the RosettaAttribute annotation
-        // except for constructors, which are necessary for deserialisation.
-        return !(a.hasAnnotation(RosettaAttribute.class) || a instanceof AnnotatedConstructor);
+        return a.hasAnnotation(RosettaIgnore.class) || super._isIgnorable(a);
     }
 
+//    @Override
+//    protected boolean _isIgnorable(Annotated a) {
+//        boolean isIgnorable= super._isIgnorable(a);
+//        if (isIgnorable) {
+//            return true;
+//        }
+//        // Additionally, ignore any members that do not have the RosettaAttribute annotation
+//        // except for constructors, which are necessary for deserialisation.
+//        return !(a.hasAnnotation(RosettaAttribute.class) || a instanceof AnnotatedConstructor);
+//    }
+
+//    @Override
+//    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
+//        // For the root element, ignore the xsi:schemaLocation attribute.
+//        JsonIgnoreProperties.Value ignoreProps = super.findPropertyIgnoralByName(config, a);
+//        return Optional.of(a)
+//                .filter(ann -> ann instanceof AnnotatedClass)
+//                .map(ann -> (AnnotatedClass) ann)
+//                // TODO: substitution groups should not have this
+//                .flatMap(ac -> this.getTypeXMLConfigurations(config, ac).stream().filter(t -> t.getXmlElementName().isPresent()).map(t -> t.getXmlElementName().get()).findFirst())
+//                .map(rootElementName -> {
+//                    Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
+//                    return JsonIgnoreProperties.Value.construct(
+//                            ignoredNames,
+//                            ignoreProps.getIgnoreUnknown(),
+//                            ignoreProps.getAllowGetters(),
+//                            ignoreProps.getAllowSetters(),
+//                            ignoreProps.getMerge());
+//                }).orElse(ignoreProps);
+//    }
+
+
     @Override
-    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
-        // For the root element, ignore the xsi:schemaLocation attribute.
-        JsonIgnoreProperties.Value ignoreProps = super.findPropertyIgnoralByName(config, a);
-        return Optional.of(a)
-                .filter(ann -> ann instanceof AnnotatedClass)
-                .map(ann -> (AnnotatedClass) ann)
-                // TODO: substitution groups should not have this
-                .flatMap(ac -> this.getTypeXMLConfigurations(config, ac).stream().filter(t -> t.getXmlElementName().isPresent()).map(t -> t.getXmlElementName().get()).findFirst())
-                .map(rootElementName -> {
-                    Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
-                    return JsonIgnoreProperties.Value.construct(
-                            ignoredNames,
-                            ignoreProps.getIgnoreUnknown(),
-                            ignoreProps.getAllowGetters(),
-                            ignoreProps.getAllowSetters(),
-                            ignoreProps.getMerge());
-                }).orElse(ignoreProps);
+    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
+        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
+            AnnotatedClass acc = (AnnotatedClass) ac;
+            Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
+            Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+            ignored.removeAll(includes);
+            return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
+        }
+        return super.findPropertyIgnoralByName(config, ac);
+    }
+
+    private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
+        return StreamSupport.stream(acc.memberMethods().spliterator(), false)
+                .filter(filter)
+                .map(m -> {
+                    RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
+                    if (attr != null && !attr.value().isEmpty()) {
+                        return attr.value();
+                    }
+                    return BeanUtil.getPropertyName(m.getAnnotated());
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     @Override

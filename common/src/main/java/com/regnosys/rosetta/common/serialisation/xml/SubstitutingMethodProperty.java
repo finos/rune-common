@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.deser.std.CollectionDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.fasterxml.jackson.dataformat.xml.deser.WrapperHandlingDeserializer;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -131,14 +132,14 @@ public class SubstitutingMethodProperty extends SettableBeanProperty {
             return this;
         }
 
-        if (deser instanceof SubstitutingCollectionDeserializer || deser instanceof SubstitutingDeserializer) {
-
-        } else if (deser instanceof CollectionDeserializer) {
-            deser = new SubstitutingCollectionDeserializer((CollectionDeserializer) deser, null);
-        } else if (deser instanceof StdDeserializer<?>) {
-            deser = new SubstitutingDeserializer(((StdDeserializer<?>)deser).getValueType(), null);
-        } else {
-            deser = new SubstitutingDeserializer(deser.handledType(), null);
+        if (!(deser instanceof SubstitutingCollectionDeserializer || deser instanceof SubstitutingDeserializer)) {
+            if (deser instanceof CollectionDeserializer) {
+                deser = new SubstitutingCollectionDeserializer((CollectionDeserializer) deser, null);
+            } else if (deser instanceof StdDeserializer<?>) {
+                deser = new SubstitutingDeserializer(((StdDeserializer<?>)deser).getValueType(), null);
+            } else {
+                deser = new SubstitutingDeserializer(deser.handledType(), null);
+            }
         }
 
         // 07-May-2019, tatu: As per [databind#2303], must keep VD/NVP in-sync if they were

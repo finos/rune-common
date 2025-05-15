@@ -44,10 +44,7 @@ import com.rosetta.model.lib.annotations.RosettaDataType;
 import com.rosetta.model.lib.annotations.RosettaEnum;
 import com.rosetta.model.lib.annotations.RosettaEnumValue;
 import com.rosetta.util.DottedPath;
-import com.rosetta.util.serialisation.AttributeXMLConfiguration;
-import com.rosetta.util.serialisation.AttributeXMLRepresentation;
-import com.rosetta.util.serialisation.RosettaXMLConfiguration;
-import com.rosetta.util.serialisation.TypeXMLConfiguration;
+import com.rosetta.util.serialisation.*;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -86,6 +83,54 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
 
+    /*
+
+        1. Want to parse an attribute called commoditySwapLeg (ie. in the CommoditySwapDetailsModel)
+        2. Lookup all possible xmlElementNames that have a substitution group = commoditySwapLeg
+        3. For each element, (ie physicalLeg) lookup all elements that have a substitution group equal to that element name so, so substitution group = physicalLeg
+            - For each element found:
+                - if is not abstract store link between name of element and type of element in the substitutionMap and recurse
+                - if is abstract carry on recursing but don't store in substitutionMap
+     */
+    public Map<String, JavaType>  findSubstitutionMapNew(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
+        AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
+        RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
+
+        if (ann != null) {
+            Map<String, JavaType> substitutionMap = new HashMap<>();
+            ModelSymbolId id = createModelSymbolId(ac, ann.value());
+            getAttributeXMLConfiguration(config, member)
+                    .flatMap(AttributeXMLConfiguration::getSubstitutionGroup)
+                    .ifPresent(substitutionGroup -> lookupTransitiveSubstitutionGroups(config, substitutionGroup, substitutionMap, classLoader));
+
+            return substitutionMap;
+        }
+
+        return null;
+    }
+
+    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config, String substitutionGroup, Map<String, JavaType> substitutionMap, ClassLoader classLoader) {
+        SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
+        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
+            TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
+            for (SubstitutionGroupTarget substitutionGroupTarget : typeXMLConfiguration.getSubstitutionGroupTargets()) {
+                if (substitutionGroupTarget.getSubstitutionGroup().equals(substitutionGroup)) {
+                    if (!substitutionGroupTarget.isAbstract()) {
+                        ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
+                        try {
+                            JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
+                            substitutionMap.put(substitutionGroupTarget.getXmlElementName(), javaType);
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    lookupTransitiveSubstitutionGroups(config, substitutionGroupTarget.getElementName(), substitutionMap, classLoader);
+                }
+            }
+        }
+    }
+
+
     public SubstitutionMap findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
         AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
         RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
@@ -100,18 +145,25 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             if (substitutions.isEmpty()) {
                 return null;
             }
+            Map<JavaType, String> original = Streams.concat(substitutions.stream(), Stream.of(id))
+                    .collect(Collectors.toMap(
+                            s -> {
+                                try {
+                                    return config.constructType(classLoader.loadClass(s.toString()));
+                                } catch (ClassNotFoundException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            },
+                            this::getElementName
+                    ));
+
+            Map<String, JavaType> substitutionMapNew = findSubstitutionMapNew(config, member, classLoader);
+            substitutionMapNew.forEach((entryName, javaType) -> {
+                original.put(javaType, entryName);
+            });
+
             return new SubstitutionMap(
-                    Streams.concat(substitutions.stream(), Stream.of(id))
-                            .collect(Collectors.toMap(
-                                    s -> {
-                                        try {
-                                            return config.constructType(classLoader.loadClass(s.toString()));
-                                        } catch (ClassNotFoundException e) {
-                                            throw new RuntimeException(e);
-                                        }
-                                    },
-                                    this::getElementName
-                            ))
+                    original
             );
         }
         return null;

@@ -86,7 +86,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     /*
 
         1. Want to parse an attribute called commoditySwapLeg (ie. in the CommoditySwapDetailsModel)
-        2. Lookup all possible xmlElementNames that have a substitution group = commoditySwapLeg
+        2. If the attribute has an elementRef lookup the xml element object in the elements array of the types by fully qualified name
         3. For each element, (ie physicalLeg) lookup all elements that have a substitution group equal to that element name so, so substitution group = physicalLeg
             - For each element found:
                 - if is not abstract store link between name of element and type of element in the substitutionMap and recurse
@@ -98,33 +98,54 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
         if (ann != null) {
             Map<String, JavaType> substitutionMap = new HashMap<>();
-            ModelSymbolId id = createModelSymbolId(ac, ann.value());
             getAttributeXMLConfiguration(config, member)
-                    .flatMap(AttributeXMLConfiguration::getSubstitutionGroup)
-                    .ifPresent(substitutionGroup -> lookupTransitiveSubstitutionGroups(config, substitutionGroup, substitutionMap, classLoader));
-
+                    .flatMap(AttributeXMLConfiguration::getElementRef)
+                    .ifPresent(elementRef -> {
+                        lookupElementByFullyQualifiedName(config, elementRef, substitutionMap, classLoader);
+                        lookupTransitiveSubstitutionGroups(config, elementRef, substitutionMap, classLoader);
+                    });
             return substitutionMap;
         }
-
         return null;
+    }
+
+    private void lookupElementByFullyQualifiedName(MapperConfig<?> config, String fullyQualifiedName, Map<String, JavaType> substitutionMap, ClassLoader classLoader) {
+        SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
+        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
+            TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
+            for (XmlElement element : typeXMLConfiguration.getElements()) {
+                if (element.getFullyQualifiedName().equals(fullyQualifiedName)) {
+                    if (!element.isAbstract()) {
+                        ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
+                        try {
+                            JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
+                            substitutionMap.put(element.getName(), javaType);
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                }
+            }
+        }
     }
 
     private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config, String substitutionGroup, Map<String, JavaType> substitutionMap, ClassLoader classLoader) {
         SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
-            for (SubstitutionGroupTarget substitutionGroupTarget : typeXMLConfiguration.getSubstitutionGroupTargets()) {
-                if (substitutionGroupTarget.getSubstitutionGroup().equals(substitutionGroup)) {
-                    if (!substitutionGroupTarget.isAbstract()) {
+            for (XmlElement element : typeXMLConfiguration.getElements()) {
+                if (element.getSubstitutionGroup() != null && element.getSubstitutionGroup().equals(substitutionGroup)) {
+                    if (!element.isAbstract()) {
                         ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
                         try {
                             JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
-                            substitutionMap.put(substitutionGroupTarget.getXmlElementName(), javaType);
+                            substitutionMap.put(element.getName(), javaType);
                         } catch (ClassNotFoundException e) {
                             throw new RuntimeException(e);
                         }
                     }
-                    lookupTransitiveSubstitutionGroups(config, substitutionGroupTarget.getElementName(), substitutionMap, classLoader);
+                    lookupTransitiveSubstitutionGroups(config, element.getFullyQualifiedName(), substitutionMap, classLoader);
                 }
             }
         }

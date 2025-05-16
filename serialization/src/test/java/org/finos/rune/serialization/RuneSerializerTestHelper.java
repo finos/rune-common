@@ -40,7 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,7 +54,7 @@ public class RuneSerializerTestHelper {
                                                                                             CodeGeneratorTestHelper helper,
                                                                                             DynamicCompiledClassLoader dynamicCompiledClassLoader) {
         String[] rosettaFileContents = rosettaPaths.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
-        HashMap<String, String> generatedCode = helper.generateCode(rosettaFileContents);
+        Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
         Class<?> aClass = compiledCode.get(namespacePrefix + groupName + ".Root");

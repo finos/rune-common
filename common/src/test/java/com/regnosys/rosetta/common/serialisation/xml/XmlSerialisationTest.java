@@ -25,7 +25,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.test.*;
+import com.rosetta.util.serialisation.AttributeXMLConfiguration;
+import com.rosetta.util.serialisation.RosettaXMLConfiguration;
+import com.rosetta.util.serialisation.TypeXMLConfiguration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
@@ -44,6 +48,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -52,6 +61,7 @@ public class XmlSerialisationTest {
 
     private final Validator xsdValidator;
     private final ObjectMapper xmlMapper;
+    private final URL configUrl;
 
     public XmlSerialisationTest() throws SAXException, IOException {
         URL schemaFile = XmlSerialisationTest.class.getResource(XSD_SCHEMA);
@@ -61,8 +71,8 @@ public class XmlSerialisationTest {
         xsdValidator = schema.newValidator();
 
         // Create an XML mapper with the generated XML configuration based on the XSD schema
-        URL url = Resources.getResource("xml-serialisation/xml-config.json");
-        try (InputStream inputStream = url.openStream()) {
+        configUrl = Resources.getResource("xml-serialisation/xml-config.json");
+        try (InputStream inputStream = configUrl.openStream()) {
             xmlMapper = RosettaObjectMapperCreator.forXML(inputStream).create();
         }
     }
@@ -261,7 +271,7 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    public void testMulticardinalitySubstitutionGroupSerialisation() throws IOException {
+    public void testMultiCardinalitySubstitutionGroupSerialisation() throws IOException {
         Zoo zoo = Zoo.builder()
                 .addAnimal(Goat.builder().setName("Goatee").build())
                 .addAnimal(Cow.builder().setName("Moomoo").build())
@@ -280,5 +290,91 @@ public class XmlSerialisationTest {
         // Test deserialisation
         Zoo actual = xmlMapper.readValue(expectedXML, Zoo.class);
         assertEquals(zoo, actual);
+    }
+
+    @Test
+    public void testSubstitutionGroupLegacySerialisation() throws IOException {
+        AnimalContainer animalContainer = AnimalContainer.builder()
+                .setAnimal(Goat.builder().setName("Goatee").build())
+                .build();
+
+        ObjectMapper legacyObjectMapper = getLegacyObjectMapper();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + legacyObjectMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(animalContainer);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        AnimalContainer actual = legacyObjectMapper.readValue(expectedXML, AnimalContainer.class);
+        assertEquals(animalContainer, actual);
+    }
+
+    @Test
+    public void testMultiCardinalitySubstitutionGroupLegacySerialisation() throws IOException {
+        Zoo zoo = Zoo.builder()
+                .addAnimal(Goat.builder().setName("Goatee").build())
+                .addAnimal(Cow.builder().setName("Moomoo").build())
+                .build();
+
+        ObjectMapper legacyObjectMapper = getLegacyObjectMapper();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + legacyObjectMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(zoo);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group-multi-legacy.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        Zoo actual = legacyObjectMapper.readValue(expectedXML, Zoo.class);
+        assertEquals(zoo, actual);
+    }
+
+    private ObjectMapper getLegacyObjectMapper() {
+        return RosettaObjectMapperCreator.forXML(getLegacyRosettaXMLConfiguration()).create();
+    }
+
+    private RosettaXMLConfiguration getLegacyRosettaXMLConfiguration() {
+        try (InputStream inputStream = configUrl.openStream()) {
+            final RosettaXMLConfiguration config = RosettaXMLConfiguration.load(inputStream);
+            Map<ModelSymbolId, TypeXMLConfiguration> newTypeConfigMap = new HashMap<>();
+
+            config.getTypeConfigMap().forEach((modelSymbolId, typeXMLConfiguration) -> {
+                Optional<Map<String, AttributeXMLConfiguration>> newAttributeXmlConfiguration = typeXMLConfiguration.getAttributes()
+                        .map(attributes -> {
+                            Map<String, AttributeXMLConfiguration> newAttributes = new HashMap<>();
+                            attributes.forEach((key, attr) -> {
+                                AttributeXMLConfiguration newAttributeConfiguration = new AttributeXMLConfiguration(attr.getXmlName(),
+                                        attr.getXmlAttributes(),
+                                        attr.getXmlRepresentation(),
+                                        attr.getElementRef(), //populate substitution group with elementRef as per legacy format
+                                        Optional.empty());
+                                newAttributes.put(key, newAttributeConfiguration);
+                            });
+                            return newAttributes;
+                        });
+
+                TypeXMLConfiguration newTypeXmlConfiguration = new TypeXMLConfiguration(
+                        typeXMLConfiguration.getSubstitutionFor(),
+                        typeXMLConfiguration.getSubstitutionGroup(),
+                        typeXMLConfiguration.getXmlElementName(),
+                        Optional.empty(), //blank out XmlElementFullyQualifiedName as per legacy format
+                       Optional.empty(), //blank out abstract as per legacy format
+                        typeXMLConfiguration.getXmlAttributes(),
+                        newAttributeXmlConfiguration,
+                        typeXMLConfiguration.getEnumValues()
+                );
+                newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);
+            });
+
+            return new RosettaXMLConfiguration(newTypeConfigMap);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

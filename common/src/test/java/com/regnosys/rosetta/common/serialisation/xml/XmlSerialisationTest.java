@@ -345,31 +345,33 @@ public class XmlSerialisationTest {
             Map<ModelSymbolId, TypeXMLConfiguration> newTypeConfigMap = new HashMap<>();
 
             config.getTypeConfigMap().forEach((modelSymbolId, typeXMLConfiguration) -> {
-                Optional<Map<String, AttributeXMLConfiguration>> newAttributeXmlConfiguration = typeXMLConfiguration.getAttributes()
-                        .map(attributes -> {
-                            Map<String, AttributeXMLConfiguration> newAttributes = new HashMap<>();
-                            attributes.forEach((key, attr) -> {
-                                AttributeXMLConfiguration newAttributeConfiguration = new AttributeXMLConfiguration(attr.getXmlName(),
-                                        attr.getXmlAttributes(),
-                                        attr.getXmlRepresentation(),
-                                        attr.getElementRef(), //populate substitution group with elementRef as per legacy format
-                                        Optional.empty());
-                                newAttributes.put(key, newAttributeConfiguration);
+                if (!typeXMLConfiguration.getAbstract().orElse(false)) {
+                    Optional<Map<String, AttributeXMLConfiguration>> newAttributeXmlConfiguration = typeXMLConfiguration.getAttributes()
+                            .map(attributes -> {
+                                Map<String, AttributeXMLConfiguration> newAttributes = new HashMap<>();
+                                attributes.forEach((key, attr) -> {
+                                    AttributeXMLConfiguration newAttributeConfiguration = new AttributeXMLConfiguration(attr.getXmlName(),
+                                            attr.getXmlAttributes(),
+                                            attr.getXmlRepresentation(),
+                                            attr.getElementRef(), //populate substitution group with elementRef as per legacy format
+                                            Optional.empty());
+                                    newAttributes.put(key, newAttributeConfiguration);
+                                });
+                                return newAttributes;
                             });
-                            return newAttributes;
-                        });
 
-                TypeXMLConfiguration newTypeXmlConfiguration = new TypeXMLConfiguration(
-                        typeXMLConfiguration.getSubstitutionFor(),
-                        typeXMLConfiguration.getSubstitutionGroup(),
-                        typeXMLConfiguration.getXmlElementName(),
-                        Optional.empty(), //blank out XmlElementFullyQualifiedName as per legacy format
-                       Optional.empty(), //blank out abstract as per legacy format
-                        typeXMLConfiguration.getXmlAttributes(),
-                        newAttributeXmlConfiguration,
-                        typeXMLConfiguration.getEnumValues()
-                );
-                newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);
+                    TypeXMLConfiguration newTypeXmlConfiguration = new TypeXMLConfiguration(
+                            typeXMLConfiguration.getSubstitutionFor(),
+                            typeXMLConfiguration.getSubstitutionGroup(),
+                            typeXMLConfiguration.getXmlElementName(),
+                            Optional.empty(), //blank out XmlElementFullyQualifiedName as per legacy format
+                            Optional.empty(), //blank out abstract as per legacy format
+                            typeXMLConfiguration.getXmlAttributes(),
+                            newAttributeXmlConfiguration,
+                            typeXMLConfiguration.getEnumValues()
+                    );
+                    newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);
+                }
             });
 
             return new RosettaXMLConfiguration(newTypeConfigMap);

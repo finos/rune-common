@@ -113,19 +113,17 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
-            for (XmlElement element : typeXMLConfiguration.getElements()) {
-                if (element.getFullyQualifiedName().equals(fullyQualifiedName)) {
-                    if (!element.isAbstract()) {
-                        ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
-                        try {
-                            JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
-                            substitutionMap.put(element.getName(), javaType);
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
+            if (typeXMLConfiguration.getXmlElementFullyQualifiedName().map(x -> x.equals(fullyQualifiedName)).orElse(false)) {
+                if (!typeXMLConfiguration.getAbstract().orElse(false)) {
+                    ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
+                    try {
+                        JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
+                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(name, javaType));
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
                     }
-
                 }
+
             }
         }
     }
@@ -134,19 +132,17 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
-            for (XmlElement element : typeXMLConfiguration.getElements()) {
-                if (element.getSubstitutionGroup() != null && element.getSubstitutionGroup().equals(substitutionGroup)) {
-                    if (!element.isAbstract()) {
-                        ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
-                        try {
-                            JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
-                            substitutionMap.put(element.getName(), javaType);
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
+            if (typeXMLConfiguration.getSubstitutionGroup().map(g -> g.equals(substitutionGroup)).orElse(false)) {
+                if (!typeXMLConfiguration.getAbstract().orElse(false)) {
+                    ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
+                    try {
+                        JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
+                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(name, javaType));
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
                     }
-                    lookupTransitiveSubstitutionGroups(config, element.getFullyQualifiedName(), substitutionMap, classLoader);
                 }
+                typeXMLConfiguration.getXmlElementFullyQualifiedName().ifPresent(fullyQualifiedName -> lookupTransitiveSubstitutionGroups(config, fullyQualifiedName, substitutionMap, classLoader));
             }
         }
     }
@@ -163,9 +159,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                     .flatMap(AttributeXMLConfiguration::getSubstitutionGroup)
                     .map(rosettaXMLConfiguration::getSubstitutionsFor)
                     .orElse(Collections.emptyList()));
-            if (substitutions.isEmpty()) {
-                return null;
-            }
+
             Map<JavaType, String> original = Streams.concat(substitutions.stream(), Stream.of(id))
                     .collect(Collectors.toMap(
                             s -> {
@@ -179,6 +173,11 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                     ));
 
             Map<String, JavaType> substitutionMapNew = findSubstitutionMapNew(config, member, classLoader);
+
+            if (substitutions.isEmpty() && substitutionMapNew.isEmpty()) {
+                return null;
+            }
+
             substitutionMapNew.forEach((entryName, javaType) -> {
                 original.put(javaType, entryName);
             });

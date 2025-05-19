@@ -20,4 +20,6 @@
 <Zoo>
   <goat name="Goatee"/>
   <cow name="Moomoo"/>
+  <shark name="Jaws"/>
+  <salmon name="Sashimi"/>
 </Zoo>

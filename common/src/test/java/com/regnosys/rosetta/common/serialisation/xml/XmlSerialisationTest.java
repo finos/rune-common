@@ -265,6 +265,8 @@ public class XmlSerialisationTest {
         Zoo zoo = Zoo.builder()
                 .addAnimal(Goat.builder().setName("Goatee").build())
                 .addAnimal(Cow.builder().setName("Moomoo").build())
+                .addAnimal(Shark.builder().setName("Jaws").build())
+                .addAnimal(Salmon.builder().setName("Sashimi").build())
                 .build();
 
         String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);

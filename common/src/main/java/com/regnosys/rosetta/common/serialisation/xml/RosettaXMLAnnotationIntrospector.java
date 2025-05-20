@@ -125,15 +125,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
             if (typeXMLConfiguration.getXmlElementFullyQualifiedName().map(x -> x.equals(fullyQualifiedName)).orElse(false)) {
-                if (!typeXMLConfiguration.getAbstract().orElse(false)) {
-                    ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
-                    try {
-                        JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
-                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(javaType, name));
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+                updateSubstitutionMap(config, substitutionMap, classLoader, modelSymbolIdTypeXMLConfigurationEntry, typeXMLConfiguration);
 
             }
         }
@@ -144,16 +136,20 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
             if (typeXMLConfiguration.getSubstitutionGroup().map(g -> g.equals(substitutionGroup)).orElse(false)) {
-                if (!typeXMLConfiguration.getAbstract().orElse(false)) {
-                    ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
-                    try {
-                        JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
-                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(javaType, name));
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+                updateSubstitutionMap(config, substitutionMap, classLoader, modelSymbolIdTypeXMLConfigurationEntry, typeXMLConfiguration);
                 typeXMLConfiguration.getXmlElementFullyQualifiedName().ifPresent(fullyQualifiedName -> lookupTransitiveSubstitutionGroups(config, fullyQualifiedName, substitutionMap, classLoader));
+            }
+        }
+    }
+
+    private void updateSubstitutionMap(MapperConfig<?> config, Map<JavaType, String> substitutionMap, ClassLoader classLoader, Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry, TypeXMLConfiguration typeXMLConfiguration) {
+        if (!typeXMLConfiguration.getAbstract().orElse(false)) {
+            ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
+            try {
+                JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
+                typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(javaType, name));
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
         }
     }

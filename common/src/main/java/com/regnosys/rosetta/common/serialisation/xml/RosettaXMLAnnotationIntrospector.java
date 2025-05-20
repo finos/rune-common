@@ -92,24 +92,35 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 - if is not abstract store link between name of element and type of element in the substitutionMap and recurse
                 - if is abstract carry on recursing but don't store in substitutionMap
      */
-    public Map<String, JavaType>  findSubstitutionMapNew(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
+    public SubstitutionMap  findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
         AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
         RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
 
         if (ann != null) {
-            Map<String, JavaType> substitutionMap = new HashMap<>();
+            Map<JavaType, String> substitutionMap = new HashMap<>();
             getAttributeXMLConfiguration(config, member)
-                    .flatMap(AttributeXMLConfiguration::getElementRef)
+                    .flatMap(this::getElementRef)
                     .ifPresent(elementRef -> {
                         lookupElementByFullyQualifiedName(config, elementRef, substitutionMap, classLoader);
                         lookupTransitiveSubstitutionGroups(config, elementRef, substitutionMap, classLoader);
                     });
-            return substitutionMap;
+            lookupLegacySubstitutionsForType(config, ac, ann, substitutionMap, classLoader);
+            if (substitutionMap.isEmpty()) {
+                return null;
+            }
+            return new SubstitutionMap(substitutionMap);
         }
         return null;
     }
 
-    private void lookupElementByFullyQualifiedName(MapperConfig<?> config, String fullyQualifiedName, Map<String, JavaType> substitutionMap, ClassLoader classLoader) {
+    /*
+     * Required for backwards compatibility getElementRef() supersedes legacy getSubstitutionGroup() method
+     */
+    private Optional<String> getElementRef(AttributeXMLConfiguration attributeXMLConfiguration) {
+        return attributeXMLConfiguration.getElementRef().isPresent() ? attributeXMLConfiguration.getElementRef() : attributeXMLConfiguration.getSubstitutionGroup();
+    }
+
+    private void lookupElementByFullyQualifiedName(MapperConfig<?> config, String fullyQualifiedName, Map<JavaType, String> substitutionMap, ClassLoader classLoader) {
         SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
@@ -118,7 +129,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                     ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
                     try {
                         JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
-                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(name, javaType));
+                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(javaType, name));
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e);
                     }
@@ -128,7 +139,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
     }
 
-    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config, String substitutionGroup, Map<String, JavaType> substitutionMap, ClassLoader classLoader) {
+    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config, String substitutionGroup, Map<JavaType, String> substitutionMap, ClassLoader classLoader) {
         SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
@@ -137,7 +148,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                     ModelSymbolId modelSymbolId = modelSymbolIdTypeXMLConfigurationEntry.getKey();
                     try {
                         JavaType javaType = config.constructType(classLoader.loadClass(modelSymbolId.toString()));
-                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(name, javaType));
+                        typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(javaType, name));
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e);
                     }
@@ -147,20 +158,15 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
     }
 
+    /*
+     * Required for backwards compatibility
+     */
+    private void lookupLegacySubstitutionsForType(MapperConfig<?> config, AnnotatedClass ac, RosettaDataType ann, Map<JavaType, String> substitutionMap, ClassLoader classLoader) {
+        ModelSymbolId id = createModelSymbolId(ac, ann.value());
+        List<ModelSymbolId> substitutions = new ArrayList<>(rosettaXMLConfiguration.getSubstitutionsForType(id)); // Old substitution group pmodel field
 
-    public SubstitutionMap findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
-        AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
-        RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
-        if (ann != null) {
-            ModelSymbolId id = createModelSymbolId(ac, ann.value());
-            List<ModelSymbolId> substitutions = new ArrayList<>();
-            substitutions.addAll(rosettaXMLConfiguration.getSubstitutionsForType(id)); // For backwards compatibility
-            substitutions.addAll(getAttributeXMLConfiguration(config, member)
-                    .flatMap(AttributeXMLConfiguration::getSubstitutionGroup)
-                    .map(rosettaXMLConfiguration::getSubstitutionsFor)
-                    .orElse(Collections.emptyList()));
-
-            Map<JavaType, String> original = Streams.concat(substitutions.stream(), Stream.of(id))
+        if (!substitutions.isEmpty()) {
+            substitutionMap.putAll(Streams.concat(substitutions.stream(), Stream.of(id))
                     .collect(Collectors.toMap(
                             s -> {
                                 try {
@@ -170,24 +176,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                                 }
                             },
                             this::getElementName
-                    ));
-
-            Map<String, JavaType> substitutionMapNew = findSubstitutionMapNew(config, member, classLoader);
-
-            if (substitutions.isEmpty() && substitutionMapNew.isEmpty()) {
-                return null;
-            }
-
-            substitutionMapNew.forEach((entryName, javaType) -> {
-                original.put(javaType, entryName);
-            });
-
-            return new SubstitutionMap(
-                    original
-            );
+                    )));
         }
-        return null;
     }
+
     private String getElementName(ModelSymbolId type) {
         return rosettaXMLConfiguration.getConfigurationForType(type).flatMap(TypeXMLConfiguration::getXmlElementName).orElse(type.getName());
     }

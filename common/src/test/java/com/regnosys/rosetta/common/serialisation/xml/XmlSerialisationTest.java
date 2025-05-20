@@ -27,6 +27,7 @@ import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.test.*;
+import com.rosetta.util.DottedPath;
 import com.rosetta.util.serialisation.AttributeXMLConfiguration;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 import com.rosetta.util.serialisation.TypeXMLConfiguration;
@@ -51,8 +52,6 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.SortedMap;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -293,12 +292,12 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    public void testSubstitutionGroupLegacySerialisation() throws IOException {
+    public void testSubstitutionGroupLegacyV2Serialisation() throws IOException {
         AnimalContainer animalContainer = AnimalContainer.builder()
                 .setAnimal(Goat.builder().setName("Goatee").build())
                 .build();
 
-        ObjectMapper legacyObjectMapper = getLegacyObjectMapper();
+        ObjectMapper legacyObjectMapper = getLegacyV2ObjectMapper();
 
         String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
@@ -314,13 +313,13 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    public void testMultiCardinalitySubstitutionGroupLegacySerialisation() throws IOException {
+    public void testMultiCardinalitySubstitutionGroupLegacyV2Serialisation() throws IOException {
         Zoo zoo = Zoo.builder()
                 .addAnimal(Goat.builder().setName("Goatee").build())
                 .addAnimal(Cow.builder().setName("Moomoo").build())
                 .build();
 
-        ObjectMapper legacyObjectMapper = getLegacyObjectMapper();
+        ObjectMapper legacyObjectMapper = getLegacyV2ObjectMapper();
 
         String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
@@ -335,11 +334,33 @@ public class XmlSerialisationTest {
         assertEquals(zoo, actual);
     }
 
-    private ObjectMapper getLegacyObjectMapper() {
-        return RosettaObjectMapperCreator.forXML(getLegacyRosettaXMLConfiguration()).create();
+    @Test
+    public void testSubstitutionGroupLegacyV1Serialisation() throws IOException {
+        AnimalContainer animalContainer = AnimalContainer.builder()
+                .setAnimal(Goat.builder().setName("Goatee").build())
+                .build();
+
+        ObjectMapper legacyObjectMapper = getLegacyV1ObjectMapper();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + legacyObjectMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(animalContainer);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        AnimalContainer actual = legacyObjectMapper.readValue(expectedXML, AnimalContainer.class);
+        assertEquals(animalContainer, actual);
     }
 
-    private RosettaXMLConfiguration getLegacyRosettaXMLConfiguration() {
+
+    private ObjectMapper getLegacyV1ObjectMapper() {
+        return RosettaObjectMapperCreator.forXML(getLegacyV1RosettaXMLConfiguration()).create();
+    }
+
+    private RosettaXMLConfiguration getLegacyV1RosettaXMLConfiguration() {
         try (InputStream inputStream = configUrl.openStream()) {
             final RosettaXMLConfiguration config = RosettaXMLConfiguration.load(inputStream);
             Map<ModelSymbolId, TypeXMLConfiguration> newTypeConfigMap = new HashMap<>();
@@ -353,7 +374,63 @@ public class XmlSerialisationTest {
                                     AttributeXMLConfiguration newAttributeConfiguration = new AttributeXMLConfiguration(attr.getXmlName(),
                                             attr.getXmlAttributes(),
                                             attr.getXmlRepresentation(),
-                                            attr.getElementRef(), //populate substitution group with elementRef as per legacy format
+                                            attr.getElementRef(), //populate substitution group with what is now elementRef as per legacy format
+                                            Optional.empty());
+                                    newAttributes.put(key, newAttributeConfiguration);
+                                });
+                                return newAttributes;
+                            });
+
+                    TypeXMLConfiguration newTypeXmlConfiguration = new TypeXMLConfiguration(
+                            deriveLegacyV1SubstitutionFor(modelSymbolId, typeXMLConfiguration), //populate with type to substitute for as in v1 format
+                            Optional.empty(), //empty substitution group as in v1 format
+                            typeXMLConfiguration.getXmlElementName(),
+                            Optional.empty(), //blank out XmlElementFullyQualifiedName as per legacy format
+                            Optional.empty(), //blank out abstract as per legacy format
+                            typeXMLConfiguration.getXmlAttributes(),
+                            newAttributeXmlConfiguration,
+                            typeXMLConfiguration.getEnumValues()
+                    );
+                    newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);
+                }
+            });
+
+            return new RosettaXMLConfiguration(newTypeConfigMap);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Optional<ModelSymbolId> deriveLegacyV1SubstitutionFor(ModelSymbolId modelSymbolId, TypeXMLConfiguration typeXMLConfiguration) {
+        return typeXMLConfiguration.getSubstitutionGroup()
+                .map(substitutionGroup -> {
+                    String name = substitutionGroup.replaceAll(".*/(.*?)$", "$1");
+                    name = name.substring(0, 1).toUpperCase() + name.substring(1);
+                    DottedPath namespace = modelSymbolId.getNamespace();
+                    return new ModelSymbolId(namespace, name);
+                });
+    }
+
+
+    private ObjectMapper getLegacyV2ObjectMapper() {
+        return RosettaObjectMapperCreator.forXML(getLegacyV2RosettaXMLConfiguration()).create();
+    }
+
+    private RosettaXMLConfiguration getLegacyV2RosettaXMLConfiguration() {
+        try (InputStream inputStream = configUrl.openStream()) {
+            final RosettaXMLConfiguration config = RosettaXMLConfiguration.load(inputStream);
+            Map<ModelSymbolId, TypeXMLConfiguration> newTypeConfigMap = new HashMap<>();
+
+            config.getTypeConfigMap().forEach((modelSymbolId, typeXMLConfiguration) -> {
+                if (!typeXMLConfiguration.getAbstract().orElse(false)) {
+                    Optional<Map<String, AttributeXMLConfiguration>> newAttributeXmlConfiguration = typeXMLConfiguration.getAttributes()
+                            .map(attributes -> {
+                                Map<String, AttributeXMLConfiguration> newAttributes = new HashMap<>();
+                                attributes.forEach((key, attr) -> {
+                                    AttributeXMLConfiguration newAttributeConfiguration = new AttributeXMLConfiguration(attr.getXmlName(),
+                                            attr.getXmlAttributes(),
+                                            attr.getXmlRepresentation(),
+                                            attr.getElementRef(), //populate substitution group with what is now elementRef as per legacy format
                                             Optional.empty());
                                     newAttributes.put(key, newAttributeConfiguration);
                                 });

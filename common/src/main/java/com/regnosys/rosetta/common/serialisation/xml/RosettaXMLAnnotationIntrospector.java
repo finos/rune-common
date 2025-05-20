@@ -159,7 +159,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
      */
     private void lookupLegacySubstitutionsForType(MapperConfig<?> config, AnnotatedClass ac, RosettaDataType ann, Map<JavaType, String> substitutionMap, ClassLoader classLoader) {
         ModelSymbolId id = createModelSymbolId(ac, ann.value());
-        List<ModelSymbolId> substitutions = new ArrayList<>(rosettaXMLConfiguration.getSubstitutionsForType(id)); // Old substitution group pmodel field
+        List<ModelSymbolId> substitutions = new ArrayList<>(rosettaXMLConfiguration.getSubstitutionsForType(id)); // Old substitution group model field
 
         if (!substitutions.isEmpty()) {
             substitutionMap.putAll(Streams.concat(substitutions.stream(), Stream.of(id))

@@ -83,15 +83,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
 
-    /*
-
-        1. Want to parse an attribute called commoditySwapLeg (ie. in the CommoditySwapDetailsModel)
-        2. If the attribute has an elementRef lookup the xml element object in the elements array of the types by fully qualified name
-        3. For each element, (ie physicalLeg) lookup all elements that have a substitution group equal to that element name so, so substitution group = physicalLeg
-            - For each element found:
-                - if is not abstract store link between name of element and type of element in the substitutionMap and recurse
-                - if is abstract carry on recursing but don't store in substitutionMap
-     */
     public SubstitutionMap  findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
         AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
         RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);

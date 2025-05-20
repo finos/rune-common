@@ -178,7 +178,7 @@ public class RosettaSerialisationTest {
     }
 
     private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String inputJson, String expectedJson, String fqClassName) throws JsonProcessingException {
-        HashMap<String, String> generatedCodeMap = codeGeneratorTestHelper.generateCode(rosetta);
+        Map<String, String> generatedCodeMap = codeGeneratorTestHelper.generateCode(rosetta);
 
         // Uncomment so see the generated code in target/<test-name>
         //codeGeneratorTestHelper.writeClasses(generatedCodeMap, Thread.currentThread().getStackTrace()[3].getMethodName());

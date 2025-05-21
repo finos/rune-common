@@ -38,7 +38,8 @@ import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyReferenceMixIn;
-import com.regnosys.rosetta.common.serialisation.xml.RosettaSerialiserFactory;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXmlMapper;
+import com.regnosys.rosetta.common.serialisation.xml.serialization.RosettaSerialiserFactory;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLModule;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
@@ -77,11 +78,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config, ClassLoader classLoader) {
         boolean supportRosettaEnumValue = true;
 
-        // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
-        XmlMapper baseXML = new XmlMapper((JacksonXmlModule) null);
-        baseXML.setSerializerFactory(RosettaSerialiserFactory.INSTANCE);
-
-        ObjectMapper base = new XmlMapper.Builder(baseXML)
+        XmlMapper base = new XmlMapper.Builder(new RosettaXmlMapper())
                 .defaultUseWrapper(false) // TODO: enable default wrapping after this issue is resolved: https://github.com/FasterXML/jackson-databind/issues/4595
                 .build();
         return new RosettaObjectMapperCreator(new RosettaXMLModule(base, config, supportRosettaEnumValue, classLoader), base);

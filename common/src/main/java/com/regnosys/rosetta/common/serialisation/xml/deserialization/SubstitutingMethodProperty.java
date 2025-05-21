@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.deserialization;
 
 /*-
  * ==============
@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.deser.std.CollectionDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.dataformat.xml.deser.WrapperHandlingDeserializer;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;

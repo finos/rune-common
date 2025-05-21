@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.deserialization;
 
 /*-
  * ==============
@@ -25,6 +25,9 @@ import com.fasterxml.jackson.databind.deser.*;
 import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.fasterxml.jackson.dataformat.xml.deser.WrapperHandlingDeserializer;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,5 +61,13 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
             }
         }
         return builder;
+    }
+
+    @Override
+    public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+        if (deserializer instanceof WrapperHandlingDeserializer) {
+            return new UnwrappableWrapperHandlingDeserializer((BeanDeserializerBase) deserializer.getDelegatee());
+        }
+        return deserializer;
     }
 }

@@ -22,7 +22,7 @@
         <xs:complexContent>
             <xs:extension base="FooBase">
                 <xs:sequence>
-                    <xs:element name="Attr1" type="xs:int" minOccurs="0" maxOccurs="unbounded" />
+                    <xs:element name="Attr1" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>
@@ -102,4 +102,21 @@
             <xs:element ref="animal" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
+
+    <xs:complexType name="Party">
+        <xs:sequence>
+            <xs:group ref="PartyName.model"/>
+            <xs:group ref="Party.model"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:group name="PartyName.model">
+        <xs:sequence>
+            <xs:element name="partyName" type="xs:string"/>
+        </xs:sequence>
+    </xs:group>
+    <xs:group name="Party.model">
+        <xs:sequence>
+            <xs:element name="partyId" type="xs:string" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:group>
 </xs:schema>

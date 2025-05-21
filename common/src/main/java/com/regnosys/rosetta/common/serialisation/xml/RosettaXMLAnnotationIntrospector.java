@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.regnosys.rosetta.common.serialisation.ConstantAttributePropertyWriter;
 import com.regnosys.rosetta.common.serialisation.mixin.EnumAsStringBuilderIntrospector;
@@ -64,13 +65,26 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
+    // Indexes used to improve the performance of generating the substitution map
+    private final Map<String, List<TypeConfigEntry>> elementIndex = new HashMap<>();
+    private final Map<String, List<TypeConfigEntry>> groupIndex = new HashMap<>();
+
+    private static class TypeConfigEntry {
+        final ModelSymbolId symbolId;
+        final TypeXMLConfiguration config;
+
+        TypeConfigEntry(ModelSymbolId symbolId, TypeXMLConfiguration config) {
+            this.symbolId = symbolId;
+            this.config = config;
+        }
+    }
+
     // Note: this is a hack! In some occasions, the methods below
     // do not have access to the `MapperConfig<?>`, but they need it,
     // so having access to the object mapper makes sure we can always
     // access it.
     // Related to https://github.com/FasterXML/jackson-databind/issues/4141.
     private final ObjectMapper mapper;
-
 
     public RosettaXMLAnnotationIntrospector(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
         this(mapper, rosettaXMLConfiguration, new RosettaEnumBuilderIntrospector(supportNativeEnumValue), new EnumAsStringBuilderIntrospector());
@@ -81,6 +95,27 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
+        buildSubstitutionLogicIndexes();
+    }
+
+    private void buildSubstitutionLogicIndexes() {
+        SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
+
+        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : typeConfigMap.entrySet()) {
+            ModelSymbolId symbolId = entry.getKey();
+            TypeXMLConfiguration cfg = entry.getValue();
+            TypeConfigEntry typeConfigEntry = new TypeConfigEntry(symbolId, cfg);
+
+            cfg.getXmlElementFullyQualifiedName()
+                    .ifPresent(fqn -> elementIndex
+                            .computeIfAbsent(fqn, k -> new ArrayList<>())
+                            .add(typeConfigEntry));
+
+            cfg.getSubstitutionGroup()
+                    .ifPresent(group -> groupIndex
+                            .computeIfAbsent(group, k -> new ArrayList<>())
+                            .add(typeConfigEntry));
+        }
     }
 
     public SubstitutionMap  findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
@@ -111,25 +146,35 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return attributeXMLConfiguration.getElementRef().isPresent() ? attributeXMLConfiguration.getElementRef() : attributeXMLConfiguration.getSubstitutionGroup();
     }
 
-    private void lookupElementByFullyQualifiedName(MapperConfig<?> config, String fullyQualifiedName, Map<JavaType, String> substitutionMap, ClassLoader classLoader) {
-        SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
-        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
-            TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
-            if (typeXMLConfiguration.getXmlElementFullyQualifiedName().map(x -> x.equals(fullyQualifiedName)).orElse(false)) {
-                updateSubstitutionMap(config, substitutionMap, classLoader, typeXMLConfiguration, modelSymbolIdTypeXMLConfigurationEntry.getKey());
-
-            }
+    private void lookupElementByFullyQualifiedName(MapperConfig<?> config,
+                                                   String fullyQualifiedName,
+                                                   Map<JavaType, String> substitutionMap,
+                                                   ClassLoader classLoader) {
+        for (TypeConfigEntry entry : elementIndex.getOrDefault(fullyQualifiedName, Lists.newArrayList())) {
+            updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
         }
     }
 
-    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config, String substitutionGroup, Map<JavaType, String> substitutionMap, ClassLoader classLoader) {
-        SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
-        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> modelSymbolIdTypeXMLConfigurationEntry : typeConfigMap.entrySet()) {
-            TypeXMLConfiguration typeXMLConfiguration = modelSymbolIdTypeXMLConfigurationEntry.getValue();
-            if (typeXMLConfiguration.getSubstitutionGroup().map(g -> g.equals(substitutionGroup)).orElse(false)) {
-                updateSubstitutionMap(config, substitutionMap, classLoader, typeXMLConfiguration, modelSymbolIdTypeXMLConfigurationEntry.getKey());
-                typeXMLConfiguration.getXmlElementFullyQualifiedName().ifPresent(fullyQualifiedName -> lookupTransitiveSubstitutionGroups(config, fullyQualifiedName, substitutionMap, classLoader));
-            }
+    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config,
+                                                    String substitutionGroup,
+                                                    Map<JavaType, String> substitutionMap,
+                                                    ClassLoader classLoader) {
+        lookupTransitiveSubstitutionGroups(config, substitutionGroup, substitutionMap, classLoader, new HashSet<>());
+    }
+
+    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config,
+                                                    String substitutionGroup,
+                                                    Map<JavaType, String> substitutionMap,
+                                                    ClassLoader classLoader,
+                                                    Set<String> visited) {
+        if (!visited.add(substitutionGroup)) {
+            return;
+        }
+
+        for (TypeConfigEntry entry : groupIndex.getOrDefault(substitutionGroup, Lists.newArrayList())) {
+            updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
+            entry.config.getXmlElementFullyQualifiedName()
+                    .ifPresent(fqn -> lookupTransitiveSubstitutionGroups(config, fqn, substitutionMap, classLoader, visited));
         }
     }
 

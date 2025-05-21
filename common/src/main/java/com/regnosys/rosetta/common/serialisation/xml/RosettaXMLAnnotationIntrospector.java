@@ -272,23 +272,16 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     @Override
-    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
-        // For the root element, ignore the xsi:schemaLocation attribute.
-        JsonIgnoreProperties.Value ignoreProps = super.findPropertyIgnoralByName(config, a);
-        return Optional.of(a)
-                .filter(ann -> ann instanceof AnnotatedClass)
-                .map(ann -> (AnnotatedClass) ann)
-                // TODO: substitution groups should not have this
-                .flatMap(ac -> this.getTypeXMLConfigurations(config, ac).stream().filter(t -> t.getXmlElementName().isPresent()).map(t -> t.getXmlElementName().get()).findFirst())
-                .map(rootElementName -> {
-                    Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
-                    return JsonIgnoreProperties.Value.construct(
-                            ignoredNames,
-                            ignoreProps.getIgnoreUnknown(),
-                            ignoreProps.getAllowGetters(),
-                            ignoreProps.getAllowSetters(),
-                            ignoreProps.getMerge());
-                }).orElse(ignoreProps);
+    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
+        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
+            AnnotatedClass acc = (AnnotatedClass) ac;
+            Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
+            Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+            ignored.removeAll(includes);
+            return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
+        }
+
+        return super.findPropertyIgnoralByName(config, ac);
     }
 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

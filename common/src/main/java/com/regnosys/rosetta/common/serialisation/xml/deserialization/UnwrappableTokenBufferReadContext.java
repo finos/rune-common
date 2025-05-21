@@ -37,6 +37,8 @@ import java.util.Set;
 public class UnwrappableTokenBufferReadContext extends TokenBufferReadContext {
 
     protected Set<String> _namesToWrap;
+    protected String _wrapperName = null;
+    protected int _wrapperState = 0;
 
     protected UnwrappableTokenBufferReadContext(JsonStreamContext base, ContentReference srcRef)
     {
@@ -70,6 +72,19 @@ public class UnwrappableTokenBufferReadContext extends TokenBufferReadContext {
     // @since 2.11.1
     public boolean shouldWrap(String localName) {
         return (_namesToWrap != null) && _namesToWrap.contains(localName);
+    }
+    
+    public void setWrapperName(String wrapperName) {
+        _wrapperName = wrapperName;
+    }
+    public String getWrapperName() {
+        return _wrapperName;
+    }
+    public void setWrapperState(int wrapperState) {
+        _wrapperState = wrapperState;
+    }
+    public int getWrapperState() {
+        return _wrapperState;
     }
 
     @Override

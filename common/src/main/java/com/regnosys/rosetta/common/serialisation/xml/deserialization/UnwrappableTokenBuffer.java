@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.databind.util.TokenBufferReadContext;
 import com.fasterxml.jackson.dataformat.xml.deser.ElementWrappable;
+import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.fasterxml.jackson.dataformat.xml.util.CaseInsensitiveNameSet;
 
 import java.io.IOException;
@@ -123,10 +124,6 @@ public class UnwrappableTokenBuffer extends TokenBuffer {
         protected transient ByteArrayBuilder _byteBuilder;
 
         protected JsonLocation _location = null;
-        
-        // CUSTOM
-        protected String wrapperName = null;
-        protected int wrapperState = 0;
 
         /*
         /**********************************************************
@@ -239,18 +236,19 @@ public class UnwrappableTokenBuffer extends TokenBuffer {
             // If we are closed, nothing more to do
             if (_closed || (_segment == null)) return null;
             
+            int wrapperState = _parsingContext.getWrapperState();
             if (wrapperState > 0) {
                 if (wrapperState == 1) {
-                    wrapperState = 2;
+                    _parsingContext.setWrapperState(2);
                     _currToken = JsonToken.START_ARRAY;
                     return _currToken;
                 } else if (wrapperState == 2) {
-                    wrapperState = 3;
+                    _parsingContext.setWrapperState(3);
                     _currToken = JsonToken.FIELD_NAME;
                     return _currToken;
                 } else if (wrapperState == 4) {
-                    wrapperState = 0;
-                    wrapperName = null;
+                    _parsingContext.setWrapperState(0);
+                    _parsingContext.setWrapperName(null);
                     _currToken = _segment.type(_segmentPtr);
                     return _currToken;
                 }
@@ -271,12 +269,12 @@ public class UnwrappableTokenBuffer extends TokenBuffer {
                 String name = (ob instanceof String) ? ((String) ob) : ob.toString();
                 if (wrapperState == 0) {
                     if (_parsingContext.shouldWrap(name)) {
-                        wrapperName = name;
-                        wrapperState = 1;
+                        _parsingContext.setWrapperName(name);
+                        _parsingContext.setWrapperState(1);
                     }
                 } else if (wrapperState == 3) {
                     if (!_parsingContext.shouldWrap(name)) {
-                        wrapperState = 4;
+                        _parsingContext.setWrapperState(4);
                         _currToken = JsonToken.END_ARRAY;
                         return _currToken;
                     }
@@ -289,7 +287,7 @@ public class UnwrappableTokenBuffer extends TokenBuffer {
             } else if (t == JsonToken.END_OBJECT
                     || t == JsonToken.END_ARRAY) {
                 if (wrapperState == 3) {
-                    wrapperState = 4;
+                    _parsingContext.setWrapperState(4);
                     _currToken = JsonToken.END_ARRAY;
                     return _currToken;
                 }
@@ -372,7 +370,11 @@ public class UnwrappableTokenBuffer extends TokenBuffer {
                 JsonStreamContext parent = _parsingContext.getParent();
                 return parent.getCurrentName();
             }
-            return _parsingContext.getCurrentName();
+            String name = _parsingContext.getCurrentName();
+            if (name != null) {
+                return name;
+            }
+            return _parsingContext.getParent().getCurrentName();
         }
 
         @Override

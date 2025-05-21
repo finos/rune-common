@@ -139,7 +139,7 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
 
     @Override
     public boolean hasIgnoreMarker(AnnotatedMember a) {
-        return a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);
+        return a.getName().startsWith("add") || a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);
     }
 
     @Override

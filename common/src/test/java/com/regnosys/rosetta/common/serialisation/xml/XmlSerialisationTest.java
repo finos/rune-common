@@ -195,6 +195,26 @@ public class XmlSerialisationTest {
         ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
         assertEquals(expected, actual);
     }
+    
+    @Test
+    public void testElementNamedTypeDeserialisation() throws IOException {
+        TypeWithTypeElement t = TypeWithTypeElement.builder()
+                .setFirstElement("first")
+                .set_type("My type")
+                .build();
+        
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(t);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/element-named-type.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        TypeWithTypeElement actual = xmlMapper.readValue(expectedXML, TypeWithTypeElement.class);
+        assertEquals(t, actual);
+    }
 
     @Test
     public void testMultiCardinalitySerialisation() throws IOException {

@@ -184,27 +184,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 .orElseGet(
                         () -> Optional.ofNullable(a.getAnnotation(RosettaAttribute.class))
                                 .map(rosettaAttrAnn -> PropertyName.construct(rosettaAttrAnn.value()))
-                                .orElseGet(() -> this.findLegacyName(a))
+                                .orElseGet(() -> super._findXmlName(a))
                 );
-    }
-
-    private PropertyName findLegacyName(Annotated a) {
-        if (a instanceof AnnotatedMethod) {
-            AnnotatedMethod am = (AnnotatedMethod) a;
-            if (am.getParameterCount() == 1) {
-                if (am.getName().startsWith("set") && RosettaModelObject.class.isAssignableFrom(am.getDeclaringClass())) {
-                    String firstLower = StringExtensions.toFirstLower(am.getName().substring(3));
-                    if (firstLower.equals("key") && GlobalKeyFields.class.isAssignableFrom(am.getDeclaringClass())) {
-                        firstLower = "location";
-                    }
-                    if (firstLower.equals("reference") && ReferenceWithMeta.class.isAssignableFrom(am.getDeclaringClass())) {
-                        firstLower = "address";
-                    }
-                    return new PropertyName(firstLower);
-                }
-            }
-        }
-        return super._findXmlName(a);
     }
 
     private boolean shouldUseDefaultPropertyName(MapperConfig<?> config, Annotated a) {
@@ -268,15 +249,17 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
         // Additionally, ignore any members that do not have the RosettaAttribute annotation
         // except for constructors, which are necessary for deserialisation.
-        return a.hasAnnotation(RosettaIgnore.class) && !(a instanceof AnnotatedConstructor);
+        // Additionally, the `getType` method needs to be ignored explicitly, otherwise it interferes with
+        // xml elements named `type`, which are then always ordered on top, instead of the actual place they occur.
+        return a.hasAnnotation(RosettaIgnore.class) && !(a instanceof AnnotatedConstructor) || a.getName().equals("getType");
     }
 
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
         if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
             AnnotatedClass acc = (AnnotatedClass) ac;
-            Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
-            Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+            Set<String> includes = getPropertyNames(config, acc, x -> x.hasAnnotation(RosettaAttribute.class));
+            Set<String> ignored = getPropertyNames(config, acc, x -> !x.hasAnnotation(RosettaAttribute.class));
             ignored.removeAll(includes);
             return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
         }
@@ -284,10 +267,14 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return super.findPropertyIgnoralByName(config, ac);
     }
 
-    private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
+    private Set<String> getPropertyNames(MapperConfig<?> config, AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
                 .map(m -> {
+                    Optional<String> xmlName = getAttributeXMLConfiguration(config, m).flatMap(AttributeXMLConfiguration::getXmlName);
+                    if (xmlName.isPresent()) {
+                        return xmlName.get();
+                    }
                     RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
                     if (attr != null && !attr.value().isEmpty()) {
                         return attr.value();

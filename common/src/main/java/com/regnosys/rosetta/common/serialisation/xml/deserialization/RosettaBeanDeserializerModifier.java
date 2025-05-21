@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.deser.*;
 import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.dataformat.xml.deser.WrapperHandlingDeserializer;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
 
@@ -56,18 +55,14 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
             AnnotatedMember acc = prop.getMember();
             SubstitutionMap substitutionMap = substitutionMapLoader.findSubstitutionMap(config, intr, acc);
             if (substitutionMap != null) {
-                SettableBeanProperty substitutingProperty = new SubstitutingMethodProperty((MethodProperty)prop, substitutionMap, (AnnotatedMethod) acc);
-                builder.addOrReplaceProperty(substitutingProperty, true);
+                for (JavaType substitutedType : substitutionMap.getTypes()) {
+                    String substitutedName = substitutionMap.getName(substitutedType);
+                    SettableBeanProperty substitutedProperty = new SubstitutedMethodProperty((MethodProperty)prop, substitutedType, (AnnotatedMethod) acc).withSimpleName(substitutedName);
+                    // TODO: only replace the original property - make sure we are not accidentally replacing random other properties
+                    builder.addOrReplaceProperty(substitutedProperty, true);
+                }
             }
         }
         return builder;
-    }
-
-    @Override
-    public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
-        if (deserializer instanceof WrapperHandlingDeserializer) {
-            return new UnwrappableWrapperHandlingDeserializer((BeanDeserializerBase) deserializer.getDelegatee());
-        }
-        return deserializer;
     }
 }

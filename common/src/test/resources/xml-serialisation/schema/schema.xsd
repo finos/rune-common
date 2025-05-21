@@ -47,6 +47,13 @@
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>
+    
+    <xs:complexType name="TypeWithTypeElement">
+        <xs:sequence>
+            <xs:element name="firstElement" type="xs:string"/>
+            <xs:element name="type" type="xs:string"/>
+        </xs:sequence>
+    </xs:complexType>
 
     <xs:complexType name="TimeContainer">
         <xs:sequence>

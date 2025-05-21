@@ -38,6 +38,9 @@ import java.io.IOException;
 /**
  * Copy of {@link XmlDeserializationContext}, with one additional override for method `bufferForInputBuffering`
  * to return our custom {@link UnwrappableTokenBuffer}.
+ * 
+ * Note that we are unable to extend {@link XmlDeserializationContext} because it has private constructors which
+ * we need.
  */
 public class RosettaXmlDeserializationContext extends DefaultDeserializationContext {
     private static final long serialVersionUID = 1L;

@@ -24,9 +24,16 @@ import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.io.ContentReference;
 import com.fasterxml.jackson.databind.util.TokenBufferReadContext;
+import com.fasterxml.jackson.dataformat.xml.deser.XmlReadContext;
 
 import java.util.Set;
 
+/**
+ * An extension of {@link TokenBufferReadContext} which add support for remembering names to wrap.
+ * 
+ * The implementation is the same as in {@link XmlReadContext}. It adds two methods
+ * `setNamesToWrap` and `setNamesToWrap`.
+ */
 public class UnwrappableTokenBufferReadContext extends TokenBufferReadContext {
 
     protected Set<String> _namesToWrap;

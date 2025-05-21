@@ -26,6 +26,9 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.regnosys.rosetta.common.serialisation.xml.deserialization.RosettaXmlDeserializationContext;
 import com.regnosys.rosetta.common.serialisation.xml.serialization.RosettaSerialiserFactory;
 
+/**
+ * This class exists just to override the `_deserializationContext` property.
+ */
 public class RosettaXmlMapper extends XmlMapper {
     public RosettaXmlMapper() {
         // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678

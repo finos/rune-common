@@ -37,6 +37,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * A collection deserializer with support for substitution groups. For each name in the substitution group,
+ * it will find a corresponding value deserializer during contextualization.
+ */
 public class SubstitutingCollectionDeserializer extends CollectionDeserializer {
 
     private final Map<String, JsonDeserializer<Object>> _valueDeserializers;

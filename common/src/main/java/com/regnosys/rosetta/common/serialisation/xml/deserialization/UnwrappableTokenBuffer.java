@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.databind.util.TokenBufferReadContext;
 import com.fasterxml.jackson.dataformat.xml.deser.ElementWrappable;
-import com.fasterxml.jackson.dataformat.xml.deser.XmlReadContext;
 import com.fasterxml.jackson.dataformat.xml.util.CaseInsensitiveNameSet;
 
 import java.io.IOException;
@@ -39,22 +38,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Set;
 
+/**
+ * A token buffer which returns a parser that supports unwrapping of lists.
+ * See issue <a href="https://github.com/FasterXML/jackson-dataformat-xml/issues/762">jackson-dataformat-xml#762</a>
+ */
 public class UnwrappableTokenBuffer extends TokenBuffer {
-    protected final XmlReadContext _parsingContext;
-    
-    public UnwrappableTokenBuffer(ObjectCodec codec, boolean hasNativeIds) {
-        super(codec, hasNativeIds);
-        _parsingContext = XmlReadContext.createRootContext(-1, -1);
-    }
-
-    public UnwrappableTokenBuffer(JsonParser p) {
-        super(p);
-        _parsingContext = XmlReadContext.createRootContext(-1, -1);
-    }
-
     public UnwrappableTokenBuffer(JsonParser p, DeserializationContext ctxt) {
         super(p, ctxt);
-        _parsingContext = XmlReadContext.createRootContext(-1, -1);
     }
 
     @Override
@@ -63,20 +53,12 @@ public class UnwrappableTokenBuffer extends TokenBuffer {
         return new ElementWrappableParser(_first, codec, _hasNativeTypeIds, _hasNativeObjectIds, _parentContext, _streamReadConstraints);
     }
 
-    /**
-     * @param streamReadConstraints constraints for streaming reads
-     * @since v2.15
-     */
     @Override
     public JsonParser asParser(StreamReadConstraints streamReadConstraints)
     {
         return new ElementWrappableParser(_first, _objectCodec, _hasNativeTypeIds, _hasNativeObjectIds, _parentContext, streamReadConstraints);
     }
 
-    /**
-     * @param src Parser to use for accessing source information
-     *    like location, configured codec, streamReadConstraints
-     */
     @Override
     public JsonParser asParser(JsonParser src)
     {

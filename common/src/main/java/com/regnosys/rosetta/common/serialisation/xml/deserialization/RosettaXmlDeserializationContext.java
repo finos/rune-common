@@ -31,11 +31,13 @@ import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
 import com.fasterxml.jackson.databind.deser.DeserializerCache;
 import com.fasterxml.jackson.databind.deser.DeserializerFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
+import com.fasterxml.jackson.dataformat.xml.deser.XmlDeserializationContext;
 
 import java.io.IOException;
 
 /**
- * Copy of XmlDeserializationContext, with one additional override for `bufferForInputBuffering`
+ * Copy of {@link XmlDeserializationContext}, with one additional override for method `bufferForInputBuffering`
+ * to return our custom {@link UnwrappableTokenBuffer}.
  */
 public class RosettaXmlDeserializationContext extends DefaultDeserializationContext {
     private static final long serialVersionUID = 1L;

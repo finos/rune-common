@@ -20,58 +20,29 @@ package com.regnosys.rosetta.common.serialisation.xml.deserialization;
  * ==============
  */
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.util.JsonParserDelegate;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerBase;
 import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.deser.std.DelegatingDeserializer;
-import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.util.NameTransformer;
-import com.fasterxml.jackson.dataformat.xml.deser.ElementWrappable;
+import com.fasterxml.jackson.dataformat.xml.deser.WrapperHandlingDeserializer;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Copy of `WrapperHandlingDeserializer` with support for unwrapping.
+ * An extension of `WrapperHandlingDeserializer` with support for unwrapping.
  */
-public class UnwrappableWrapperHandlingDeserializer extends DelegatingDeserializer {
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * (Simple) Names of properties, for which virtual wrapping is needed
-     * to compensate: these are so-called 'unwrapped' XML lists where property
-     * name is used for elements, and not as List markers.
-     */
-    protected final Set<String> _namesToWrap;
-
-    protected final JavaType _type;
-
-    // @since 2.12
-    protected final boolean _caseInsensitive;
+public class UnwrappableWrapperHandlingDeserializer extends WrapperHandlingDeserializer {
 
     public UnwrappableWrapperHandlingDeserializer(BeanDeserializerBase delegate) {
-        this(delegate, null);
+        super(delegate);
     }
 
     public UnwrappableWrapperHandlingDeserializer(BeanDeserializerBase delegate, Set<String> namesToWrap)
     {
-        super(delegate);
-        _namesToWrap = namesToWrap;
-        _type = delegate.getValueType();
-        _caseInsensitive = delegate.isCaseInsensitive();
-    }
-
-    @Override
-    protected JsonDeserializer<?> newDelegatingInstance(JsonDeserializer<?> newDelegatee0) {
-        // default not enough, as we may need to create a new wrapping deserializer
-        // even if delegatee does not change
-        throw new IllegalStateException("Internal error: should never get called");
+        super(delegate, namesToWrap);
     }
 
     @Override
@@ -130,69 +101,5 @@ public class UnwrappableWrapperHandlingDeserializer extends DelegatingDeserializ
         }
         // Otherwise, create the thing that can deal with virtual wrapping
         return new UnwrappableWrapperHandlingDeserializer(newDelegatee, unwrappedNames);
-    }
-
-    @Override
-    public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException
-    {
-        _configureParser(p);
-        return _delegatee.deserialize(p,  ctxt);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Object deserialize(JsonParser p, DeserializationContext ctxt,
-                              Object intoValue) throws IOException
-    {
-        _configureParser(p);
-        return ((JsonDeserializer<Object>)_delegatee).deserialize(p, ctxt, intoValue);
-    }
-
-    @Override
-    public Object deserializeWithType(JsonParser p, DeserializationContext ctxt,
-                                      TypeDeserializer typeDeserializer) throws IOException
-    {
-        _configureParser(p);
-        return _delegatee.deserializeWithType(p, ctxt, typeDeserializer);
-    }
-    
-    /*
-    /**********************************************************************
-    /* Internal methods
-    /**********************************************************************
-     */
-
-    protected final void _configureParser(JsonParser p) throws IOException
-    {
-        // 05-Sep-2019, tatu: May get XML parser, except for case where content is
-        //   buffered. In that case we may still have access to real parser if we
-        //   are lucky (like in [dataformat-xml#242])
-        while (p instanceof JsonParserDelegate) {
-            p = ((JsonParserDelegate) p).delegate();
-        }
-        if ((p instanceof ElementWrappable) && (_namesToWrap != null)) {
-            // 03-May-2021, tatu: as per [dataformat-xml#469] there are special
-            //   cases where we get String token to represent XML empty element.
-            //   If so, need to refrain from adding wrapping as that would
-            //   override parent settings
-            JsonToken t = p.currentToken();
-            if (t == JsonToken.START_OBJECT || t == JsonToken.START_ARRAY
-                    // 12-Dec-2021, tatu: [dataformat-xml#490] There seems to be
-                    //    cases here (similar to regular JSON) where leading START_OBJECT
-                    //    is consumed during buffering, so need to consider that too
-                    //    it seems (just hope we are at correct level and not off by one...)
-                    || t == JsonToken.FIELD_NAME) {
-                ((ElementWrappable) p).addVirtualWrapping(_namesToWrap, _caseInsensitive);
-            }
-        }
-    }
-
-    protected BeanDeserializerBase _verifyDeserType(JsonDeserializer<?> deser)
-    {
-        if (!(deser instanceof BeanDeserializerBase)) {
-            throw new IllegalArgumentException("Can not change delegate to be of type "
-                    +deser.getClass().getName());
-        }
-        return (BeanDeserializerBase) deser;
     }
 }

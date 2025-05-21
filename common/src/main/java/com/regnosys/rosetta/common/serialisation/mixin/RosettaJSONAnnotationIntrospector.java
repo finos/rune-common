@@ -30,7 +30,7 @@ import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
-//import com.rosetta.model.lib.annotations.RosettaIgnore;
+import com.rosetta.model.lib.annotations.RosettaIgnore;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -137,10 +137,10 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
                 .collect(Collectors.toSet());
     }
 
-//    @Override
-//    public boolean hasIgnoreMarker(AnnotatedMember a) {
-//        return a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);
-//    }
+    @Override
+    public boolean hasIgnoreMarker(AnnotatedMember a) {
+        return a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);
+    }
 
     @Override
     public Version version() {

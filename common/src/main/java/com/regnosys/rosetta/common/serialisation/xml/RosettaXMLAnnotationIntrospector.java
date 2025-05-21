@@ -184,7 +184,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 .orElseGet(
                         () -> Optional.ofNullable(a.getAnnotation(RosettaAttribute.class))
                                 .map(rosettaAttrAnn -> PropertyName.construct(rosettaAttrAnn.value()))
-                                .orElseGet(() -> super._findXmlName(a))
+                                .orElseGet(() -> this.findLegacyName(a))
                 );
     }
 
@@ -268,7 +268,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
         // Additionally, ignore any members that do not have the RosettaAttribute annotation
         // except for constructors, which are necessary for deserialisation.
-        return !(a.hasAnnotation(RosettaAttribute.class) || a instanceof AnnotatedConstructor);
+        return a.hasAnnotation(RosettaIgnore.class) && !(a instanceof AnnotatedConstructor);
     }
 
     @Override

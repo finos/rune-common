@@ -66,7 +66,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
     // Indexes used to improve the performance of generating the substitution map
-    private final Map<String, List<TypeConfigEntry>> elementIndex = new HashMap<>();
+    private final Map<String, TypeConfigEntry> elementIndex = new HashMap<>();
     private final Map<String, List<TypeConfigEntry>> substitutionGroupIndex = new HashMap<>();
 
     private static class TypeConfigEntry {
@@ -107,9 +107,12 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             TypeConfigEntry typeConfigEntry = new TypeConfigEntry(symbolId, cfg);
 
             cfg.getXmlElementFullyQualifiedName()
-                    .ifPresent(fqn -> elementIndex
-                            .computeIfAbsent(fqn, k -> new ArrayList<>())
-                            .add(typeConfigEntry));
+                    .ifPresent(fqn -> {
+                        if (elementIndex.containsKey(fqn)) {
+                            throw new IllegalStateException(String.format("Attempted to add duplicate key %s to element index", fqn));
+                        }
+                        elementIndex.put(fqn, typeConfigEntry);
+                    });
 
             cfg.getSubstitutionGroup()
                     .ifPresent(group -> substitutionGroupIndex
@@ -150,7 +153,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                                                    String fullyQualifiedName,
                                                    Map<JavaType, String> substitutionMap,
                                                    ClassLoader classLoader) {
-        for (TypeConfigEntry entry : elementIndex.getOrDefault(fullyQualifiedName, Lists.newArrayList())) {
+        if (elementIndex.containsKey(fullyQualifiedName)) {
+            TypeConfigEntry entry = elementIndex.get(fullyQualifiedName);
             updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
         }
     }

@@ -103,7 +103,7 @@ public class XmlSerialisationTest {
     @Test
     public void testTopLevelXsdExtensionSerialisation() throws SAXException, IOException {
         // Construct a Document object
-        Foo foo = Foo.builder().setXmlValue("My value").build();
+        Foo foo = Foo.builder().setXmlValue("My value").addAttr1("Foo").addAttr1("Bar").build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
         Document document = TopLevelExtension.builder().setAttr(foo).setValue(measure).setDocumentExtensionAttr("Document Extension Attribute Value").build();
 
@@ -119,8 +119,10 @@ public class XmlSerialisationTest {
         // Test serialised document matches the XSD schema
         xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
 
+        //TODO: TopLevelExtension is a type of DocumentExtension which is what we need to deserialize to
         // Test deserialisaton
         Document actual = xmlMapper.readValue(expectedXML, Document.class);
+
         assertEquals(document, actual);
     }
 

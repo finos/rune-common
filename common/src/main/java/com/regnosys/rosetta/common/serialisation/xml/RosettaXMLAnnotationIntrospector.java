@@ -67,7 +67,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     // Indexes used to improve the performance of generating the substitution map
     private final Map<String, List<TypeConfigEntry>> elementIndex = new HashMap<>();
-    private final Map<String, List<TypeConfigEntry>> groupIndex = new HashMap<>();
+    private final Map<String, List<TypeConfigEntry>> substitutionGroupIndex = new HashMap<>();
 
     private static class TypeConfigEntry {
         final ModelSymbolId symbolId;
@@ -112,7 +112,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                             .add(typeConfigEntry));
 
             cfg.getSubstitutionGroup()
-                    .ifPresent(group -> groupIndex
+                    .ifPresent(group -> substitutionGroupIndex
                             .computeIfAbsent(group, k -> new ArrayList<>())
                             .add(typeConfigEntry));
         }
@@ -171,7 +171,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             return;
         }
 
-        for (TypeConfigEntry entry : groupIndex.getOrDefault(substitutionGroup, Lists.newArrayList())) {
+        for (TypeConfigEntry entry : substitutionGroupIndex.getOrDefault(substitutionGroup, Lists.newArrayList())) {
             updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
             entry.config.getXmlElementFullyQualifiedName()
                     .ifPresent(fqn -> lookupTransitiveSubstitutionGroups(config, fqn, substitutionMap, classLoader, visited));

@@ -30,6 +30,7 @@ import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RosettaIgnore;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -125,9 +126,20 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
-                .map(m -> BeanUtil.getPropertyName(m.getAnnotated()))
+                .map(m -> {
+                    RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
+                    if (attr != null && !attr.value().isEmpty()) {
+                        return attr.value();
+                    }
+                    return BeanUtil.getPropertyName(m.getAnnotated());
+                })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean hasIgnoreMarker(AnnotatedMember a) {
+        return a.getName().startsWith("add") || a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);
     }
 
     @Override

@@ -70,7 +70,7 @@ public class XmlSerialisationTest {
     @Test
     public void testDocumentSerialisation() throws SAXException, IOException {
         // Construct a Document object
-        Foo foo = Foo.builder().setXmlValue("My value").addAttr1(1).addAttr1(2).build();
+        Foo foo = Foo.builder().setXmlValue("My value").addAttr1("Foo").addAttr1("Bar").build();
         Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
         TopLevel document = TopLevel.builder().setAttr(foo).setValue(measure).build();
 
@@ -195,13 +195,33 @@ public class XmlSerialisationTest {
         ZonedDateTime actual = xmlMapper.readValue(xml, ZonedDateTime.class);
         assertEquals(expected, actual);
     }
+    
+    @Test
+    public void testElementNamedTypeDeserialisation() throws IOException {
+        TypeWithTypeElement t = TypeWithTypeElement.builder()
+                .setFirstElement("first")
+                .set_type("My type")
+                .build();
+        
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(t);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/element-named-type.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        TypeWithTypeElement actual = xmlMapper.readValue(expectedXML, TypeWithTypeElement.class);
+        assertEquals(t, actual);
+    }
 
     @Test
     public void testMultiCardinalitySerialisation() throws IOException {
         // Construct a MultiCardinality object
         MulticardinalityContainer multicardinalityContainer = MulticardinalityContainer.builder()
-                .addFoo(Foo.builder().setXmlValue("foo1").addAttr1(1).addAttr1(2).build())
-                .addFoo(Foo.builder().setXmlValue("foo2").addAttr1(3).build())
+                .addFoo(Foo.builder().setXmlValue("foo1").addAttr1("Foo").addAttr1("Bar").build())
+                .addFoo(Foo.builder().setXmlValue("foo2").addAttr1("Qux").build())
                 .build();
 
         String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
@@ -278,5 +298,28 @@ public class XmlSerialisationTest {
         // Test deserialisation
         Zoo actual = xmlMapper.readValue(expectedXML, Zoo.class);
         assertEquals(zoo, actual);
+    }
+
+    @Test
+    public void testMulticardinalityAttributeInsideVirtualAttribute() throws IOException {
+        Party party = Party.builder()
+                .setPartyNameModel(PartyNameModel.builder()
+                        .setPartyName("my name"))
+                .setPartyModel(PartyModel.builder()
+                        .addPartyId("myId1")
+                        .addPartyId("myId2"))
+                .build();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(party);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/virtual-attributes.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation
+        Party actual = xmlMapper.readValue(expectedXML, Party.class);
+        assertEquals(party, actual);
     }
 }

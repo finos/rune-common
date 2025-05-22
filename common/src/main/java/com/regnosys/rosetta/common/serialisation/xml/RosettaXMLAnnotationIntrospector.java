@@ -66,8 +66,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
     // Indexes used to improve the performance of generating the substitution map
-    private final Map<String, TypeConfigEntry> elementIndex = new HashMap<>();
-    private final Map<String, List<TypeConfigEntry>> substitutionGroupIndex = new HashMap<>();
+    private Map<String, TypeConfigEntry> elementIndex = null;
+    private Map<String, List<TypeConfigEntry>> substitutionGroupIndex = null;
 
     private static class TypeConfigEntry {
         final ModelSymbolId symbolId;
@@ -95,10 +95,11 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
         this.rosettaEnumBuilderIntrospector = rosettaEnumBuilderIntrospector;
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
-        buildSubstitutionLogicIndexes();
     }
 
     private void buildSubstitutionLogicIndexes() {
+        elementIndex = new HashMap<>();
+        substitutionGroupIndex = new HashMap<>();
         SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
 
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : typeConfigMap.entrySet()) {
@@ -142,6 +143,20 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return null;
     }
 
+    public Map<String, TypeConfigEntry> getElementIndex() {
+        if (elementIndex == null) {
+            buildSubstitutionLogicIndexes();
+        }
+        return elementIndex;
+    }
+
+    public Map<String, List<TypeConfigEntry>> getSubstitutionGroupIndex() {
+        if (substitutionGroupIndex == null) {
+            buildSubstitutionLogicIndexes();
+        }
+        return substitutionGroupIndex;
+    }
+
     /*
      * Required for backwards compatibility getElementRef() supersedes legacy getSubstitutionGroup() method
      */
@@ -153,6 +168,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                                                    String fullyQualifiedName,
                                                    Map<JavaType, String> substitutionMap,
                                                    ClassLoader classLoader) {
+        Map<String, TypeConfigEntry> elementIndex = getElementIndex();
         if (elementIndex.containsKey(fullyQualifiedName)) {
             TypeConfigEntry entry = elementIndex.get(fullyQualifiedName);
             updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
@@ -174,7 +190,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         if (!visited.add(substitutionGroup)) {
             return;
         }
-
+        Map<String, List<TypeConfigEntry>> substitutionGroupIndex = getSubstitutionGroupIndex();
         for (TypeConfigEntry entry : substitutionGroupIndex.getOrDefault(substitutionGroup, Lists.newArrayList())) {
             updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
             entry.config.getXmlElementFullyQualifiedName()

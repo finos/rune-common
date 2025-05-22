@@ -131,8 +131,8 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             getAttributeXMLConfiguration(config, member)
                     .flatMap(this::getElementRef)
                     .ifPresent(elementRef -> {
-                        lookupElementByFullyQualifiedName(config, elementRef, substitutionMap, classLoader);
-                        lookupTransitiveSubstitutionGroups(config, elementRef, substitutionMap, classLoader);
+                        populateSubstitutionMapForElementByFullyQualifiedName(config, elementRef, substitutionMap, classLoader);
+                        populateSubstitutionMapForTransitiveSubstitutionGroups(config, elementRef, substitutionMap, classLoader);
                     });
             lookupLegacySubstitutionsForType(config, ac, ann, substitutionMap, classLoader);
             if (substitutionMap.isEmpty()) {
@@ -164,10 +164,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         return attributeXMLConfiguration.getElementRef().isPresent() ? attributeXMLConfiguration.getElementRef() : attributeXMLConfiguration.getSubstitutionGroup();
     }
 
-    private void lookupElementByFullyQualifiedName(MapperConfig<?> config,
-                                                   String fullyQualifiedName,
-                                                   Map<JavaType, String> substitutionMap,
-                                                   ClassLoader classLoader) {
+    private void populateSubstitutionMapForElementByFullyQualifiedName(MapperConfig<?> config,
+                                                                       String fullyQualifiedName,
+                                                                       Map<JavaType, String> substitutionMap,
+                                                                       ClassLoader classLoader) {
         Map<String, TypeConfigEntry> elementIndex = getElementIndex();
         if (elementIndex.containsKey(fullyQualifiedName)) {
             TypeConfigEntry entry = elementIndex.get(fullyQualifiedName);
@@ -175,18 +175,18 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
     }
 
-    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config,
-                                                    String substitutionGroup,
-                                                    Map<JavaType, String> substitutionMap,
-                                                    ClassLoader classLoader) {
-        lookupTransitiveSubstitutionGroups(config, substitutionGroup, substitutionMap, classLoader, new HashSet<>());
+    private void populateSubstitutionMapForTransitiveSubstitutionGroups(MapperConfig<?> config,
+                                                                        String substitutionGroup,
+                                                                        Map<JavaType, String> substitutionMap,
+                                                                        ClassLoader classLoader) {
+        populateSubstitutionMapForTransitiveSubstitutionGroups(config, substitutionGroup, substitutionMap, classLoader, new HashSet<>());
     }
 
-    private void lookupTransitiveSubstitutionGroups(MapperConfig<?> config,
-                                                    String substitutionGroup,
-                                                    Map<JavaType, String> substitutionMap,
-                                                    ClassLoader classLoader,
-                                                    Set<String> visited) {
+    private void populateSubstitutionMapForTransitiveSubstitutionGroups(MapperConfig<?> config,
+                                                                        String substitutionGroup,
+                                                                        Map<JavaType, String> substitutionMap,
+                                                                        ClassLoader classLoader,
+                                                                        Set<String> visited) {
         if (!visited.add(substitutionGroup)) {
             return;
         }
@@ -194,7 +194,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         for (TypeConfigEntry entry : substitutionGroupIndex.getOrDefault(substitutionGroup, Lists.newArrayList())) {
             updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
             entry.config.getXmlElementFullyQualifiedName()
-                    .ifPresent(fqn -> lookupTransitiveSubstitutionGroups(config, fqn, substitutionMap, classLoader, visited));
+                    .ifPresent(fqn -> populateSubstitutionMapForTransitiveSubstitutionGroups(config, fqn, substitutionMap, classLoader, visited));
         }
     }
 

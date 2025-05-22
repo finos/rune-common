@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.serialization;
 
 /*-
  * ==============
@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.PropertySerializerMap;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 
 /**
  * A bean property writer which will change the property name

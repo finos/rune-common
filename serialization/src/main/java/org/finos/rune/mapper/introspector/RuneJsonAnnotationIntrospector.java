@@ -193,7 +193,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     private Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
-                .map(m -> RuneBeanUtil.getPropertyName(m.getAnnotated()))
+                .map(RuneBeanUtil::getPropertyName)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }

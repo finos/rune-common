@@ -39,6 +39,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +72,7 @@ public class RosettaXmlMapper extends XmlMapper {
         if (valueTypeForElement.isPresent()) {
             return super.readValue(content, valueTypeForElement.get());
         }
-        throw new IOException();
+        throw new ParserConfigurationException("Unable to find value type for top level element");
     }
 
     private <T> T readValueInternal(String content, JavaType valueType) throws IOException, ParserConfigurationException, SAXException {
@@ -79,7 +81,7 @@ public class RosettaXmlMapper extends XmlMapper {
         if (valueTypeForElement.isPresent()) {
             return super.readValue(content, convertClassToJavaType(valueTypeForElement.get()));
         }
-        throw new IOException();
+        throw new ParserConfigurationException("Unable to find value type for top level element");
     }
 
     @Override
@@ -100,136 +102,126 @@ public class RosettaXmlMapper extends XmlMapper {
         }
     }
 
-//    @Override
-//    public <T> T readValue(File src, Class<T> valueType) throws IOException {
-//        String content = convertFileToString(src);
-//        try {
-//            return readValueInternal(content);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(File src, JavaType valueType) throws IOException {
-//        String content = convertFileToString(src);
-//        try {
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(URL src, Class<T> valueType) throws IOException {
-//        try {
-//            String content = convertFileToString(new File(src.toURI()));
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(URL src, JavaType valueType) throws IOException {
-//        try {
-//            String content = convertFileToString(new File(src.toURI()));
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//
-//    @Override
-//    public <T> T readValue(Reader src, Class<T> valueType) throws IOException {
-//        try {
-//            String content = convertReaderToString(src);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(Reader src, JavaType valueType) throws IOException {
-//        try {
-//            String content = convertReaderToString(src);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(byte[] src, Class<T> valueType) throws IOException {
-//        try {
-//            String content = new String(src);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(byte[] src, JavaType valueType) throws IOException {
-//        try {
-//            String content = new String(src);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(InputStream src, Class<T> valueType) throws IOException {
-//        try {
-//            String content = convertInputStreamToString(src);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(InputStream src, JavaType valueType) throws IOException {
-//        try {
-//            String content = convertInputStreamToString(src);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(src, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(XMLStreamReader r, Class<T> valueType) throws IOException {
-//        try {
-//            String content = convertXMLStreamReaderToString(r);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(r, valueType);
-//        }
-//    }
-//
-//    @Override
-//    public <T> T readValue(XMLStreamReader r, JavaType valueType) throws IOException {
-//        try {
-//            String content = convertXMLStreamReaderToString(r);
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(r, valueType);
-//        }
-//    }
+    @Override
+    public <T> T readValue(File src, Class<T> valueType) throws IOException {
+        String content = convertFileToString(src);
+        try {
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(File src, JavaType valueType) throws IOException {
+        String content = convertFileToString(src);
+        try {
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(URL src, Class<T> valueType) throws IOException {
+        try {
+            String content = convertFileToString(new File(src.toURI()));
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(URL src, JavaType valueType) throws IOException {
+        try {
+            String content = convertFileToString(new File(src.toURI()));
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+
+    @Override
+    public <T> T readValue(Reader src, Class<T> valueType) throws IOException {
+        try {
+            String content = convertReaderToString(src);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(Reader src, JavaType valueType) throws IOException {
+        try {
+            String content = convertReaderToString(src);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(byte[] src, Class<T> valueType) throws IOException {
+        try {
+            String content = new String(src);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(byte[] src, JavaType valueType) throws IOException {
+        try {
+            String content = new String(src);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(InputStream src, Class<T> valueType) throws IOException {
+        try {
+            String content = convertInputStreamToString(src);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(InputStream src, JavaType valueType) throws IOException {
+        try {
+            String content = convertInputStreamToString(src);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(src, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(XMLStreamReader r, Class<T> valueType) throws IOException {
+        try {
+            String content = convertXMLStreamReaderToString(r);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(r, valueType);
+        }
+    }
+
+    @Override
+    public <T> T readValue(XMLStreamReader r, JavaType valueType) throws IOException {
+        try {
+            String content = convertXMLStreamReaderToString(r);
+            return readValueInternal(content, valueType);
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return super.readValue(r, valueType);
+        }
+    }
 
     private String getOutermostElementName(String xmlContent) throws ParserConfigurationException, IOException, SAXException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -254,8 +246,6 @@ public class RosettaXmlMapper extends XmlMapper {
 
         return Optional.empty();
     }
-
-
 
     @SuppressWarnings("unchecked")
     private <T> Class<T> loadModelSymbolAsClass(ModelSymbolId modelSymbolId) throws ClassNotFoundException {

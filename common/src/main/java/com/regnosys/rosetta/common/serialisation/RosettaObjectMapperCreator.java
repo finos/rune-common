@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXmlMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -78,7 +79,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
         boolean supportRosettaEnumValue = true;
 
         // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
-        XmlMapper baseXML = new XmlMapper((JacksonXmlModule) null);
+        RosettaXmlMapper baseXML = new RosettaXmlMapper(config);
         baseXML.setSerializerFactory(RosettaSerialiserFactory.INSTANCE);
 
         ObjectMapper base = new XmlMapper.Builder(baseXML)

@@ -96,14 +96,24 @@ public class RosettaXmlMapper extends XmlMapper {
     }
 
     @Override
-    public <T> T readValue(File src, Class<T> valueType) throws IOException {
-        String content = convertFileToString(src);
+    public <T> T readValue(String content, JavaType valueType) throws JsonProcessingException {
         try {
             return readValueInternal(content, valueType);
         } catch (ParserConfigurationException | IOException | SAXException e) {
-            return super.readValue(src, valueType);
+            LOGGER.error("Failed to parse XML content", e);
+            return super.readValue(content, valueType);
         }
     }
+
+//    @Override
+//    public <T> T readValue(File src, Class<T> valueType) throws IOException {
+//        String content = convertFileToString(src);
+//        try {
+//            return readValueInternal(content, valueType);
+//        } catch (ParserConfigurationException | IOException | SAXException e) {
+//            return super.readValue(src, valueType);
+//        }
+//    }
 //
 //    @Override
 //    public <T> T readValue(File src, JavaType valueType) throws IOException {
@@ -137,15 +147,6 @@ public class RosettaXmlMapper extends XmlMapper {
 //        }
 //    }
 //
-//    @Override
-//    public <T> T readValue(String content, JavaType valueType) throws JsonProcessingException {
-//        try {
-//            return readValueInternal(content, valueType);
-//        } catch (ParserConfigurationException | IOException | SAXException e) {
-//            LOGGER.error("Failed to parse XML content", e);
-//            return super.readValue(content, valueType);
-//        }
-//    }
 //
 //    @Override
 //    public <T> T readValue(Reader src, Class<T> valueType) throws IOException {

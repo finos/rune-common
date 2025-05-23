@@ -39,8 +39,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.Optional;
@@ -54,8 +52,6 @@ import org.xml.sax.SAXException;
  * to delegate to the super class.
  */
 public class RosettaXmlMapper extends XmlMapper {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RosettaXmlMapper.class);
     private static final long serialVersionUID = 1L;
     private RosettaXMLConfiguration config;
 
@@ -81,7 +77,7 @@ public class RosettaXmlMapper extends XmlMapper {
         String outermostElementName = getOutermostElementName(content);
         Optional<Class<T>> valueTypeForElement = getValueTypeForElement(outermostElementName);
         if (valueTypeForElement.isPresent()) {
-            return super.readValue(content, valueTypeForElement.get());
+            return super.readValue(content, convertClassToJavaType(valueTypeForElement.get()));
         }
         throw new IOException();
     }
@@ -100,7 +96,6 @@ public class RosettaXmlMapper extends XmlMapper {
         try {
             return readValueInternal(content, valueType);
         } catch (ParserConfigurationException | IOException | SAXException e) {
-            LOGGER.error("Failed to parse XML content", e);
             return super.readValue(content, valueType);
         }
     }
@@ -109,7 +104,7 @@ public class RosettaXmlMapper extends XmlMapper {
 //    public <T> T readValue(File src, Class<T> valueType) throws IOException {
 //        String content = convertFileToString(src);
 //        try {
-//            return readValueInternal(content, valueType);
+//            return readValueInternal(content);
 //        } catch (ParserConfigurationException | IOException | SAXException e) {
 //            return super.readValue(src, valueType);
 //        }
@@ -309,5 +304,8 @@ public class RosettaXmlMapper extends XmlMapper {
         return content.toString();
     }
 
+    private JavaType convertClassToJavaType(Class<?> clazz) {
+        return getTypeFactory().constructType(clazz);
+    }
 
 }

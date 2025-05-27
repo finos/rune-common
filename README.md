@@ -1,7 +1,5 @@
 [![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/regnosysops/FINOS%2Frune-common?type=cf-1)]( https://g.codefresh.io/public/accounts/regnosysops/pipelines/new/667e8e2a5151928589be94bf)
 
-[![FINOS - Incubating](https://cdn.jsdelivr.net/gh/finos/contrib-toolbox@master/images/badge-incubating.svg)](https://community.finos.org/docs/governance/Software-Projects/stages/incubating)
-
 # Rune Common
 
 Rune Common is a java library that is utilised by [Rune Code Generators](https://github.com/REGnosys/rosetta-code-generators) and models expressed in the [Rune DSL](https://github.com/finos/rune-dsl) the main `Rune` project.

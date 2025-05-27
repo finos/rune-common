@@ -119,8 +119,7 @@ public class XmlSerialisationTest {
         // Test serialised document matches the XSD schema
         xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
 
-        //TODO: TopLevelExtension is a type of DocumentExtension which is what we need to deserialize to
-        // Test deserialisaton
+        // Test TopLevelExtension is a type of DocumentExtension which is what we need to deserialize to
         Document actual = xmlMapper.readValue(expectedXML, Document.class);
 
         assertEquals(document, actual);

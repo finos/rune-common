@@ -101,6 +101,31 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testTopLevelXsdExtensionSerialisation() throws SAXException, IOException {
+        // Construct a Document object
+        Foo foo = Foo.builder().setXmlValue("My value").addAttr1("Foo").addAttr1("Bar").build();
+        Measure measure = Measure.builder().setUnit(UnitEnum.METER).setValue(BigDecimal.ONE).build();
+        Document document = TopLevelExtension.builder().setAttr(foo).setValue(measure).setDocumentExtensionAttr("Document Extension Attribute Value").build();
+
+        // Test serialisation
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        ObjectWriter xmlWriter = xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
+        String actualXML = licenseHeader + xmlWriter.writeValueAsString(document);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/extended-top-level-document.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test serialised document matches the XSD schema
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(actualXML.getBytes(StandardCharsets.UTF_8))));
+
+        // Test TopLevelExtension is a type of DocumentExtension which is what we need to deserialize to
+        Document actual = xmlMapper.readValue(expectedXML, Document.class);
+
+        assertEquals(document, actual);
+    }
+
+    @Test
     public void testTimeSerialisation() throws JsonProcessingException {
         // Construct a TimeContainer object
         TimeContainer timeContainer = TimeContainer.builder().setTimeValue(LocalTime.of(1, 23, 45)).build();
@@ -397,7 +422,6 @@ public class XmlSerialisationTest {
         AnimalContainer actual = legacyObjectMapper.readValue(expectedXML, AnimalContainer.class);
         assertEquals(animalContainer, actual);
     }
-
 
     private ObjectMapper getLegacyV1ObjectMapper() {
         return RosettaObjectMapperCreator.forXML(getLegacyV1RosettaXMLConfiguration()).create();

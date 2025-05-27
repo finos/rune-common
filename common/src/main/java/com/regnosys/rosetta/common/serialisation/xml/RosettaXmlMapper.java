@@ -31,18 +31,16 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.Optional;
 
 import com.rosetta.util.serialisation.TypeXMLConfiguration;
+import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -271,23 +269,13 @@ public class RosettaXmlMapper extends XmlMapper {
     }
 
     public String convertReaderToString(Reader reader) throws IOException {
-        StringBuilder content = new StringBuilder();
-        char[] buffer = new char[1024];
-        int numRead;
-        while ((numRead = reader.read(buffer)) != -1) {
-            content.append(buffer, 0, numRead);
-        }
-        return content.toString();
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(reader, writer);
+        return writer.toString();
     }
 
     private String convertInputStreamToString(InputStream inputStream) throws IOException {
-        StringBuilder content = new StringBuilder();
-        byte[] buffer = new byte[1024];
-        int numRead;
-        while ((numRead = inputStream.read(buffer)) != -1) {
-            content.append(new String(buffer, 0, numRead));
-        }
-        return content.toString();
+        return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
     }
 
     private JavaType convertClassToJavaType(Class<?> clazz) {

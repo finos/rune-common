@@ -52,15 +52,14 @@ import org.xml.sax.SAXException;
  */
 public class RosettaXmlMapper extends XmlMapper {
     private static final long serialVersionUID = 1L;
-    private RosettaXMLConfiguration config;
+    private final RosettaXMLConfiguration config;
+    private final ClassLoader classLoader;
 
-    public RosettaXmlMapper(JacksonXmlModule module) {
-        super(module);
-    }
-
-    public RosettaXmlMapper(RosettaXMLConfiguration config) {
-        this((JacksonXmlModule) null);
+    public RosettaXmlMapper(RosettaXMLConfiguration config, ClassLoader classLoader) {
+        super((JacksonXmlModule) null);
         this.config = config;
+        this.classLoader = classLoader;
+
     }
 
     private <T> T readClassValueInternal(String content) throws IOException, ParserConfigurationException, SAXException, ReadValueException {
@@ -246,7 +245,6 @@ public class RosettaXmlMapper extends XmlMapper {
 
     @SuppressWarnings("unchecked")
     private <T> Class<T> loadModelSymbolAsClass(ModelSymbolId modelSymbolId) throws ClassNotFoundException {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         return (Class<T>) classLoader.loadClass(modelSymbolId.getQualifiedName().toString());
     }
 

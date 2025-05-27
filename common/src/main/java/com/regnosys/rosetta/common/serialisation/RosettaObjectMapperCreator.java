@@ -79,7 +79,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
         boolean supportRosettaEnumValue = true;
 
         // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
-        RosettaXmlMapper baseXML = new RosettaXmlMapper(config);
+        RosettaXmlMapper baseXML = new RosettaXmlMapper(config, classLoader);
         baseXML.setSerializerFactory(RosettaSerialiserFactory.INSTANCE);
 
         ObjectMapper base = new XmlMapper.Builder(baseXML)

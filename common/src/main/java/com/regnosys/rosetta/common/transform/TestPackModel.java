@@ -150,17 +150,31 @@ public class TestPackModel {
 
         public static class Assertions {
 
+            private final Integer inputPathCount;
+            private final Integer outputPathCount;
             private final Integer modelValidationFailures;
             private final Boolean schemaValidationFailure;
             private final Boolean runtimeError;
 
             @JsonCreator
-            public Assertions(@JsonProperty("modelValidationFailures") Integer modelValidationFailures,
+            public Assertions(@JsonProperty("inputPathCount") Integer inputPathCount,
+                              @JsonProperty("outputPathCount") Integer outputPathCount,
+                              @JsonProperty("modelValidationFailures") Integer modelValidationFailures,
                               @JsonProperty("schemaValidationFailure") Boolean schemaValidationFailure,
                               @JsonProperty("runtimeError") Boolean runtimeError) {
+                this.inputPathCount = inputPathCount;
+                this.outputPathCount = outputPathCount;
                 this.modelValidationFailures = modelValidationFailures;
                 this.schemaValidationFailure = schemaValidationFailure;
                 this.runtimeError = runtimeError;
+            }
+
+            public Integer getInputPathCount() {
+                return inputPathCount;
+            }
+
+            public Integer getOutputPathCount() {
+                return outputPathCount;
             }
 
             public Integer getModelValidationFailures() {
@@ -177,21 +191,22 @@ public class TestPackModel {
 
             @Override
             public boolean equals(Object o) {
-                if (this == o) return true;
-                if (!(o instanceof Assertions)) return false;
+                if (o == null || getClass() != o.getClass()) return false;
                 Assertions that = (Assertions) o;
-                return Objects.equals(getModelValidationFailures(), that.getModelValidationFailures()) && Objects.equals(schemaValidationFailure, that.schemaValidationFailure) && Objects.equals(runtimeError, that.runtimeError);
+                return Objects.equals(inputPathCount, that.inputPathCount) && Objects.equals(outputPathCount, that.outputPathCount) && Objects.equals(modelValidationFailures, that.modelValidationFailures) && Objects.equals(schemaValidationFailure, that.schemaValidationFailure) && Objects.equals(runtimeError, that.runtimeError);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(getModelValidationFailures(), schemaValidationFailure, runtimeError);
+                return Objects.hash(inputPathCount, outputPathCount, modelValidationFailures, schemaValidationFailure, runtimeError);
             }
 
             @Override
             public String toString() {
                 return "Assertions{" +
-                        "modelValidationFailures=" + modelValidationFailures +
+                        "inputPathCount=" + inputPathCount +
+                        ", outputPathCount=" + outputPathCount +
+                        ", modelValidationFailures=" + modelValidationFailures +
                         ", schemaValidationFailure=" + schemaValidationFailure +
                         ", runtimeError=" + runtimeError +
                         '}';

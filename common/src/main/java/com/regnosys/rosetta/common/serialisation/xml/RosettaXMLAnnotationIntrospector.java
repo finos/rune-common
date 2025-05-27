@@ -34,25 +34,23 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.util.TypeUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
+import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.ConstantAttributePropertyWriter;
 import com.regnosys.rosetta.common.serialisation.mixin.EnumAsStringBuilderIntrospector;
 import com.regnosys.rosetta.common.serialisation.mixin.RosettaEnumBuilderIntrospector;
 import com.rosetta.model.lib.ModelSymbolId;
-import com.rosetta.model.lib.annotations.RosettaAttribute;
-import com.rosetta.model.lib.annotations.RosettaDataType;
-import com.rosetta.model.lib.annotations.RosettaEnum;
-import com.rosetta.model.lib.annotations.RosettaEnumValue;
+import com.rosetta.model.lib.annotations.*;
 import com.rosetta.util.DottedPath;
-import com.rosetta.util.serialisation.AttributeXMLConfiguration;
-import com.rosetta.util.serialisation.AttributeXMLRepresentation;
-import com.rosetta.util.serialisation.RosettaXMLConfiguration;
-import com.rosetta.util.serialisation.TypeXMLConfiguration;
+import com.rosetta.util.serialisation.*;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntrospector {
 
@@ -67,13 +65,26 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     private final EnumAsStringBuilderIntrospector enumAsStringBuilderIntrospector;
 
+    // Indexes used to improve the performance of generating the substitution map
+    private Map<String, TypeConfigEntry> elementIndex = null;
+    private Map<String, List<TypeConfigEntry>> substitutionGroupIndex = null;
+
+    private static class TypeConfigEntry {
+        final ModelSymbolId symbolId;
+        final TypeXMLConfiguration config;
+
+        TypeConfigEntry(ModelSymbolId symbolId, TypeXMLConfiguration config) {
+            this.symbolId = symbolId;
+            this.config = config;
+        }
+    }
+
     // Note: this is a hack! In some occasions, the methods below
     // do not have access to the `MapperConfig<?>`, but they need it,
     // so having access to the object mapper makes sure we can always
     // access it.
     // Related to https://github.com/FasterXML/jackson-databind/issues/4141.
     private final ObjectMapper mapper;
-
 
     public RosettaXMLAnnotationIntrospector(ObjectMapper mapper, final RosettaXMLConfiguration rosettaXMLConfiguration, final boolean supportNativeEnumValue) {
         this(mapper, rosettaXMLConfiguration, new RosettaEnumBuilderIntrospector(supportNativeEnumValue), new EnumAsStringBuilderIntrospector());
@@ -86,31 +97,140 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         this.enumAsStringBuilderIntrospector = enumAsStringBuilderIntrospector;
     }
 
-    public SubstitutionMap findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
+    private void buildSubstitutionLogicIndexes() {
+        elementIndex = new HashMap<>();
+        substitutionGroupIndex = new HashMap<>();
+        SortedMap<ModelSymbolId, TypeXMLConfiguration> typeConfigMap = rosettaXMLConfiguration.getTypeConfigMap();
+
+        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : typeConfigMap.entrySet()) {
+            ModelSymbolId symbolId = entry.getKey();
+            TypeXMLConfiguration cfg = entry.getValue();
+            TypeConfigEntry typeConfigEntry = new TypeConfigEntry(symbolId, cfg);
+
+            cfg.getXmlElementFullyQualifiedName()
+                    .ifPresent(fqn -> {
+                        if (elementIndex.containsKey(fqn)) {
+                            throw new IllegalStateException(String.format("Attempted to add duplicate key %s to element index", fqn));
+                        }
+                        elementIndex.put(fqn, typeConfigEntry);
+                    });
+
+            cfg.getSubstitutionGroup()
+                    .ifPresent(group -> substitutionGroupIndex
+                            .computeIfAbsent(group, k -> new ArrayList<>())
+                            .add(typeConfigEntry));
+        }
+    }
+
+    public SubstitutionMap  findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
         AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
         RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
+
         if (ann != null) {
-            ModelSymbolId id = createModelSymbolId(ac, ann.value());
-            List<ModelSymbolId> substitutions = rosettaXMLConfiguration.getSubstitutionsForType(id);
-            if (substitutions.isEmpty()) {
+            Map<JavaType, String> substitutionMap = new HashMap<>();
+            getAttributeXMLConfiguration(config, member)
+                    .flatMap(this::getElementRef)
+                    .ifPresent(elementRef -> {
+                        populateSubstitutionMapForElementByFullyQualifiedName(config, elementRef, substitutionMap, classLoader);
+                        populateSubstitutionMapForTransitiveSubstitutionGroups(config, elementRef, substitutionMap, classLoader);
+                    });
+            lookupLegacySubstitutionsForType(config, ac, ann, substitutionMap, classLoader);
+            if (substitutionMap.isEmpty()) {
                 return null;
             }
-            return new SubstitutionMap(
-                    Streams.concat(substitutions.stream(), Stream.of(id))
-                            .collect(Collectors.toMap(
-                                    s -> {
-                                        try {
-                                            return config.constructType(classLoader.loadClass(s.toString()));
-                                        } catch (ClassNotFoundException e) {
-                                            throw new RuntimeException(e);
-                                        }
-                                    },
-                                    this::getElementName
-                            ))
-            );
+            return new SubstitutionMap(substitutionMap);
         }
         return null;
     }
+
+    public Map<String, TypeConfigEntry> getElementIndex() {
+        if (elementIndex == null) {
+            buildSubstitutionLogicIndexes();
+        }
+        return elementIndex;
+    }
+
+    public Map<String, List<TypeConfigEntry>> getSubstitutionGroupIndex() {
+        if (substitutionGroupIndex == null) {
+            buildSubstitutionLogicIndexes();
+        }
+        return substitutionGroupIndex;
+    }
+
+    /*
+     * Required for backwards compatibility getElementRef() supersedes legacy getSubstitutionGroup() method
+     */
+    private Optional<String> getElementRef(AttributeXMLConfiguration attributeXMLConfiguration) {
+        return attributeXMLConfiguration.getElementRef().isPresent() ? attributeXMLConfiguration.getElementRef() : attributeXMLConfiguration.getSubstitutionGroup();
+    }
+
+    private void populateSubstitutionMapForElementByFullyQualifiedName(MapperConfig<?> config,
+                                                                       String fullyQualifiedName,
+                                                                       Map<JavaType, String> substitutionMap,
+                                                                       ClassLoader classLoader) {
+        Map<String, TypeConfigEntry> elementIndex = getElementIndex();
+        if (elementIndex.containsKey(fullyQualifiedName)) {
+            TypeConfigEntry entry = elementIndex.get(fullyQualifiedName);
+            updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
+        }
+    }
+
+    private void populateSubstitutionMapForTransitiveSubstitutionGroups(MapperConfig<?> config,
+                                                                        String substitutionGroup,
+                                                                        Map<JavaType, String> substitutionMap,
+                                                                        ClassLoader classLoader) {
+        populateSubstitutionMapForTransitiveSubstitutionGroups(config, substitutionGroup, substitutionMap, classLoader, new HashSet<>());
+    }
+
+    private void populateSubstitutionMapForTransitiveSubstitutionGroups(MapperConfig<?> config,
+                                                                        String substitutionGroup,
+                                                                        Map<JavaType, String> substitutionMap,
+                                                                        ClassLoader classLoader,
+                                                                        Set<String> visited) {
+        if (!visited.add(substitutionGroup)) {
+            return;
+        }
+        Map<String, List<TypeConfigEntry>> substitutionGroupIndex = getSubstitutionGroupIndex();
+        for (TypeConfigEntry entry : substitutionGroupIndex.getOrDefault(substitutionGroup, Lists.newArrayList())) {
+            updateSubstitutionMap(config, substitutionMap, classLoader, entry.config, entry.symbolId);
+            entry.config.getXmlElementFullyQualifiedName()
+                    .ifPresent(fqn -> populateSubstitutionMapForTransitiveSubstitutionGroups(config, fqn, substitutionMap, classLoader, visited));
+        }
+    }
+
+    private void updateSubstitutionMap(MapperConfig<?> config, Map<JavaType, String> substitutionMap, ClassLoader classLoader, TypeXMLConfiguration typeXMLConfiguration, ModelSymbolId key) {
+        if (!typeXMLConfiguration.getAbstract().orElse(false)) {
+            try {
+                JavaType javaType = config.constructType(classLoader.loadClass(key.toString()));
+                typeXMLConfiguration.getXmlElementName().ifPresent(name -> substitutionMap.put(javaType, name));
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /*
+     * Required for backwards compatibility
+     */
+    private void lookupLegacySubstitutionsForType(MapperConfig<?> config, AnnotatedClass ac, RosettaDataType ann, Map<JavaType, String> substitutionMap, ClassLoader classLoader) {
+        ModelSymbolId id = createModelSymbolId(ac, ann.value());
+        List<ModelSymbolId> substitutions = new ArrayList<>(rosettaXMLConfiguration.getSubstitutionsForType(id)); // Old substitution group model field
+
+        if (!substitutions.isEmpty()) {
+            substitutionMap.putAll(Streams.concat(substitutions.stream(), Stream.of(id))
+                    .collect(Collectors.toMap(
+                            s -> {
+                                try {
+                                    return config.constructType(classLoader.loadClass(s.toString()));
+                                } catch (ClassNotFoundException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            },
+                            this::getElementName
+                    )));
+        }
+    }
+
     private String getElementName(ModelSymbolId type) {
         return rosettaXMLConfiguration.getConfigurationForType(type).flatMap(TypeXMLConfiguration::getXmlElementName).orElse(type.getName());
     }
@@ -240,27 +360,40 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
         // Additionally, ignore any members that do not have the RosettaAttribute annotation
         // except for constructors, which are necessary for deserialisation.
-        return !(a.hasAnnotation(RosettaAttribute.class) || a instanceof AnnotatedConstructor);
+        // Additionally, the `getType` method needs to be ignored explicitly, otherwise it interferes with
+        // xml elements named `type`, which are then always ordered on top, instead of the actual place they occur.
+        return a.hasAnnotation(RosettaIgnore.class) && !(a instanceof AnnotatedConstructor) || a.getName().equals("getType");
     }
 
     @Override
-    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated a) {
-        // For the root element, ignore the xsi:schemaLocation attribute.
-        JsonIgnoreProperties.Value ignoreProps = super.findPropertyIgnoralByName(config, a);
-        return Optional.of(a)
-                .filter(ann -> ann instanceof AnnotatedClass)
-                .map(ann -> (AnnotatedClass) ann)
-                // TODO: substitution groups should not have this
-                .flatMap(ac -> this.getTypeXMLConfigurations(config, ac).stream().filter(t -> t.getXmlElementName().isPresent()).map(t -> t.getXmlElementName().get()).findFirst())
-                .map(rootElementName -> {
-                    Set<String> ignoredNames = new HashSet<>(ignoreProps.getIgnored());
-                    return JsonIgnoreProperties.Value.construct(
-                            ignoredNames,
-                            ignoreProps.getIgnoreUnknown(),
-                            ignoreProps.getAllowGetters(),
-                            ignoreProps.getAllowSetters(),
-                            ignoreProps.getMerge());
-                }).orElse(ignoreProps);
+    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
+        if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
+            AnnotatedClass acc = (AnnotatedClass) ac;
+            Set<String> includes = getPropertyNames(config, acc, x -> x.hasAnnotation(RosettaAttribute.class));
+            Set<String> ignored = getPropertyNames(config, acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+            ignored.removeAll(includes);
+            return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
+        }
+
+        return super.findPropertyIgnoralByName(config, ac);
+    }
+
+    private Set<String> getPropertyNames(MapperConfig<?> config, AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
+        return StreamSupport.stream(acc.memberMethods().spliterator(), false)
+                .filter(filter)
+                .map(m -> {
+                    Optional<String> xmlName = getAttributeXMLConfiguration(config, m).flatMap(AttributeXMLConfiguration::getXmlName);
+                    if (xmlName.isPresent()) {
+                        return xmlName.get();
+                    }
+                    RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
+                    if (attr != null && !attr.value().isEmpty()) {
+                        return attr.value();
+                    }
+                    return BeanUtil.getPropertyName(m.getAnnotated());
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     @Override

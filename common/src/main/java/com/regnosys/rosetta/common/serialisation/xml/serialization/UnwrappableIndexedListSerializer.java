@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.serialization;
 
 /*-
  * ==============
@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ser.impl.PropertySerializerMap;
 import com.fasterxml.jackson.databind.ser.std.AsArraySerializerBase;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 
 import javax.xml.namespace.QName;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.serialization;
 
 /*-
  * ==============
@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializer;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
 
 import java.util.List;
 

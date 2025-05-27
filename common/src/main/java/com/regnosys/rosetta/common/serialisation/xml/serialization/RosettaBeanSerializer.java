@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.serialization;
 
 /*-
  * ==============
@@ -22,7 +22,6 @@ package com.regnosys.rosetta.common.serialisation.xml;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.io.SerializedString;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
@@ -32,6 +31,8 @@ import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializer;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
+import com.regnosys.rosetta.common.serialisation.xml.VirtualXMLAttribute;
 
 import javax.xml.namespace.QName;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.util;
+package com.regnosys.rosetta.common.transform;
 
 /*-
  * ==============
@@ -22,6 +22,7 @@ package com.regnosys.rosetta.common.util;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.functions.RosettaFunction;
+import com.rosetta.model.lib.reports.ReportFunction;
 
 public class PipelineTestUtils {
     static class Enrich_Type_1ToType_2 implements RosettaFunction {
@@ -41,4 +42,20 @@ public class PipelineTestUtils {
             return "Enriched" + input;
         }
     }
+
+    public interface ReportFunction<Input, Report> extends RosettaFunction {
+        Report evaluate(Input reportableInput);
+    }
+
+    public static class SpecificInput {}
+
+    public static class SpecificOutput {}
+
+    public abstract static class TestReportFunction implements ReportFunction<SpecificInput, SpecificOutput> {
+        @Override
+        public SpecificOutput evaluate(SpecificInput input) {
+            return new SpecificOutput();
+        }
+    }
+
 }

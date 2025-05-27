@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.deserialization;
 
 /*-
  * ==============
@@ -68,7 +68,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
     }
 
     protected SubstitutedMethodProperty(SubstitutedMethodProperty src, JsonDeserializer<?> deser,
-                                         NullValueProvider nva) {
+                                        NullValueProvider nva) {
         super(src, deser, nva);
         _annotated = src._annotated;
         _setter = src._setter;
@@ -106,7 +106,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
     }
 
     @Override
-    public SettableBeanProperty withValueDeserializer(JsonDeserializer<?> deser) {
+    public SubstitutedMethodProperty withValueDeserializer(JsonDeserializer<?> deser) {
         if (_valueDeserializer == deser) {
             return this;
         }

@@ -38,8 +38,8 @@ import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyReferenceMixIn;
-import com.regnosys.rosetta.common.serialisation.xml.RosettaSerialiserFactory;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLModule;
+import com.regnosys.rosetta.common.serialisation.xml.serialization.RosettaSerialiserFactory;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.Reference;
@@ -92,7 +92,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     }
 
     public static RosettaObjectMapperCreator forXML(InputStream configInputStream, ClassLoader classLoader) throws IOException {
-        final RosettaXMLConfiguration config = getRosettaXMLConfiguration(configInputStream);
+        final RosettaXMLConfiguration config = RosettaXMLConfiguration.load(configInputStream);
         return forXML(config, classLoader);
     }
 
@@ -102,13 +102,6 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
     public static RosettaObjectMapperCreator forXML() {
         return forXML(new RosettaXMLConfiguration(Collections.emptyMap()), RosettaObjectMapperCreator.class.getClassLoader());
-    }
-
-    private static RosettaXMLConfiguration getRosettaXMLConfiguration(InputStream configInputStream) throws IOException {
-        ObjectMapper xmlConfigurationMapper = new ObjectMapper()
-                .registerModule(new Jdk8Module()) // because RosettaXMLConfiguration contains `Optional` types.
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT); // because we want to interpret an absent value as `Optional.empty()`.
-        return xmlConfigurationMapper.readValue(configInputStream, RosettaXMLConfiguration.class);
     }
 
     @Override

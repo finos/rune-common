@@ -1,0 +1,27 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.overriding.Root",
+  "@version" : "0.0.0",
+  "foo2" : {
+    "numberAttr" : 10,
+    "parentList" : {
+      "@ref:external" : "childKey"
+    },
+    "attr" : 42,
+    "parent" : {
+      "@key:external" : "childKey",
+      "parentAttr" : 42
+    },
+    "otherParentList" : [ {
+      "@key:external" : "otherChildKey1",
+      "parentAttr" : 1
+    }, {
+      "@key:external" : "otherChildKey2",
+      "parentAttr" : 2
+    } ],
+    "stringAttr" : {
+      "@scheme" : "Some scheme",
+      "@data" : "Some string"
+    }
+  }
+}

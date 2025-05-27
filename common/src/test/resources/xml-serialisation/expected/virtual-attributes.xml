@@ -17,14 +17,8 @@
   limitations under the License.
   ==============
   -->
-<MulticardinalityContainer>
-  <foo>
-    <XMLValue>foo1</XMLValue>
-    <Attr1>Foo</Attr1>
-    <Attr1>Bar</Attr1>
-  </foo>
-  <foo>
-    <XMLValue>foo2</XMLValue>
-    <Attr1>Qux</Attr1>
-  </foo>
-</MulticardinalityContainer>
+<Party>
+  <partyName>my name</partyName>
+  <partyId>myId1</partyId>
+  <partyId>myId2</partyId>
+</Party>

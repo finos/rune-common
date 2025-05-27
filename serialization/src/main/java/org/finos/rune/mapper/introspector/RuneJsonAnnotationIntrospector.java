@@ -43,7 +43,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static com.rosetta.model.lib.RuneNameConstants.*;
+import static com.rosetta.model.lib.SerializedNameConstants.*;
 
 /**
  * Custom Jackson annotation introspector for handling serialization and deserialization
@@ -193,7 +193,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     private Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)
                 .filter(filter)
-                .map(m -> RuneBeanUtil.getPropertyName(m.getAnnotated()))
+                .map(RuneBeanUtil::getPropertyName)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }

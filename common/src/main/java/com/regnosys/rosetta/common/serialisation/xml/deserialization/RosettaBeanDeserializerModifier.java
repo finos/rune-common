@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.xml;
+package com.regnosys.rosetta.common.serialisation.xml.deserialization;
 
 /*-
  * ==============
@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.deser.*;
 import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
 
 import java.util.ArrayList;
 import java.util.List;

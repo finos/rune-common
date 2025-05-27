@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,54 +36,58 @@ import java.util.stream.Collectors;
 @SuppressWarnings("FieldCanBeLocal") // Used by Jackson
 public class ValidationReport implements PostProcessorReport, Processor.Report {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ValidationReport.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ValidationReport.class);
 
-	@JsonProperty
-	private final List<ValidationResult<?>> validationResults;
-	@JsonIgnore
-	private final RosettaModelObject resultObject;
+    @JsonProperty
+    private final List<ValidationResult<?>> validationResults;
+    @JsonIgnore
+    private final RosettaModelObject resultObject;
 
-	public ValidationReport(RosettaModelObject resultObject, List<ValidationResult<?>> validationResults) {
-		this.resultObject = resultObject;
-		validationResults.sort(Comparator.comparing(ValidationResult::isSuccess, Boolean::compare));
-		this.validationResults = validationResults;
-	}
+    public ValidationReport(RosettaModelObject resultObject, List<ValidationResult<?>> validationResults) {
+        this.resultObject = resultObject;
+        validationResults.sort(Comparator.comparing(ValidationResult::isSuccess, Boolean::compare));
+        this.validationResults = validationResults;
+    }
 
-	@JsonProperty
-	public boolean success() {
-		return !failure();
-	}
+    @JsonProperty
+    public boolean success() {
+        return !failure();
+    }
 
-	public List<ValidationResult<?>> validationFailures() {
-		return validationResults.stream()
-				.filter(r -> !r.isSuccess())
-				.collect(Collectors.toList());
-	}
+    public List<ValidationResult<?>> validationFailures() {
+        return validationResults.stream()
+                .filter(r -> !r.isSuccess())
+                .collect(Collectors.toList());
+    }
 
-	public List<ValidationResult<?>> results() {
-		return validationResults;
-	}
+    public List<ValidationResult<?>> results() {
+        return validationResults;
+    }
 
-	public void logReport() {
-		for (ValidationResult<?> validationResult : validationResults) {
-			if (!validationResult.isSuccess()) {
-				LOGGER.debug(validationResult.toString());
-			} else {
-				LOGGER.trace(validationResult.toString());
-			}
-		}
-	}
+    public void logReport() {
+        if (LOGGER.isDebugEnabled()) {
+            for (ValidationResult<?> validationResult : validationResults) {
+                if (!validationResult.isSuccess()) {
+                    LOGGER.debug(validationResult.toString());
+                } else {
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace(validationResult.toString());
+                    }
+                }
+            }
+        }
+    }
 
-	private boolean failure() {
-		return !validationFailures().isEmpty();
-	}
+    private boolean failure() {
+        return !validationFailures().isEmpty();
+    }
 
-	public List<ValidationResult<?>> getValidationResults() {
-		return validationResults;
-	}
+    public List<ValidationResult<?>> getValidationResults() {
+        return validationResults;
+    }
 
-	@Override
-	public RosettaModelObject getResultObject() {
-		return resultObject;
-	}
+    @Override
+    public RosettaModelObject getResultObject() {
+        return resultObject;
+    }
 }

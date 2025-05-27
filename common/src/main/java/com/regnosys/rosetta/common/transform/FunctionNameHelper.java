@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+
 public class FunctionNameHelper {
 
     public Class<?> getInputClass(Class<? extends RosettaFunction> function) {
@@ -50,7 +52,9 @@ public class FunctionNameHelper {
     public Method getFuncMethod(Class<? extends RosettaFunction> function) {
         try {
             List<Method> evaluateMethods = Arrays.stream(function.getMethods())
-                    .filter(x -> x.getName().equals("evaluate"))
+                    .filter(m -> m.getName().equals("evaluate"))
+                    .filter(m-> !m.isBridge())
+                    .filter(m-> !m.isSynthetic())
                     .collect(Collectors.toList());
             return Iterables.getLast(evaluateMethods);
         } catch (Exception ex) {
@@ -63,6 +67,12 @@ public class FunctionNameHelper {
         return Optional.ofNullable(function.getAnnotation(com.rosetta.model.lib.annotations.RosettaReport.class))
                 .map(a -> String.format("%s / %s", a.body(), String.join(" ", a.corpusList())))
                 .orElse(readableFunctionName(function));
+    }
+
+    public String getName(Class<? extends RosettaFunction> function, String modelId) {
+        return Optional.ofNullable(modelId)
+                .map(id -> String.format("%s (%s)", getName(function), id))
+                .orElse(getName(function));
     }
 
     public String capitalizeFirstLetter(String input) {
@@ -81,27 +91,34 @@ public class FunctionNameHelper {
         return readableId(simpleName);
     }
 
-    public String readableFunctionName(String functionSimpleName){
+    public String readableFunctionName(String functionSimpleName) {
         return readableFunctionNameFromId(readableId(functionSimpleName));
     }
 
-    private String readableId(String simpleName) {
+    public String readableId(String name) {
+        String simpleName = name.replaceAll(".*\\.(.*?)$", "$1");
 
-        String sanitise = simpleName
-                .replace("Ingest_", "")
-                .replace("Report_", "")
-                .replace("Function", "")
-                .replace("Enrich_", "")
-                .replace("Project_", "")
+        String sanitisedName = getSanitisedName(simpleName)
                 .replace("-", ".")
                 .replace("_", ".");
 
-        String functionName = lowercaseConsecutiveUppercase(sanitise)
+        String functionName = lowercaseConsecutiveUppercase(sanitisedName)
                 .replace(".", "");
 
-        return CaseFormat.UPPER_CAMEL
+        return UPPER_CAMEL
                 .converterTo(CaseFormat.LOWER_HYPHEN)
                 .convert(functionName);
+    }
+
+    private static String getSanitisedName(String simpleName) {
+        return simpleName
+                .replace("Ingest_", "")
+                .replace("Report_", "")
+                .replace("ReportFunction", "")
+                .replace("Function", "")
+                .replace("Enrich_", "")
+                .replace("Project_", "");
+
     }
 
     private String readableFunctionNameFromId(String readableId) {
@@ -142,5 +159,4 @@ public class FunctionNameHelper {
         }
         return result.toString();
     }
-
 }

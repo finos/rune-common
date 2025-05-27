@@ -20,9 +20,6 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
@@ -66,29 +63,29 @@ public class RosettaXmlMapper extends XmlMapper {
         this.config = config;
     }
 
-    private <T> T readValueInternal(String content, Class<T> valueType) throws IOException, ParserConfigurationException, SAXException {
+    private <T> T readClassValueInternal(String content) throws IOException, ParserConfigurationException, SAXException, ReadValueException {
         String outermostElementName = getOutermostElementName(content);
         Optional<Class<T>> valueTypeForElement = getValueTypeForElement(outermostElementName);
         if (valueTypeForElement.isPresent()) {
             return super.readValue(content, valueTypeForElement.get());
         }
-        throw new ParserConfigurationException("Unable to find value type for top level element");
+        throw new ReadValueException("Unable to find value type for top level element");
     }
 
-    private <T> T readValueInternal(String content, JavaType valueType) throws IOException, ParserConfigurationException, SAXException {
+    private <T> T readJavaTypeValueInternal(String content) throws IOException, ParserConfigurationException, SAXException, ReadValueException {
         String outermostElementName = getOutermostElementName(content);
         Optional<Class<T>> valueTypeForElement = getValueTypeForElement(outermostElementName);
         if (valueTypeForElement.isPresent()) {
             return super.readValue(content, convertClassToJavaType(valueTypeForElement.get()));
         }
-        throw new ParserConfigurationException("Unable to find value type for top level element");
+        throw new ReadValueException("Unable to find value type for top level element");
     }
 
     @Override
     public <T> T readValue(String content, Class<T> valueType) throws JsonProcessingException {
         try {
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readClassValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(content, valueType);
         }
     }
@@ -96,8 +93,8 @@ public class RosettaXmlMapper extends XmlMapper {
     @Override
     public <T> T readValue(String content, JavaType valueType) throws JsonProcessingException {
         try {
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readJavaTypeValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(content, valueType);
         }
     }
@@ -106,8 +103,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(File src, Class<T> valueType) throws IOException {
         String content = convertFileToString(src);
         try {
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readClassValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -116,8 +113,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(File src, JavaType valueType) throws IOException {
         String content = convertFileToString(src);
         try {
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readJavaTypeValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -126,8 +123,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(URL src, Class<T> valueType) throws IOException {
         try {
             String content = convertFileToString(new File(src.toURI()));
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException e) {
+            return readClassValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -136,8 +133,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(URL src, JavaType valueType) throws IOException {
         try {
             String content = convertFileToString(new File(src.toURI()));
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException e) {
+            return readJavaTypeValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -147,8 +144,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(Reader src, Class<T> valueType) throws IOException {
         try {
             String content = convertReaderToString(src);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readClassValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -157,8 +154,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(Reader src, JavaType valueType) throws IOException {
         try {
             String content = convertReaderToString(src);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readJavaTypeValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -167,8 +164,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(byte[] src, Class<T> valueType) throws IOException {
         try {
             String content = new String(src);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readClassValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -177,8 +174,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(byte[] src, JavaType valueType) throws IOException {
         try {
             String content = new String(src);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readJavaTypeValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -187,8 +184,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(InputStream src, Class<T> valueType) throws IOException {
         try {
             String content = convertInputStreamToString(src);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readClassValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -197,8 +194,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(InputStream src, JavaType valueType) throws IOException {
         try {
             String content = convertInputStreamToString(src);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readJavaTypeValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(src, valueType);
         }
     }
@@ -207,8 +204,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(XMLStreamReader r, Class<T> valueType) throws IOException {
         try {
             String content = convertXMLStreamReaderToString(r);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readClassValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(r, valueType);
         }
     }
@@ -217,8 +214,8 @@ public class RosettaXmlMapper extends XmlMapper {
     public <T> T readValue(XMLStreamReader r, JavaType valueType) throws IOException {
         try {
             String content = convertXMLStreamReaderToString(r);
-            return readValueInternal(content, valueType);
-        } catch (ParserConfigurationException | IOException | SAXException e) {
+            return readJavaTypeValueInternal(content);
+        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
             return super.readValue(r, valueType);
         }
     }
@@ -249,7 +246,8 @@ public class RosettaXmlMapper extends XmlMapper {
 
     @SuppressWarnings("unchecked")
     private <T> Class<T> loadModelSymbolAsClass(ModelSymbolId modelSymbolId) throws ClassNotFoundException {
-        return (Class<T>) getClass().getClassLoader().loadClass(modelSymbolId.getQualifiedName().toString());
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        return (Class<T>) classLoader.loadClass(modelSymbolId.getQualifiedName().toString());
     }
 
     private String convertXMLStreamReaderToString(XMLStreamReader reader) throws IOException {
@@ -298,4 +296,11 @@ public class RosettaXmlMapper extends XmlMapper {
         return getTypeFactory().constructType(clazz);
     }
 
+    private static class ReadValueException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        public ReadValueException(String message) {
+            super(message);
+        }
+    }
 }

@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A post-processing step that re-keys scoped references in a Rosetta model.
  * This processor identifies references with temporary keys (containing
  * "[a-zA-Z]*-\$[0-9]*", e.g., price-$123456) and assigns them new sequential
- * keys based on their prefix.
+ * keys based on their prefix (e.g., price-1).
  */
 public class UpdateTemporaryKeyProcessStep implements PostProcessStep {
 

@@ -25,7 +25,9 @@ import com.regnosys.rosetta.common.util.SimpleProcessor;
 import com.rosetta.lib.postprocess.PostProcessorReport;
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.meta.FieldWithMeta;
+import com.rosetta.model.lib.meta.FieldWithMeta.FieldWithMetaBuilder;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.Reference;
@@ -74,9 +76,10 @@ public class UpdateTemporaryKeyProcessStep implements PostProcessStep {
     public <T extends RosettaModelObject> PostProcessorReport runProcessStep(
             Class<? extends T> topClass,
             T instance) {
-        ScopedKeyReferenceCollector collectedData = collectScopedKeyReferences(instance);
+        RosettaModelObjectBuilder builder = instance.toBuilder();
+        ScopedKeyReferenceCollector collectedData = collectScopedKeyReferences(builder);
         updateReferences(collectedData.helper.getScopeToDataMap().values());
-        return new ScopedReferenceReKeyPostProcessorReport<>(instance);
+        return new ScopedReferenceReKeyPostProcessorReport<>(instance.build());
     }
 
     /**
@@ -111,14 +114,13 @@ public class UpdateTemporaryKeyProcessStep implements PostProcessStep {
     /**
      * Collects scoped key references from the given instance.
      *
-     * @param <T>      the type of the Rosetta model object
-     * @param instance the instance to collect references from
+     * @param builder the instance to collect references from
      * @return the collector containing the collected references
      */
-    private <T extends RosettaModelObject> ScopedKeyReferenceCollector collectScopedKeyReferences(T instance) {
-        RosettaPath path = RosettaPath.valueOf(instance.getType().getSimpleName());
+    private ScopedKeyReferenceCollector collectScopedKeyReferences(RosettaModelObjectBuilder builder) {
+        RosettaPath path = RosettaPath.valueOf(builder.getType().getSimpleName());
         ScopedKeyReferenceCollector collector = new ScopedKeyReferenceCollector(referenceConfig);
-        instance.process(path, collector);
+        builder.process(path, collector);
         return collector;
     }
 

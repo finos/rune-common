@@ -38,6 +38,7 @@ public class WorkflowPostProcessor implements PostProcessor {
 	public WorkflowPostProcessor(QualifyProcessorStep qualifyProcessorStep, ReferenceConfig resolverConfig) {
 		this.postProcessors = Arrays.asList(
 				new ReKeyProcessStep(new GlobalKeyProcessStep(NonNullHashCollector::new)),
+				new UpdateTemporaryKeyProcessStep(resolverConfig),
 				new ReferenceResolverProcessStep(resolverConfig),
 				qualifyProcessorStep);
 	}

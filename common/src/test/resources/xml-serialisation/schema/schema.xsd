@@ -5,13 +5,22 @@
         elementFormDefault="qualified"
         targetNamespace="urn:my.schema"
 >
-    <xs:element name="TopLevel" type="Document">
-    </xs:element>
+    <xs:element name="TopLevel" type="Document"/>
     <xs:complexType name="Document">
         <xs:sequence>
             <xs:element name="Attr" type="Foo" />
             <xs:element name="Value" type="Measure" />
         </xs:sequence>
+    </xs:complexType>
+    <xs:element name="TopLevelExtension" type="DocumentExtension"/>
+    <xs:complexType name="DocumentExtension">
+        <xs:complexContent>
+            <xs:extension base="Document">
+                <xs:sequence>
+                    <xs:element name="DocumentExtensionAttr" type="xs:string"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
     <xs:complexType name="FooBase">
         <xs:sequence>

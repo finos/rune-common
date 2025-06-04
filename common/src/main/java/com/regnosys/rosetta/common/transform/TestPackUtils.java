@@ -98,28 +98,28 @@ public class TestPackUtils {
             throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
         }
         // match on modelId
-        List<PipelineModel> pipelineModelsWithModelId = pipelineModelsFunctionName.stream()
-                .filter(p -> modelId != null && modelId.equals(p.getModelId()))
+        return findPipelineModel(pipelineModelsFunctionName, modelId)
+                // any single match
+                .orElseGet(() -> getOnlyPipelineModel(pipelineModelsFunctionName).orElse(null));
+    }
+
+    private static Optional<PipelineModel> findPipelineModel(List<PipelineModel> pipelineModels, String modelId) {
+        List<PipelineModel> filteredPipelineModels = pipelineModels.stream()
+                .filter(p ->
+                        (modelId != null && modelId.equals(p.getModelId())
+                                || (modelId == null && p.getModelId() == null)))
                 .collect(Collectors.toList());
-        if (pipelineModelsWithModelId.size() > 1) {
-            throw new IllegalArgumentException(String.format("Multiple PipelineModels found with function name %s and modelId %s. IDs: %s", functionName, modelId, pipelineModelsWithModelId.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
-        } else if (pipelineModelsWithModelId.size() == 1) {
-            return pipelineModelsWithModelId.get(0);
+
+        return getOnlyPipelineModel(filteredPipelineModels);
+    }
+
+    private static Optional<PipelineModel> getOnlyPipelineModel(List<PipelineModel> filteredPipelineModels) {
+        if (filteredPipelineModels.size() > 1) {
+            throw new IllegalArgumentException(String.format("Multiple PipelineModels found. IDs: %s", filteredPipelineModels.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
+        } else if (filteredPipelineModels.size() == 1) {
+            return Optional.of(filteredPipelineModels.get(0));
         }
-        // match on no modelId
-        List<PipelineModel> pipelineModelsWithNoModelId = pipelineModelsFunctionName.stream()
-                .filter(p -> modelId == null && p.getModelId() == null)
-                .collect(Collectors.toList());
-        if (pipelineModelsWithNoModelId.size() > 1) {
-            throw new IllegalArgumentException(String.format("Multiple PipelineModels found with function name %s and no modelId. IDs: %s", functionName, pipelineModelsWithNoModelId.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
-        } else if (pipelineModelsWithNoModelId.size() == 1) {
-            return pipelineModelsWithNoModelId.get(0);
-        }
-        // any match (but there must be only one)
-        if (pipelineModelsFunctionName.size() > 1) {
-            throw new IllegalArgumentException(String.format("Multiple PipelineModels found with function name %s. IDs: %s", functionName, pipelineModelsFunctionName.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
-        }
-        return pipelineModelsFunctionName.get(0);
+        return Optional.empty();
     }
 
     public static List<TestPackModel> getTestPackModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {

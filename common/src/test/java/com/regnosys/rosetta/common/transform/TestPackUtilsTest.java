@@ -97,7 +97,7 @@ class TestPackUtilsTest {
         Exception e = assertThrows(IllegalArgumentException.class, () ->
                 TestPackUtils.getPipelineModel(models, "func1", "modelA")
         );
-        assertTrue(e.getMessage().startsWith("Multiple PipelineModels found with function name func1 and modelId modelA"));
+        assertEquals("Multiple PipelineModels found. IDs: test-1-modelA-id, test-2-modelA-id", e.getMessage());
     }
 
     @Test
@@ -110,7 +110,7 @@ class TestPackUtilsTest {
         Exception e = assertThrows(IllegalArgumentException.class, () ->
                 TestPackUtils.getPipelineModel(models, "func1", null)
         );
-        assertTrue(e.getMessage().startsWith("Multiple PipelineModels found with function name func1 and no modelId"));
+        assertEquals("Multiple PipelineModels found. IDs: test-1-id, test-2-id", e.getMessage());
     }
 
     @Test
@@ -124,6 +124,6 @@ class TestPackUtilsTest {
         Exception e = assertThrows(IllegalArgumentException.class, () ->
                 TestPackUtils.getPipelineModel(models, "func1", "unknownModel")
         );
-        assertTrue(e.getMessage().startsWith("Multiple PipelineModels found with function name func1"));
+        assertEquals("Multiple PipelineModels found. IDs: test-1-id, test-2-modelA-id, test-3-modelB-id", e.getMessage());
     }
 }

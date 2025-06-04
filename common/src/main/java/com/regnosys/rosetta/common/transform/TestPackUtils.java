@@ -93,14 +93,33 @@ public class TestPackUtils {
         List<PipelineModel> pipelineModelsFunctionName = pipelineModels.stream()
                 .filter(p -> p.getTransform().getFunction().equals(functionName))
                 .collect(Collectors.toList());
+        // not found
         if (pipelineModelsFunctionName.isEmpty()) {
             throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
         }
-        return pipelineModelsFunctionName.stream()
-                .filter(p -> modelId != null && modelId.equals(p.getModelId())
-                        || modelId == null && p.getModelId() == null)
-                .findFirst()
-                .orElse(pipelineModelsFunctionName.get(0));
+        // match on modelId
+        List<PipelineModel> pipelineModelsWithModelId = pipelineModelsFunctionName.stream()
+                .filter(p -> modelId != null && modelId.equals(p.getModelId()))
+                .collect(Collectors.toList());
+        if (pipelineModelsWithModelId.size() > 1) {
+            throw new IllegalArgumentException(String.format("Multiple PipelineModels found with function name %s and modelId %s. IDs: %s", functionName, modelId, pipelineModelsWithModelId.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
+        } else if (pipelineModelsWithModelId.size() == 1) {
+            return pipelineModelsWithModelId.get(0);
+        }
+        // match on no modelId
+        List<PipelineModel> pipelineModelsWithNoModelId = pipelineModelsFunctionName.stream()
+                .filter(p -> modelId == null && p.getModelId() == null)
+                .collect(Collectors.toList());
+        if (pipelineModelsWithNoModelId.size() > 1) {
+            throw new IllegalArgumentException(String.format("Multiple PipelineModels found with function name %s and no modelId. IDs: %s", functionName, pipelineModelsWithNoModelId.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
+        } else if (pipelineModelsWithNoModelId.size() == 1) {
+            return pipelineModelsWithNoModelId.get(0);
+        }
+        // any match (but there must be only one)
+        if (pipelineModelsFunctionName.size() > 1) {
+            throw new IllegalArgumentException(String.format("Multiple PipelineModels found with function name %s. IDs: %s", functionName, pipelineModelsFunctionName.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
+        }
+        return pipelineModelsFunctionName.get(0);
     }
 
     public static List<TestPackModel> getTestPackModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {

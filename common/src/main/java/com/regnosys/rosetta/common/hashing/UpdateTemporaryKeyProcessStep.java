@@ -227,7 +227,7 @@ public class UpdateTemporaryKeyProcessStep implements PostProcessStep {
                             });
                 } else if (fieldWithMeta instanceof GlobalKey.GlobalKeyBuilder) {
                     GlobalKey.GlobalKeyBuilder globalKeyBuilder = (GlobalKey.GlobalKeyBuilder) fieldWithMeta;
-                    Optional.ofNullable(globalKeyBuilder.getMeta()).map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKey).orElse(Collections.emptyList()).stream().map(Key::getKeyValue).findFirst()
+                    Optional.ofNullable(globalKeyBuilder.getMeta()).map(GlobalKeyFields.GlobalKeyFieldsBuilder::getKey).orElse(Collections.emptyList()).stream().map(Key::getKeyValue).filter(Objects::nonNull).findFirst()
                             .filter(v -> v.matches(TEMPORARY_KEY_REGEX))
                             .ifPresent(keyValue -> {
                                 ScopedData scopedData = helper.getDataForModelPath(PathUtils.toPath(path));

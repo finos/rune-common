@@ -95,18 +95,36 @@ public class TestPackUtils {
                 .collect(Collectors.toList());
     }
 
-    //This will return a list of pipeline models that match the function name and pipelineId
     public static PipelineModel getPipelineModel(List<PipelineModel> pipelineModels, String functionName, String modelId) {
         //fallback to get the first pipeline model with the function name if pipelineId is not provided
         List<PipelineModel> pipelineModelsFunctionName = getPipelineModels(pipelineModels, functionName);
+        // not found
         if (pipelineModelsFunctionName.isEmpty()) {
             throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
         }
-        return pipelineModelsFunctionName.stream()
-                .filter(p -> modelId != null && modelId.equals(p.getModelId())
-                        || modelId == null && p.getModelId() == null)
-                .findFirst()
-                .orElse(pipelineModelsFunctionName.get(0));
+        // match on modelId
+        return findPipelineModel(pipelineModelsFunctionName, modelId)
+                // any single match
+                .orElseGet(() -> getOnlyPipelineModel(pipelineModelsFunctionName).orElse(null));
+    }
+
+    private static Optional<PipelineModel> findPipelineModel(List<PipelineModel> pipelineModels, String modelId) {
+        List<PipelineModel> filteredPipelineModels = pipelineModels.stream()
+                .filter(p ->
+                        (modelId != null && modelId.equals(p.getModelId())
+                                || (modelId == null && p.getModelId() == null)))
+                .collect(Collectors.toList());
+
+        return getOnlyPipelineModel(filteredPipelineModels);
+    }
+
+    private static Optional<PipelineModel> getOnlyPipelineModel(List<PipelineModel> filteredPipelineModels) {
+        if (filteredPipelineModels.size() > 1) {
+            throw new IllegalArgumentException(String.format("Multiple PipelineModels found. IDs: %s", filteredPipelineModels.stream().map(PipelineModel::getId).collect(Collectors.joining(", "))));
+        } else if (filteredPipelineModels.size() == 1) {
+            return Optional.of(filteredPipelineModels.get(0));
+        }
+        return Optional.empty();
     }
 
     public static List<TestPackModel> getTestPackModels(Path resourcePath, ClassLoader classLoader, ObjectMapper jsonObjectMapper) {

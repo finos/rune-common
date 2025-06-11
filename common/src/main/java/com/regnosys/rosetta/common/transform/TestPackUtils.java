@@ -44,9 +44,9 @@ import java.util.stream.Collectors;
 public class TestPackUtils {
 
     public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
-    public static final Path PROJECTION_CONFIG = PROJECTION_PATH.resolve("config");
+    public static final Path PROJECTION_CONFIG_PATH = PROJECTION_PATH.resolve("config");
     @Deprecated
-    public static final Path PROJECTION_CONFIG_PATH_WITHOUT_ISO20022 = PROJECTION_CONFIG; // for backwards compatibility
+    public static final Path PROJECTION_CONFIG_PATH_WITHOUT_ISO20022 = PROJECTION_CONFIG_PATH; // for backwards compatibility
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");
     public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.TRANSLATE.getResourcePath()).resolve("config");
 

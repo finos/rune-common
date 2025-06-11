@@ -20,33 +20,24 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Map;
 import java.util.Optional;
 
 import com.rosetta.util.serialisation.TypeXMLConfiguration;
-import org.apache.commons.io.IOUtils;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 /**
- * Custom XmlMapper that extends the standard XmlMapper and overrides the base readValue method
- * to delegate to the super class.
+ * Custom XmlMapper that extends the standard XmlMapper and adds support for top-level
+ * XML element substitution.
  */
 public class RosettaXmlMapper extends XmlMapper {
     private static final long serialVersionUID = 1L;
@@ -60,168 +51,56 @@ public class RosettaXmlMapper extends XmlMapper {
 
     }
 
-    private <T> T readClassValueInternal(String content) throws IOException, ParserConfigurationException, SAXException, ReadValueException {
-        String outermostElementName = getOutermostElementName(content);
-        Optional<Class<T>> valueTypeForElement = getValueTypeForElement(outermostElementName);
-        if (valueTypeForElement.isPresent()) {
-            return super.readValue(content, valueTypeForElement.get());
+    @Override
+    protected Object _readValue(DeserializationConfig cfg, JsonParser p,
+                                JavaType valueType)
+            throws IOException
+    {
+        JavaType typeFromRootElementName = getTypeFromRootElementName(p);
+        if (typeFromRootElementName != null) {
+            checkRootTypeIsSubtypeOfProvidedType(typeFromRootElementName, valueType);
+            Object value = super._readValue(cfg, p, typeFromRootElementName);
+            return valueType.getRawClass().cast(value);
         }
-        throw new ReadValueException("Unable to find value type for top level element");
-    }
-
-    private <T> T readJavaTypeValueInternal(String content) throws IOException, ParserConfigurationException, SAXException, ReadValueException {
-        String outermostElementName = getOutermostElementName(content);
-        Optional<Class<T>> valueTypeForElement = getValueTypeForElement(outermostElementName);
-        if (valueTypeForElement.isPresent()) {
-            return super.readValue(content, convertClassToJavaType(valueTypeForElement.get()));
-        }
-        throw new ReadValueException("Unable to find value type for top level element");
+        return super._readValue(cfg, p, valueType);
     }
 
     @Override
-    public <T> T readValue(String content, Class<T> valueType) throws JsonProcessingException {
-        try {
-            return readClassValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(content, valueType);
+    protected Object _readMapAndClose(JsonParser p, JavaType valueType)
+            throws IOException
+    {
+        JavaType typeFromRootElementName = getTypeFromRootElementName(p);
+        if (typeFromRootElementName != null) {
+            checkRootTypeIsSubtypeOfProvidedType(typeFromRootElementName, valueType);
+            Object value = super._readMapAndClose(p, typeFromRootElementName);
+            return valueType.getRawClass().cast(value);
         }
+        return super._readMapAndClose(p, valueType);
     }
-
-    @Override
-    public <T> T readValue(String content, JavaType valueType) throws JsonProcessingException {
-        try {
-            return readJavaTypeValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(content, valueType);
+    
+    private void checkRootTypeIsSubtypeOfProvidedType(JavaType rootType, JavaType providedType) {
+        if (rootType.isTypeOrSubTypeOf(providedType.getRawClass())) {
+            return;
         }
+        throw new IllegalArgumentException("The inferred root type " + rootType + " is not a subtype of the provided type " + providedType + ".");
     }
-
-    @Override
-    public <T> T readValue(File src, Class<T> valueType) throws IOException {
-        String content = convertFileToString(src);
-        try {
-            return readClassValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
+    
+    private JavaType getTypeFromRootElementName(JsonParser p) {
+        String rootElementName = getRootXMLElementName(p);
+        if (rootElementName == null) {
+            return null;
         }
+        return getValueTypeForElement(rootElementName)
+                .map(this::convertClassToJavaType)
+                .orElse(null);
     }
-
-    @Override
-    public <T> T readValue(File src, JavaType valueType) throws IOException {
-        String content = convertFileToString(src);
-        try {
-            return readJavaTypeValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
+    
+    private String getRootXMLElementName(JsonParser p) {
+        if (p instanceof FromXmlParser) {
+            FromXmlParser fromXmlParser = (FromXmlParser) p;
+            return fromXmlParser.getStaxReader().getLocalName();
         }
-    }
-
-    @Override
-    public <T> T readValue(URL src, Class<T> valueType) throws IOException {
-        try {
-            String content = convertFileToString(new File(src.toURI()));
-            return readClassValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(URL src, JavaType valueType) throws IOException {
-        try {
-            String content = convertFileToString(new File(src.toURI()));
-            return readJavaTypeValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | URISyntaxException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-
-    @Override
-    public <T> T readValue(Reader src, Class<T> valueType) throws IOException {
-        try {
-            String content = convertReaderToString(src);
-            return readClassValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(Reader src, JavaType valueType) throws IOException {
-        try {
-            String content = convertReaderToString(src);
-            return readJavaTypeValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(byte[] src, Class<T> valueType) throws IOException {
-        try {
-            String content = new String(src);
-            return readClassValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(byte[] src, JavaType valueType) throws IOException {
-        try {
-            String content = new String(src);
-            return readJavaTypeValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(InputStream src, Class<T> valueType) throws IOException {
-        try {
-            String content = convertInputStreamToString(src);
-            return readClassValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(InputStream src, JavaType valueType) throws IOException {
-        try {
-            String content = convertInputStreamToString(src);
-            return readJavaTypeValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(src, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(XMLStreamReader r, Class<T> valueType) throws IOException {
-        try {
-            String content = convertXMLStreamReaderToString(r);
-            return readClassValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(r, valueType);
-        }
-    }
-
-    @Override
-    public <T> T readValue(XMLStreamReader r, JavaType valueType) throws IOException {
-        try {
-            String content = convertXMLStreamReaderToString(r);
-            return readJavaTypeValueInternal(content);
-        } catch (ParserConfigurationException | IOException | SAXException | ReadValueException e) {
-            return super.readValue(r, valueType);
-        }
-    }
-
-    private String getOutermostElementName(String xmlContent) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(new ByteArrayInputStream(xmlContent.getBytes()));
-        return document.getDocumentElement().getTagName();
+        return null;
     }
 
     private <T> Optional<Class<T>> getValueTypeForElement(String elementName) {
@@ -246,47 +125,7 @@ public class RosettaXmlMapper extends XmlMapper {
         return (Class<T>) classLoader.loadClass(modelSymbolId.getQualifiedName().toString());
     }
 
-    private String convertXMLStreamReaderToString(XMLStreamReader reader) throws IOException {
-        StringBuilder content = new StringBuilder();
-        try {
-            while (reader.hasNext()) {
-                int event = reader.next();
-                switch (event) {
-                    case XMLStreamReader.CHARACTERS:
-                    case XMLStreamReader.CDATA:
-                        content.append(reader.getText());
-                        break;
-                }
-            }
-        } catch (Exception e) {
-            throw new IOException("Failed to read XML content", e);
-        }
-        return content.toString();
-    }
-
-    public String convertFileToString(File file) throws IOException {
-        return new String(Files.readAllBytes(file.toPath()));
-    }
-
-    public String convertReaderToString(Reader reader) throws IOException {
-        StringWriter writer = new StringWriter();
-        IOUtils.copy(reader, writer);
-        return writer.toString();
-    }
-
-    private String convertInputStreamToString(InputStream inputStream) throws IOException {
-        return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-    }
-
     private JavaType convertClassToJavaType(Class<?> clazz) {
         return getTypeFactory().constructType(clazz);
-    }
-
-    private static class ReadValueException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        public ReadValueException(String message) {
-            super(message);
-        }
     }
 }

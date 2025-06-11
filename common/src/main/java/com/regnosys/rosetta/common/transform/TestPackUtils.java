@@ -55,13 +55,13 @@ public class TestPackUtils {
     }
 
     private static String createTestPackId(TransformType transformType, String formattedFunctionName, String testPackName) {
-        return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-").toLowerCase());
+        return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-")).toLowerCase();
     }
 
-    private static String createPipelineId(TransformType transformType, String modelId, String functionQualifiedName) {
+    static String createPipelineId(TransformType transformType, String modelId, String functionQualifiedName) {
         FunctionNameHelper functionNameHelper = new FunctionNameHelper();
         String formattedFunctionName = functionNameHelper.readableId(functionQualifiedName);
-        return String.format("pipeline-%s%s-%s", transformType.name().toLowerCase(), Optional.ofNullable(modelId).map(m -> "-" + m).orElse(""), formattedFunctionName);
+        return String.format("pipeline-%s%s-%s", transformType.name(), Optional.ofNullable(modelId).map(m -> "-" + m).orElse(""), formattedFunctionName).toLowerCase();
     }
 
     public static PipelineModel createPipeline(TransformType transformType,

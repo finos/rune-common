@@ -103,13 +103,13 @@ public class RosettaXmlMapper extends XmlMapper {
         return null;
     }
 
-    private <T> Optional<Class<T>> getValueTypeForElement(String elementName) {
+    private Optional<Class<?>> getValueTypeForElement(String elementName) {
         for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : config.getTypeConfigMap().entrySet()) {
             TypeXMLConfiguration typeXMLConfiguration = entry.getValue();
             if (typeXMLConfiguration.getXmlElementName().map(x -> x.equals(elementName)).orElse(false)) {
                 ModelSymbolId modelSymbolId = entry.getKey();
                 try {
-                    Class<T> aClass = loadModelSymbolAsClass(modelSymbolId);
+                    Class<?> aClass = loadModelSymbolAsClass(modelSymbolId);
                     return Optional.of(aClass);
                 } catch (ClassNotFoundException e) {
                     return Optional.empty();
@@ -120,9 +120,8 @@ public class RosettaXmlMapper extends XmlMapper {
         return Optional.empty();
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> Class<T> loadModelSymbolAsClass(ModelSymbolId modelSymbolId) throws ClassNotFoundException {
-        return (Class<T>) classLoader.loadClass(modelSymbolId.getQualifiedName().toString());
+    private Class<?> loadModelSymbolAsClass(ModelSymbolId modelSymbolId) throws ClassNotFoundException {
+        return classLoader.loadClass(modelSymbolId.getQualifiedName().toString());
     }
 
     private JavaType convertClassToJavaType(Class<?> clazz) {

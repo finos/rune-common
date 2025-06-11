@@ -44,7 +44,9 @@ import java.util.stream.Collectors;
 public class TestPackUtils {
 
     public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
-    public static final Path PROJECTION_CONFIG_PATH_WITHOUT_ISO20022 = PROJECTION_PATH.resolve("config");
+    public static final Path PROJECTION_CONFIG_PATH = PROJECTION_PATH.resolve("config");
+    @Deprecated
+    public static final Path PROJECTION_CONFIG_PATH_WITHOUT_ISO20022 = PROJECTION_CONFIG_PATH; // for backwards compatibility
     public static final Path REPORT_CONFIG_PATH = Paths.get(TransformType.REPORT.getResourcePath()).resolve("config");
     public static final Path INGEST_CONFIG_PATH = Paths.get(TransformType.TRANSLATE.getResourcePath()).resolve("config");
 
@@ -87,12 +89,15 @@ public class TestPackUtils {
         return getPipelineModel(pipelineModels, functionName, null);
     }
 
-    //This will return a list of pipeline models that match the function name and pipelineId
-    public static PipelineModel getPipelineModel(List<PipelineModel> pipelineModels, String functionName, String modelId) {
-        //fallback to get the first pipeline model with the function name if pipelineId is not provided
-        List<PipelineModel> pipelineModelsFunctionName = pipelineModels.stream()
+    public static List<PipelineModel> getPipelineModels(List<PipelineModel> pipelineModels, String functionName) {
+        return pipelineModels.stream()
                 .filter(p -> p.getTransform().getFunction().equals(functionName))
                 .collect(Collectors.toList());
+    }
+
+    public static PipelineModel getPipelineModel(List<PipelineModel> pipelineModels, String functionName, String modelId) {
+        //fallback to get the first pipeline model with the function name if pipelineId is not provided
+        List<PipelineModel> pipelineModelsFunctionName = getPipelineModels(pipelineModels, functionName);
         // not found
         if (pipelineModelsFunctionName.isEmpty()) {
             throw new IllegalArgumentException(String.format("No PipelineModel found with function name %s", functionName));
@@ -151,11 +156,6 @@ public class TestPackUtils {
 
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
         return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
-    }
-
-    @Deprecated
-    public static String getProjectionTestPackName(String reportId) {
-        return "test-pack-projection-" + reportId + "-report-to-iso20022.*\\.json";
     }
 
     public static String getReportTestPackName(String reportId) {

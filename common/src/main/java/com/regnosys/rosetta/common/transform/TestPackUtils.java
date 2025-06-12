@@ -58,7 +58,7 @@ public class TestPackUtils {
         return String.format("test-pack-%s-%s-%s", transformType.name().toLowerCase(), formattedFunctionName, testPackName.replace(" ", "-")).toLowerCase();
     }
 
-    static String createPipelineId(TransformType transformType, String modelId, String functionQualifiedName) {
+    public static String createPipelineId(TransformType transformType, String modelId, String functionQualifiedName) {
         FunctionNameHelper functionNameHelper = new FunctionNameHelper();
         String formattedFunctionName = functionNameHelper.readableId(functionQualifiedName);
         return String.format("pipeline-%s%s-%s", transformType.name(), Optional.ofNullable(modelId).map(m -> "-" + m).orElse(""), formattedFunctionName).toLowerCase();

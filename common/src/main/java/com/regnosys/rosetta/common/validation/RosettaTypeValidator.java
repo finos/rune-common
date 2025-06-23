@@ -76,7 +76,7 @@ public class RosettaTypeValidator implements PostProcessStep {
                     metaData.dataRules(validatorFactory).stream(),
                     Optional.ofNullable(metaData.validator(validatorFactory)).map(Stream::of).orElse(Stream.empty()),
                     Optional.ofNullable(metaData.typeFormatValidator(validatorFactory)).map(Stream::of).orElse(Stream.empty())
-                ).forEach(validator -> validationResults.addAll(validator.getValidationResults(path, instance)));
+                ).forEach(validator -> validationResults.addAll(validator.getValidationResults(path, (RosettaModelObject) instance)));
 			return true;
 		}
 

@@ -11,16 +11,5 @@
             <passphrase>${env.GPG_PASSPHRASE}</passphrase>
         </server>
     </servers>
-    <profiles>
-        <profile>
-            <id>gpg</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
-            </properties>
-        </profile>
-    </profiles>
     <localRepository>${env.CICD_REPO}</localRepository>
 </settings>

@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.finos</groupId>
         <artifactId>finos</artifactId>
-        <version>5</version>
+        <version>7</version>
     </parent>
 
     <name>Rune Common Parent</name>
@@ -95,7 +95,6 @@
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
-        <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
         <jackson.version>2.17.1</jackson.version>

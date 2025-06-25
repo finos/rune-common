@@ -36,6 +36,7 @@ steps:
           releaseNameNotDefined: "${{TAG_REPO}} == true"
     commands:
       - cf_export RELEASE_NAME=${{TAG_NAME}}
+      - cf_export MVN_BUILD_FLAGS="DaltDeploymentRepository=ossrh::default::https://central.sonatype.com/repository/maven-snapshots/"
 
   SnapshotProperties:
     title: Setup snapshot build
@@ -47,6 +48,7 @@ steps:
           releaseNameNotDefined: "${{TAG_REPO}} == false"
     commands:
       - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}-SNAPSHOT
+      - cf_export MVN_BUILD_FLAGS="DaltDeploymentRepository=ossrh::default::https://central.sonatype.com/repository/maven-releases/"
 
   Build:
     title: Maven build
@@ -62,8 +64,7 @@ steps:
       - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"
       - export GPG_KEYNAME="${{GPG_KEYNAME}}"
       - export GPG_PASSPHRASE="${{GPG_PASSPHRASE}}"
-      - mvn -B ${{MVN_CLI_OPT}} -DpreparationGoals=clean release:prepare -Prelease -DinteractiveMode=false
-      - mvn -s settings.xml -U -B ${{MVN_CLI_OPT}} release:perform -Prelease -DinteractiveMode=false
+      - mvn -s settings.xml -U -B ${{MVN_CLI_OPT}} clean deploy -P release
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if main build failed

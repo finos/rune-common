@@ -58,6 +58,7 @@ steps:
     working_directory: ./
     commands:
       - apk --no-cache add git
+      - export GPG_TTY=$(tty)
       - bash -c "${{GPG_IMPORT_COMMAND}}"
       - mvn ${{MVN_CLI_OPT}} versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
       - export CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}"

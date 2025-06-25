@@ -65,7 +65,7 @@ steps:
       - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"
       - export GPG_KEYNAME="${{GPG_KEYNAME}}"
       - export GPG_PASSPHRASE="${{GPG_PASSPHRASE}}"
-      - mvn -s settings.xml -U -B ${{MVN_CLI_OPT}} clean deploy ${{MVN_BUILD_FLAGS}}
+      - mvn -s settings.xml -U -B ${{MVN_CLI_OPT}} clean deploy ${{MVN_BUILD_FLAGS}} -Dgpg.pinentry-mode=loopback
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if main build failed

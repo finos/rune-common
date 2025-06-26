@@ -57,7 +57,6 @@ steps:
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
       - mvn ${{MVN_CLI_OPT}} versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
-      - export GPG_TTY=$(tty)
       - export CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}"
       - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"
       - export GPG_KEYNAME="${{GPG_KEYNAME}}"

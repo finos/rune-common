@@ -15,8 +15,7 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -33,13 +32,13 @@
     <groupId>com.regnosys</groupId>
     <artifactId>rune-common-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.0-test-SNAPSHOT</version>
+    <version>0.0.0-test</version>
     <url>https://github.com/finos/rune-common</url>
 
     <scm>
         <developerConnection>scm:git:https://github.com/finos/rune-common</developerConnection>
         <connection>scm:git:git://github.com/finos/rune-common.git</connection>
-        <tag>HEAD</tag>
+        <tag>rune-common-parent-0.0.0-test</tag>
         <url>https://github.com/finos/rune-common</url>
     </scm>
 

@@ -53,7 +53,6 @@ import static java.util.Optional.ofNullable;
  *   <li>EXTERNAL</li>
  *   <li>GLOBAL (lowest precedence)</li>
  * </ol>
- * </p>
  * <p>
  * The collected key-value mappings help ensure that only the most relevant references (higher precedence) are kept
  * while lower-precedence references pointing to the same object are removed.

@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.regnosys</groupId>
         <artifactId>rune-common-parent</artifactId>
-        <version>0.0.0.main-SNAPSHOT</version>
+        <version>0.0.0-test-SNAPSHOT</version>
     </parent>
 
     <artifactId>rosetta-common</artifactId>

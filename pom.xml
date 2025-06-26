@@ -147,6 +147,11 @@
                                     <useAgent>false</useAgent>
                                     <keyname>${gpg.keyname}</keyname>
                                     <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                    <useAgent>true</useAgent>
                                 </configuration>
                             </execution>
                         </executions>

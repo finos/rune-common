@@ -55,6 +55,8 @@ steps:
     image: maven:3.9.9-eclipse-temurin-21-alpine
     working_directory: ./
     commands:
+      - echo "GPG PRIVATE KEY (truncated):"
+      - echo "${{GPG_PRIVATE_KEY}}" | head -n 5
       - echo '${{GPG_PRIVATE_KEY}}' | gpg --batch --import
       - mvn ${{MVN_CLI_OPT}} versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
       - export CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}"

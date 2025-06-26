@@ -32,13 +32,13 @@
     <groupId>com.regnosys</groupId>
     <artifactId>rune-common-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.0-test</version>
+    <version>0.0.0.main-SNAPSHOT</version>
     <url>https://github.com/finos/rune-common</url>
 
     <scm>
         <developerConnection>scm:git:https://github.com/finos/rune-common</developerConnection>
         <connection>scm:git:git://github.com/finos/rune-common.git</connection>
-        <tag>rune-common-parent-0.0.0-test</tag>
+        <tag>HEAD</tag>
         <url>https://github.com/finos/rune-common</url>
     </scm>
 

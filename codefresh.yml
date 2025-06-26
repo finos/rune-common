@@ -36,7 +36,6 @@ steps:
           releaseNameNotDefined: "${{TAG_REPO}} == true"
     commands:
       - cf_export RELEASE_NAME=${{TAG_NAME}}
-      - cf_export MVN_BUILD_FLAGS="mvn org.sonatype.central:central-publishing-maven-plugin:0.7.0:publish -Prelease"
 
   SnapshotProperties:
     title: Setup snapshot build
@@ -48,7 +47,6 @@ steps:
           releaseNameNotDefined: "${{TAG_REPO}} == false"
     commands:
       - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}-SNAPSHOT
-      - cf_export MVN_BUILD_FLAGS="mvn release:perform -Prelease -DinteractiveMode=false -Dmaven.javadoc.skip=true"
 
   Build:
     title: Maven build
@@ -57,16 +55,13 @@ steps:
     image: maven:3.9.9-eclipse-temurin-21-alpine
     working_directory: ./
     commands:
-      - apk --no-cache add git
       - bash -c "${{GPG_IMPORT_COMMAND}}"
       - mvn ${{MVN_CLI_OPT}} versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
       - export CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}"
       - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"
       - export GPG_KEYNAME="${{GPG_KEYNAME}}"
       - export GPG_PASSPHRASE="${{GPG_PASSPHRASE}}"
-      - mvn -B ${{MVN_CLI_OPT}} install
-      - mvn -B ${{MVN_CLI_OPT}} -DpreparationGoals=clean release:prepare -Prelease -DinteractiveMode=false
-      - ${{MVN_BUILD_FLAGS}} -s settings.xml -U -B ${{MVN_CLI_OPT}} release:perform -Prelease -DinteractiveMode=false -Dmaven.javadoc.skip=true
+      - mvn -s settings.xml -U -B ${{MVN_CLI_OPT}} install org.sonatype.central:central-publishing-maven-plugin:0.7.0:publish -P release
 
   NotifySlackOnFail:
     title: Trigger Slack dev channel notification if main build failed

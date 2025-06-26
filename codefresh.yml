@@ -56,17 +56,12 @@ steps:
     working_directory: ./
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
-      - echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-      - echo "use-agent" >> ~/.gnupg/gpg.conf
-      - echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
       - export GPG_TTY=$(tty)
       - mvn ${{MVN_CLI_OPT}} versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
       - export CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}"
       - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"
       - export GPG_KEYNAME="${{GPG_KEYNAME}}"
       - export GPG_PASSPHRASE="${{GPG_PASSPHRASE}}"
-      - gpgconf --kill gpg-agent || true
-      - gpgconf --launch gpg-agent
       - mvn -s settings.xml -U -B ${{MVN_CLI_OPT}} install org.sonatype.central:central-publishing-maven-plugin:0.7.0:publish -P release
 
   NotifySlackOnFail:

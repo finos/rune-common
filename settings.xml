@@ -5,11 +5,6 @@
             <id>ossrh</id>
             <username>${env.CI_DEPLOY_USERNAME}</username>
             <password>${env.CI_DEPLOY_PASSWORD}</password>
-            <passphrase>${env.GPG_PASSPHRASE}</passphrase>
-        </server>
-        <server>
-            <id>${env.GPG_KEYNAME}</id>
-            <passphrase>${env.GPG_PASSPHRASE}</passphrase>
         </server>
     </servers>
     <profiles>

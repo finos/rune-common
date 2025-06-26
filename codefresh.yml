@@ -56,7 +56,6 @@ steps:
     working_directory: ./
     commands:
       - bash -c "${{GPG_IMPORT_COMMAND}}"
-      - export GPG_TTY="$(tty)"
       - mvn ${{MVN_CLI_OPT}} versions:set -DnewVersion="${{RELEASE_NAME}}" -DallowSnapshots=true
       - export CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}"
       - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"

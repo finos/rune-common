@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>serialization</artifactId>
-
+    <name>Rosetta Common Serialization</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>

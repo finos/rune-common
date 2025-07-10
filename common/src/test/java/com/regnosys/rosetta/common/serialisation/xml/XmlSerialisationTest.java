@@ -234,7 +234,7 @@ public class XmlSerialisationTest {
     public void testElementNamedTypeDeserialisation() throws IOException {
         TypeWithTypeElement t = TypeWithTypeElement.builder()
                 .setFirstElement("first")
-                .set_type("My type")
+                .setType("My type")
                 .build();
 
         String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);

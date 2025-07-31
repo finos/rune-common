@@ -21,6 +21,7 @@ package com.regnosys.rosetta.common.serialisation.mixin;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
@@ -80,6 +81,21 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
         }
         return legacyRosettaBuilderIntrospector.findNameForDeserialization(a)
                 .orElse(super.findNameForDeserialization(a));
+    }
+    
+    @Override
+    public JsonInclude.Value findPropertyInclusion(Annotated a) {
+        JsonInclude.Value incl = super.findPropertyInclusion(a);
+        if (incl != JsonInclude.Value.empty()) {
+            return incl;
+        }
+        if (a.hasAnnotation(RosettaAttribute.class)) {
+            RosettaAttribute attr = a.getAnnotation(RosettaAttribute.class);
+            if (attr.isRequired()) {
+                return JsonInclude.Value.empty().withValueInclusion(JsonInclude.Include.ALWAYS);
+            }
+        }
+        return JsonInclude.Value.empty();
     }
 
     @Override

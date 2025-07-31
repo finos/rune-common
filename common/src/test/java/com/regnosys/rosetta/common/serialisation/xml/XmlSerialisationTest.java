@@ -358,6 +358,24 @@ public class XmlSerialisationTest {
         Party actual = xmlMapper.readValue(expectedXML, Party.class);
         assertEquals(party, actual);
     }
+    
+    @Test
+    void testRequiredEmptyFieldIsPreserved() throws IOException {
+        Foo foo = Foo.builder().build();
+
+        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        // Test serialisation
+        String actualXML = licenseHeader + xmlMapper
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(foo);
+        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/empty-required-field.xml"), StandardCharsets.UTF_8);
+        assertEquals(expectedXML, actualXML);
+
+        // Test deserialisation 
+        // TODO right now, an empty string element is interpreted as an empty string rather than null
+//        Foo actual = xmlMapper.readValue(expectedXML, Foo.class);
+//        assertEquals(foo, actual);
+    }
 
     @Test
     public void testSubstitutionGroupLegacyV2Serialisation() throws IOException {

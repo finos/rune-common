@@ -4,7 +4,7 @@ annotation rootType: <"Mark a type as a root of the rosetta model">
 
 type A:
   [metadata key]
-  fieldA string (1..1)
+  fieldA string (0..1)
 
 type NodeRef:
   typeA A (0..1)

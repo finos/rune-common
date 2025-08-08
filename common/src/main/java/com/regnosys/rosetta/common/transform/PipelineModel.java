@@ -206,7 +206,8 @@ public class PipelineModel {
 
         public enum Format {
             JSON,
-            XML
+            XML,
+            CSV
         }
     }
 }

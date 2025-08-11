@@ -236,21 +236,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     @Override
-    public JsonInclude.Value findPropertyInclusion(Annotated a) {
-        JsonInclude.Value incl = super.findPropertyInclusion(a);
-        if (incl != JsonInclude.Value.empty()) {
-            return incl;
-        }
-        if (a.hasAnnotation(RosettaAttribute.class)) {
-            RosettaAttribute attr = a.getAnnotation(RosettaAttribute.class);
-            if (attr.isRequired()) {
-                return JsonInclude.Value.empty().withValueInclusion(JsonInclude.Include.ALWAYS);
-            }
-        }
-        return JsonInclude.Value.empty();
-    }
-
-    @Override
     public NameTransformer findUnwrappingNameTransformer(AnnotatedMember member) {
         return getAttributeXMLConfiguration(mapper.getDeserializationConfig(), member)
                 .flatMap(AttributeXMLConfiguration::getXmlRepresentation)

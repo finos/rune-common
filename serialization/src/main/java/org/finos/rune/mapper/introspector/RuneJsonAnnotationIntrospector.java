@@ -21,7 +21,6 @@ package org.finos.rune.mapper.introspector;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.JavaType;
@@ -32,7 +31,6 @@ import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.google.common.collect.Lists;
-import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.annotations.RuneMetaType;
@@ -100,21 +98,6 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     protected TypeResolverBuilder<?> _constructStdTypeResolverBuilder(MapperConfig<?> config,
                                                                       JsonTypeInfo.Value typeInfo, JavaType baseType) {
         return new RuneStdTypeResolverBuilder(typeInfo);
-    }
-
-    @Override
-    public JsonInclude.Value findPropertyInclusion(Annotated a) {
-        JsonInclude.Value incl = super.findPropertyInclusion(a);
-        if (incl != JsonInclude.Value.empty()) {
-            return incl;
-        }
-        if (a.hasAnnotation(RosettaAttribute.class)) {
-            RosettaAttribute attr = a.getAnnotation(RosettaAttribute.class);
-            if (attr.isRequired()) {
-                return JsonInclude.Value.empty().withValueInclusion(JsonInclude.Include.ALWAYS);
-            }
-        }
-        return JsonInclude.Value.empty();
     }
 
     @Override

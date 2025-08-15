@@ -38,20 +38,16 @@ public class RosettaCsvObjectMapper extends CsvMapper  {
 
     @Override
     public <T> T readValue(String content, Class<T> valueType) {
-        // Split the CSV into lines
         String[] lines = content.split("\\R");
         if (lines.length < 2) {
             throw new IllegalArgumentException("CSV must have at least a header and one data row");
         }
 
-        // Reuse the header from the first line
         String header = lines[0];
         String secondRow = lines[1];
 
-        // Build CSV string containing only the header and the desired data row
         String csvToParse = header + System.lineSeparator() + secondRow;
 
-        // Read the single object
         List<T> result;
         try {
             result = this

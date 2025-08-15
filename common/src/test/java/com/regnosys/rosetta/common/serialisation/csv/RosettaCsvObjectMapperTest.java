@@ -13,11 +13,9 @@ public class RosettaCsvObjectMapperTest {
     @Test
     void testCsvMapperBuilder() throws IOException {
         RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
-
         Key.KeyBuilder key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue");
 
         String serializedKey = csvObjectMapper.writeCsv(key);
-
         Key newKey = csvObjectMapper.readValue(serializedKey, Key.class);
 
         assertEquals(key.build(), newKey);

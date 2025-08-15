@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
@@ -154,7 +155,7 @@ public class TestPackUtils {
                     throw new UncheckedIOException(e);
                 }
             case JSON:
-                return Optional.of(RosettaObjectMapperCreator.forJSON().create());
+                return Optional.of(RosettaObjectMapper.getNewRosettaObjectMapper());
             case CSV:
                 return Optional.of(RosettaObjectMapperCreator.forCSV().create());
         }

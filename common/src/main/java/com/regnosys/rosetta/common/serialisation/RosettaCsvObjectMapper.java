@@ -60,7 +60,7 @@ public class RosettaCsvObjectMapper extends CsvMapper  {
                     .<T>readValues(new StringReader(csvToParse))
                     .readAll();
         } catch (IOException e) {
-            throw new IllegalStateException("", e);
+            throw new IllegalStateException("Unable to read content to be parsed", e);
         }
 
         //Return a single row

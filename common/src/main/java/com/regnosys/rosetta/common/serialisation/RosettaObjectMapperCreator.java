@@ -26,7 +26,9 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -103,6 +105,12 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
     public static RosettaObjectMapperCreator forXML() {
         return forXML(new RosettaXMLConfiguration(Collections.emptyMap()), RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
+    public static RosettaObjectMapperCreator forCSV() {
+        SimpleModule simpleModule = new SimpleModule();
+        RosettaCsvObjectMapper csvMapper = new RosettaCsvObjectMapper();
+        return new RosettaObjectMapperCreator(simpleModule, csvMapper);
     }
 
     @Override

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +36,37 @@ public class RosettaCsvObjectMapper extends CsvMapper  {
         this.defaultSchema = CsvSchema.emptySchema().withHeader();
     }
 
+    @Override
+    public <T> T readValue(String content, Class<T> valueType) {
+        // Split the CSV into lines
+        String[] lines = content.split("\\R");
+        if (lines.length < 2) {
+            throw new IllegalArgumentException("CSV must have at least a header and one data row");
+        }
+
+        // Reuse the header from the first line
+        String header = lines[0];
+        String secondRow = lines[1];
+
+        // Build CSV string containing only the header and the desired data row
+        String csvToParse = header + System.lineSeparator() + secondRow;
+
+        // Read the single object
+        List<T> result;
+        try {
+            result = this
+                    .readerFor(valueType)
+                    .with(defaultSchema)
+                    .<T>readValues(new StringReader(csvToParse))
+                    .readAll();
+        } catch (IOException e) {
+            throw new IllegalStateException("", e);
+        }
+
+        //Return a single row
+        return result.get(0);
+    }
+
     public List<Map<String, String>> readCsv(String csv) throws IOException {
         try (MappingIterator<Map<String, String>> iterator = this.readerFor(Map.class).with(defaultSchema).readValues(csv)) {
             return iterator.readAll();
@@ -42,7 +74,8 @@ public class RosettaCsvObjectMapper extends CsvMapper  {
     }
 
     public String writeCsv(Object value) throws IOException {
-        return this.writer(defaultSchema).writeValueAsString(value);
+        CsvSchema schema = this.schemaFor(value.getClass()).withHeader();
+        return this.writer(schema).writeValueAsString(value);
     }
 
     public static RosettaCsvObjectMapper createCsvObjectMapper() {

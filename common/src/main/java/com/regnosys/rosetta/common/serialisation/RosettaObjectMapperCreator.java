@@ -108,9 +108,8 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     }
 
     public static RosettaObjectMapperCreator forCSV() {
-        SimpleModule simpleModule = new SimpleModule();
         RosettaCsvObjectMapper csvMapper = new RosettaCsvObjectMapper();
-        return new RosettaObjectMapperCreator(simpleModule, csvMapper);
+        return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
     }
 
     @Override

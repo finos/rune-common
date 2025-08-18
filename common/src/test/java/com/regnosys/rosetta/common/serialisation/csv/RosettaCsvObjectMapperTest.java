@@ -55,7 +55,7 @@ public class RosettaCsvObjectMapperTest {
     @Test
     void testCsvMapperRoundTrip() throws IOException {
         RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
-        Key.KeyBuilder key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue");
+        Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
 
         String serializedKey = csvObjectMapper.writeCsv(key);
         Key newKey = csvObjectMapper.readValue(serializedKey, Key.class);

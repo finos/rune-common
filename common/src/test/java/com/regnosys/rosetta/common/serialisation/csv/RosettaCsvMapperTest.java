@@ -35,7 +35,7 @@ public class RosettaCsvMapperTest {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
 
-        String serializedKey = csvObjectMapper.writeCsv(key);
+        String serializedKey = csvObjectMapper.writeValueAsString(key);
 
         String expected = "scope,value\nTestScope,TestKeyValue\n";
         assertEquals(expected, serializedKey);
@@ -57,7 +57,7 @@ public class RosettaCsvMapperTest {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
 
-        String serializedKey = csvObjectMapper.writeCsv(key);
+        String serializedKey = csvObjectMapper.writeValueAsString(key);
         Key newKey = csvObjectMapper.readValue(serializedKey, Key.class);
 
         assertEquals(key.build(), newKey);

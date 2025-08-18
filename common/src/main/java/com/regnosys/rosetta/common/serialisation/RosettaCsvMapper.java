@@ -20,6 +20,7 @@ package com.regnosys.rosetta.common.serialisation;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
@@ -67,7 +68,8 @@ public class RosettaCsvMapper extends CsvMapper  {
         }
     }
 
-    public String writeCsv(Object value) throws IOException {
+    @Override
+    public String writeValueAsString(Object value) throws JsonProcessingException {
         CsvSchema schema = this.schemaFor(value.getClass()).withHeader();
         return this.writer(schema).writeValueAsString(value);
     }

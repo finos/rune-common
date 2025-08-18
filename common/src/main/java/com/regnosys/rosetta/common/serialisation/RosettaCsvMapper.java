@@ -29,10 +29,10 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.Map;
 
-public class RosettaCsvObjectMapper extends CsvMapper  {
+public class RosettaCsvMapper extends CsvMapper  {
     private final CsvSchema defaultSchema;
 
-    public RosettaCsvObjectMapper() {
+    public RosettaCsvMapper() {
         this.defaultSchema = CsvSchema.emptySchema().withHeader();
     }
 
@@ -48,19 +48,17 @@ public class RosettaCsvObjectMapper extends CsvMapper  {
 
         String csvToParse = header + System.lineSeparator() + secondRow;
 
-        List<T> result;
+        T result;
         try {
             result = this
                     .readerFor(valueType)
                     .with(defaultSchema)
-                    .<T>readValues(new StringReader(csvToParse))
-                    .readAll();
+                    .readValue(new StringReader(csvToParse));
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read content to be parsed", e);
         }
 
-        //Return a single row
-        return result.get(0);
+        return result;
     }
 
     public List<Map<String, String>> readCsv(String csv) throws IOException {
@@ -74,7 +72,7 @@ public class RosettaCsvObjectMapper extends CsvMapper  {
         return this.writer(schema).writeValueAsString(value);
     }
 
-    public static RosettaCsvObjectMapper createCsvObjectMapper() {
-        return (RosettaCsvObjectMapper) RosettaObjectMapperCreator.forCSV().create();
+    public static RosettaCsvMapper createCsvObjectMapper() {
+        return (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV().create();
     }
 }

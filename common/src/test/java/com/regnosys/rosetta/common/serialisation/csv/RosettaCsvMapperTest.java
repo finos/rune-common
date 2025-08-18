@@ -20,7 +20,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
  * ==============
  */
 
-import com.regnosys.rosetta.common.serialisation.RosettaCsvObjectMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
 import com.rosetta.model.lib.meta.Key;
 import org.junit.jupiter.api.Test;
 
@@ -28,11 +28,11 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RosettaCsvObjectMapperTest {
+public class RosettaCsvMapperTest {
 
     @Test
     void testCsvMapperSerialise() throws IOException {
-        RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
+        RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
 
         String serializedKey = csvObjectMapper.writeCsv(key);
@@ -43,7 +43,7 @@ public class RosettaCsvObjectMapperTest {
 
     @Test
     void testCsvMapperDeserialize() {
-        RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
+        RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         String input = "scope,value\nTestScope,TestKeyValue\n";
 
         Key key = csvObjectMapper.readValue(input, Key.class);
@@ -54,7 +54,7 @@ public class RosettaCsvObjectMapperTest {
 
     @Test
     void testCsvMapperRoundTrip() throws IOException {
-        RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
+        RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
 
         String serializedKey = csvObjectMapper.writeCsv(key);

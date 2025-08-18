@@ -31,7 +31,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RosettaCsvObjectMapperTest {
 
     @Test
-    void testCsvMapperBuilder() throws IOException {
+    void testCsvMapperSerialise() throws IOException {
+        RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
+        Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
+
+        String serializedKey = csvObjectMapper.writeCsv(key);
+
+        String expected = "scope,value\nTestScope,TestKeyValue\n";
+        assertEquals(expected, serializedKey);
+    }
+
+    @Test
+    void testCsvMapperDeserialize() {
+        RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
+        String input = "scope,value\nTestScope,TestKeyValue\n";
+
+        Key key = csvObjectMapper.readValue(input, Key.class);
+
+        Key expected = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
+        assertEquals(expected, key);
+    }
+
+    @Test
+    void testCsvMapperRoundTrip() throws IOException {
         RosettaCsvObjectMapper csvObjectMapper = RosettaCsvObjectMapper.createCsvObjectMapper();
         Key.KeyBuilder key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue");
 

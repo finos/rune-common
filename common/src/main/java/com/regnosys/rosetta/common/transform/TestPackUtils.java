@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
@@ -142,16 +143,23 @@ public class TestPackUtils {
     }
 
     public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation) {
-        if (serialisation != null && serialisation.getFormat() == PipelineModel.Serialisation.Format.XML) {
-            URL xmlConfigPath = Objects.requireNonNull(Resources.getResource(serialisation.getConfigPath()));
-            try (InputStream inputStream = xmlConfigPath.openStream()) {
-                return Optional.of(RosettaObjectMapperCreator.forXML(inputStream).create());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } else {
+        if (serialisation == null || serialisation.getFormat() == null) {
             return Optional.empty();
         }
+        switch (serialisation.getFormat()) {
+            case XML:
+                URL xmlConfigPath = Objects.requireNonNull(Resources.getResource(serialisation.getConfigPath()));
+                try (InputStream inputStream = xmlConfigPath.openStream()) {
+                    return Optional.of(RosettaObjectMapperCreator.forXML(inputStream).create());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            case JSON:
+                return Optional.of(RosettaObjectMapper.getNewRosettaObjectMapper());
+            case CSV:
+                return Optional.of(RosettaObjectMapperCreator.forCSV().create());
+        }
+        return Optional.empty();
     }
 
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
@@ -182,8 +190,23 @@ public class TestPackUtils {
         }
     }
 
+    @Deprecated
     public static PipelineModel.Serialisation getSerialisation(String xmlConfigPath) {
         return xmlConfigPath == null ? null :
                 new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.XML, xmlConfigPath);
+    }
+
+    public static PipelineModel.Serialisation getSerialisation(PipelineModel.Serialisation.Format serialisationFormat, String xmlConfigPath) {
+        if (serialisationFormat == null && xmlConfigPath == null) {
+            return null;
+        }
+        if (xmlConfigPath != null && serialisationFormat != null && serialisationFormat != PipelineModel.Serialisation.Format.XML) {
+            throw new IllegalArgumentException("Cannot specify an xmlConfigPath and a serialisation format other than XML");
+        }
+        if (serialisationFormat == PipelineModel.Serialisation.Format.XML && xmlConfigPath == null) {
+            throw new IllegalArgumentException("Cannot specify an XML serialisation format without an xmlXonfigPath");
+        }
+        return xmlConfigPath != null ? new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.XML, xmlConfigPath)
+                : new PipelineModel.Serialisation(serialisationFormat, null);
     }
 }

@@ -190,8 +190,23 @@ public class TestPackUtils {
         }
     }
 
+    @Deprecated
     public static PipelineModel.Serialisation getSerialisation(String xmlConfigPath) {
         return xmlConfigPath == null ? null :
                 new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.XML, xmlConfigPath);
+    }
+
+    public static PipelineModel.Serialisation getSerialisation(PipelineModel.Serialisation.Format serialisationFormat, String xmlConfigPath) {
+        if (serialisationFormat == null && xmlConfigPath == null) {
+            return null;
+        }
+        if (xmlConfigPath != null && serialisationFormat != null && serialisationFormat != PipelineModel.Serialisation.Format.XML) {
+            throw new IllegalArgumentException("Cannot specify an xmlConfigPath and a serialisation format other than XML");
+        }
+        if (serialisationFormat == PipelineModel.Serialisation.Format.XML && xmlConfigPath == null) {
+            throw new IllegalArgumentException("Cannot specify an XML serialisation format without an xmlXonfigPath");
+        }
+        return xmlConfigPath != null ? new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.XML, xmlConfigPath)
+                : new PipelineModel.Serialisation(serialisationFormat, null);
     }
 }

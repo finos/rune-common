@@ -55,8 +55,8 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     @Override
     public String writeValueAsString(Object value) throws JsonProcessingException {
-        CsvSchema schema = this.schemaFor(value.getClass()).withHeader();
-        return this.writer(schema).writeValueAsString(value);
+        CsvSchema schema = super.schemaFor(value.getClass()).withHeader();
+        return super.writer(schema).writeValueAsString(value);
     }
 
     public static RosettaCsvMapper createCsvObjectMapper() {

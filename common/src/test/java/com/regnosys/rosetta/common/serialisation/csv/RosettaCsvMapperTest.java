@@ -20,7 +20,6 @@ package com.regnosys.rosetta.common.serialisation.csv;
  * ==============
  */
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
 import com.rosetta.model.lib.meta.Key;
 import org.junit.jupiter.api.Test;

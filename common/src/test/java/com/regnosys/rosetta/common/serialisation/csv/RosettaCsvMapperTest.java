@@ -20,6 +20,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
  * ==============
  */
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
 import com.rosetta.model.lib.meta.Key;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ public class RosettaCsvMapperTest {
     }
 
     @Test
-    void testCsvMapperDeserialize() {
+    void testCsvMapperDeserialize() throws JsonMappingException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         String input = "scope,value\nTestScope,TestKeyValue\n";
 
@@ -53,7 +54,7 @@ public class RosettaCsvMapperTest {
     }
 
     @Test
-    void testCsvMapperDeserializeIgnoresExtraLines() {
+    void testCsvMapperDeserializeIgnoresExtraLines() throws JsonMappingException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         String input = "scope,value\nTestScope,TestKeyValue\nTestScope2,TestKeyValue2\n";
 

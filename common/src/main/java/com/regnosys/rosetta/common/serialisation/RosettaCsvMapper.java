@@ -23,6 +23,7 @@ package com.regnosys.rosetta.common.serialisation;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
@@ -40,11 +41,14 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     @Override
-    public <T> T readValue(String content, Class<T> valueType)  {
+    public <T> T readValue(String content, Class<T> valueType) throws JsonMappingException {
         try {
             return super.readerFor(valueType).with(defaultSchema).readValue(content, valueType);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw  new JsonMappingException(null,
+                    String.format("IOException (of type %s): %s",
+                            e.getClass().getName(),
+                            ClassUtil.exceptionMessage(e)));
         }
     }
 

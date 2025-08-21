@@ -53,6 +53,17 @@ public class RosettaCsvMapperTest {
     }
 
     @Test
+    void testCsvMapperDeserializeIgnoresExtraLines() {
+        RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
+        String input = "scope,value\nTestScope,TestKeyValue\nTestScope2,TestKeyValue2\n";
+
+        Key key = csvObjectMapper.readValue(input, Key.class);
+
+        Key expected = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
+        assertEquals(expected, key);
+    }
+
+    @Test
     void testCsvMapperRoundTrip() throws IOException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
         Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();

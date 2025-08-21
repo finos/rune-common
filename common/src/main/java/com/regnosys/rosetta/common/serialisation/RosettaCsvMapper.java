@@ -21,12 +21,15 @@ package com.regnosys.rosetta.common.serialisation;
  */
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -38,40 +41,26 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     @Override
-    public <T> T readValue(String content, Class<T> valueType) {
-        String[] lines = content.split("\\R");
-        if (lines.length < 2) {
-            throw new IllegalArgumentException("CSV must have at least a header and one data row");
-        }
-
-        String header = lines[0];
-        String secondRow = lines[1];
-
-        String csvToParse = header + System.lineSeparator() + secondRow;
-
-        T result;
+    public <T> T readValue(String content, Class<T> valueType) throws JsonMappingException {
         try {
-            result = this
-                    .readerFor(valueType)
-                    .with(defaultSchema)
-                    .readValue(new StringReader(csvToParse));
+            return super.readerFor(valueType).with(defaultSchema).readValue(content, valueType);
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to read content to be parsed", e);
-        }
-
-        return result;
-    }
-
-    public List<Map<String, String>> readCsv(String csv) throws IOException {
-        try (MappingIterator<Map<String, String>> iterator = this.readerFor(Map.class).with(defaultSchema).readValues(csv)) {
-            return iterator.readAll();
+            throw  new JsonMappingException(null,
+                    String.format("IOException (of type %s): %s",
+                            e.getClass().getName(),
+                            ClassUtil.exceptionMessage(e)));
         }
     }
 
     @Override
+    public <T> T readValue(URL src, Class<T> valueType) throws IOException {
+        return super.readerFor(valueType).with(defaultSchema).readValue(src, valueType);
+    }
+
+    @Override
     public String writeValueAsString(Object value) throws JsonProcessingException {
-        CsvSchema schema = this.schemaFor(value.getClass()).withHeader();
-        return this.writer(schema).writeValueAsString(value);
+        CsvSchema schema = super.schemaFor(value.getClass()).withHeader();
+        return super.writer(schema).writeValueAsString(value);
     }
 
     public static RosettaCsvMapper createCsvObjectMapper() {

@@ -34,11 +34,17 @@ public class RosettaCsvMapperTest {
     @Test
     void testCsvMapperSerialise() throws IOException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
-        Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
+        User user = User.builder()
+                .setFirstName("FirstName")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
 
-        String serializedKey = csvObjectMapper.writeValueAsString(key);
+        String serializedKey = csvObjectMapper.writeValueAsString(user);
 
-        String expected = "scope,value\nTestScope,TestKeyValue\n";
+        String expected = "firstName,identifier,lastName,username\n" +
+                "FirstName,identifier,LastName,username";
         assertEquals(expected, serializedKey);
     }
 

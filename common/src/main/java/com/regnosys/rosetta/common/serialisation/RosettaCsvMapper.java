@@ -20,9 +20,11 @@ package com.regnosys.rosetta.common.serialisation;
  * ==============
  */
 
+import com.fasterxml.jackson.core.FormatSchema;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
@@ -59,8 +61,30 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     @Override
     public String writeValueAsString(Object value) throws JsonProcessingException {
-        CsvSchema schema = super.schemaFor(value.getClass()).withHeader();
-        return super.writer(schema).writeValueAsString(value);
+        SerializationConfig config = getSerializationConfig();
+        RosettaCsvObjectWriter rosettaCsvObjectWriter = new RosettaCsvObjectWriter(this, config);
+        return rosettaCsvObjectWriter.writeValueAsString(value);
+    }
+
+    @Override
+    public ObjectWriter writerWithDefaultPrettyPrinter() {
+        SerializationConfig config = getSerializationConfig();
+        return new RosettaCsvObjectWriter(this, config);
+    }
+
+    private static class RosettaCsvObjectWriter extends ObjectWriter {
+        private final CsvMapper mapper;
+        protected RosettaCsvObjectWriter(CsvMapper mapper, SerializationConfig config) {
+            super(mapper, config);
+            this.mapper = mapper;
+        }
+
+        @Override
+        public String writeValueAsString(Object value) throws JsonProcessingException {
+            CsvSchema schema = mapper.schemaFor(value.getClass()).withHeader();
+            ObjectWriter writer = mapper.writer(schema);
+            return writer.writeValueAsString(value);
+        }
     }
 
     public static RosettaCsvMapper createCsvObjectMapper() {

@@ -25,13 +25,16 @@ import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.*;
+import com.fasterxml.jackson.module.blackbird.util.CheckedFunction;
 import com.regnosys.rosetta.common.serialisation.BackwardsCompatibleAnnotationIntrospector;
 import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
 import com.rosetta.model.lib.annotations.RosettaIgnore;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -139,7 +142,16 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
 
     @Override
     public boolean hasIgnoreMarker(AnnotatedMember a) {
-        return a.getName().startsWith("add") || a.getName().equals("getType") || a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);
+        return a.getName().startsWith("add") || isMemberRosettaModelObjectGetTypeMethod(a) || a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);
+    }
+
+    private boolean isMemberRosettaModelObjectGetTypeMethod(AnnotatedMember am) {
+        if (am.getMember() instanceof Method && am.getName().equals("getType")) {
+            Method method = (Method) am.getMember();
+            Class<?> declaringClass = method.getDeclaringClass();
+            return RosettaModelObject.class.isAssignableFrom(declaringClass);
+        }
+        return false;
     }
 
     @Override

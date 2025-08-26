@@ -1,0 +1,8 @@
+namespace csv.test.user
+version "${project.version}"
+
+type User:
+    username string (1..1)
+    identifier string (1..1)
+    firstName string (1..1)
+    lastName string (1..1)

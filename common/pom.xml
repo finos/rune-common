@@ -85,64 +85,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>${exec-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>import-test-xsd-schema</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>com.regnosys.rosetta.tools.modelimport.XsdImportMain</mainClass>
-                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
-                            <arguments>
-                                <argument>-config-path</argument>
-                                <argument>
-                                    ${project.basedir}/src/test/resources/xml-serialisation/schema/import-config.yml
-                                </argument>
-                                <argument>-rosetta-output-path</argument>
-                                <argument>${project.build.testOutputDirectory}/xml-serialisation/rosetta</argument>
-                                <argument>-xml-config-output-path</argument>
-                                <argument>${project.build.testOutputDirectory}/xml-serialisation/xml-config.json
-                                </argument>
-                            </arguments>
-                            <includePluginDependencies>true</includePluginDependencies>
-                        </configuration>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.regnosys.rosetta</groupId>
-                        <artifactId>com.regnosys.rosetta.tools</artifactId>
-                        <version>${rosetta.dsl.version}</version>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>com.regnosys.rosetta</groupId>
-                                <artifactId>com.regnosys.rosetta.ide</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.osgi</groupId>
-                                <artifactId>org.osgi.service.prefs</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>com.regnosys.rosetta</groupId>
-                        <artifactId>com.regnosys.rosetta.xcore</artifactId>
-                        <version>${rosetta.dsl.version}</version>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>org.eclipse.emf</groupId>
-                                <artifactId>org.eclipse.emf.ecore</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
                 <groupId>com.regnosys.rosetta</groupId>
                 <artifactId>rosetta-maven-plugin</artifactId>
                 <version>${rosetta.dsl.version}</version>
@@ -156,7 +98,7 @@
                         <configuration>
                             <addOutputDirectoriesToCompileSourceRoots>false</addOutputDirectoriesToCompileSourceRoots>
                             <sourceRoots>
-                                <sourceRoot>${project.build.testOutputDirectory}/xml-serialisation/rosetta</sourceRoot>
+                                <sourceRoot>${project.build.testSourceDirectory}/xml-serialisation</sourceRoot>
                             </sourceRoots>
                             <classPathLookupFilter>.*com\.regnosys\.rosetta.*</classPathLookupFilter>
                             <languages>

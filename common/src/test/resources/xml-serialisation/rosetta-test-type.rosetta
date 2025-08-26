@@ -1,0 +1,95 @@
+namespace com.rosetta.test
+version "${project.version}"
+
+typeAlias Decimal19: number(digits: 25, fractionalDigits: 19, min: 0)
+
+type TopLevel extends Document:
+    [rootType]
+
+type TopLevelExtension extends DocumentExtension:
+    [rootType]
+
+type Cow extends Animal:
+
+type Goat extends Animal:
+
+type Fish extends Animal:
+
+type Shark extends Fish:
+
+type Salmon extends Fish:
+
+type Document:
+
+    attr Foo (1..1)
+    value Measure (1..1)
+
+type DocumentExtension extends Document:
+
+    documentExtensionAttr string (1..1)
+
+type FooBase:
+
+    xmlValue string (1..1)
+
+type Foo extends FooBase:
+
+    attr1 string (0..*)
+
+type Measure:
+
+    value Decimal19 (1..1)
+    unit UnitEnum (1..1)
+
+type TypeWithTypeElement:
+
+    firstElement string (1..1)
+    ^type string (1..1)
+
+type TimeContainer:
+
+    timeValue time (1..1)
+
+type MulticardinalityContainer:
+
+    foo Foo (0..*)
+
+type NestedContainer:
+
+    nestedContainerSequence0 NestedContainerSequence0 (0..1)
+    nestedContainerSequence1 NestedContainerSequence1 (1..*)
+
+type NestedContainerSequence0:
+
+    a int (1..1)
+    b int (1..1)
+
+type NestedContainerSequence1:
+
+    c int (1..1)
+    d int (1..1)
+
+type AnimalContainer:
+
+    animal Animal (1..1)
+
+type Animal:
+
+    name string (0..1)
+
+type Zoo:
+
+    animal Animal (1..*)
+
+type Party:
+
+    partyNameModel PartyNameModel (1..1)
+    partyModel PartyModel (1..1)
+
+type PartyNameModel:
+
+    partyName string (1..1)
+
+type PartyModel:
+
+    partyId string (1..*)

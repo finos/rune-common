@@ -148,8 +148,7 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     private boolean isMemberRosettaModelObjectGetTypeMethod(AnnotatedMember am) {
         if (am.getMember() instanceof Method && am.getName().equals("getType")) {
             Method method = (Method) am.getMember();
-            Class<?> declaringClass = method.getDeclaringClass();
-            return RosettaModelObject.class.isAssignableFrom(declaringClass);
+            return RosettaModelObject.class.isAssignableFrom(method.getDeclaringClass());
         }
         return false;
     }

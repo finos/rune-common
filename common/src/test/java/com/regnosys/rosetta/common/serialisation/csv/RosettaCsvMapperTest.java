@@ -22,6 +22,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
+import csv.test.user.User;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

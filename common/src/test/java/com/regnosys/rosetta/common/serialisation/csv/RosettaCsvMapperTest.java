@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.serialisation.csv;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
-import com.rosetta.model.lib.meta.Key;
+import csv.test.user.User;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -34,44 +34,70 @@ public class RosettaCsvMapperTest {
     @Test
     void testCsvMapperSerialise() throws IOException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
-        Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
+        User user = User.builder()
+                .setFirstName("FirstName")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
 
-        String serializedKey = csvObjectMapper.writeValueAsString(key);
+        String serializedKey = csvObjectMapper.writeValueAsString(user);
 
-        String expected = "scope,value\nTestScope,TestKeyValue\n";
+        String expected = "firstName,identifier,lastName,username\n" +
+                "FirstName,identifier,LastName,username\n";
         assertEquals(expected, serializedKey);
     }
 
     @Test
     void testCsvMapperDeserialize() throws JsonMappingException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
-        String input = "scope,value\nTestScope,TestKeyValue\n";
+        String input = "firstName,identifier,lastName,username\n" +
+                "FirstName,identifier,LastName,username\n";
 
-        Key key = csvObjectMapper.readValue(input, Key.class);
+        User user = csvObjectMapper.readValue(input, User.class);
 
-        Key expected = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
-        assertEquals(expected, key);
+        User expected = User.builder()
+                .setFirstName("FirstName")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        assertEquals(expected, user);
     }
 
     @Test
     void testCsvMapperDeserializeIgnoresExtraLines() throws JsonMappingException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
-        String input = "scope,value\nTestScope,TestKeyValue\nTestScope2,TestKeyValue2\n";
+        String input = "firstName,identifier,lastName,username\n" +
+                "FirstName,identifier,LastName,username\n" +
+                "FirstName2,identifier2,LastName2,username2\n";
 
-        Key key = csvObjectMapper.readValue(input, Key.class);
+        User user = csvObjectMapper.readValue(input, User.class);
 
-        Key expected = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
-        assertEquals(expected, key);
+        User expected = User.builder()
+                .setFirstName("FirstName")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        assertEquals(expected, user);
     }
 
     @Test
     void testCsvMapperRoundTrip() throws IOException {
         RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
-        Key key = Key.builder().setScope("TestScope").setKeyValue("TestKeyValue").build();
+        User user = User.builder()
+                .setFirstName("FirstName")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
 
-        String serializedKey = csvObjectMapper.writeValueAsString(key);
-        Key newKey = csvObjectMapper.readValue(serializedKey, Key.class);
+        String serializedKey = csvObjectMapper.writeValueAsString(user);
+        User newUser = csvObjectMapper.readValue(serializedKey, User.class);
 
-        assertEquals(key.build(), newKey);
+        assertEquals(user.build(), newUser);
     }
 }

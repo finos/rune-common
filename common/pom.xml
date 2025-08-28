@@ -90,7 +90,7 @@
                 <version>${rosetta.dsl.version}</version>
                 <executions>
                     <execution>
-                        <id>generate-xsd-based-sources</id>
+                        <id>generate-java-from-test-rosetta</id>
                         <phase>generate-test-sources</phase>
                         <goals>
                             <goal>testGenerate</goal>
@@ -98,7 +98,7 @@
                         <configuration>
                             <addOutputDirectoriesToCompileSourceRoots>false</addOutputDirectoriesToCompileSourceRoots>
                             <sourceRoots>
-                                <sourceRoot>${project.build.testSourceDirectory}/xml-serialisation</sourceRoot>
+                                <sourceRoot>${project.basedir}/src/test/resources/rosetta</sourceRoot>
                             </sourceRoots>
                             <classPathLookupFilter>.*com\.regnosys\.rosetta.*</classPathLookupFilter>
                             <languages>
@@ -106,7 +106,7 @@
                                     <setup>com.regnosys.rosetta.RosettaStandaloneSetup</setup>
                                     <outputConfigurations>
                                         <outputConfiguration>
-                                            <outputDirectory>${project.build.testOutputDirectory}/xml-serialisation/java</outputDirectory>
+                                            <outputDirectory>${project.build.testOutputDirectory}/serialisation/java</outputDirectory>
                                         </outputConfiguration>
                                     </outputConfigurations>
                                 </language>
@@ -128,7 +128,7 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>${project.build.testOutputDirectory}/xml-serialisation/java</source>
+                                <source>${project.build.testOutputDirectory}/serialisation/java</source>
                             </sources>
                         </configuration>
                     </execution>

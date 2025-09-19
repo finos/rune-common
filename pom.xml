@@ -91,7 +91,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rosetta.dsl.version>9.65.2</rosetta.dsl.version>
+        <rosetta.dsl.version>0.0.0.main-SNAPSHOT</rosetta.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
@@ -429,38 +429,51 @@
                     <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>2.4.0</version>
-                <configuration>
-                    <verbose>false</verbose>
-                    <licenseName>apache_v2</licenseName>
-                    <organizationName>REGnosys</organizationName>
-                    <projectName>Rune Common</projectName>
-                    <inceptionYear>2018</inceptionYear>
-                    <roots>
-                        <root>src/main/java</root>
-                        <root>src/test</root>
-                    </roots>
-                    <includes>
-                        <include>**/*.java</include>
-                        <include>**/*.xml</include>
-                    </includes>
-                    <processStartTag> ==============</processStartTag>
-                    <sectionDelimiter>==============</sectionDelimiter>
-                    <processEndTag>   ==============</processEndTag>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>first</id>
-                        <goals>
-                            <goal>update-file-header</goal>
-                        </goals>
-                        <phase>process-sources</phase>
-                    </execution>
-                </executions>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.codehaus.mojo</groupId>-->
+<!--                <artifactId>license-maven-plugin</artifactId>-->
+<!--                <version>2.4.0</version>-->
+<!--                <configuration>-->
+<!--                    <verbose>false</verbose>-->
+<!--                    <licenseName>apache_v2</licenseName>-->
+<!--                    <organizationName>REGnosys</organizationName>-->
+<!--                    <projectName>Rune Common</projectName>-->
+<!--                    <inceptionYear>2018</inceptionYear>-->
+<!--                    <roots>-->
+<!--                        <root>src/main/java</root>-->
+<!--                        <root>src/test</root>-->
+<!--                    </roots>-->
+<!--                    <includes>-->
+<!--                        <include>**/*.java</include>-->
+<!--                        <include>**/*.xml</include>-->
+<!--                    </includes>-->
+<!--                    <processStartTag> ==============</processStartTag>-->
+<!--                    <sectionDelimiter>==============</sectionDelimiter>-->
+<!--                    <processEndTag>   ==============</processEndTag>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>first</id>-->
+<!--                        <goals>-->
+<!--                            <goal>update-file-header</goal>-->
+<!--                        </goals>-->
+<!--                        <phase>process-sources</phase>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
         </plugins>
     </build>
+    <repositories>
+        <repository>
+            <name>Central Portal Snapshots</name>
+            <id>central-portal-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>

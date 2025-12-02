@@ -20,6 +20,7 @@ package com.regnosys.rosetta.common.serialisation;
  * ==============
  */
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -31,6 +32,9 @@ public class RosettaDataValueObjectToString {
             ZonedDateTime zonedDateTime = (ZonedDateTime) object;
             return zonedDateTime.truncatedTo(ChronoUnit.SECONDS)
                     .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        }
+        if (object instanceof BigDecimal) {
+            return ((BigDecimal) object).toPlainString();
         }
         return object.toString();
     }

@@ -206,6 +206,7 @@ public class PipelineModel {
 
         public enum Format {
             JSON,
+            RUNE_JSON,
             XML,
             CSV
         }

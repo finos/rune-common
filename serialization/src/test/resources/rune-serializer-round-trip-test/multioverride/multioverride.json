@@ -1,0 +1,8 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.multioverride.Root",
+  "@version" : "0.0.0",
+  "level" : {
+    "attr" : 1
+  }
+}

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.PrettyPrinter;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -69,6 +70,12 @@ import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
 public class RuneJsonObjectMapper extends ObjectMapper {
     public RuneJsonObjectMapper() {
         super(create());
+    }
+
+    public RuneJsonObjectMapper(ClassLoader classLoader) {
+        super(create());
+        TypeFactory typeFactory = getTypeFactory().withClassLoader(classLoader);
+        setTypeFactory(typeFactory);
     }
 
     @Override

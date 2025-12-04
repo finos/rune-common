@@ -205,9 +205,20 @@ public class PipelineModel {
         }
 
         public enum Format {
-            JSON,
-            XML,
-            CSV
+            JSON("json"),
+            RUNE_JSON("json"),
+            XML("xml"),
+            CSV("csv");
+
+            private final String fileExtension;
+
+            Format(String fileExtension) {
+                this.fileExtension = fileExtension;
+            }
+
+            public String getFileExtension() {
+                return fileExtension;
+            }
         }
     }
 }

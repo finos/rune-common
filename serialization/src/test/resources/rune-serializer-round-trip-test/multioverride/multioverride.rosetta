@@ -1,0 +1,12 @@
+namespace serialization.test.passing.multioverride
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type Level1:
+    attr int (0..1)
+
+type Level2 extends Level1:
+    override attr int (1..1)
+
+type Root:
+    [rootType]
+    level Level2 (0..1)

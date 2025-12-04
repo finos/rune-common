@@ -28,6 +28,7 @@ import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
+import org.finos.rune.mapper.RuneJsonObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -156,6 +157,8 @@ public class TestPackUtils {
                 }
             case JSON:
                 return Optional.of(RosettaObjectMapper.getNewRosettaObjectMapper());
+            case RUNE_JSON:
+                return Optional.of(new RuneJsonObjectMapper());
             case CSV:
                 return Optional.of(RosettaObjectMapperCreator.forCSV().create());
         }
@@ -200,7 +203,7 @@ public class TestPackUtils {
         if (serialisationFormat == null && xmlConfigPath == null) {
             return null;
         }
-        if (xmlConfigPath != null && serialisationFormat != null && serialisationFormat != PipelineModel.Serialisation.Format.XML) {
+        if (xmlConfigPath != null && serialisationFormat != PipelineModel.Serialisation.Format.XML) {
             throw new IllegalArgumentException("Cannot specify an xmlConfigPath and a serialisation format other than XML");
         }
         if (serialisationFormat == PipelineModel.Serialisation.Format.XML && xmlConfigPath == null) {

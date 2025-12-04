@@ -21,6 +21,11 @@
             <artifactId>com.regnosys.rosetta.lib</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.regnosys</groupId>
+            <artifactId>serialization</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>

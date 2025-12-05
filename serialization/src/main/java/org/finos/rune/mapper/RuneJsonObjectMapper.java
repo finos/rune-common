@@ -83,7 +83,7 @@ public class RuneJsonObjectMapper extends ObjectMapper {
     public static List<String> getMetaProperties() {
         return RuneJsonConfig.getMetaProperties();
     }
-
+  
     @Override
     protected ObjectWriter _newWriter(SerializationConfig config) {
         return new RuneJsonObjectWriter(this, config);

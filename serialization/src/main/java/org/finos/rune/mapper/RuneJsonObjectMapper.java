@@ -41,6 +41,8 @@ import org.finos.rune.mapper.filters.SubtypeFilter;
 import org.finos.rune.mapper.introspector.RuneJsonModule;
 import org.finos.rune.mapper.mixins.RosettaModelObjectMixin;
 
+import java.util.List;
+
 /**
  * A custom {@link ObjectMapper} designed for the Rune DSL.
  * <p>
@@ -76,6 +78,10 @@ public class RuneJsonObjectMapper extends ObjectMapper {
         super(create());
         TypeFactory typeFactory = getTypeFactory().withClassLoader(classLoader);
         setTypeFactory(typeFactory);
+    }
+
+    public static List<String> getMetaProperties() {
+        return RuneJsonConfig.getMetaProperties();
     }
 
     @Override

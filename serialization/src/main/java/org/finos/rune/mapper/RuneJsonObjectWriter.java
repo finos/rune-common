@@ -34,7 +34,6 @@ import com.rosetta.model.lib.annotations.RuneDataType;
 import org.finos.rune.mapper.processor.SerializationPreProcessor;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 /**
  * A custom {@link ObjectWriter} implementation for the Rune DSL.
@@ -60,7 +59,6 @@ import java.util.Optional;
 public class RuneJsonObjectWriter extends ObjectWriter {
     private final ObjectMapper mapper;
     private final SerializationPreProcessor serializationPreProcessor;
-
 
     protected RuneJsonObjectWriter(ObjectMapper mapper, SerializationConfig config, FormatSchema s) {
         super(mapper, config, s);
@@ -112,8 +110,7 @@ public class RuneJsonObjectWriter extends ObjectWriter {
         private String version;
         private RosettaModelObject rosettaModelObject;
 
-
-        @JsonGetter("@model")
+        @JsonGetter(RuneJsonConfig.MetaProperties.MODEL)
         public String getModel() {
             return model;
         }
@@ -122,7 +119,7 @@ public class RuneJsonObjectWriter extends ObjectWriter {
             this.model = model;
         }
 
-        @JsonGetter("@type")
+        @JsonGetter(RuneJsonConfig.MetaProperties.TYPE)
         public String getType() {
             return type;
         }
@@ -131,7 +128,7 @@ public class RuneJsonObjectWriter extends ObjectWriter {
             this.type = type;
         }
 
-        @JsonGetter("@version")
+        @JsonGetter(RuneJsonConfig.MetaProperties.VERSION)
         public String getVersion() {
             return version;
         }

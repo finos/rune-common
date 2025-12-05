@@ -35,6 +35,7 @@ import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.annotations.RuneMetaType;
 import com.rosetta.model.metafields.MetaFields;
+import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -106,7 +107,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         if (t != null  && !isAnnotatedTypeMetaFields(ann)) {
             return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
                     JsonTypeInfo.As.EXISTING_PROPERTY,
-                    "@type",
+                    RuneJsonConfig.MetaProperties.TYPE,
                     JsonTypeInfo.class,
                     true,
                     false);

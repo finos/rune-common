@@ -89,8 +89,6 @@ public class RuneJsonSerializerRoundTripTest {
                     Class<RosettaModelObject> rootDataType = generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, rosettas, helper, dynamicCompiledClassLoader);
 
                             return listFiles(groupPath, ".json").stream()
-                                    // TODO: This test will fail as there is an issue with override types. Remove this filter when fixed or to repro the issue.
-                                    .filter(jsonPath -> !jsonPath.toString().endsWith("multioverride.json"))
                                     .map(jsonPath -> Arguments.of(
                                             groupName,
                                             jsonPath.getFileName().toString(),

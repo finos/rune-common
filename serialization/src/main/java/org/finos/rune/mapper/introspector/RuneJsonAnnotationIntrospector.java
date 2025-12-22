@@ -31,9 +31,7 @@ import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.google.common.collect.Lists;
-import com.rosetta.model.lib.annotations.RuneAttribute;
-import com.rosetta.model.lib.annotations.RuneDataType;
-import com.rosetta.model.lib.annotations.RuneMetaType;
+import com.rosetta.model.lib.annotations.*;
 import com.rosetta.model.metafields.MetaFields;
 import org.finos.rune.mapper.RuneJsonConfig;
 
@@ -190,6 +188,13 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         }
         return super.findSerializationPropertyOrder(ac);
     }
+
+    // TODO: `a.hasAnnotation(RuneIgnore.class)` causes undeterministic property ordering in the serialised object, causing flaky tests.
+    //  Need to solve the property order issue
+//    @Override
+//    public boolean hasIgnoreMarker(AnnotatedMember a) {
+//        return a.getName().startsWith("add") || a.hasAnnotation(RuneIgnore.class) || super.hasIgnoreMarker(a);
+//    }
 
     private Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)

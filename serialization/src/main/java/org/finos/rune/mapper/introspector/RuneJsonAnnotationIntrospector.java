@@ -189,10 +189,12 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         return super.findSerializationPropertyOrder(ac);
     }
 
-    @Override
-    public boolean hasIgnoreMarker(AnnotatedMember a) {
-        return a.getName().startsWith("add") || a.hasAnnotation(RuneIgnore.class) || super.hasIgnoreMarker(a);
-    }
+    // TODO: `a.hasAnnotation(RuneIgnore.class)` causes undeterministic property ordering in the serialised object, causing flaky tests.
+    //  Need to solve the property order issue
+//    @Override
+//    public boolean hasIgnoreMarker(AnnotatedMember a) {
+//        return a.getName().startsWith("add") || a.hasAnnotation(RuneIgnore.class) || super.hasIgnoreMarker(a);
+//    }
 
     private Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {
         return StreamSupport.stream(acc.memberMethods().spliterator(), false)

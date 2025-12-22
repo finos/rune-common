@@ -3,10 +3,6 @@
   "@type" : "serialization.test.passing.overriding.Root",
   "@version" : "0.0.0",
   "foo3" : {
-    "numberAttr" : 10,
-    "parentList" : {
-      "grandChildAttr" : "My grand child attribute"
-    },
     "attr" : 142,
     "parent" : {
       "@key:external" : "childKey",
@@ -15,6 +11,10 @@
     "stringAttr" : {
       "@scheme" : "Some scheme",
       "@data" : "Some string"
+    },
+    "numberAttr" : 10,
+    "parentList" : {
+      "grandChildAttr" : "My grand child attribute"
     }
   }
 }

@@ -3,10 +3,6 @@
   "@type" : "serialization.test.passing.overriding.Root",
   "@version" : "0.0.0",
   "foo2" : {
-    "numberAttr" : 10,
-    "parentList" : {
-      "@ref:external" : "childKey"
-    },
     "attr" : 42,
     "parent" : {
       "@key:external" : "childKey",
@@ -22,6 +18,10 @@
     "stringAttr" : {
       "@scheme" : "Some scheme",
       "@data" : "Some string"
+    },
+    "numberAttr" : 10,
+    "parentList" : {
+      "@ref:external" : "childKey"
     }
   }
 }

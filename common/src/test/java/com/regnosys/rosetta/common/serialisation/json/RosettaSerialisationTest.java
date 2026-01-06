@@ -37,6 +37,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.inject.Inject;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -44,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
-public class RosettaSerialisationTest {
+class RosettaSerialisationTest {
 
     @Inject
     CodeGeneratorTestHelper codeGeneratorTestHelper;
@@ -225,6 +229,33 @@ public class RosettaSerialisationTest {
         assertJsonSerialisation(mapper, rosetta, "{}", "com.rosetta.test.model.AExtended");
         assertJsonSerialisation(mapper, rosetta, "{\"b\": [{\"c\" : \"xxx\"}]}", "com.rosetta.test.model.AExtended");
         assertJsonSerialisation(mapper, rosetta, "{\"b\": [{\"c\" : \"xxx\", \"d\" : \"yyy\"}]}", "com.rosetta.test.model.AExtended");
+    }
+
+    @Test
+    @Disabled()
+    /**
+     * TODO: When there are multiple overridden attributes, the ordering of the overridden attributes in the serialised object is indeterministic.
+     * This indeterministic behaviour occurs when `a.hasAnnotation(RosettaIgnore.class)` is added in `RosettaJsonAnnotationIntrospector.hasIgnoreMarker`, which likely affects the discoverability order in Jackson.
+     * Enable this test when the ordering issue is fixed.
+     */
+    void overriddenAttributesOrderIsPreserved() throws IOException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+        Path path = Paths.get("src/test/java/com/regnosys/rosetta/common/serialisation/json/ordering/ordering.rosetta");
+        String rosetta = new String(Files.readAllBytes(path));
+        String foo2 =  new String(Files.readAllBytes(Paths.get("src/test/java/com/regnosys/rosetta/common/serialisation/json/ordering/ordering-foo2.json")));
+
+        assertSerialisationRoundTrip(rosetta, mapper, foo2, "serialization.test.passing.ordering.Root");
+    }
+
+    private void assertSerialisationRoundTrip(String rosetta, ObjectMapper mapper, String inputJson, String rosettaType) throws JsonProcessingException {
+        Map<String, String> generatedCodeMap = codeGeneratorTestHelper.generateCode(rosetta);
+        Map<String, Class<?>> compiledCode = codeGeneratorTestHelper.compileToClasses(generatedCodeMap);
+        @SuppressWarnings("unchecked")
+        Class<? extends RosettaModelObject> compilesClass = (Class<? extends RosettaModelObject>) compiledCode.get(rosettaType);
+        RosettaModelObject deserializedObject = mapper.readValue(inputJson, compilesClass);
+        String serializedObject = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(deserializedObject);
+
+        assertEquals(inputJson, serializedObject);
     }
 
     private void assertJsonSerialisation(ObjectMapper mapper, String rosetta, String expectedJson, String fqClassName) throws JsonProcessingException {

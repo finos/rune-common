@@ -238,6 +238,7 @@ class RosettaSerialisationTest {
      * This indeterministic behaviour occurs when `a.hasAnnotation(RosettaIgnore.class)` is added in `RosettaJsonAnnotationIntrospector.hasIgnoreMarker`, which likely affects the discoverability order in Jackson.
      * Enable this test when the ordering issue is fixed.
      */
+    // NOTE: This is more likely to fail when running all tests in this class, passes almost all the time when running on its own
     void overriddenAttributesOrderIsPreserved() throws IOException {
         ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         Path path = Paths.get("src/test/java/com/regnosys/rosetta/common/serialisation/json/ordering/ordering.rosetta");

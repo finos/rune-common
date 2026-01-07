@@ -1,0 +1,9 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.ordering.Root",
+  "@version" : "0.0.0",
+  "foo2" : {
+    "numberAttr" : 1,
+    "numberAttr2" : 2
+  }
+}

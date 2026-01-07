@@ -140,6 +140,7 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
                 .collect(Collectors.toSet());
     }
 
+    // NOTE: `a.hasAnnotation(RosettaIgnore.class)` causes undeterministic property ordering for overridden attributes in the serialised object.
     @Override
     public boolean hasIgnoreMarker(AnnotatedMember a) {
         return a.getName().startsWith("add") || isMemberRosettaModelObjectGetTypeMethod(a) || a.hasAnnotation(RosettaIgnore.class) || super.hasIgnoreMarker(a);

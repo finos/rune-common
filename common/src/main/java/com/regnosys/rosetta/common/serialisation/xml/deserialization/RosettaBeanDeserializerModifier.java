@@ -51,6 +51,10 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
         builder.getProperties().forEachRemaining(p -> propNames.add(p.getFullName()));
         for (PropertyName propName : propNames) {
             SettableBeanProperty prop = builder.findProperty(propName);
+            // Skip if already a SubstitutedMethodProperty to avoid double-processing
+            if (!(prop instanceof MethodProperty)) {
+                continue;
+            }
 
             AnnotatedMember acc = prop.getMember();
             SubstitutionMap substitutionMap = substitutionMapLoader.findSubstitutionMap(config, intr, acc);
@@ -58,7 +62,6 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
                 for (JavaType substitutedType : substitutionMap.getTypes()) {
                     String substitutedName = substitutionMap.getName(substitutedType);
                     SettableBeanProperty substitutedProperty = new SubstitutedMethodProperty((MethodProperty)prop, substitutedType, (AnnotatedMethod) acc).withSimpleName(substitutedName);
-                    // TODO: only replace the original property - make sure we are not accidentally replacing random other properties
                     builder.addOrReplaceProperty(substitutedProperty, true);
                 }
             }

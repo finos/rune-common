@@ -140,6 +140,12 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:group name="Snake.model">
+        <xs:sequence>
+            <xs:element name="isDeadly" type="xs:boolean"/>
+        </xs:sequence>
+    </xs:group>
+
     <xs:complexType name="Party">
         <xs:sequence>
             <xs:group ref="PartyName.model"/>

@@ -31,10 +31,6 @@ public class SubstitutionMapLoader {
     private final ClassLoader classLoader;
     private final RosettaXMLConfiguration rosettaXMLConfiguration;
 
-    public SubstitutionMapLoader(ClassLoader classLoader) {
-        this(classLoader, null);
-    }
-
     public SubstitutionMapLoader(ClassLoader classLoader, RosettaXMLConfiguration rosettaXMLConfiguration) {
         this.classLoader = classLoader;
         this.rosettaXMLConfiguration = rosettaXMLConfiguration;
@@ -58,11 +54,7 @@ public class SubstitutionMapLoader {
      * Extracts the namespace from the XML configuration for a given type.
      * The namespace is derived from the xmlElementFullyQualifiedName (format: "namespace/localName").
      */
-    public String getNamespaceForType(MapperConfig<?> config, JavaType type) {
-        if (rosettaXMLConfiguration == null) {
-            return null;
-        }
-
+    public String getNamespaceForType(JavaType type) {
         try {
             ModelSymbolId symbolId = ModelSymbolId.fromQualifiedName(type.getRawClass().getName());
             return rosettaXMLConfiguration.getConfigurationForType(symbolId)

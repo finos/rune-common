@@ -62,7 +62,6 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
                 for (JavaType substitutedType : substitutionMap.getTypes()) {
                     String substitutedName = substitutionMap.getName(substitutedType);
 
-                    // Extract namespace from the type's XML configuration if available
                     String namespaceURI = substitutionMapLoader.getNamespaceForType(substitutedType);
 
                     PropertyName propertyName = namespaceURI != null

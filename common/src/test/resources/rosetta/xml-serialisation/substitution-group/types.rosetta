@@ -1,0 +1,9 @@
+namespace test.substitution
+
+type Root:
+    substituted Parent (1..1)
+    foo Foo (1..1)
+
+type Parent:
+
+type Foo:

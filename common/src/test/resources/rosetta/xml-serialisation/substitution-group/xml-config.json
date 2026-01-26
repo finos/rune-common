@@ -1,0 +1,16 @@
+{
+  "test.substitution.Root": {
+    "attributes": {
+      "substituted": {
+        "elementRef": "urn:schema/substituted",
+        "substitutionGroup": "urn:schema/substituted"
+      }
+    }
+  },
+  "test.substitution.Foo": {
+    "substitutionGroup": "urn:schema/substituted",
+    "xmlElementName": "foo",
+    "xmlElementFullyQualifiedName": "urn:schema/foo",
+    "abstract": false
+  }
+}

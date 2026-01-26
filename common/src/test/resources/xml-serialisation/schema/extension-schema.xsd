@@ -8,7 +8,7 @@
     <xs:complexType name="Snake">
         <xs:complexContent>
             <xs:extension base="parent:Animal">
-                <xs:group ref="parent:Snake.model"/>
+                <xs:group ref="parent:SnakeExtension.model"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

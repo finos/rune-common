@@ -103,6 +103,9 @@
     <xs:element name="fish" type="Fish" abstract="true" substitutionGroup="animal"/>
     <xs:element name="shark" type="Shark" substitutionGroup="fish"/>
     <xs:element name="salmon" type="Salmon" substitutionGroup="fish"/>
+
+    <xs:element name="snake" type="Snake" substitutionGroup="animal"/>
+
     <!-- Types: `Cow` and `Goat` extend from `Animal` -->
     <xs:complexType name="Animal">
         <xs:attribute name="name" type="xs:string" />
@@ -133,6 +136,13 @@
             <xs:extension base="Fish"/>
         </xs:complexContent>
     </xs:complexType>
+    <xs:complexType name="Snake">
+        <xs:complexContent>
+            <xs:extension base="Animal">
+                <xs:group ref="Snake.model"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
     <xs:complexType name="Zoo">
         <xs:sequence>
@@ -145,6 +155,13 @@
             <xs:element name="isDeadly" type="xs:boolean"/>
         </xs:sequence>
     </xs:group>
+
+    <xs:group name="SnakeExtension.model">
+        <xs:sequence>
+            <xs:element name="isDeadly" type="xs:string"/>
+        </xs:sequence>
+    </xs:group>
+
 
     <xs:complexType name="Party">
         <xs:sequence>

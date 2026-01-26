@@ -19,6 +19,10 @@ type Shark extends Fish:
 
 type Salmon extends Fish:
 
+type Snake extends Animal:
+
+    snakeModel SnakeModel (1..1)
+
 type Document:
 
     attr Foo (1..1)
@@ -84,6 +88,10 @@ type Zoo:
 type SnakeModel:
 
     isDeadly boolean (1..1)
+
+type SnakeExtensionModel:
+
+    isDeadly string (1..1)
 
 type Party:
 

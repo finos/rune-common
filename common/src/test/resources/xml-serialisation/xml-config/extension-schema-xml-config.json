@@ -5,7 +5,7 @@
     "xmlElementFullyQualifiedName" : "urn:my.extension/snake",
     "abstract" : false,
     "attributes" : {
-      "snakeModel" : {
+      "snakeExtensionModel" : {
         "xmlRepresentation" : "VIRTUAL"
       }
     }
@@ -115,6 +115,17 @@
     "xmlElementName" : "shark",
     "xmlElementFullyQualifiedName" : "urn:my.schema/shark",
     "abstract" : false
+  },
+  "com.rosetta.test.Snake" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "snake",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/snake",
+    "abstract" : false,
+    "attributes" : {
+      "snakeModel" : {
+        "xmlRepresentation" : "VIRTUAL"
+      }
+    }
   },
   "com.rosetta.test.TopLevel" : {
     "xmlElementName" : "TopLevel",

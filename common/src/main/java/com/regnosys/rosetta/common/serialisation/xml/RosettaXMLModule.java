@@ -92,7 +92,7 @@ public class RosettaXMLModule extends SimpleModule {
     @Override
     public void setupModule(SetupContext context) {
         // Note: order is important. Each modifier is inserted to the front of the list of modifiers.
-        final SubstitutionMapLoader substitutionMapLoader = new SubstitutionMapLoader(classLoader);
+        final SubstitutionMapLoader substitutionMapLoader = new SubstitutionMapLoader(classLoader, rosettaXMLConfiguration);
         context.addBeanSerializerModifier(new RosettaBeanSerializerModifier(substitutionMapLoader));
         context.addBeanSerializerModifier(new XmlBeanSerializerModifier());
         context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier(substitutionMapLoader));

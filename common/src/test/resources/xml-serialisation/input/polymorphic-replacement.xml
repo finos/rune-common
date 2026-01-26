@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AnimalContainer xmlns="urn:my.schema"
+                 xmlns:parent="urn:my.extension">
+    <parent:snake name="Snakee">
+        <deadliness>MostlyHarmless</deadliness>
+    </parent:snake>
+</AnimalContainer>

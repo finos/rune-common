@@ -295,6 +295,36 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testPolymorphicDeserialisation() throws IOException {
+        String input = Resources.toString(Resources.getResource("xml-serialisation/input/polymorphic.xml"), StandardCharsets.UTF_8);
+
+        // Test deserialisation
+        AnimalContainer actual = xmlMapper.readValue(input, AnimalContainer.class);
+
+        AnimalContainer expected = AnimalContainer.builder()
+                .setAnimal(Snake.builder().setName("Snakee")
+                        .setSnakeModel(SnakeModel.builder()
+                                .setDeadliness(SnakeDeadlinessEnum.DEADLY))).build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testPolymorphicReplacementDeserialisation() throws IOException {
+        String input = Resources.toString(Resources.getResource("xml-serialisation/input/polymorphic-replacement.xml"), StandardCharsets.UTF_8);
+
+        // Test deserialisation
+        AnimalContainer actual = xmlMapper.readValue(input, AnimalContainer.class);
+
+        AnimalContainer expected = AnimalContainer.builder()
+                .setAnimal(com.rosetta.extension.test.Snake.builder().setName("Snakee")
+                                .setSnakeExtensionModel(SnakeExtensionModel.builder().setDeadliness("MostlyHarmless"))
+                        ).build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
     // TODO: test non-substituted groups should not perform substitution
     public void testSubstitutionGroupSerialisation() throws IOException {
         AnimalContainer animalContainer = AnimalContainer.builder()

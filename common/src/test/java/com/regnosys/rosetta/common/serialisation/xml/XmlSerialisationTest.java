@@ -56,7 +56,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class XmlSerialisationTest {
-    private static final String XSD_SCHEMA = "/xml-serialisation/schema/schema.xsd";
+    private static final String XSD_SCHEMA = "/xml-serialisation/schema/extension-schema.xsd";
 
     private final Validator xsdValidator;
     private final ObjectMapper xmlMapper;
@@ -70,7 +70,7 @@ public class XmlSerialisationTest {
         xsdValidator = schema.newValidator();
 
         // Create an XML mapper with the generated XML configuration based on the XSD schema
-        configUrl = Resources.getResource("xml-serialisation/xml-config/my-schema-xml-config.json");
+        configUrl = Resources.getResource("xml-serialisation/xml-config/extension-schema-xml-config.json");
         try (InputStream inputStream = configUrl.openStream()) {
             xmlMapper = RosettaObjectMapperCreator.forXML(inputStream).create();
         }

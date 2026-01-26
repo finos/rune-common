@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,12 +32,34 @@ import java.util.Map;
  * of all XML substitution groups defined in an XSD schema.
  */
 public class SubstitutionMap {
-    private final Map<JavaType, String> typeToNameMap;
+    private final Map<JavaType, ElementInfo> typeToElementInfoMap;
+    private final Map<String, JavaType> fullyQualifiedNameToTypeMap;
 
-    public SubstitutionMap(Map<JavaType, String> typeToNameMap) {
-        this.typeToNameMap = new LinkedHashMap<>();
+    /**
+     * Holds the XML element name and optional namespace for a type.
+     */
+    public static class ElementInfo {
+        private final String name;
+        private final String namespace;
+
+        public ElementInfo(String name, String namespace) {
+            this.name = name;
+            this.namespace = namespace;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getNamespace() {
+            return namespace;
+        }
+    }
+
+    public SubstitutionMap(Map<JavaType, ElementInfo> typeToElementInfoMap, Map<String, JavaType> fullyQualifiedNameToTypeMap) {
+        this.typeToElementInfoMap = new LinkedHashMap<>();
         // Sort types so subtypes come first, supertypes come later.
-        typeToNameMap.keySet().stream().sorted((o1, o2) -> {
+        typeToElementInfoMap.keySet().stream().sorted((o1, o2) -> {
             if (o1.equals(o2)) {
                 return 0;
             }
@@ -51,7 +73,8 @@ public class SubstitutionMap {
                 return -1;
             }
             return o1.toString().compareTo(o2.toString());
-        }).forEach(key -> this.typeToNameMap.put(key, typeToNameMap.get(key)));
+        }).forEach(key -> this.typeToElementInfoMap.put(key, typeToElementInfoMap.get(key)));
+        this.fullyQualifiedNameToTypeMap = new LinkedHashMap<>(fullyQualifiedNameToTypeMap);
     }
 
     public String getSubstitutedName(Object object) {
@@ -59,17 +82,28 @@ public class SubstitutionMap {
             return null;
         }
         Class<?> clazz = object.getClass();
-        return typeToNameMap.entrySet().stream()
+        return typeToElementInfoMap.entrySet().stream()
                 .filter(e -> e.getKey().isTypeOrSuperTypeOf(clazz))
-                .map(Map.Entry::getValue)
+                .map(e -> e.getValue().getName())
                 .findFirst()
                 .orElse(null);
     }
 
     public Collection<JavaType> getTypes() {
-        return typeToNameMap.keySet();
+        return typeToElementInfoMap.keySet();
     }
+
     public String getName(JavaType type) {
-        return typeToNameMap.get(type);
+        ElementInfo info = typeToElementInfoMap.get(type);
+        return info != null ? info.getName() : null;
+    }
+
+    public String getNamespace(JavaType type) {
+        ElementInfo info = typeToElementInfoMap.get(type);
+        return info != null ? info.getNamespace() : null;
+    }
+
+    public JavaType getTypeByFullyQualifiedName(String fullyQualifiedName) {
+        return fullyQualifiedNameToTypeMap.get(fullyQualifiedName);
     }
 }

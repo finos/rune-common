@@ -81,6 +81,10 @@ type Zoo:
 
     animal Animal (1..*)
 
+type SnakeModel:
+
+    isDeadly boolean (1..1)
+
 type Party:
 
     partyNameModel PartyNameModel (1..1)

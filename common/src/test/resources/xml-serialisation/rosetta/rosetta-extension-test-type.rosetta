@@ -1,0 +1,6 @@
+namespace com.rosetta.extension.test
+version "${project.version}"
+
+type Snake extends com.rosetta.test.Animal:
+
+    snakeModel com.rosetta.test.SnakeModel (1..1)

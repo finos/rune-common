@@ -13,5 +13,5 @@
         </xs:complexContent>
     </xs:complexType>
 
-    <xs:element name="snake" type="parent:Animal" substitutionGroup="parent:animal"/>
+    <xs:element name="snake" type="Snake" substitutionGroup="parent:animal"/>
 </xs:schema>

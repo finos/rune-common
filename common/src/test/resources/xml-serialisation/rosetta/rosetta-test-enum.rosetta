@@ -1,0 +1,7 @@
+namespace com.rosetta.test
+version "${project.version}"
+
+enum UnitEnum:
+
+    METER displayName "Meter"
+    KILOGRAM displayName "Kilogram"

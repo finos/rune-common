@@ -1,0 +1,139 @@
+{
+  "com.rosetta.test.Animal" : {
+    "attributes" : {
+      "name" : {
+        "xmlRepresentation" : "ATTRIBUTE"
+      }
+    }
+  },
+  "com.rosetta.test.AnimalContainer" : {
+    "attributes" : {
+      "animal" : {
+        "elementRef" : "urn:my.schema/animal"
+      }
+    }
+  },
+  "com.rosetta.test.Cow" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "cow",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/cow",
+    "abstract" : false
+  },
+  "com.rosetta.test.Document" : {
+    "attributes" : {
+      "attr" : {
+        "xmlName" : "Attr"
+      },
+      "value" : {
+        "xmlName" : "Value"
+      }
+    }
+  },
+  "com.rosetta.test.DocumentExtension" : {
+    "attributes" : {
+      "documentExtensionAttr" : {
+        "xmlName" : "DocumentExtensionAttr"
+      }
+    }
+  },
+  "com.rosetta.test.Fish" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "fish",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/fish",
+    "abstract" : true
+  },
+  "com.rosetta.test.Foo" : {
+    "attributes" : {
+      "attr1" : {
+        "xmlName" : "Attr1"
+      }
+    }
+  },
+  "com.rosetta.test.FooBase" : {
+    "attributes" : {
+      "xmlValue" : {
+        "xmlName" : "XMLValue"
+      }
+    }
+  },
+  "com.rosetta.test.Goat" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "goat",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/goat",
+    "abstract" : false
+  },
+  "com.rosetta.test.Measure" : {
+    "attributes" : {
+      "value" : {
+        "xmlRepresentation" : "VALUE"
+      },
+      "unit" : {
+        "xmlName" : "Unit",
+        "xmlRepresentation" : "ATTRIBUTE"
+      }
+    }
+  },
+  "com.rosetta.test.NestedContainer" : {
+    "attributes" : {
+      "nestedContainerSequence0" : {
+        "xmlRepresentation" : "VIRTUAL"
+      },
+      "nestedContainerSequence1" : {
+        "xmlRepresentation" : "VIRTUAL"
+      }
+    }
+  },
+  "com.rosetta.test.Party" : {
+    "attributes" : {
+      "partyNameModel" : {
+        "xmlRepresentation" : "VIRTUAL"
+      },
+      "partyModel" : {
+        "xmlRepresentation" : "VIRTUAL"
+      }
+    }
+  },
+  "com.rosetta.test.Salmon" : {
+    "substitutionGroup" : "urn:my.schema/fish",
+    "xmlElementName" : "salmon",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/salmon",
+    "abstract" : false
+  },
+  "com.rosetta.test.Shark" : {
+    "substitutionGroup" : "urn:my.schema/fish",
+    "xmlElementName" : "shark",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/shark",
+    "abstract" : false
+  },
+  "com.rosetta.test.TopLevel" : {
+    "xmlElementName" : "TopLevel",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/TopLevel",
+    "abstract" : false,
+    "xmlAttributes" : {
+      "xmlns" : "urn:my.schema",
+      "xmlns:xsi" : "http://www.w3.org/2001/XMLSchema-instance"
+    }
+  },
+  "com.rosetta.test.TopLevelExtension" : {
+    "xmlElementName" : "TopLevelExtension",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/TopLevelExtension",
+    "abstract" : false,
+    "xmlAttributes" : {
+      "xmlns" : "urn:my.schema",
+      "xmlns:xsi" : "http://www.w3.org/2001/XMLSchema-instance"
+    }
+  },
+  "com.rosetta.test.UnitEnum" : {
+    "enumValues" : {
+      "METER" : "Meter",
+      "KILOGRAM" : "Kilogram"
+    }
+  },
+  "com.rosetta.test.Zoo" : {
+    "attributes" : {
+      "animal" : {
+        "elementRef" : "urn:my.schema/animal"
+      }
+    }
+  }
+}

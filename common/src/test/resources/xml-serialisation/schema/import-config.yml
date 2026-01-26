@@ -1,0 +1,5 @@
+schemas:
+  - name: "my-schema"
+    location: "./schema.xsd"
+target:
+  defaultNamespace: "com.rosetta.test"

@@ -150,15 +150,23 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:simpleType name="SnakeDeadlinessEnum">
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="Deadly"/>
+            <xs:enumeration value="QuiteHarmful"/>
+            <xs:enumeration value="Harmless"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:group name="Snake.model">
         <xs:sequence>
-            <xs:element name="isDeadly" type="xs:boolean"/>
+            <xs:element name="deadliness" type="SnakeDeadlinessEnum"/>
         </xs:sequence>
     </xs:group>
 
     <xs:group name="SnakeExtension.model">
         <xs:sequence>
-            <xs:element name="isDeadly" type="xs:string"/>
+            <xs:element name="deadliness" type="xs:string"/>
         </xs:sequence>
     </xs:group>
 

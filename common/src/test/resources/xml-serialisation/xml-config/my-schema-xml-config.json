@@ -116,6 +116,13 @@
       }
     }
   },
+  "com.rosetta.test.SnakeDeadlinessEnum" : {
+    "enumValues" : {
+      "DEADLY" : "Deadly",
+      "QUITE_HARMFUL" : "QuiteHarmful",
+      "HARMLESS" : "Harmless"
+    }
+  },
   "com.rosetta.test.TopLevel" : {
     "xmlElementName" : "TopLevel",
     "xmlElementFullyQualifiedName" : "urn:my.schema/TopLevel",

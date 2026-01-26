@@ -87,11 +87,11 @@ type Zoo:
 
 type SnakeModel:
 
-    isDeadly boolean (1..1)
+    deadliness SnakeDeadlinessEnum (1..1)
 
 type SnakeExtensionModel:
 
-    isDeadly string (1..1)
+    deadliness string (1..1)
 
 type Party:
 

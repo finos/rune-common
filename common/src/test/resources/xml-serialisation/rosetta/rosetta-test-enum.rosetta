@@ -5,3 +5,9 @@ enum UnitEnum:
 
     METER displayName "Meter"
     KILOGRAM displayName "Kilogram"
+
+enum SnakeDeadlinessEnum:
+
+    DEADLY displayName "Deadly"
+    QUITE_HARMFUL displayName "QuiteHarmful"
+    HARMLESS displayName "Harmless"

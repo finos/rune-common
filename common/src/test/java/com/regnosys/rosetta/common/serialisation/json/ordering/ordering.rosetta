@@ -1,0 +1,14 @@
+namespace serialization.test.passing.ordering
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type Foo1:
+    numberAttr number (1..1)
+    numberAttr2 number (1..1)
+
+type Foo2 extends Foo1:
+    override numberAttr int (1..1)
+    override numberAttr2 int (1..1)
+
+type Root:
+    [rootType]
+    foo2 Foo2 (1..1)

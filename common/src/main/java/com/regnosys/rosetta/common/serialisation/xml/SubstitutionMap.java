@@ -32,17 +32,17 @@ import java.util.Map;
  * of all XML substitution groups defined in an XSD schema.
  */
 public class SubstitutionMap {
-    private final Map<JavaType, ElementInfo> typeToElementInfoMap;
+    private final Map<JavaType, XMLFullyQualifiedName> typeToFullyQualifiedNameMap;
     private final Map<String, JavaType> fullyQualifiedNameToTypeMap;
 
     /**
      * Holds the XML element name and optional namespace for a type.
      */
-    public static class ElementInfo {
+    public static class XMLFullyQualifiedName {
         private final String name;
         private final String namespace;
 
-        public ElementInfo(String name, String namespace) {
+        public XMLFullyQualifiedName(String name, String namespace) {
             this.name = name;
             this.namespace = namespace;
         }
@@ -56,10 +56,10 @@ public class SubstitutionMap {
         }
     }
 
-    public SubstitutionMap(Map<JavaType, ElementInfo> typeToElementInfoMap, Map<String, JavaType> fullyQualifiedNameToTypeMap) {
-        this.typeToElementInfoMap = new LinkedHashMap<>();
+    public SubstitutionMap(Map<JavaType, XMLFullyQualifiedName> typeToFullyQualifiedNameMap, Map<String, JavaType> fullyQualifiedNameToTypeMap) {
+        this.typeToFullyQualifiedNameMap = new LinkedHashMap<>();
         // Sort types so subtypes come first, supertypes come later.
-        typeToElementInfoMap.keySet().stream().sorted((o1, o2) -> {
+        typeToFullyQualifiedNameMap.keySet().stream().sorted((o1, o2) -> {
             if (o1.equals(o2)) {
                 return 0;
             }
@@ -73,7 +73,7 @@ public class SubstitutionMap {
                 return -1;
             }
             return o1.toString().compareTo(o2.toString());
-        }).forEach(key -> this.typeToElementInfoMap.put(key, typeToElementInfoMap.get(key)));
+        }).forEach(key -> this.typeToFullyQualifiedNameMap.put(key, typeToFullyQualifiedNameMap.get(key)));
         this.fullyQualifiedNameToTypeMap = new LinkedHashMap<>(fullyQualifiedNameToTypeMap);
     }
 
@@ -82,7 +82,7 @@ public class SubstitutionMap {
             return null;
         }
         Class<?> clazz = object.getClass();
-        return typeToElementInfoMap.entrySet().stream()
+        return typeToFullyQualifiedNameMap.entrySet().stream()
                 .filter(e -> e.getKey().isTypeOrSuperTypeOf(clazz))
                 .map(e -> e.getValue().getName())
                 .findFirst()
@@ -90,17 +90,17 @@ public class SubstitutionMap {
     }
 
     public Collection<JavaType> getTypes() {
-        return typeToElementInfoMap.keySet();
+        return typeToFullyQualifiedNameMap.keySet();
     }
 
     public String getName(JavaType type) {
-        ElementInfo info = typeToElementInfoMap.get(type);
+        XMLFullyQualifiedName info = typeToFullyQualifiedNameMap.get(type);
         return info != null ? info.getName() : null;
     }
 
     public String getNamespace(JavaType type) {
-        ElementInfo info = typeToElementInfoMap.get(type);
-        return info != null ? info.getNamespace() : null;
+        XMLFullyQualifiedName fullyQualifiedName = typeToFullyQualifiedNameMap.get(type);
+        return fullyQualifiedName != null ? fullyQualifiedName.getNamespace() : null;
     }
 
     public JavaType getTypeByFullyQualifiedName(String fullyQualifiedName) {

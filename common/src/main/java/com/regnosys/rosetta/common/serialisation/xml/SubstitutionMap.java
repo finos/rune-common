@@ -46,7 +46,7 @@ public class SubstitutionMap {
         private final String namespace;
 
         public XMLFullyQualifiedName(String name) {
-            Pattern p = Pattern.compile("^([^/]+)/(.+)$");
+            Pattern p = Pattern.compile("^(.+)/(.+)$");
             Matcher m = p.matcher(name);
             if (m.matches()) {
                 this.namespace = m.group(1);

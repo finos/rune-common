@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * An map defining the relation between types and
@@ -34,7 +36,7 @@ import java.util.Objects;
  */
 public class SubstitutionMap {
     private final Map<JavaType, XMLFullyQualifiedName> typeToFullyQualifiedNameMap;
-    private final Map<String, JavaType> fullyQualifiedNameToTypeMap;
+    private final Map<XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap;
 
     /**
      * Holds the XML element name and optional namespace for a type.
@@ -42,6 +44,18 @@ public class SubstitutionMap {
     public static class XMLFullyQualifiedName {
         private final String name;
         private final String namespace;
+
+        public XMLFullyQualifiedName(String name) {
+            Pattern p = Pattern.compile("^([^/]+)/(.+)$");
+            Matcher m = p.matcher(name);
+            if (m.matches()) {
+                this.namespace = m.group(1);
+                this.name = m.group(2);
+            } else {
+                this.namespace = null;
+                this.name = name;
+            }
+        }
 
         public XMLFullyQualifiedName(String name, String namespace) {
             this.name = name;
@@ -67,9 +81,14 @@ public class SubstitutionMap {
         public int hashCode() {
             return Objects.hash(name, namespace);
         }
+
+        @Override
+        public String toString() {
+            return namespace != null ? namespace + "/" + name : name;
+        }
     }
 
-    public SubstitutionMap(Map<JavaType, XMLFullyQualifiedName> typeToFullyQualifiedNameMap, Map<String, JavaType> fullyQualifiedNameToTypeMap) {
+    public SubstitutionMap(Map<JavaType, XMLFullyQualifiedName> typeToFullyQualifiedNameMap, Map<XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap) {
         this.typeToFullyQualifiedNameMap = new LinkedHashMap<>();
         // Sort types so subtypes come first, supertypes come later.
         typeToFullyQualifiedNameMap.keySet().stream().sorted((o1, o2) -> {
@@ -107,8 +126,8 @@ public class SubstitutionMap {
     }
 
     public String getName(JavaType type) {
-        XMLFullyQualifiedName info = typeToFullyQualifiedNameMap.get(type);
-        return info != null ? info.getName() : null;
+        XMLFullyQualifiedName fullyQualifiedName = typeToFullyQualifiedNameMap.get(type);
+        return fullyQualifiedName != null ? fullyQualifiedName.getName() : null;
     }
 
     public String getNamespace(JavaType type) {
@@ -116,7 +135,7 @@ public class SubstitutionMap {
         return fullyQualifiedName != null ? fullyQualifiedName.getNamespace() : null;
     }
 
-    public JavaType getTypeByFullyQualifiedName(String fullyQualifiedName) {
+    public JavaType getTypeByFullyQualifiedName(XMLFullyQualifiedName fullyQualifiedName) {
         return fullyQualifiedNameToTypeMap.get(fullyQualifiedName);
     }
 }

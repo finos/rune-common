@@ -128,7 +128,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
         if (ann != null) {
             Map<JavaType, SubstitutionMap.XMLFullyQualifiedName> typeToFullyQualifiedNameMap = new HashMap<>();
-            Map<String, JavaType> fullyQualifiedNameToTypeMap = new HashMap<>();
+            Map<SubstitutionMap.XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap = new HashMap<>();
             getAttributeXMLConfiguration(config, member)
                     .flatMap(this::getElementRef)
                     .ifPresent(elementRef -> {
@@ -168,7 +168,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     private void populateSubstitutionMapForElementByFullyQualifiedName(MapperConfig<?> config,
                                                                        String fullyQualifiedName,
                                                                        Map<JavaType, SubstitutionMap.XMLFullyQualifiedName> typeToFullyQualifiedNameMap,
-                                                                       Map<String, JavaType> fullyQualifiedNameToTypeMap,
+                                                                       Map<SubstitutionMap.XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap,
                                                                        ClassLoader classLoader) {
         Map<String, TypeConfigEntry> elementIndex = getElementIndex();
         if (elementIndex.containsKey(fullyQualifiedName)) {
@@ -180,7 +180,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     private void populateSubstitutionMapForTransitiveSubstitutionGroups(MapperConfig<?> config,
                                                                         String substitutionGroup,
                                                                         Map<JavaType, SubstitutionMap.XMLFullyQualifiedName> typeToFullyQualifiedNameMap,
-                                                                        Map<String, JavaType> fullyQualifiedNameToTypeMap,
+                                                                        Map<SubstitutionMap.XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap,
                                                                         ClassLoader classLoader) {
         populateSubstitutionMapForTransitiveSubstitutionGroups(config, substitutionGroup, typeToFullyQualifiedNameMap, fullyQualifiedNameToTypeMap, classLoader, new HashSet<>());
     }
@@ -188,7 +188,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     private void populateSubstitutionMapForTransitiveSubstitutionGroups(MapperConfig<?> config,
                                                                         String substitutionGroup,
                                                                         Map<JavaType, SubstitutionMap.XMLFullyQualifiedName> typeToFullyQualifiedNameMap,
-                                                                        Map<String, JavaType> fullyQualifiedNameToTypeMap,
+                                                                        Map<SubstitutionMap.XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap,
                                                                         ClassLoader classLoader,
                                                                         Set<String> visited) {
         if (!visited.add(substitutionGroup)) {
@@ -202,7 +202,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
     }
 
-    private void updateSubstitutionMap(MapperConfig<?> config, Map<JavaType, SubstitutionMap.XMLFullyQualifiedName> typeToFullyQualifiedNameMap, Map<String, JavaType> fullyQualifiedNameToTypeMap, ClassLoader classLoader, TypeXMLConfiguration typeXMLConfiguration, ModelSymbolId key) {
+    private void updateSubstitutionMap(MapperConfig<?> config, Map<JavaType, SubstitutionMap.XMLFullyQualifiedName> typeToFullyQualifiedNameMap, Map<SubstitutionMap.XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap, ClassLoader classLoader, TypeXMLConfiguration typeXMLConfiguration, ModelSymbolId key) {
         if (!typeXMLConfiguration.getAbstract().orElse(false)) {
             try {
                 JavaType javaType = config.constructType(classLoader.loadClass(key.toString()));
@@ -211,12 +211,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
                 if (typeXMLConfiguration.getXmlElementFullyQualifiedName().isPresent()) {
                     String fqn = typeXMLConfiguration.getXmlElementFullyQualifiedName().get();
-                    fullyQualifiedNameToTypeMap.put(fqn, javaType);
-                    // Extract namespace from FQN (format: "namespace/localName")
-                    int lastSlash = fqn.lastIndexOf('/');
-                    if (lastSlash > 0) {
-                        namespace = fqn.substring(0, lastSlash);
-                    }
+                    SubstitutionMap.XMLFullyQualifiedName xmlFqn = new SubstitutionMap.XMLFullyQualifiedName(fqn);
+                    fullyQualifiedNameToTypeMap.put(xmlFqn, javaType);
+                    // Extract namespace from XMLFullyQualifiedName
+                    namespace = xmlFqn.getNamespace();
                 }
 
                 if (elementName != null) {

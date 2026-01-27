@@ -122,8 +122,8 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
                 String namespaceURI = staxName.getNamespaceURI();
                 String localName = staxName.getLocalPart();
                 if (namespaceURI != null && !namespaceURI.isEmpty()) {
-                    String fullyQualifiedName = namespaceURI + "/" + localName;
-                    JavaType typeByFqn = _substitutionMap.getTypeByFullyQualifiedName(fullyQualifiedName);
+                    SubstitutionMap.XMLFullyQualifiedName xmlFullyQualifiedName = new SubstitutionMap.XMLFullyQualifiedName(localName, namespaceURI);
+                    JavaType typeByFqn = _substitutionMap.getTypeByFullyQualifiedName(xmlFullyQualifiedName);
                     if (typeByFqn != null) {
                         return typeByFqn;
                     }

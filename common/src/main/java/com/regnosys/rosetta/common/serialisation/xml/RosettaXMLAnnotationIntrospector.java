@@ -206,20 +206,16 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         if (!typeXMLConfiguration.getAbstract().orElse(false)) {
             try {
                 JavaType javaType = config.constructType(classLoader.loadClass(key.toString()));
-                String elementName = typeXMLConfiguration.getXmlElementName().orElse(null);
-                String namespace = null;
 
-                if (typeXMLConfiguration.getXmlElementFullyQualifiedName().isPresent()) {
-                    String fqn = typeXMLConfiguration.getXmlElementFullyQualifiedName().get();
-                    SubstitutionMap.XMLFullyQualifiedName xmlFqn = new SubstitutionMap.XMLFullyQualifiedName(fqn);
-                    fullyQualifiedNameToTypeMap.put(xmlFqn, javaType);
-                    // Extract namespace from XMLFullyQualifiedName
-                    namespace = xmlFqn.getNamespace();
-                }
+                Optional<SubstitutionMap.XMLFullyQualifiedName> maybeXmlFullyQualifiedName = typeXMLConfiguration.getXmlElementFullyQualifiedName()
+                        .map(SubstitutionMap.XMLFullyQualifiedName::new)
+                        .map(Optional::of)
+                        .orElseGet(() -> typeXMLConfiguration.getXmlElementName().map(SubstitutionMap.XMLFullyQualifiedName::new));
 
-                if (elementName != null) {
-                    typeToFullyQualifiedNameMap.put(javaType, new SubstitutionMap.XMLFullyQualifiedName(elementName, namespace));
-                }
+                maybeXmlFullyQualifiedName.ifPresent(xmlFullyQualifiedName -> {
+                    fullyQualifiedNameToTypeMap.put(xmlFullyQualifiedName, javaType);
+                    typeToFullyQualifiedNameMap.put(javaType, xmlFullyQualifiedName);
+                });
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }

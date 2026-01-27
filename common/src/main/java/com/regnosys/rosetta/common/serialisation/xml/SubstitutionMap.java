@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * An map defining the relation between types and
@@ -53,6 +54,18 @@ public class SubstitutionMap {
 
         public String getNamespace() {
             return namespace;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) return false;
+            XMLFullyQualifiedName that = (XMLFullyQualifiedName) o;
+            return Objects.equals(name, that.name) && Objects.equals(namespace, that.namespace);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, namespace);
         }
     }
 

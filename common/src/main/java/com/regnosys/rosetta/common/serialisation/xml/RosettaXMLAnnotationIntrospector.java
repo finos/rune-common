@@ -44,6 +44,7 @@ import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.model.lib.annotations.*;
 import com.rosetta.util.DottedPath;
 import com.rosetta.util.serialisation.*;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -206,20 +207,33 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         if (!typeXMLConfiguration.getAbstract().orElse(false)) {
             try {
                 JavaType javaType = config.constructType(classLoader.loadClass(key.toString()));
+                SubstitutionMap.XMLFullyQualifiedName fullyQualifiedName = getFullyQualifiedNameFromConfig(typeXMLConfiguration);
 
-                Optional<SubstitutionMap.XMLFullyQualifiedName> maybeXmlFullyQualifiedName = typeXMLConfiguration.getXmlElementFullyQualifiedName()
-                        .map(SubstitutionMap.XMLFullyQualifiedName::new)
-                        .map(Optional::of)
-                        .orElseGet(() -> typeXMLConfiguration.getXmlElementName().map(SubstitutionMap.XMLFullyQualifiedName::new));
-
-                maybeXmlFullyQualifiedName.ifPresent(xmlFullyQualifiedName -> {
-                    fullyQualifiedNameToTypeMap.put(xmlFullyQualifiedName, javaType);
-                    typeToFullyQualifiedNameMap.put(javaType, xmlFullyQualifiedName);
-                });
+                if (fullyQualifiedName != null && fullyQualifiedName.getName() != null) {
+                    fullyQualifiedNameToTypeMap.put(fullyQualifiedName, javaType);
+                    typeToFullyQualifiedNameMap.put(javaType, fullyQualifiedName);
+                }
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private SubstitutionMap.XMLFullyQualifiedName getFullyQualifiedNameFromConfig(TypeXMLConfiguration typeXMLConfiguration) {
+        SubstitutionMap.XMLFullyQualifiedName fullyQualifiedName = null;
+
+        if (typeXMLConfiguration.getXmlElementFullyQualifiedName().isPresent()) {
+            fullyQualifiedName = new SubstitutionMap.XMLFullyQualifiedName(typeXMLConfiguration.getXmlElementFullyQualifiedName().get());
+        }
+
+        if (typeXMLConfiguration.getXmlElementName().isPresent()) {
+            if (fullyQualifiedName != null) {
+                fullyQualifiedName = new SubstitutionMap.XMLFullyQualifiedName(typeXMLConfiguration.getXmlElementName().get(), fullyQualifiedName.getNamespace());
+            } else {
+                fullyQualifiedName = new SubstitutionMap.XMLFullyQualifiedName(typeXMLConfiguration.getXmlElementName().get());
+            }
+        }
+        return fullyQualifiedName;
     }
 
     /*

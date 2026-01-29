@@ -21,6 +21,7 @@ package com.regnosys.rosetta.common.serialisation.xml.deserialization;
  */
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.NullValueProvider;
@@ -29,6 +30,7 @@ import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.deser.impl.NullsConstantProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 
@@ -36,6 +38,9 @@ import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A copy of {@code MethodProperty}, which is a final class,
@@ -130,7 +135,56 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
                 }
             }
         }
-        return _substitutedType;
+        return null;
+    }
+
+    private String getCurrentElementName(JsonParser p) throws IOException {
+        try {
+            String name = p.currentName();
+            if (name != null) {
+                return name;
+            }
+        } catch (IOException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            // Some parsers throw IllegalStateException when name is missing.
+        }
+        JsonStreamContext context = p.getParsingContext();
+        return (context != null) ? context.getCurrentName() : null;
+    }
+
+    private List<JavaType> getCandidateTypesByLocalName(String localName) {
+        if (localName == null) {
+            return Collections.emptyList();
+        }
+        List<JavaType> candidates = new ArrayList<>();
+        for (JavaType type : _substitutionMap.getTypes()) {
+            String typeName = _substitutionMap.getName(type);
+            if (localName.equals(typeName)) {
+                candidates.add(type);
+            }
+        }
+        return candidates;
+    }
+
+    private Object deserializeWithCandidates(JsonParser p, DeserializationContext ctxt, List<JavaType> candidates) throws IOException {
+        TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
+        IOException lastException = null;
+        for (JavaType candidate : candidates) {
+            JsonParser candidateParser = buffer.asParserOnFirstToken();
+            try {
+                JsonDeserializer<?> deserializer = ctxt.findRootValueDeserializer(candidate);
+                return deserializer.deserialize(candidateParser, ctxt);
+            } catch (IOException e) {
+                lastException = e;
+            } finally {
+                candidateParser.close();
+            }
+        }
+        if (lastException != null) {
+            throw lastException;
+        }
+        return null;
     }
 
     @Override
@@ -184,7 +238,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
     @Override
     public void deserializeAndSet(JsonParser p, DeserializationContext ctxt,
                                   Object instance) throws IOException {
-        Object value;
+        Object value = null;
         if (p.hasToken(JsonToken.VALUE_NULL)) {
             if (_skipNulls) {
                 return;
@@ -193,12 +247,28 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         } else if (_valueTypeDeserializer == null) {
             // Check if we need to use a different deserializer based on namespace
             JavaType actualType = getActualType(p);
-            JsonDeserializer<?> deserializer = _valueDeserializer;
-            if (!actualType.equals(_substitutedType)) {
-                // Get the deserializer for the actual type
-                deserializer = ctxt.findRootValueDeserializer(actualType);
+            if (actualType == null) {
+                String localName = getCurrentElementName(p);
+                List<JavaType> candidates = getCandidateTypesByLocalName(localName);
+                if (candidates.size() > 1) {
+                    if (candidates.remove(_substitutedType)) {
+                        candidates.add(0, _substitutedType);
+                    }
+                    value = deserializeWithCandidates(p, ctxt, candidates);
+                } else if (candidates.size() == 1) {
+                    actualType = candidates.get(0);
+                } else {
+                    actualType = _substitutedType;
+                }
             }
-            value = deserializer.deserialize(p, ctxt);
+            if (actualType != null) {
+                JsonDeserializer<?> deserializer = _valueDeserializer;
+                if (!actualType.equals(_substitutedType)) {
+                    // Get the deserializer for the actual type
+                    deserializer = ctxt.findRootValueDeserializer(actualType);
+                }
+                value = deserializer.deserialize(p, ctxt);
+            }
             // 04-May-2018, tatu: [databind#2023] Coercion from String (mostly) can give null
             if (value == null) {
                 if (_skipNulls) {
@@ -219,7 +289,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
     @Override
     public Object deserializeSetAndReturn(JsonParser p,
                                           DeserializationContext ctxt, Object instance) throws IOException {
-        Object value;
+        Object value = null;
         if (p.hasToken(JsonToken.VALUE_NULL)) {
             if (_skipNulls) {
                 return instance;
@@ -228,12 +298,28 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         } else if (_valueTypeDeserializer == null) {
             // Check if we need to use a different deserializer based on namespace
             JavaType actualType = getActualType(p);
-            JsonDeserializer<?> deserializer = _valueDeserializer;
-            if (!actualType.equals(_substitutedType)) {
-                // Get the deserializer for the actual type
-                deserializer = ctxt.findRootValueDeserializer(actualType);
+            if (actualType == null) {
+                String localName = getCurrentElementName(p);
+                List<JavaType> candidates = getCandidateTypesByLocalName(localName);
+                if (candidates.size() > 1) {
+                    if (candidates.remove(_substitutedType)) {
+                        candidates.add(0, _substitutedType);
+                    }
+                    value = deserializeWithCandidates(p, ctxt, candidates);
+                } else if (candidates.size() == 1) {
+                    actualType = candidates.get(0);
+                } else {
+                    actualType = _substitutedType;
+                }
             }
-            value = deserializer.deserialize(p, ctxt);
+            if (actualType != null) {
+                JsonDeserializer<?> deserializer = _valueDeserializer;
+                if (!actualType.equals(_substitutedType)) {
+                    // Get the deserializer for the actual type
+                    deserializer = ctxt.findRootValueDeserializer(actualType);
+                }
+                value = deserializer.deserialize(p, ctxt);
+            }
             // 04-May-2018, tatu: [databind#2023] Coercion from String (mostly) can give null
             if (value == null) {
                 if (_skipNulls) {

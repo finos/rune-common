@@ -93,6 +93,7 @@ public class SubstitutionMap {
 
     public SubstitutionMap(Map<JavaType, XMLFullyQualifiedName> typeToFullyQualifiedNameMap, Map<XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap) {
         this.typeToFullyQualifiedNameMap = new LinkedHashMap<>();
+        this.localNameToTypeMap = MultimapBuilder.hashKeys().arrayListValues().build();
         // Sort types so subtypes come first, supertypes come later.
         typeToFullyQualifiedNameMap.keySet().stream().sorted((o1, o2) -> {
             if (o1.equals(o2)) {
@@ -108,10 +109,14 @@ public class SubstitutionMap {
                 return -1;
             }
             return o1.toString().compareTo(o2.toString());
-        }).forEach(key -> this.typeToFullyQualifiedNameMap.put(key, typeToFullyQualifiedNameMap.get(key)));
+        }).forEach(key -> {
+            XMLFullyQualifiedName fqn = typeToFullyQualifiedNameMap.get(key);
+            this.typeToFullyQualifiedNameMap.put(key, fqn);
+            if (fqn != null && fqn.getName() != null) {
+                localNameToTypeMap.put(fqn.getName(), key);
+            }
+        });
         this.fullyQualifiedNameToTypeMap = new LinkedHashMap<>(fullyQualifiedNameToTypeMap);
-        this.localNameToTypeMap = MultimapBuilder.hashKeys().arrayListValues().build();
-        fullyQualifiedNameToTypeMap.keySet().forEach(fqn -> localNameToTypeMap.put(fqn.getName(), fullyQualifiedNameToTypeMap.get(fqn)));
     }
 
     public String getSubstitutedName(Object object) {

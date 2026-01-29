@@ -94,6 +94,9 @@
             <xs:element ref="animal"/> <!-- Note that the name of this element is determined by the actual type of animal -->
         </xs:sequence>
     </xs:complexType>
+    <xs:complexType name="WrappedAnimalContainer">
+        <xs:group ref="WrappedAnimalContainer.model"/>
+    </xs:complexType>
     <!-- Element names: `Cow`s should be serialised as an element named `cow`, `Goat`s should be serialised as an element named `goat`. -->
     <xs:element name="animal" type="Animal" abstract="true" />
     <xs:element name="cow" type="Cow" substitutionGroup="animal" />
@@ -157,6 +160,12 @@
             <xs:enumeration value="Harmless"/>
         </xs:restriction>
     </xs:simpleType>
+
+    <xs:group name="WrappedAnimalContainer.model">
+        <xs:sequence>
+            <xs:element ref="animal"/>
+        </xs:sequence>
+    </xs:group>
 
     <xs:group name="Snake.model">
         <xs:sequence>

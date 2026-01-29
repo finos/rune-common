@@ -147,6 +147,20 @@
       "KILOGRAM" : "Kilogram"
     }
   },
+  "com.rosetta.test.WrappedAnimalContainer" : {
+    "attributes" : {
+      "wrappedAnimalContainerModel" : {
+        "xmlRepresentation" : "VIRTUAL"
+      }
+    }
+  },
+  "com.rosetta.test.WrappedAnimalContainerModel" : {
+    "attributes" : {
+      "animal" : {
+        "elementRef" : "urn:my.schema/animal"
+      }
+    }
+  },
   "com.rosetta.test.Zoo" : {
     "attributes" : {
       "animal" : {

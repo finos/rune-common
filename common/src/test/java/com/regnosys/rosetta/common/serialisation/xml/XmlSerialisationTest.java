@@ -325,6 +325,22 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testPolymorphicReplacementDeserialisationWithTokenBufferParser() throws IOException {
+        String input = Resources.toString(Resources.getResource("xml-serialisation/input/polymorphic-replacement-token-buffer-parser.xml"), StandardCharsets.UTF_8);
+
+        // Test deserialisation
+        WrappedAnimalContainer actual = xmlMapper.readValue(input, WrappedAnimalContainer.class);
+
+        WrappedAnimalContainer expected = WrappedAnimalContainer.builder()
+                .setWrappedAnimalContainerModel(WrappedAnimalContainerModel.builder()
+                    .setAnimal(com.rosetta.extension.test.Snake.builder().setName("Snakee")
+                            .setSnakeExtensionModel(SnakeExtensionModel.builder().setDeadliness("MostlyHarmless"))
+                )).build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
     // TODO: test non-substituted groups should not perform substitution
     public void testSubstitutionGroupSerialisation() throws IOException {
         AnimalContainer animalContainer = AnimalContainer.builder()

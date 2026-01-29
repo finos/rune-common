@@ -21,6 +21,8 @@ package com.regnosys.rosetta.common.serialisation.xml;
  */
 
 import com.fasterxml.jackson.databind.JavaType;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -37,6 +39,7 @@ import java.util.regex.Pattern;
 public class SubstitutionMap {
     private final Map<JavaType, XMLFullyQualifiedName> typeToFullyQualifiedNameMap;
     private final Map<XMLFullyQualifiedName, JavaType> fullyQualifiedNameToTypeMap;
+    private final Multimap<String, JavaType> localNameToTypeMap;
 
     /**
      * Holds the XML element name and optional namespace for a type.
@@ -107,6 +110,8 @@ public class SubstitutionMap {
             return o1.toString().compareTo(o2.toString());
         }).forEach(key -> this.typeToFullyQualifiedNameMap.put(key, typeToFullyQualifiedNameMap.get(key)));
         this.fullyQualifiedNameToTypeMap = new LinkedHashMap<>(fullyQualifiedNameToTypeMap);
+        this.localNameToTypeMap = MultimapBuilder.hashKeys().arrayListValues().build();
+        fullyQualifiedNameToTypeMap.keySet().forEach(fqn -> localNameToTypeMap.put(fqn.getName(), fullyQualifiedNameToTypeMap.get(fqn)));
     }
 
     public String getSubstitutedName(Object object) {
@@ -137,5 +142,9 @@ public class SubstitutionMap {
 
     public JavaType getTypeByFullyQualifiedName(XMLFullyQualifiedName fullyQualifiedName) {
         return fullyQualifiedNameToTypeMap.get(fullyQualifiedName);
+    }
+
+    public Collection<JavaType> getTypesByLocalName(String localName) {
+        return localNameToTypeMap.get(localName);
     }
 }

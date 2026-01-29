@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -154,26 +155,23 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         return (context != null) ? context.getCurrentName() : null;
     }
 
-    private List<JavaType> getCandidateTypesByLocalName(String localName) {
+    private Collection<JavaType> getCandidateTypesByLocalName(String localName) {
         if (localName == null) {
             return Collections.emptyList();
         }
 
-        return new ArrayList<>(_substitutionMap.getTypesByLocalName(localName));
+        return _substitutionMap.getTypesByLocalName(localName);
     }
 
     private Object deserializeWithCandidates(JsonParser p, DeserializationContext ctxt, List<JavaType> candidates) throws IOException {
         TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
         IOException lastException = null;
         for (JavaType candidate : candidates) {
-            JsonParser candidateParser = buffer.asParserOnFirstToken();
-            try {
+            try (JsonParser candidateParser = buffer.asParserOnFirstToken()) {
                 JsonDeserializer<?> deserializer = ctxt.findRootValueDeserializer(candidate);
                 return deserializer.deserialize(candidateParser, ctxt);
             } catch (IOException e) {
                 lastException = e;
-            } finally {
-                candidateParser.close();
             }
         }
         if (lastException != null) {
@@ -264,7 +262,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         JavaType actualType = getActualType(p);
         if (actualType == null) {
             String localName = getCurrentElementName(p);
-            List<JavaType> candidates = getCandidateTypesByLocalName(localName);
+            List<JavaType> candidates = new ArrayList<>(getCandidateTypesByLocalName(localName));
             if (candidates.size() > 1) {
                 if (candidates.remove(_substitutedType)) {
                     candidates.add(0, _substitutedType);

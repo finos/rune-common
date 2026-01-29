@@ -130,10 +130,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
                 String localName = staxName.getLocalPart();
                 if (namespaceURI != null && !namespaceURI.isEmpty()) {
                     SubstitutionMap.XMLFullyQualifiedName xmlFullyQualifiedName = new SubstitutionMap.XMLFullyQualifiedName(localName, namespaceURI);
-                    JavaType typeByFqn = _substitutionMap.getTypeByFullyQualifiedName(xmlFullyQualifiedName);
-                    if (typeByFqn != null) {
-                        return typeByFqn;
-                    }
+                    return _substitutionMap.getTypeByFullyQualifiedName(xmlFullyQualifiedName);
                 }
             }
         }
@@ -141,15 +138,9 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
     }
 
     private String getCurrentElementName(JsonParser p) throws IOException {
-        try {
-            String name = p.currentName();
-            if (name != null) {
-                return name;
-            }
-        } catch (IOException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            // Some parsers throw IllegalStateException when name is missing.
+        String name = p.currentName();
+        if (name != null) {
+            return name;
         }
         JsonStreamContext context = p.getParsingContext();
         return (context != null) ? context.getCurrentName() : null;

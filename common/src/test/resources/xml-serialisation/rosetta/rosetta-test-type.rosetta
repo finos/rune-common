@@ -23,6 +23,8 @@ type Snake extends Animal:
 
     snakeModel SnakeModel (1..1)
 
+type Camel extends Animal:
+
 type Document:
 
     attr Foo (1..1)

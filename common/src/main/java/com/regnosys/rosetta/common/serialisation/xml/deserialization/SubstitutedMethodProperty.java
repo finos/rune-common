@@ -39,10 +39,7 @@ import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * A copy of {@code MethodProperty}, which is a final class,
@@ -157,13 +154,20 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
     private Object deserializeWithCandidates(JsonParser p, DeserializationContext ctxt, List<JavaType> candidates) throws IOException {
         TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
         IOException lastException = null;
+
+        NavigableSet<Object> candidateSet = new TreeSet<>(Comparator.comparingInt(o -> o.toString().length()));
+
         for (JavaType candidate : candidates) {
             try (JsonParser candidateParser = buffer.asParserOnFirstToken()) {
                 JsonDeserializer<?> deserializer = ctxt.findRootValueDeserializer(candidate);
-                return deserializer.deserialize(candidateParser, ctxt);
+                candidateSet.add(deserializer.deserialize(candidateParser, ctxt));
+//                return deserializer.deserialize(candidateParser, ctxt);
             } catch (IOException e) {
                 lastException = e;
             }
+        }
+        if (!candidateSet.isEmpty()) {
+            return candidateSet.last();
         }
         if (lastException != null) {
             throw lastException;

@@ -13,6 +13,12 @@
       }
     }
   },
+  "com.rosetta.test.Camel" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "camel",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/camel",
+    "abstract" : false
+  },
   "com.rosetta.test.Cow" : {
     "substitutionGroup" : "urn:my.schema/animal",
     "xmlElementName" : "cow",

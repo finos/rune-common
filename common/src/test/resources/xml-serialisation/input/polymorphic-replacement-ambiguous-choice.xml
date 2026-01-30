@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ==============
   Rune Common
@@ -17,8 +18,10 @@
   limitations under the License.
   ==============
   -->
-<AnimalContainer xmlns="urn:my.schema">
-    <snake name="Snakee">
-        <deadliness>Deadly</deadliness>
-    </snake>
-</AnimalContainer>
+
+<WrappedAnimalContainer xmlns="urn:my.schema"
+                 xmlns:ext="urn:my.extension">
+    <ext:camel name="Humpee">
+        <ext:humps>2</ext:humps>
+    </ext:camel>
+</WrappedAnimalContainer>

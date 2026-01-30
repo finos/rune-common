@@ -1,4 +1,10 @@
 {
+  "com.rosetta.extension.test.Camel" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "camel",
+    "xmlElementFullyQualifiedName" : "urn:my.extension/camel",
+    "abstract" : false
+  },
   "com.rosetta.extension.test.Snake" : {
     "substitutionGroup" : "urn:my.schema/animal",
     "xmlElementName" : "snake",
@@ -23,6 +29,12 @@
         "elementRef" : "urn:my.schema/animal"
       }
     }
+  },
+  "com.rosetta.test.Camel" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "camel",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/camel",
+    "abstract" : false
   },
   "com.rosetta.test.Cow" : {
     "substitutionGroup" : "urn:my.schema/animal",

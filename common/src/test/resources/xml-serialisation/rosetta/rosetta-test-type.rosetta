@@ -19,6 +19,12 @@ type Shark extends Fish:
 
 type Salmon extends Fish:
 
+type Snake extends Animal:
+
+    snakeModel SnakeModel (1..1)
+
+type Camel extends Animal:
+
 type Document:
 
     attr Foo (1..1)
@@ -73,6 +79,10 @@ type AnimalContainer:
 
     animal Animal (1..1)
 
+type WrappedAnimalContainer:
+
+    wrappedAnimalContainerModel WrappedAnimalContainerModel (1..1)
+
 type Animal:
 
     name string (0..1)
@@ -80,6 +90,18 @@ type Animal:
 type Zoo:
 
     animal Animal (1..*)
+
+type WrappedAnimalContainerModel:
+
+    animal Animal (1..1)
+
+type SnakeModel:
+
+    deadliness SnakeDeadlinessEnum (1..1)
+
+type SnakeExtensionModel:
+
+    deadliness string (1..1)
 
 type Party:
 

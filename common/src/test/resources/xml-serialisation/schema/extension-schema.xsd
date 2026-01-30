@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+        xmlns="urn:my.extension"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:parent="urn:my.schema"
+        targetNamespace="urn:my.extension">
+    <xs:import namespace="urn:my.schema" schemaLocation="schema.xsd"/>
+    <xs:complexType name="Snake">
+        <xs:complexContent>
+            <xs:extension base="parent:Animal">
+                <xs:group ref="parent:SnakeExtension.model"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:element name="snake" type="Snake" substitutionGroup="parent:animal"/>
+
+    <xs:complexType name="Camel">
+        <xs:complexContent>
+            <xs:extension base="parent:Animal">
+                <xs:sequence>
+                    <xs:element name="humps" type="xs:int"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:element name="camel" type="Camel" substitutionGroup="parent:animal"/>
+</xs:schema>

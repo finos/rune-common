@@ -1,0 +1,23 @@
+schemas:
+  - name: "my-schema"
+    location: "./schema.xsd"
+    version: "schema-1.0"
+    autoDeprecate: false
+  - name: "extension-schema"
+    location: "./extension-schema.xsd"
+    version: "extension-1.0"
+    autoDeprecate: false
+target:
+  defaultNamespace: "com.rosetta.test"
+  namespaceGroupings:
+    - regex: "^.*/schema\\.xsd$"
+      groupNamespace: "com.rosetta.test"
+      groupByNamespace: true
+    - regex: "^.*/extension-schema\\.xsd$"
+      groupNamespace: "com.rosetta.extension.test"
+      groupByNamespace: true
+  preferences:
+    generateDocRefs: false
+  docReference:
+    body: "BODY"
+    corpus: "CORPUS"

@@ -1,0 +1,10 @@
+namespace com.rosetta.extension.test
+version "${project.version}"
+
+type Snake extends com.rosetta.test.Animal:
+
+    snakeExtensionModel com.rosetta.test.SnakeExtensionModel (1..1)
+
+type Camel extends com.rosetta.test.Animal:
+
+    humps int (1..1)

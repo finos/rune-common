@@ -21,6 +21,7 @@ package com.regnosys.rosetta.common.serialisation.xml.deserialization;
  */
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.NullValueProvider;
@@ -29,10 +30,16 @@ import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.deser.impl.NullsConstantProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
+import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.*;
 
 /**
  * A copy of {@code MethodProperty}, which is a final class,
@@ -59,12 +66,15 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
 
     protected final JavaType _substitutedType;
 
-    public SubstitutedMethodProperty(MethodProperty src, JavaType substitutedType, AnnotatedMethod method) {
+    protected final SubstitutionMap _substitutionMap;
+
+    public SubstitutedMethodProperty(MethodProperty src, JavaType substitutedType, AnnotatedMethod method, SubstitutionMap substitutionMap) {
         super(src);
         _annotated = method;
         _setter = method.getAnnotated();
         _skipNulls = NullsConstantProvider.isSkipper(_nullProvider);
         _substitutedType = substitutedType;
+        _substitutionMap = substitutionMap;
     }
 
     protected SubstitutedMethodProperty(SubstitutedMethodProperty src, JsonDeserializer<?> deser,
@@ -74,6 +84,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         _setter = src._setter;
         _skipNulls = NullsConstantProvider.isSkipper(nva);
         _substitutedType = src._substitutedType;
+        _substitutionMap = src._substitutionMap;
     }
 
     protected SubstitutedMethodProperty(SubstitutedMethodProperty src, PropertyName newName) {
@@ -82,6 +93,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         _setter = src._setter;
         _skipNulls = src._skipNulls;
         _substitutedType = src._substitutedType;
+        _substitutionMap = src._substitutionMap;
     }
 
     /**
@@ -93,11 +105,73 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         _setter = m;
         _skipNulls = src._skipNulls;
         _substitutedType = src._substitutedType;
+        _substitutionMap = src._substitutionMap;
     }
 
     @Override
     public JavaType getType() {
         return _substitutedType;
+    }
+
+    /**
+     * Determines the actual type to deserialize based on the namespace information in the XML parser.
+     * If the parser is a FromXmlParser and has namespace information, it will look up the correct type
+     * from the substitution map. Otherwise, it falls back to the default substituted type.
+     */
+    private JavaType getActualType(JsonParser p) {
+        if (p instanceof FromXmlParser) {
+            FromXmlParser xmlParser = (FromXmlParser) p;
+            QName staxName = xmlParser.getStaxReader().getName();
+            if (staxName != null) {
+                String namespaceURI = staxName.getNamespaceURI();
+                String localName = staxName.getLocalPart();
+                if (namespaceURI != null && !namespaceURI.isEmpty()) {
+                    SubstitutionMap.XMLFullyQualifiedName xmlFullyQualifiedName = new SubstitutionMap.XMLFullyQualifiedName(localName, namespaceURI);
+                    return _substitutionMap.getTypeByFullyQualifiedName(xmlFullyQualifiedName);
+                }
+            }
+        }
+        return null;
+    }
+
+    private String getCurrentElementName(JsonParser p) throws IOException {
+        String name = p.currentName();
+        if (name != null) {
+            return name;
+        }
+        JsonStreamContext context = p.getParsingContext();
+        return (context != null) ? context.getCurrentName() : null;
+    }
+
+    private Collection<JavaType> getCandidateTypesByLocalName(String localName) {
+        if (localName == null) {
+            return Collections.emptyList();
+        }
+
+        return _substitutionMap.getTypesByLocalName(localName);
+    }
+
+    private Object deserializeWithCandidates(JsonParser p, DeserializationContext ctxt, List<JavaType> candidates) throws IOException {
+        TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
+        IOException lastException = null;
+
+        NavigableSet<Object> candidateSet = new TreeSet<>(Comparator.comparingInt(RosettaModelObjectSizeEstimator::getNumberOfFields));
+
+        for (JavaType candidate : candidates) {
+            try (JsonParser candidateParser = buffer.asParserOnFirstToken()) {
+                JsonDeserializer<?> deserializer = ctxt.findRootValueDeserializer(candidate);
+                candidateSet.add(deserializer.deserialize(candidateParser, ctxt));
+            } catch (IOException e) {
+                lastException = e;
+            }
+        }
+        if (!candidateSet.isEmpty()) {
+            return candidateSet.last();
+        }
+        if (lastException != null) {
+            throw lastException;
+        }
+        return null;
     }
 
     @Override
@@ -151,14 +225,15 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
     @Override
     public void deserializeAndSet(JsonParser p, DeserializationContext ctxt,
                                   Object instance) throws IOException {
-        Object value;
+        Object value = null;
         if (p.hasToken(JsonToken.VALUE_NULL)) {
             if (_skipNulls) {
                 return;
             }
             value = _nullProvider.getNullValue(ctxt);
         } else if (_valueTypeDeserializer == null) {
-            value = _valueDeserializer.deserialize(p, ctxt);
+            // Check if we need to use a different deserializer based on namespace
+            value = getDeserialisedValue(p, ctxt, value);
             // 04-May-2018, tatu: [databind#2023] Coercion from String (mostly) can give null
             if (value == null) {
                 if (_skipNulls) {
@@ -176,17 +251,46 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         }
     }
 
+    @Nullable
+    private Object getDeserialisedValue(JsonParser p, DeserializationContext ctxt, Object value) throws IOException {
+        JavaType actualType = getActualType(p);
+        if (actualType == null) {
+            String localName = getCurrentElementName(p);
+            List<JavaType> candidates = new ArrayList<>(getCandidateTypesByLocalName(localName));
+            if (candidates.size() > 1) {
+                if (candidates.remove(_substitutedType)) {
+                    candidates.add(0, _substitutedType);
+                }
+                value = deserializeWithCandidates(p, ctxt, candidates);
+            } else if (candidates.size() == 1) {
+                actualType = candidates.get(0);
+            } else {
+                actualType = _substitutedType;
+            }
+        }
+        if (actualType != null) {
+            JsonDeserializer<?> deserializer = _valueDeserializer;
+            if (!actualType.equals(_substitutedType)) {
+                // Get the deserializer for the actual type
+                deserializer = ctxt.findRootValueDeserializer(actualType);
+            }
+            value = deserializer.deserialize(p, ctxt);
+        }
+        return value;
+    }
+
     @Override
     public Object deserializeSetAndReturn(JsonParser p,
                                           DeserializationContext ctxt, Object instance) throws IOException {
-        Object value;
+        Object value = null;
         if (p.hasToken(JsonToken.VALUE_NULL)) {
             if (_skipNulls) {
                 return instance;
             }
             value = _nullProvider.getNullValue(ctxt);
         } else if (_valueTypeDeserializer == null) {
-            value = _valueDeserializer.deserialize(p, ctxt);
+            // Check if we need to use a different deserializer based on namespace
+            value = getDeserialisedValue(p, ctxt, value);
             // 04-May-2018, tatu: [databind#2023] Coercion from String (mostly) can give null
             if (value == null) {
                 if (_skipNulls) {

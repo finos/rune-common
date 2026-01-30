@@ -161,7 +161,6 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
             try (JsonParser candidateParser = buffer.asParserOnFirstToken()) {
                 JsonDeserializer<?> deserializer = ctxt.findRootValueDeserializer(candidate);
                 candidateSet.add(deserializer.deserialize(candidateParser, ctxt));
-//                return deserializer.deserialize(candidateParser, ctxt);
             } catch (IOException e) {
                 lastException = e;
             }

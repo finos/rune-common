@@ -155,7 +155,7 @@ public class SubstitutedMethodProperty extends SettableBeanProperty {
         TokenBuffer buffer = ctxt.bufferAsCopyOfValue(p);
         IOException lastException = null;
 
-        NavigableSet<Object> candidateSet = new TreeSet<>(Comparator.comparingInt(o -> o.toString().length()));
+        NavigableSet<Object> candidateSet = new TreeSet<>(Comparator.comparingInt(RosettaModelObjectSizeEstimator::getNumberOfFields));
 
         for (JavaType candidate : candidates) {
             try (JsonParser candidateParser = buffer.asParserOnFirstToken()) {

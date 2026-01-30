@@ -49,8 +49,8 @@ public class SubstitutionMap {
         private final String namespace;
 
         public XMLFullyQualifiedName(String name) {
-            this.name = getLocalName(name);
-            this.namespace = getNamespace(name);
+            this.name = generateLocalName(name);
+            this.namespace = generateNamespace(name);
         }
 
         public XMLFullyQualifiedName(String name, String namespace) {
@@ -66,7 +66,7 @@ public class SubstitutionMap {
             return namespace;
         }
 
-        private static String getNamespace(String name) {
+        private static String generateNamespace(String name) {
             Matcher m = getNamespaceAndLocalNameMatcher(name);
             if (m.matches()) {
                 return m.group(1);
@@ -74,7 +74,7 @@ public class SubstitutionMap {
             return null;
         }
 
-        private static String getLocalName(String name) {
+        private static String generateLocalName(String name) {
             Matcher m = getNamespaceAndLocalNameMatcher(name);
             if (m.matches()) {
                 return m.group(2);

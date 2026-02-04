@@ -23,6 +23,7 @@ package com.regnosys.rosetta.common.serialisation.mixin;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.PropertyName;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.module.blackbird.util.CheckedFunction;
@@ -30,6 +31,7 @@ import com.regnosys.rosetta.common.serialisation.BackwardsCompatibleAnnotationIn
 import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.annotations.AccessorType;
 import com.rosetta.model.lib.annotations.RosettaAttribute;
 import com.rosetta.model.lib.annotations.RosettaDataType;
 import com.rosetta.model.lib.annotations.RosettaIgnore;
@@ -66,6 +68,14 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
         }
         return legacyRosettaBuilderIntrospector.findPOJOBuilder(ac)
                 .orElse(super.findPOJOBuilder(ac));
+    }
+
+    @Override
+    public JsonPOJOBuilder.Value findPOJOBuilderConfig(AnnotatedClass ac) {
+        if (ac.hasAnnotation(RosettaDataType.class)) {
+            return new JsonPOJOBuilder.Value("build", "set");
+        }
+        return super.findPOJOBuilderConfig(ac);
     }
 
     @Override
@@ -116,14 +126,19 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
         if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
             AnnotatedClass acc = (AnnotatedClass) ac;
-            Set<String> includes = getPropertyNames(acc, x -> x.hasAnnotation(RosettaAttribute.class));
-            Set<String> ignored = getPropertyNames(acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+            Set<String> includes = getPropertyNames(acc, x -> shouldIncludeMethod(x));
+            Set<String> ignored = getPropertyNames(acc, x -> !shouldIncludeMethod(x));
             ignored.removeAll(includes);
             return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
         }
 
         return legacyRosettaBuilderIntrospector.findPropertyIgnorals(ac)
                 .orElse(JsonIgnoreProperties.Value.empty());
+    }
+    
+    private boolean shouldIncludeMethod(AnnotatedMethod m) {
+        RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
+        return attr != null && attr.accessorType() != AccessorType.ADDER;
     }
 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

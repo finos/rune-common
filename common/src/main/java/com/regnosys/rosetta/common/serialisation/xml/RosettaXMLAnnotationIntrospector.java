@@ -406,8 +406,11 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     private boolean shouldIncludeMember(Annotated m) {
-        RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
-        return attr != null && (!attr.isMulti() || attr.accessorType() != AccessorType.SETTER);
+        return m.hasAnnotation(RosettaAttribute.class) && (!m.hasAnnotation(Multi.class) || getAccessorType(m) != AccessorType.SETTER);
+    }
+    private AccessorType getAccessorType(Annotated m) {
+        Accessor acc = m.getAnnotation(Accessor.class);
+        return acc != null ? acc.value() : null;
     }
 
     private Set<String> getPropertyNames(MapperConfig<?> config, AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

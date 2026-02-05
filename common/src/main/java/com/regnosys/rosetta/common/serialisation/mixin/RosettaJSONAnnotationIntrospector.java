@@ -31,10 +31,7 @@ import com.regnosys.rosetta.common.serialisation.BackwardsCompatibleAnnotationIn
 import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyRosettaBuilderIntrospector;
 import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.annotations.AccessorType;
-import com.rosetta.model.lib.annotations.RosettaAttribute;
-import com.rosetta.model.lib.annotations.RosettaDataType;
-import com.rosetta.model.lib.annotations.RosettaIgnore;
+import com.rosetta.model.lib.annotations.*;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -137,8 +134,11 @@ public class RosettaJSONAnnotationIntrospector extends JacksonAnnotationIntrospe
     }
     
     private boolean shouldIncludeMethod(AnnotatedMethod m) {
-        RosettaAttribute attr = m.getAnnotation(RosettaAttribute.class);
-        return attr != null && attr.accessorType() != AccessorType.ADDER;
+        return m.hasAnnotation(RosettaAttribute.class) && getAccessorType(m) != AccessorType.ADDER;
+    }
+    private AccessorType getAccessorType(Annotated m) {
+        Accessor acc = m.getAnnotation(Accessor.class);
+        return acc != null ? acc.value() : null;
     }
 
     private static Set<String> getPropertyNames(AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

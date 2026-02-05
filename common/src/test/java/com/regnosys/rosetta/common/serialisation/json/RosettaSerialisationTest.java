@@ -212,7 +212,6 @@ class RosettaSerialisationTest {
     }
 
     @Test
-    @Disabled // TODO
     void overridingMultiCardinalityTypesCanDeserialize() throws JsonProcessingException {
         ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         String rosetta =

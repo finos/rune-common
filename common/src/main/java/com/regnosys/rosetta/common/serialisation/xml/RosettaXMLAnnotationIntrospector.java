@@ -389,20 +389,28 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         // except for constructors, which are necessary for deserialisation.
         // Additionally, the `getType` method needs to be ignored explicitly, otherwise it interferes with
         // xml elements named `type`, which are then always ordered on top, instead of the actual place they occur.
-        return a.hasAnnotation(RosettaIgnore.class) && !(a instanceof AnnotatedConstructor) || a.getName().equals("getType");
+        return (a.hasAnnotation(RosettaIgnore.class) || !shouldIncludeMember(a)) && !(a instanceof AnnotatedConstructor);
     }
 
     @Override
     public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
         if (ac instanceof AnnotatedClass && ac.hasAnnotation(RosettaDataType.class)) {
             AnnotatedClass acc = (AnnotatedClass) ac;
-            Set<String> includes = getPropertyNames(config, acc, x -> x.hasAnnotation(RosettaAttribute.class));
-            Set<String> ignored = getPropertyNames(config, acc, x -> !x.hasAnnotation(RosettaAttribute.class));
+            Set<String> includes = getPropertyNames(config, acc, x -> shouldIncludeMember(x));
+            Set<String> ignored = getPropertyNames(config, acc, x -> !shouldIncludeMember(x));
             ignored.removeAll(includes);
             return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
         }
 
         return super.findPropertyIgnoralByName(config, ac);
+    }
+
+    private boolean shouldIncludeMember(Annotated m) {
+        return m.hasAnnotation(RosettaAttribute.class) && (!m.hasAnnotation(Multi.class) || getAccessorType(m) != AccessorType.SETTER);
+    }
+    private AccessorType getAccessorType(Annotated m) {
+        Accessor acc = m.getAnnotation(Accessor.class);
+        return acc != null ? acc.value() : null;
     }
 
     private Set<String> getPropertyNames(MapperConfig<?> config, AnnotatedClass acc, Predicate<AnnotatedMethod> filter) {

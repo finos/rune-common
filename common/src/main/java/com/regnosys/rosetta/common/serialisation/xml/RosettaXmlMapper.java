@@ -26,14 +26,13 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.rosetta.model.lib.ModelSymbolId;
-import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
 import java.io.*;
 import java.util.Map;
 import java.util.Optional;
-
-import com.rosetta.util.serialisation.TypeXMLConfiguration;
 
 /**
  * Custom XmlMapper that extends the standard XmlMapper and adds support for top-level

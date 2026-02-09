@@ -32,9 +32,9 @@ import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.fasterxml.jackson.dataformat.xml.deser.XmlBeanDeserializerModifier;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializerModifier;
 import com.google.common.collect.Lists;
+import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.deserialization.RosettaBeanDeserializerModifier;
 import com.regnosys.rosetta.common.serialisation.xml.serialization.RosettaBeanSerializerModifier;
-import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

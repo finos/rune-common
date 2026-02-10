@@ -401,14 +401,14 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
             Set<String> includes = getPropertyNames(config, acc, x -> shouldIncludeMember(x));
             Set<String> ignored = getPropertyNames(config, acc, x -> !shouldIncludeMember(x));
             ignored.removeAll(includes);
-            return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withAllowSetters();
+            return JsonIgnoreProperties.Value.forIgnoredProperties(ignored).withoutAllowSetters();
         }
 
         return super.findPropertyIgnoralByName(config, ac);
     }
 
-    private boolean shouldIncludeMember(Annotated m) {
-        return m.hasAnnotation(RosettaAttribute.class) && (!m.hasAnnotation(Multi.class) || getAccessorType(m) != AccessorType.SETTER);
+    private boolean shouldIncludeMember(Annotated a) {
+        return a.hasAnnotation(RosettaAttribute.class) && (!a.hasAnnotation(Multi.class) || getAccessorType(a) != AccessorType.SETTER);
     }
     private AccessorType getAccessorType(Annotated m) {
         Accessor acc = m.getAnnotation(Accessor.class);
@@ -493,6 +493,13 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         } else {
             super.findEnumAliases(config, enumType, enumValues, aliasList);
         }
+    }
+
+    public boolean isIgnoredRepresentation(MapperConfig<?> config, AnnotatedMember member) {
+        return getAttributeXMLConfiguration(config, member)
+                .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
+                .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.IGNORED)
+                .orElse(false);
     }
 
     private AnnotatedClass getEnclosingAnnotatedClass(MapperConfig<?> config, AnnotatedMember member) {

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.deser.*;
 import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLAnnotationIntrospector;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
 
@@ -47,6 +48,34 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     public BeanDeserializerBuilder updateBuilder(DeserializationConfig config,
                                                  BeanDescription beanDesc, BeanDeserializerBuilder builder) {
         final AnnotationIntrospector intr = config.getAnnotationIntrospector();
+        removeIgnoredRepresentationProperties(config, builder, intr);
+
+        addSubstitutionProperties(config, builder, intr);
+        return builder;
+    }
+
+    private void removeIgnoredRepresentationProperties(DeserializationConfig config,
+                                                       BeanDeserializerBuilder builder,
+                                                       AnnotationIntrospector intr) {
+        RosettaXMLAnnotationIntrospector rosettaIntr = findRosettaIntrospector(intr);
+        if (rosettaIntr == null) {
+            return;
+        }
+        List<PropertyName> ignoredNames = new ArrayList<>();
+        builder.getProperties().forEachRemaining(p -> {
+            AnnotatedMember member = p.getMember();
+            if (member != null && rosettaIntr.isIgnoredRepresentation(config, member)) {
+                ignoredNames.add(p.getFullName());
+            }
+        });
+        for (PropertyName ignoredName : ignoredNames) {
+            builder.removeProperty(ignoredName);
+        }
+    }
+
+    private void addSubstitutionProperties(DeserializationConfig config,
+                                           BeanDeserializerBuilder builder,
+                                           AnnotationIntrospector intr) {
         List<PropertyName> propNames = new ArrayList<>();
         builder.getProperties().forEachRemaining(p -> propNames.add(p.getFullName()));
         for (PropertyName propName : propNames) {
@@ -67,6 +96,14 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
                 }
             }
         }
-        return builder;
+    }
+
+    private RosettaXMLAnnotationIntrospector findRosettaIntrospector(AnnotationIntrospector intr) {
+        for (AnnotationIntrospector candidate : intr.allIntrospectors()) {
+            if (candidate instanceof RosettaXMLAnnotationIntrospector) {
+                return (RosettaXMLAnnotationIntrospector) candidate;
+            }
+        }
+        return null;
     }
 }

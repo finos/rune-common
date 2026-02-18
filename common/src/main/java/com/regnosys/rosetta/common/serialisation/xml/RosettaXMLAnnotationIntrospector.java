@@ -40,11 +40,13 @@ import com.regnosys.rosetta.common.serialisation.BeanUtil;
 import com.regnosys.rosetta.common.serialisation.ConstantAttributePropertyWriter;
 import com.regnosys.rosetta.common.serialisation.mixin.EnumAsStringBuilderIntrospector;
 import com.regnosys.rosetta.common.serialisation.mixin.RosettaEnumBuilderIntrospector;
+import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLRepresentation;
+import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.model.lib.annotations.*;
 import com.rosetta.util.DottedPath;
-import com.rosetta.util.serialisation.*;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.*;

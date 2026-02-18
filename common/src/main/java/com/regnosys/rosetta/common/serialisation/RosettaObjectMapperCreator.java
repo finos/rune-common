@@ -39,12 +39,12 @@ import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFie
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyReferenceMixIn;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLModule;
+import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.serialization.RosettaSerialiserFactory;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
-import com.rosetta.util.serialisation.RosettaXMLConfiguration;
 
 import java.io.IOException;
 import java.io.InputStream;

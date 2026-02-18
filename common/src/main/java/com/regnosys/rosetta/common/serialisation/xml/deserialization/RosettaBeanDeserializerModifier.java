@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.deser.*;
 import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLAnnotationIntrospector;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
 
@@ -47,6 +48,13 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     public BeanDeserializerBuilder updateBuilder(DeserializationConfig config,
                                                  BeanDescription beanDesc, BeanDeserializerBuilder builder) {
         final AnnotationIntrospector intr = config.getAnnotationIntrospector();
+        addSubstitutionProperties(config, builder, intr);
+        return builder;
+    }
+
+    private void addSubstitutionProperties(DeserializationConfig config,
+                                           BeanDeserializerBuilder builder,
+                                           AnnotationIntrospector intr) {
         List<PropertyName> propNames = new ArrayList<>();
         builder.getProperties().forEachRemaining(p -> propNames.add(p.getFullName()));
         for (PropertyName propName : propNames) {
@@ -67,6 +75,5 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
                 }
             }
         }
-        return builder;
     }
 }

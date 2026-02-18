@@ -76,13 +76,4 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
             }
         }
     }
-
-    private RosettaXMLAnnotationIntrospector findRosettaIntrospector(AnnotationIntrospector intr) {
-        for (AnnotationIntrospector candidate : intr.allIntrospectors()) {
-            if (candidate instanceof RosettaXMLAnnotationIntrospector) {
-                return (RosettaXMLAnnotationIntrospector) candidate;
-            }
-        }
-        return null;
-    }
 }

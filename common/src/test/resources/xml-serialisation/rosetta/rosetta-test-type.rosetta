@@ -115,8 +115,3 @@ type PartyNameModel:
 type PartyModel:
 
     partyId string (1..*)
-
-type PartyWithIgnoredFlatPartyId:
-
-    partyId string (0..1)
-    partyModel PartyModel (1..1)

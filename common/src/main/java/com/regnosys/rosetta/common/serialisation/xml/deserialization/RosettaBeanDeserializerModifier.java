@@ -48,29 +48,8 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     public BeanDeserializerBuilder updateBuilder(DeserializationConfig config,
                                                  BeanDescription beanDesc, BeanDeserializerBuilder builder) {
         final AnnotationIntrospector intr = config.getAnnotationIntrospector();
-        removeIgnoredRepresentationProperties(config, builder, intr);
-
         addSubstitutionProperties(config, builder, intr);
         return builder;
-    }
-
-    private void removeIgnoredRepresentationProperties(DeserializationConfig config,
-                                                       BeanDeserializerBuilder builder,
-                                                       AnnotationIntrospector intr) {
-        RosettaXMLAnnotationIntrospector rosettaIntr = findRosettaIntrospector(intr);
-        if (rosettaIntr == null) {
-            return;
-        }
-        List<PropertyName> ignoredNames = new ArrayList<>();
-        builder.getProperties().forEachRemaining(p -> {
-            AnnotatedMember member = p.getMember();
-            if (member != null && rosettaIntr.isIgnoredRepresentation(config, member)) {
-                ignoredNames.add(p.getFullName());
-            }
-        });
-        for (PropertyName ignoredName : ignoredNames) {
-            builder.removeProperty(ignoredName);
-        }
     }
 
     private void addSubstitutionProperties(DeserializationConfig config,

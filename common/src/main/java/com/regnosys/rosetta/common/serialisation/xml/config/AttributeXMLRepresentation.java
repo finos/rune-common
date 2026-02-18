@@ -40,6 +40,5 @@ public enum AttributeXMLRepresentation {
 	ELEMENT,
 	ATTRIBUTE,
 	VALUE,
-	VIRTUAL,
-	IGNORED
+	VIRTUAL
 }

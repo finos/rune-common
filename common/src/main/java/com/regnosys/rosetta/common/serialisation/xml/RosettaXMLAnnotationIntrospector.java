@@ -495,13 +495,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
     }
 
-    public boolean isIgnoredRepresentation(MapperConfig<?> config, AnnotatedMember member) {
-        return getAttributeXMLConfiguration(config, member)
-                .flatMap(AttributeXMLConfiguration::getXmlRepresentation)
-                .map(attributeXMLRepresentation -> attributeXMLRepresentation == AttributeXMLRepresentation.IGNORED)
-                .orElse(false);
-    }
-
     private AnnotatedClass getEnclosingAnnotatedClass(MapperConfig<?> config, AnnotatedMember member) {
         // TODO: see issue https://github.com/FasterXML/jackson-databind/issues/4141
         return AnnotatedClassResolver.resolve(config, config.constructType(member.getDeclaringClass()), config);

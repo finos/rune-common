@@ -147,6 +147,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnosticCollector, null, null);
         List<File> sourceFiles = sourceJavaPaths.stream().map(Path::toFile).collect(Collectors.toList());
         Iterable<? extends JavaFileObject> javaFileObjects = fileManager.getJavaFileObjectsFromFiles(sourceFiles);
+        LOGGER.debug("Compiling {} java files to {}", sourceFiles.size(), targetPath);
         return compiler.getTask(null, fileManager, diagnosticCollector, compilerArguments, null, javaFileObjects);
     }
 
@@ -172,6 +173,7 @@ public class JavaCSourceCancellableCompiler implements JavaCancellableCompiler {
         args.add("--release");
         args.add(releaseFlag.getVersion());
 
+        LOGGER.debug("Java version {} and compiler arguments: {}", System.getProperty("java.version"), args);
         return args;
     }
 

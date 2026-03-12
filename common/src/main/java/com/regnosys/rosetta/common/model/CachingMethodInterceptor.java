@@ -22,8 +22,9 @@ package com.regnosys.rosetta.common.model;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.inject.Provider;
+import java.util.Collections;
 import java.util.Set;
+import javax.inject.Provider;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class CachingMethodInterceptor implements MethodInterceptor {
     private final Provider<Set<FunctionCacheObserver>> cacheObserversProvider;
 
     public CachingMethodInterceptor(CacheBuilder cacheBuilder, Set<String> debugFunctions) {
-        this(cacheBuilder, debugFunctions, Set::of);
+        this(cacheBuilder, debugFunctions, Collections::emptySet);
     }
 
     public CachingMethodInterceptor(

@@ -4,7 +4,7 @@ package com.regnosys.rosetta.common.model;
  * ==============
  * Rune Common
  * ==============
- * Copyright (C) 2018 - 2024 REGnosys
+ * Copyright (C) 2018 - 2026 REGnosys
  * ==============
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,20 +20,23 @@ package com.regnosys.rosetta.common.model;
  * ==============
  */
 
+import static com.google.inject.matcher.Matchers.subclassesOf;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.matcher.Matcher;
 import com.google.inject.matcher.Matchers;
+import com.google.inject.multibindings.Multibinder;
 import com.rosetta.model.lib.functions.RosettaFunction;
-
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
-
-import static com.google.inject.matcher.Matchers.subclassesOf;
+import javax.inject.Provider;
 
 public class FunctionMemoisingModule extends AbstractModule {
 
@@ -51,10 +54,14 @@ public class FunctionMemoisingModule extends AbstractModule {
     protected void configure() {
         CacheBuilder<Object, Object> cacheBuilder = configureCacheBuilder();
         Matcher<Class> classMatcher = createClassMatcher();
+        Multibinder.newSetBinder(binder(), FunctionCacheObserver.class);
+        Provider<Set<FunctionCacheObserver>> cacheObserversProvider = getProvider(
+                Key.get(new TypeLiteral<Set<FunctionCacheObserver>>() {})
+        );
         binder().bindInterceptor(
                 classMatcher,
                 isEvaluateMethod(),
-                new CachingMethodInterceptor(cacheBuilder, debugFunctions)
+                new CachingMethodInterceptor(cacheBuilder, debugFunctions, cacheObserversProvider)
         );
     }
 

@@ -22,12 +22,14 @@ package com.regnosys.rosetta.common.model;
 
 import com.google.inject.*;
 import com.google.inject.matcher.Matchers;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.rosetta.model.lib.functions.RosettaFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -99,6 +101,34 @@ class FunctionMemoisingModuleTest {
         abs.evaluate(BigDecimal.TEN);
         abs.evaluate(BigDecimal.ZERO);
         assertThat(counter.count(), is(3));
+    }
+
+    @Test
+    void checkFunctionCacheObserverIsNotified() {
+        AtomicInteger lookups = new AtomicInteger();
+        AtomicInteger cacheHits = new AtomicInteger();
+        FunctionCacheObserver observer = (invocation, cacheKey, cacheHit, cachedValue) -> {
+            lookups.incrementAndGet();
+            if (cacheHit) {
+                cacheHits.incrementAndGet();
+            }
+        };
+
+        Injector injector = Guice.createInjector(Modules.combine(createModule(COM_REGNOSYS_MODEL), new AbstractModule() {
+            @Override
+            protected void configure() {
+                Multibinder.newSetBinder(binder(), FunctionCacheObserver.class)
+                        .addBinding()
+                        .toInstance(observer);
+            }
+        }));
+
+        Foo foo = injector.getInstance(Foo.class);
+        foo.evaluate("xxx");
+        foo.evaluate("xxx");
+
+        assertThat(lookups.get(), is(2));
+        assertThat(cacheHits.get(), is(1));
     }
 
     @SafeVarargs

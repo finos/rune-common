@@ -109,7 +109,35 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
                     true,
                     false);
         }
+
+        // Check if this is a choice type (interface with "Choice" in the name)
+        if (isChoiceType(ann)) {
+            return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
+                    JsonTypeInfo.As.EXISTING_PROPERTY,
+                    RuneJsonConfig.MetaProperties.TYPE,
+                    JsonTypeInfo.class,
+                    true,
+                    false);
+        }
+
         return super.findPolymorphicTypeInfo(config, ann);
+    }
+
+    private boolean isChoiceType(Annotated ann) {
+        if (ann.getType() == null) {
+            return false;
+        }
+        Class<?> rawClass = ann.getType().getRawClass();
+        if (rawClass == null || !rawClass.isInterface()) {
+            return false;
+        }
+        String simpleName = rawClass.getSimpleName();
+        // Check if it contains "Choice" but is not a builder (builders end with "Builder")
+        boolean isChoice = simpleName.contains("Choice") && !simpleName.endsWith("Builder");
+        if (rawClass.isInterface()) {
+            System.out.println("  -> isChoiceType check: " + rawClass + " = " + isChoice);
+        }
+        return isChoice;
     }
 
     @Override
@@ -134,6 +162,42 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
             return new PropertyName(a.getAnnotation(RuneAttribute.class).value());
         }
         return super.findNameForDeserialization(a);
+    }
+
+    @Override
+    public TypeResolverBuilder<?> findPropertyTypeResolver(MapperConfig<?> config, AnnotatedMember am, JavaType baseType) {
+        // Check if the property type is a choice type
+        if (baseType != null && baseType.isInterface()) {
+            Class<?> rawClass = baseType.getRawClass();
+            String simpleName = rawClass.getSimpleName();
+            if (simpleName.contains("Choice") && !simpleName.endsWith("Builder")) {
+                // Return a custom type resolver builder for choice types
+                JsonTypeInfo.Value typeInfo = JsonTypeInfo.Value.construct(
+                        JsonTypeInfo.Id.CLASS,
+                        JsonTypeInfo.As.EXISTING_PROPERTY,
+                        RuneJsonConfig.MetaProperties.TYPE,
+                        JsonTypeInfo.class,
+                        true,
+                        false
+                );
+                return new RuneStdTypeResolverBuilder(typeInfo);
+            }
+        }
+        return super.findPropertyTypeResolver(config, am, baseType);
+    }
+
+    @Override
+    public Object findSerializer(Annotated a) {
+        // Check if this is a choice type
+        JavaType type = a.getType();
+        if (type != null && type.isInterface()) {
+            Class<?> rawClass = type.getRawClass();
+            String simpleName = rawClass.getSimpleName();
+            if (simpleName.contains("Choice") && !simpleName.endsWith("Builder")) {
+                return org.finos.rune.mapper.choice.ChoiceTypeSerializer.class;
+            }
+        }
+        return super.findSerializer(a);
     }
 
     @Override

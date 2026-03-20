@@ -217,7 +217,6 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
             return buildMethod.invoke(builder);
 
         } catch (Exception e) {
-            e.printStackTrace();
             throw new IOException("Failed to wrap value in choice type: " + e.getMessage(), e);
         }
     }

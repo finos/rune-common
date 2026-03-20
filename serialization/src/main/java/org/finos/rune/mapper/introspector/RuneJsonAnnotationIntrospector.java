@@ -133,11 +133,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         }
         String simpleName = rawClass.getSimpleName();
         // Check if it contains "Choice" but is not a builder (builders end with "Builder")
-        boolean isChoice = simpleName.contains("Choice") && !simpleName.endsWith("Builder");
-        if (rawClass.isInterface()) {
-            System.out.println("  -> isChoiceType check: " + rawClass + " = " + isChoice);
-        }
-        return isChoice;
+        return simpleName.contains("Choice") && !simpleName.endsWith("Builder");
     }
 
     @Override

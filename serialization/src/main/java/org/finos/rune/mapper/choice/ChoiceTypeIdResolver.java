@@ -29,11 +29,13 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * Custom TypeIdResolver for choice types that can resolve both:
  * 1. Primitive type names (string, int, number, etc.)
  * 2. Fully qualified class names (for data types)
+ *
  */
 public class ChoiceTypeIdResolver extends TypeIdResolverBase {
 
@@ -53,10 +55,8 @@ public class ChoiceTypeIdResolver extends TypeIdResolverBase {
         // For primitives, return simple type name
         if (value instanceof String) {
             return "string";
-        } else if (value instanceof Integer) {
+        } else if (value instanceof Integer || value instanceof Long || value instanceof BigInteger) {
             return "int";
-        } else if (value instanceof Long) {
-            return "long";
         } else if (value instanceof BigDecimal || value instanceof Double || value instanceof Float) {
             return "number";
         } else if (value instanceof Boolean) {
@@ -84,8 +84,6 @@ public class ChoiceTypeIdResolver extends TypeIdResolverBase {
                 return _typeFactory.constructType(String.class);
             case "int":
                 return _typeFactory.constructType(Integer.class);
-            case "long":
-                return _typeFactory.constructType(Long.class);
             case "number":
                 return _typeFactory.constructType(BigDecimal.class);
             case "boolean":

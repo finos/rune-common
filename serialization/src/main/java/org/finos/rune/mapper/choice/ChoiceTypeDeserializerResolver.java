@@ -119,7 +119,6 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
     private boolean isPrimitiveType(String typeStr) {
         return "string".equals(typeStr) ||
                "int".equals(typeStr) ||
-               "long".equals(typeStr) ||
                "number".equals(typeStr) ||
                "boolean".equals(typeStr);
     }
@@ -129,9 +128,14 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
             case "string":
                 return valueNode.asText();
             case "int":
-                return valueNode.asInt();
-            case "long":
-                return valueNode.asLong();
+                // Handle int which can be Integer, Long, or BigInteger depending on size
+                if (valueNode.canConvertToInt()) {
+                    return valueNode.asInt();
+                } else if (valueNode.canConvertToLong()) {
+                    return valueNode.asLong();
+                } else {
+                    return valueNode.bigIntegerValue();
+                }
             case "number":
                 return valueNode.decimalValue();
             case "boolean":

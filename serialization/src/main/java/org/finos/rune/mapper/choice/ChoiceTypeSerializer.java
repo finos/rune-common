@@ -139,11 +139,9 @@ public class ChoiceTypeSerializer extends StdSerializer<Object> {
     private String getSimpleTypeName(Object value) {
         if (value instanceof String) {
             return "string";
-        } else if (value instanceof Integer) {
+        } else if (value instanceof Integer || value instanceof Long || value instanceof java.math.BigInteger) {
             return "int";
-        } else if (value instanceof Long) {
-            return "long";
-        } else if (value instanceof Double || value instanceof Float) {
+        } else if (value instanceof java.math.BigDecimal || value instanceof Double || value instanceof Float) {
             return "number";
         } else if (value instanceof Boolean) {
             return "boolean";

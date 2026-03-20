@@ -133,6 +133,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         }
         String simpleName = rawClass.getSimpleName();
         // Check if it contains "Choice" but is not a builder (builders end with "Builder")
+        //TODO: fix this, we need to annotate choice types
         return simpleName.contains("Choice") && !simpleName.endsWith("Builder");
     }
 
@@ -189,6 +190,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         if (type != null && type.isInterface()) {
             Class<?> rawClass = type.getRawClass();
             String simpleName = rawClass.getSimpleName();
+            //TODO: fix this, we need to annotate choice types
             if (simpleName.contains("Choice") && !simpleName.endsWith("Builder")) {
                 return org.finos.rune.mapper.choice.ChoiceTypeSerializer.class;
             }

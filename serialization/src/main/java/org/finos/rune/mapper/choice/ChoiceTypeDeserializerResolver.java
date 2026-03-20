@@ -25,9 +25,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.jsontype.impl.AsPropertyTypeDeserializer;
@@ -97,7 +95,7 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
             }
 
             Object primitiveValue = deserializePrimitive(typeStr, node.get(RuneJsonConfig.MetaProperties.DATA), ctxt);
-            return wrapInChoiceType(primitiveValue, ctxt);
+            return wrapInChoiceType(primitiveValue);
         }
 
         // It's a data type - deserialize it
@@ -109,7 +107,7 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
             objectNode.remove(RuneJsonConfig.MetaProperties.TYPE);
 
             Object dataValue = ctxt.readTreeAsValue(objectNode, targetClass);
-            return wrapInChoiceType(dataValue, ctxt);
+            return wrapInChoiceType(dataValue);
         } catch (ClassNotFoundException e) {
             ctxt.reportInputMismatch(_baseType, "Could not resolve type: " + typeStr);
             return null;
@@ -145,7 +143,7 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
         }
     }
 
-    private Object wrapInChoiceType(Object value, DeserializationContext ctxt) throws IOException {
+    private Object wrapInChoiceType(Object value) throws IOException {
         try {
             Class<?> choiceClass = _baseType.getRawClass();
 
@@ -183,19 +181,17 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
             // If no direct setter found, check if the value's interfaces match any setter parameter types
             // This handles nested choices where A$AImpl implements A, and the setter expects ChoiceData
             if (setterMethod == null) {
-                // Get the interfaces implemented by the value
-                Class<?>[] valueInterfaces = valueClass.getInterfaces();
-
                 for (java.lang.reflect.Method m : builder.getClass().getMethods()) {
                     String methodName = m.getName();
                     if (methodName.startsWith("set") && m.getParameterCount() == 1) {
                         Class<?> paramType = m.getParameterTypes()[0];
 
                         // Check if the parameter type is a choice type that can wrap our value
+                        //TODO: fix this, we need to annotate choice types
                         if (paramType.isInterface() && paramType.getSimpleName().contains("Choice")) {
                             // Try to wrap the value in this intermediate choice type
                             try {
-                                Object wrappedValue = wrapInIntermediateChoice(value, paramType, ctxt);
+                                Object wrappedValue = wrapInIntermediateChoice(value, paramType);
                                 if (wrappedValue != null) {
                                     setterMethod = m;
                                     value = wrappedValue; // Use the wrapped value
@@ -225,7 +221,7 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
         }
     }
 
-    private Object wrapInIntermediateChoice(Object value, Class<?> intermediateChoiceType, DeserializationContext ctxt) throws Exception {
+    private Object wrapInIntermediateChoice(Object value, Class<?> intermediateChoiceType) throws Exception {
         // Get the builder for the intermediate choice type
         java.lang.reflect.Method builderMethod = intermediateChoiceType.getMethod("builder");
         Object builder = builderMethod.invoke(null);

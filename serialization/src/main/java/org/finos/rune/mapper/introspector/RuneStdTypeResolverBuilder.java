@@ -23,7 +23,6 @@ package org.finos.rune.mapper.introspector;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
@@ -60,7 +59,7 @@ public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
         // 1. It's an interface
         // 2. It's not annotated with @RuneDataType (data types have their own handling)
         // 3. It has "Choice" in its name
-        boolean isChoice = isChoiceType(config, baseType);
+        boolean isChoice = isChoiceType(baseType);
 
         if (isChoice) {
             return new ChoiceTypeDeserializerResolver(baseType, _typeProperty);
@@ -69,7 +68,7 @@ public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
         return super.buildTypeDeserializer(config, baseType, subtypes);
     }
 
-    private boolean isChoiceType(MapperConfig<?> config, JavaType baseType) {
+    private boolean isChoiceType(JavaType baseType) {
         if (baseType == null || baseType.getRawClass() == null) {
             return false;
         }
@@ -83,6 +82,7 @@ public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
 
         // Check if the name contains "Choice" and is not a builder
         String simpleName = rawClass.getSimpleName();
+        //TODO: fix this, we need to annotate choice types
         return simpleName.contains("Choice") && !simpleName.endsWith("Builder");
     }
 }

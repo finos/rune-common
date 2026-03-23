@@ -26,11 +26,20 @@ import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+
+import java.lang.reflect.Method;
 
 public class SubtypeFilter extends SimpleBeanPropertyFilter {
 
     @Override
     public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
+        if (!(pojo instanceof RosettaModelObject)) {
+            super.serializeAsField(pojo, jgen, provider, writer);
+            return;
+        }
+
         String name = writer.getName();
         if (name.equals("@type")) {
             /*
@@ -42,60 +51,25 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
             Class<?> runtimeClass = pojo.getClass();
             Class<?> superclass = runtimeClass.getSuperclass();
 
-            // Check if this is a subtype (has a non-Object superclass)
             if (superclass != null && !superclass.equals(Object.class)) {
-                // Get the property name from the JSON stream context (parent context)
                 JsonStreamContext parentContext = jgen.getOutputContext().getParent();
                 if (parentContext != null) {
                     String propertyName = parentContext.getCurrentName();
                     Object parentObject = parentContext.getCurrentValue();
 
                     if (propertyName != null && parentObject != null) {
-                        // Try to find the declared type of the property in the parent object
-                        try {
-                            Class<?> parentClass = parentObject.getClass();
-                            // Look for getter method that matches the property
-                            String getterName = "get" + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
-                            java.lang.reflect.Method getter = findMethod(parentClass, getterName);
+                        Class<?> parentClass = parentObject.getClass();
+                        Method getter = findMethod(parentClass, propertyName);
 
-                            if (getter != null) {
-                                Class<?> declaredType = getter.getReturnType();
-                                // Include @type only if the object's type is a proper subtype of the declared type
-                                // This means:
-                                // 1. The declared type is assignable from runtime class (declared is supertype)
-                                // 2. BUT the runtime class's direct superclass or implemented interface
-                                //    is different from the declared type
-                                //
-                                // Example:
-                                // - typeA is declared as A, contains B (B extends A) -> Include @type (polymorphic)
-                                // - typeB is declared as B, contains B -> Don't include @type (not polymorphic)
-                                //
-                                // For generated Rosetta types:
-                                // - Runtime class is like B$BImpl (implements B interface)
-                                // - Declared type is B interface
-                                // - We need to check if B is the direct interface or a parent interface
-
-                                if (declaredType.isAssignableFrom(runtimeClass)) {
-                                    // Check if the declared type is a parent (not the direct type)
-                                    boolean isDirectType = false;
-
-                                    // Check if runtime class directly implements the declared interface
-                                    for (Class<?> iface : runtimeClass.getInterfaces()) {
-                                        if (iface.equals(declaredType)) {
-                                            isDirectType = true;
-                                            break;
-                                        }
-                                    }
-
-                                    // If not direct, it's polymorphic - include @type
-                                    if (!isDirectType) {
-                                        writer.serializeAsField(pojo, jgen, provider);
-                                    }
+                        if (getter != null) {
+                            Class<?> declaredType = getter.getReturnType();
+                            if (declaredType.isAssignableFrom(runtimeClass)) {
+                                Class<? extends RosettaModelObject> type = ((RosettaModelObject) pojo).getType();
+                                if (declaredType.equals(type)) {
+                                    return;
                                 }
+                                writer.serializeAsField(pojo, jgen, provider);
                             }
-                        } catch (Exception e) {
-                            // If we can't determine the declared type, don't include @type
-                            // This is the safe fallback to avoid adding @type everywhere
                         }
                     }
                 }
@@ -105,17 +79,13 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
         super.serializeAsField(pojo, jgen, provider, writer);
     }
 
-    private java.lang.reflect.Method findMethod(Class<?> clazz, String methodName) {
-        try {
-            return clazz.getMethod(methodName);
-        } catch (NoSuchMethodException e) {
-            // Try superclass
-            if (clazz.getSuperclass() != null) {
-                return findMethod(clazz.getSuperclass(), methodName);
+    private Method findMethod(Class<?> clazz, String propertyName) {
+        for (Method method : clazz.getMethods()) {
+            RuneAttribute annotation = method.getAnnotation(RuneAttribute.class);
+            if (annotation != null && annotation.value().equals(propertyName)) {
+                return method;
             }
-            return null;
         }
+        return null;
     }
-
-
 }

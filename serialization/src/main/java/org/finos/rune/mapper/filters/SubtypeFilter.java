@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Method;
 
 public class SubtypeFilter extends SimpleBeanPropertyFilter {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SubtypeFilter.class);
 
     @Override
     public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
@@ -61,23 +60,18 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
                     Object parentObject = parentContext.getCurrentValue();
 
                     if (propertyName != null && parentObject != null) {
-                        try {
-                            Class<?> parentClass = parentObject.getClass();
-                            Method getter = findMethod(parentClass, propertyName);
+                        Class<?> parentClass = parentObject.getClass();
+                        Method getter = findMethod(parentClass, propertyName);
 
-                            if (getter != null) {
-                                Class<?> declaredType = getter.getReturnType();
-                                if (declaredType.isAssignableFrom(runtimeClass)) {
-                                    Class<? extends RosettaModelObject> type = ((RosettaModelObject) pojo).getType();
-                                    if (declaredType.equals(type)) {
-                                        return;
-                                    }
-                                    writer.serializeAsField(pojo, jgen, provider);
+                        if (getter != null) {
+                            Class<?> declaredType = getter.getReturnType();
+                            if (declaredType.isAssignableFrom(runtimeClass)) {
+                                Class<? extends RosettaModelObject> type = ((RosettaModelObject) pojo).getType();
+                                if (declaredType.equals(type)) {
+                                    return;
                                 }
+                                writer.serializeAsField(pojo, jgen, provider);
                             }
-                        } catch (Exception e) {
-                            // If we can't determine the declared type, don't include @type
-                            LOGGER.error("Failed to determine declared type for property {}", propertyName, e);
                         }
                     }
                 }

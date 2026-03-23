@@ -28,13 +28,21 @@ import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 
 public class SubtypeFilter extends SimpleBeanPropertyFilter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubtypeFilter.class);
 
     @Override
     public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
+        if (!(pojo instanceof RosettaModelObject)) {
+            super.serializeAsField(pojo, jgen, provider, writer);
+            return;
+        }
+
         String name = writer.getName();
         if (name.equals("@type")) {
             /*
@@ -60,17 +68,16 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
                             if (getter != null) {
                                 Class<?> declaredType = getter.getReturnType();
                                 if (declaredType.isAssignableFrom(runtimeClass)) {
-                                    if (pojo instanceof RosettaModelObject) {
-                                        Class<? extends RosettaModelObject> type = ((RosettaModelObject) pojo).getType();
-                                        if (declaredType.equals(type)) {
-                                            return;
-                                        }
+                                    Class<? extends RosettaModelObject> type = ((RosettaModelObject) pojo).getType();
+                                    if (declaredType.equals(type)) {
+                                        return;
                                     }
                                     writer.serializeAsField(pojo, jgen, provider);
                                 }
                             }
                         } catch (Exception e) {
                             // If we can't determine the declared type, don't include @type
+                            LOGGER.error("Failed to determine declared type for property {}", propertyName, e);
                         }
                     }
                 }

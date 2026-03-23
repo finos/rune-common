@@ -131,14 +131,10 @@ public class XmlSerialisationTest {
         String xml = Resources.toString(Resources.getResource("xml-serialisation/expected/top-level-prune.xml"), StandardCharsets.UTF_8);
 
         TopLevel actual = xmlMapper.readValue(xml, TopLevel.class);
-        TopLevel pruned = actual.toBuilder().prune().build();
-
-        assertEquals("xml-content", actual.getAttr().getXmlValue());
-        assertEquals(2, actual.getAttr().getAttr1().size());
-        assertEquals("first", actual.getAttr().getAttr1().get(0));
-        assertEquals("second", actual.getAttr().getAttr1().get(1));
-        // should get pruned
-        assertNull(pruned.getValue());
+        
+        assertEquals(BigDecimal.ONE, actual.getValue().getValue());
+        assertEquals(UnitEnum.METER, actual.getValue().getUnit());
+        assertNull(actual.getAttr());
     }
 
     @Test

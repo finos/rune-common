@@ -80,10 +80,10 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
         super.serializeAsField(pojo, jgen, provider, writer);
     }
 
-    private Method findMethod(Class<?> clazz, String fieldName) {
+    private Method findMethod(Class<?> clazz, String propertyName) {
         for (Method method : clazz.getMethods()) {
             RuneAttribute annotation = method.getAnnotation(RuneAttribute.class);
-            if (annotation != null && annotation.value().equals(fieldName)) {
+            if (annotation != null && annotation.value().equals(propertyName)) {
                 return method;
             }
         }

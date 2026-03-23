@@ -29,6 +29,7 @@ import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.rosetta.model.lib.ModelSymbolId;
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
 import java.io.IOException;
@@ -133,8 +134,8 @@ public class RosettaXmlMapper extends XmlMapper {
     }
 
     private Object pruneBuilder(Object value) {
-        if (value instanceof RosettaModelObjectBuilder) {
-            return ((RosettaModelObjectBuilder) value).prune();
+        if (value instanceof RosettaModelObject) {
+            return ((RosettaModelObject) value).toBuilder().prune().build();
         }
         return value;
     }

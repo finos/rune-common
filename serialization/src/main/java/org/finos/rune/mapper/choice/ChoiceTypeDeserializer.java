@@ -48,7 +48,7 @@ public class ChoiceTypeDeserializer extends AsPropertyTypeDeserializer {
     }
 
     public ChoiceTypeDeserializer(JavaType bt, TypeIdResolver idRes, String typePropertyName) {
-        super(bt, idRes, typePropertyName, false, null, null);
+        super(bt, idRes, typePropertyName, false, null, null, true);
     }
 
     private static TypeIdResolver createTypeIdResolver(JavaType baseType) {

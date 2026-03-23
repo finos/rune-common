@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.rosetta.model.lib.annotations.RuneDataType;
-import org.finos.rune.mapper.choice.ChoiceTypeDeserializerResolver;
+import org.finos.rune.mapper.choice.ChoiceTypeDeserializer;
 
 import java.util.Collection;
 
@@ -62,7 +62,7 @@ public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
         boolean isChoice = isChoiceType(baseType);
 
         if (isChoice) {
-            return new ChoiceTypeDeserializerResolver(baseType, _typeProperty);
+            return new ChoiceTypeDeserializer(baseType, _typeProperty);
         }
 
         return super.buildTypeDeserializer(config, baseType, subtypes);

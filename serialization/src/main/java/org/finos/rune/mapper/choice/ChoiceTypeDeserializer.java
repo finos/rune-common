@@ -41,13 +41,13 @@ import java.io.IOException;
  * This replaces the standard polymorphic type deserializer for choice types
  * to handle primitive types (string, int, etc.) and nested choice types.
  */
-public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
+public class ChoiceTypeDeserializer extends AsPropertyTypeDeserializer {
 
-    public ChoiceTypeDeserializerResolver(JavaType bt, String typePropertyName) {
+    public ChoiceTypeDeserializer(JavaType bt, String typePropertyName) {
         this(bt, createTypeIdResolver(bt), typePropertyName);
     }
 
-    public ChoiceTypeDeserializerResolver(JavaType bt, TypeIdResolver idRes, String typePropertyName) {
+    public ChoiceTypeDeserializer(JavaType bt, TypeIdResolver idRes, String typePropertyName) {
         super(bt, idRes, typePropertyName, false, null, null);
     }
 
@@ -55,13 +55,13 @@ public class ChoiceTypeDeserializerResolver extends AsPropertyTypeDeserializer {
         return new ChoiceTypeIdResolver(baseType, TypeFactory.defaultInstance());
     }
 
-    protected ChoiceTypeDeserializerResolver(AsPropertyTypeDeserializer src, BeanProperty property) {
+    protected ChoiceTypeDeserializer(AsPropertyTypeDeserializer src, BeanProperty property) {
         super(src, property);
     }
 
     @Override
     public TypeDeserializer forProperty(BeanProperty prop) {
-        return (prop == _property) ? this : new ChoiceTypeDeserializerResolver(this, prop);
+        return (prop == _property) ? this : new ChoiceTypeDeserializer(this, prop);
     }
 
     @Override

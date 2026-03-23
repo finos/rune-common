@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class XmlSerialisationTest {
     private static final String XSD_SCHEMA = "/xml-serialisation/schema/extension-schema.xsd";
@@ -123,6 +124,21 @@ public class XmlSerialisationTest {
         Document actual = xmlMapper.readValue(expectedXML, Document.class);
 
         assertEquals(document, actual);
+    }
+
+    @Test
+    public void testTopLevelDeserialisationPrunesEmpty() throws IOException {
+        String xml = Resources.toString(Resources.getResource("xml-serialisation/expected/top-level-prune.xml"), StandardCharsets.UTF_8);
+
+        TopLevel actual = xmlMapper.readValue(xml, TopLevel.class);
+        TopLevel pruned = actual.toBuilder().prune().build();
+
+        assertEquals("xml-content", actual.getAttr().getXmlValue());
+        assertEquals(2, actual.getAttr().getAttr1().size());
+        assertEquals("first", actual.getAttr().getAttr1().get(0));
+        assertEquals("second", actual.getAttr().getAttr1().get(1));
+        // should get pruned
+        assertNull(pruned.getValue());
     }
 
     @Test

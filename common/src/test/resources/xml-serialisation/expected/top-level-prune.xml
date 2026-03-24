@@ -18,10 +18,7 @@
   ==============
   -->
 <TopLevel xmlns="urn:my.schema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:my.schema ../schema/schema.xsd">
-  <Attr>
-    <XMLValue/>
-    <Attr1/>
-    <Attr1/>
-  </Attr>
+  <!-- this should get pruned -->
+  <Attr/>
   <Value Unit="Meter">1</Value>
 </TopLevel>

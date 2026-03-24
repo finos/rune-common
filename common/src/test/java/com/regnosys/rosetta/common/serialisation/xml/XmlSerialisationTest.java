@@ -134,6 +134,7 @@ public class XmlSerialisationTest {
         
         assertEquals(BigDecimal.ONE, actual.getValue().getValue());
         assertEquals(UnitEnum.METER, actual.getValue().getUnit());
+        // empty Attr object should have been pruned
         assertNull(actual.getAttr());
     }
 

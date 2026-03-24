@@ -28,10 +28,11 @@ import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class SubtypeFilter extends SimpleBeanPropertyFilter {
 
@@ -82,12 +83,30 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
     }
 
     private Method findMethod(Class<?> clazz, String propertyName) {
+        List<Method> candidates = new ArrayList<>();
         for (Method method : clazz.getMethods()) {
             RuneAttribute annotation = method.getAnnotation(RuneAttribute.class);
             if (annotation != null && annotation.value().equals(propertyName)) {
-                return method;
+                candidates.add(method);
             }
         }
-        return null;
+        if (candidates.isEmpty()) {
+            return null;
+        }
+
+        // Bridge/synthetic accessors are compiler artifacts for covariant overrides; prefer real methods.
+        candidates.sort(Comparator
+                .comparing(Method::isBridge)
+                .thenComparing(Method::isSynthetic));
+
+        Method selected = candidates.get(0);
+        for (Method candidate : candidates) {
+            Class<?> selectedType = selected.getReturnType();
+            Class<?> candidateType = candidate.getReturnType();
+            if (selectedType.isAssignableFrom(candidateType)) {
+                selected = candidate;
+            }
+        }
+        return selected;
     }
 }

@@ -30,7 +30,11 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -57,15 +61,16 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
             if (superclass != null && !superclass.equals(Object.class)) {
                 JsonStreamContext parentContext = jgen.getOutputContext().getParent();
                 if (parentContext != null) {
-                    String propertyName = parentContext.getCurrentName();
-                    Object parentObject = parentContext.getCurrentValue();
+                    JsonStreamContext ownerContext = parentContext.inArray() ? parentContext.getParent() : parentContext;
+                    String propertyName = ownerContext != null ? ownerContext.getCurrentName() : null;
+                    Object parentObject = ownerContext != null ? ownerContext.getCurrentValue() : null;
 
                     if (propertyName != null && parentObject != null) {
                         Class<?> parentClass = parentObject.getClass();
                         Method getter = findMethod(parentClass, propertyName);
 
                         if (getter != null) {
-                            Class<?> declaredType = getter.getReturnType();
+                            Class<?> declaredType = getDeclaredType(getter);
                             if (declaredType.isAssignableFrom(runtimeClass)) {
                                 Class<? extends RosettaModelObject> type = ((RosettaModelObject) pojo).getType();
                                 if (declaredType.equals(type)) {
@@ -108,5 +113,45 @@ public class SubtypeFilter extends SimpleBeanPropertyFilter {
             }
         }
         return selected;
+    }
+
+    private Class<?> getDeclaredType(Method getter) {
+        Class<?> returnType = getter.getReturnType();
+        if (!Collection.class.isAssignableFrom(returnType)) {
+            return returnType;
+        }
+
+        Type genericReturnType = getter.getGenericReturnType();
+        if (genericReturnType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericReturnType;
+            Type[] typeArguments = parameterizedType.getActualTypeArguments();
+            if (typeArguments.length == 1) {
+                Class<?> resolved = resolveType(typeArguments[0]);
+                if (resolved != null) {
+                    return resolved;
+                }
+            }
+        }
+        return returnType;
+    }
+
+    private Class<?> resolveType(Type type) {
+        if (type instanceof Class<?>) {
+            return (Class<?>) type;
+        }
+        if (type instanceof ParameterizedType) {
+            Type rawType = ((ParameterizedType) type).getRawType();
+            if (rawType instanceof Class<?>) {
+                return (Class<?>) rawType;
+            }
+        }
+        if (type instanceof WildcardType) {
+            WildcardType wildcardType = (WildcardType) type;
+            Type[] upperBounds = wildcardType.getUpperBounds();
+            if (upperBounds.length > 0) {
+                return resolveType(upperBounds[0]);
+            }
+        }
+        return null;
     }
 }

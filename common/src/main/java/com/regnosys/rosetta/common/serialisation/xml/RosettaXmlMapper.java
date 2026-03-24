@@ -65,7 +65,7 @@ public class RosettaXmlMapper extends XmlMapper {
         } else {
             value = super._readValue(cfg, p, valueType);
         }
-        return pruneBuilder(value);
+        return pruneObject(value);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class RosettaXmlMapper extends XmlMapper {
         } else {
             value = super._readMapAndClose(p, valueType);
         }
-        return pruneBuilder(value);
+        return pruneObject(value);
     }
     
     private void checkRootTypeIsSubtypeOfProvidedType(JavaType rootType, JavaType providedType) {
@@ -133,7 +133,10 @@ public class RosettaXmlMapper extends XmlMapper {
         return getTypeFactory().constructType(clazz);
     }
 
-    private Object pruneBuilder(Object value) {
+    private Object pruneObject(Object value) {
+        if (value instanceof RosettaModelObjectBuilder) {
+            return ((RosettaModelObjectBuilder) value).prune();
+        }
         if (value instanceof RosettaModelObject) {
             return ((RosettaModelObject) value).toBuilder().prune().build();
         }

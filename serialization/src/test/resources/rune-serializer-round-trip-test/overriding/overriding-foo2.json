@@ -10,8 +10,7 @@
     "attr" : 42,
     "parent" : {
       "@key:external" : "childKey",
-      "parentAttr" : 42,
-      "@type" : "serialization.test.passing.overriding.Child"
+      "parentAttr" : 42
     },
     "otherParentList" : [ {
       "@key:external" : "otherChildKey1",

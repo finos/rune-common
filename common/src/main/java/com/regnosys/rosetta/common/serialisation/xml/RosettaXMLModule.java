@@ -43,6 +43,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
+import java.time.zone.ZoneRulesProvider;
 import java.util.List;
 
 /**
@@ -74,6 +75,7 @@ public class RosettaXMLModule extends SimpleModule {
     static {
         ZoneId unknown = null;
         try {
+            ZoneRulesProvider.registerProvider(new UnknownZoneProvider());
             unknown = ZoneId.of("Unknown");
         } catch (Exception e) {
             LOGGER.error("Failed to create ZoneId for 'Unknown'", e);
@@ -103,7 +105,7 @@ public class RosettaXMLModule extends SimpleModule {
         // Workaround, see https://github.com/REGnosys/rosetta-dsl/issues/663
         addDeserializer(LocalTime.class, new StdDeserializer<LocalTime>(LocalTime.class) {
             @Override
-            public LocalTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+            public LocalTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
                 String next = p.readValueAs(String.class);
                 try {
                     OffsetTime time = OffsetTime.parse(next, DateTimeFormatter.ISO_TIME);
@@ -122,7 +124,7 @@ public class RosettaXMLModule extends SimpleModule {
 
         addDeserializer(ZonedDateTime.class, new StdDeserializer<ZonedDateTime>(ZonedDateTime.class) {
             @Override
-            public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+            public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
                 String dateTimeStr = p.readValueAs(String.class);
                 // 1. Full ZonedDateTime (includes zone ID like [Europe/Paris])
                 try {

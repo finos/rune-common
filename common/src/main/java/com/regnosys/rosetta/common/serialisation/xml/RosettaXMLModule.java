@@ -20,10 +20,8 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -45,6 +43,8 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.time.zone.ZoneRulesProvider;
 import java.util.List;
+
+import static com.regnosys.rosetta.common.serialisation.xml.UnknownZoneProvider.UNKNOWN_ZONE_ID;
 
 /**
  * Using a module class to append our annotation introspector with a minimal fuss
@@ -75,8 +75,10 @@ public class RosettaXMLModule extends SimpleModule {
     static {
         ZoneId unknown = null;
         try {
-            ZoneRulesProvider.registerProvider(new UnknownZoneProvider());
-            unknown = ZoneId.of("Unknown");
+            if(!ZoneRulesProvider.getAvailableZoneIds().contains(UNKNOWN_ZONE_ID)) {
+                ZoneRulesProvider.registerProvider(new UnknownZoneProvider());
+            }
+            unknown = ZoneId.of(UNKNOWN_ZONE_ID);
         } catch (Exception e) {
             LOGGER.error("Failed to create ZoneId for 'Unknown'", e);
         }

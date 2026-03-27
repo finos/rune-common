@@ -31,7 +31,7 @@ import java.util.*;
  * which do not have a timezone defined.
  * <p>
  * This is to support the xsd:dateTime type, for which a timezone is optional.
- * See <a href="https://www.datypic.com/sc/xsd/t-xsd_dateTime.html">...</a>
+ * See <a href="https://www.datypic.com/sc/xsd/t-xsd_dateTime.html">https://www.datypic.com/sc/xsd/t-xsd_dateTime.html</a>
  */
 public class UnknownZoneProvider extends ZoneRulesProvider {
     public static final String UNKNOWN_ZONE_ID = "Unknown";

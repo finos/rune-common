@@ -6,6 +6,10 @@ choice ChoiceBasic:
   string
   number
 
+choice ChoiceBasic2:
+  string
+  int
+
 type A:
   fieldA string (1..1)
 
@@ -21,8 +25,14 @@ choice ChoiceMixed:
   B
   string
 
+ choice ChoiceNested:
+   ChoiceData
+   ChoiceBasic
+
 type Root:
   [rootType]
   choiceBasic ChoiceBasic (0..1)
+  choiceBasic2 ChoiceBasic2 (0..1)
   choiceData ChoiceData (0..1)
   choiceMixed ChoiceMixed (0..1)
+  choiceNested ChoiceNested (0..1)

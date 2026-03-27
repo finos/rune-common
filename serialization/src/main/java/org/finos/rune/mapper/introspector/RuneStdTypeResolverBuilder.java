@@ -25,8 +25,13 @@ import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.rosetta.model.lib.annotations.RuneDataType;
+import org.finos.rune.mapper.choice.ChoiceTypeDeserializer;
+
+import java.util.Collection;
 
 public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
 
@@ -46,5 +51,38 @@ public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
         }
 
         return super._strictTypeIdHandling(config, baseType);
+    }
+
+    @Override
+    public TypeDeserializer buildTypeDeserializer(DeserializationConfig config, JavaType baseType, Collection<NamedType> subtypes) {
+        // Check if this looks like a choice type:
+        // 1. It's an interface
+        // 2. It's not annotated with @RuneDataType (data types have their own handling)
+        // 3. It has "Choice" in its name
+        boolean isChoice = isChoiceType(baseType);
+
+        if (isChoice) {
+            return new ChoiceTypeDeserializer(baseType, _typeProperty);
+        }
+
+        return super.buildTypeDeserializer(config, baseType, subtypes);
+    }
+
+    private boolean isChoiceType(JavaType baseType) {
+        if (baseType == null || baseType.getRawClass() == null) {
+            return false;
+        }
+
+        Class<?> rawClass = baseType.getRawClass();
+
+        // Must be an interface
+        if (!rawClass.isInterface()) {
+            return false;
+        }
+
+        // Check if the name contains "Choice" and is not a builder
+        String simpleName = rawClass.getSimpleName();
+        //TODO: fix this, we need to annotate choice types
+        return simpleName.contains("Choice") && !simpleName.endsWith("Builder");
     }
 }

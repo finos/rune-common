@@ -3,6 +3,7 @@
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
   "choiceMixed" : {
-    "string" : "foo"
+    "@type" : "string",
+    "@data" : "foo"
   }
 }

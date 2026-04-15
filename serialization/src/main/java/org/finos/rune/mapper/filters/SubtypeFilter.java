@@ -9,9 +9,9 @@ package org.finos.rune.mapper.filters;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,29 +22,136 @@ package org.finos.rune.mapper.filters;
 
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.annotations.RuneAttribute;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 
 public class SubtypeFilter extends SimpleBeanPropertyFilter {
 
     @Override
     public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
+        if (!(pojo instanceof RosettaModelObject)) {
+            super.serializeAsField(pojo, jgen, provider, writer);
+            return;
+        }
+
         String name = writer.getName();
         if (name.equals("@type")) {
             /*
-                TODO: find a better way to add json type fields.
-                The below approach doesn't work and adds @type in too many places. An alternative approach
-                may be to stop generating @type in the POJOs and only add them where needed in
-                the RuneJsonAnnotationIntrospector by overriding findAndAddVirtualProperties
+                Include @type only when needed for polymorphic deserialization:
+                - When the object's runtime class is a subtype AND
+                - The object is being serialized into a property expecting a base type
+                This allows proper deserialization of subtypes when assigned to base type fields
              */
-//            if (!pojo.getClass().getSuperclass().getCanonicalName().equals(Object.class.getCanonicalName())) {
-//                writer.serializeAsField(pojo, jgen, provider);
-//            }
+            Class<?> runtimeClass = pojo.getClass();
+            Class<?> superclass = runtimeClass.getSuperclass();
+
+            if (superclass != null && !superclass.equals(Object.class)) {
+                JsonStreamContext parentContext = jgen.getOutputContext().getParent();
+                if (parentContext != null) {
+                    JsonStreamContext ownerContext = parentContext.inArray() ? parentContext.getParent() : parentContext;
+                    String propertyName = ownerContext != null ? ownerContext.getCurrentName() : null;
+                    Object parentObject = ownerContext != null ? ownerContext.getCurrentValue() : null;
+
+                    if (propertyName != null && parentObject != null) {
+                        Class<?> parentClass = parentObject.getClass();
+                        Method getter = findMethod(parentClass, propertyName);
+
+                        if (getter != null) {
+                            Class<?> declaredType = getDeclaredType(getter);
+                            if (declaredType.isAssignableFrom(runtimeClass)) {
+                                Class<? extends RosettaModelObject> type = ((RosettaModelObject) pojo).getType();
+                                if (declaredType.equals(type)) {
+                                    return;
+                                }
+                                writer.serializeAsField(pojo, jgen, provider);
+                            }
+                        }
+                    }
+                }
+            }
             return;
         }
         super.serializeAsField(pojo, jgen, provider, writer);
     }
 
+    private Method findMethod(Class<?> clazz, String propertyName) {
+        List<Method> candidates = new ArrayList<>();
+        for (Method method : clazz.getMethods()) {
+            RuneAttribute annotation = method.getAnnotation(RuneAttribute.class);
+            if (annotation != null && annotation.value().equals(propertyName)) {
+                candidates.add(method);
+            }
+        }
+        if (candidates.isEmpty()) {
+            return null;
+        }
 
+        // Bridge/synthetic accessors are compiler artifacts for covariant overrides; prefer real methods.
+        candidates.sort(Comparator
+                .comparing(Method::isBridge)
+                .thenComparing(Method::isSynthetic));
+
+        Method selected = candidates.get(0);
+        for (Method candidate : candidates) {
+            Class<?> selectedType = selected.getReturnType();
+            Class<?> candidateType = candidate.getReturnType();
+            if (selectedType.isAssignableFrom(candidateType)) {
+                selected = candidate;
+            }
+        }
+        return selected;
+    }
+
+    private Class<?> getDeclaredType(Method getter) {
+        Class<?> returnType = getter.getReturnType();
+        if (!Collection.class.isAssignableFrom(returnType)) {
+            return returnType;
+        }
+
+        Type genericReturnType = getter.getGenericReturnType();
+        if (genericReturnType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericReturnType;
+            Type[] typeArguments = parameterizedType.getActualTypeArguments();
+            if (typeArguments.length == 1) {
+                Class<?> resolved = resolveType(typeArguments[0]);
+                if (resolved != null) {
+                    return resolved;
+                }
+            }
+        }
+        return returnType;
+    }
+
+    private Class<?> resolveType(Type type) {
+        if (type instanceof Class<?>) {
+            return (Class<?>) type;
+        }
+        if (type instanceof ParameterizedType) {
+            Type rawType = ((ParameterizedType) type).getRawType();
+            if (rawType instanceof Class<?>) {
+                return (Class<?>) rawType;
+            }
+        }
+        if (type instanceof WildcardType) {
+            WildcardType wildcardType = (WildcardType) type;
+            Type[] upperBounds = wildcardType.getUpperBounds();
+            if (upperBounds.length > 0) {
+                return resolveType(upperBounds[0]);
+            }
+        }
+        return null;
+    }
 }

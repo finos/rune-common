@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.model;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,13 +22,13 @@ package com.regnosys.rosetta.common.model;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import java.util.Collections;
+import java.util.Set;
+import javax.inject.Provider;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
-import java.util.Set;
 
 public class CachingMethodInterceptor implements MethodInterceptor {
 
@@ -43,10 +43,20 @@ public class CachingMethodInterceptor implements MethodInterceptor {
 
     private final Cache<MemoiseCacheKey, Object> memoiseCache;
     private final Set<String> debugFunctions;
+    private final Provider<Set<FunctionCacheObserver>> cacheObserversProvider;
 
     public CachingMethodInterceptor(CacheBuilder cacheBuilder, Set<String> debugFunctions) {
+        this(cacheBuilder, debugFunctions, Collections::emptySet);
+    }
+
+    public CachingMethodInterceptor(
+            CacheBuilder cacheBuilder,
+            Set<String> debugFunctions,
+            Provider<Set<FunctionCacheObserver>> cacheObserversProvider
+    ) {
         this.memoiseCache = cacheBuilder.build();
         this.debugFunctions = debugFunctions;
+        this.cacheObserversProvider = cacheObserversProvider;
     }
 
     @Override
@@ -56,6 +66,7 @@ public class CachingMethodInterceptor implements MethodInterceptor {
 
         Object ifPresent = memoiseCache.getIfPresent(key);
         if (ifPresent == null) {
+            notifyObservers(invocation, key, false, null);
             Object invoked = invocation.proceed();
             log(debugLoggingEnabled, "Executed function", invocation, invoked);
 
@@ -66,32 +77,21 @@ public class CachingMethodInterceptor implements MethodInterceptor {
             }
             return invoked;
         }
-        log(debugLoggingEnabled, "Cached function", invocation, ifPresent);
-
-        if (ifPresent == NULL) {
-            return null;
-        }
-        return ifPresent;
+        Object cachedValue = ifPresent == NULL ? null : ifPresent;
+        notifyObservers(invocation, key, true, cachedValue);
+        log(debugLoggingEnabled, "Cached function", invocation, cachedValue);
+        return cachedValue;
     }
 
-//    /* This method has slightly different null handling - experimental */
-//    public Object invoke(MethodInvocation invocation) throws Throwable {
-//        MemoiseCacheKey key = MemoiseCacheKey.create(invocation.getMethod().toString(), invocation.getArguments());
-//        boolean debugLoggingEnabled = isDebugLoggingEnabled(invocation);
-//
-//        Object ifPresent = memoiseCache.getIfPresent(key);
-//        if (ifPresent == null) {
-//            Object functionResult = Optional.ofNullable(invocation.proceed()).orElse(NULL);
-//            log(debugLoggingEnabled, "Executed function", invocation, functionResult);
-//            memoiseCache.put(key, functionResult);
-//            return functionResult;
-//        }
-//        log(debugLoggingEnabled, "Cached function", invocation, ifPresent);
-//        if (ifPresent == NULL) {
-//            return null;
-//        }
-//        return ifPresent;
-//    }
+    private void notifyObservers(MethodInvocation invocation, MemoiseCacheKey key, boolean cacheHit, Object cachedValue) {
+        for (FunctionCacheObserver observer : cacheObserversProvider.get()) {
+            try {
+                observer.onCacheLookup(invocation, key, cacheHit, cachedValue);
+            } catch (Throwable t) {
+                LOGGER.warn("FunctionCacheObserver callback failed for method {}", invocation.getMethod(), t);
+            }
+        }
+    }
 
     private boolean isDebugLoggingEnabled(MethodInvocation invocation) {
         return debugFunctions.contains(invocation.getMethod().getDeclaringClass().getSimpleName().toUpperCase());
@@ -99,11 +99,13 @@ public class CachingMethodInterceptor implements MethodInterceptor {
 
     private static void log(boolean debugLoggingEnabled, String message, MethodInvocation invocation, Object functionResult) {
         if (debugLoggingEnabled) {
-            LOGGER.debug("{} '{}' Inputs[{}] Output[{}]",
+            LOGGER.debug(
+                    "{} '{}' Inputs[{}] Output[{}]",
                     message,
                     invocation.getMethod().getDeclaringClass().getSimpleName(),
                     invocation.getArguments(),
-                    functionResult);
+                    functionResult
+            );
         }
     }
 }

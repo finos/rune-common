@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.regnosys</groupId>
+        <groupId>org.finos.rune</groupId>
         <artifactId>rune-common-parent</artifactId>
         <version>0.0.0.main-SNAPSHOT</version>
     </parent>
 
-    <artifactId>rosetta-common</artifactId>
+    <artifactId>rune-common</artifactId>
     <name>Rune Common</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -88,7 +88,7 @@
         <dependency>
             <groupId>org.finos.rune</groupId>
             <artifactId>rune-maven-plugin</artifactId>
-            <version>${rosetta.dsl.version}</version>
+            <version>${rune.dsl.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.reload4j</groupId>
@@ -103,7 +103,7 @@
             <plugin>
                 <groupId>org.finos.rune</groupId>
                 <artifactId>rune-maven-plugin</artifactId>
-                <version>${rosetta.dsl.version}</version>
+                <version>${rune.dsl.version}</version>
                 <executions>
                     <execution>
                         <id>generate-java-from-test-rosetta</id>

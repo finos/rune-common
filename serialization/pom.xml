@@ -17,8 +17,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.lib</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

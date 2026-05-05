@@ -17,8 +17,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.lib</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>com.regnosys</groupId>
@@ -86,8 +86,8 @@
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>rosetta-maven-plugin</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-maven-plugin</artifactId>
             <version>${rosetta.dsl.version}</version>
             <exclusions>
                 <exclusion>
@@ -101,8 +101,8 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>rosetta-maven-plugin</artifactId>
+                <groupId>org.finos.rune</groupId>
+                <artifactId>rune-maven-plugin</artifactId>
                 <version>${rosetta.dsl.version}</version>
                 <executions>
                     <execution>

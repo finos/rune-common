@@ -91,7 +91,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rosetta.dsl.version>9.78.0</rosetta.dsl.version>
+        <rosetta.dsl.version>10.0.0-dev.1</rosetta.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
@@ -168,8 +168,8 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>com.regnosys.rosetta.lib</artifactId>
+                <groupId>org.finos.rune</groupId>
+                <artifactId>rune-runtime</artifactId>
                 <version>${rosetta.dsl.version}</version>
             </dependency>
             <dependency>
@@ -293,8 +293,8 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>com.regnosys.rosetta.tests</artifactId>
+                <groupId>org.finos.rune</groupId>
+                <artifactId>rune-testing</artifactId>
                 <version>${rosetta.dsl.version}</version>
                 <scope>test</scope>
                 <exclusions>
@@ -340,8 +340,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.tests</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-testing</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

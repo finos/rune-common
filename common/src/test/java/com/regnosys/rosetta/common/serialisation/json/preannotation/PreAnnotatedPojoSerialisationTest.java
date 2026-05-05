@@ -27,7 +27,6 @@ import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.Pri
 import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.ResolvablePriceQuantity;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.*;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
@@ -121,7 +120,6 @@ public class PreAnnotatedPojoSerialisationTest {
         }
     }
 
-    @RosettaClass
     interface PreAnnotation extends RosettaModelObject {
 
         /*********************** Getter Methods  ***********************/

@@ -24,7 +24,6 @@ import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.Pri
 import com.rosetta.model.lib.GlobalKey;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaClass;
 import com.rosetta.model.lib.meta.BasicRosettaMetaData;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.RosettaMetaData;
@@ -32,6 +31,7 @@ import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
+
 import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
@@ -39,7 +39,6 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 1
  */
-@RosettaClass
 public interface FieldWithMetaPrice extends RosettaModelObject, FieldWithMeta<Price>, GlobalKey {
 
 	FieldWithMetaPriceMeta metaData = new FieldWithMetaPriceMeta();

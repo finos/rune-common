@@ -23,7 +23,6 @@ package com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.me
 import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.Price;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaClass;
 import com.rosetta.model.lib.meta.BasicRosettaMetaData;
 import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
@@ -33,6 +32,7 @@ import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
+
 import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
@@ -40,7 +40,6 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 1
  */
-@RosettaClass
 public interface ReferenceWithMetaPrice extends RosettaModelObject, ReferenceWithMeta<Price> {
 
 	ReferenceWithMetaPriceMeta metaData = new ReferenceWithMetaPriceMeta();

@@ -23,18 +23,14 @@ package com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.me
 import com.google.common.collect.ImmutableList;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaClass;
-import com.rosetta.model.lib.meta.BasicRosettaMetaData;
-import com.rosetta.model.lib.meta.GlobalKeyFields;
-import com.rosetta.model.lib.meta.Key;
-import com.rosetta.model.lib.meta.MetaDataFields;
-import com.rosetta.model.lib.meta.RosettaMetaData;
+import com.rosetta.model.lib.meta.*;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.BuilderMerger;
 import com.rosetta.model.lib.process.BuilderProcessor;
 import com.rosetta.model.lib.process.Processor;
 import com.rosetta.util.ListEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -45,7 +41,6 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 1
  */
-@RosettaClass
 public interface MetaFields extends RosettaModelObject, MetaDataFields, GlobalKeyFields {
 
 	MetaFieldsMeta metaData = new MetaFieldsMeta();

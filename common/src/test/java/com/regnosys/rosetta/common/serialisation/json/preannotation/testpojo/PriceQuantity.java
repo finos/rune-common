@@ -23,7 +23,6 @@ package com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo;
 import com.regnosys.rosetta.common.serialisation.json.preannotation.testpojo.metafields.FieldWithMetaPrice;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaClass;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
@@ -38,7 +37,6 @@ import static java.util.Optional.ofNullable;
 /**
  * @version test
  */
-@RosettaClass
 public interface PriceQuantity extends RosettaModelObject {
 
 

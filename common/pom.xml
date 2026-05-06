@@ -17,8 +17,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.lib</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>com.regnosys</groupId>
@@ -86,9 +86,9 @@
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>rosetta-maven-plugin</artifactId>
-            <version>${rosetta.dsl.version}</version>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-maven-plugin</artifactId>
+            <version>${rune.dsl.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.reload4j</groupId>
@@ -101,9 +101,9 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>rosetta-maven-plugin</artifactId>
-                <version>${rosetta.dsl.version}</version>
+                <groupId>org.finos.rune</groupId>
+                <artifactId>rune-maven-plugin</artifactId>
+                <version>${rune.dsl.version}</version>
                 <executions>
                     <execution>
                         <id>generate-java-from-test-rosetta</id>

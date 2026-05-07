@@ -2,8 +2,8 @@
   "@model" : "serialization",
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
-  "choiceBasic" : {
-    "@type" : "string",
-    "@data" : "foo"
+  "choiceNested" : {
+    "@type" : "serialization.test.passing.choicetype.A",
+    "fieldA" : "foo"
   }
 }

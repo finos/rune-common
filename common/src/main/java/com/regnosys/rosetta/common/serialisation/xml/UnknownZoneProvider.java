@@ -29,12 +29,12 @@ import java.util.*;
 /**
  * Registers support for a "Unknown" time zone, allowing for deserializing `ZonedDateTime` objects
  * which do not have a timezone defined.
- *
+ * <p>
  * This is to support the xsd:dateTime type, for which a timezone is optional.
- * See https://www.datypic.com/sc/xsd/t-xsd_dateTime.html
+ * See <a href="https://www.datypic.com/sc/xsd/t-xsd_dateTime.html">https://www.datypic.com/sc/xsd/t-xsd_dateTime.html</a>
  */
 public class UnknownZoneProvider extends ZoneRulesProvider {
-    private static final String UNKNOWN_ZONE_ID = "Unknown";
+    public static final String UNKNOWN_ZONE_ID = "Unknown";
     private static final ZoneRules UNKNOWN_ZONE_RULES = ZoneRules.of(ZoneOffset.UTC);
 
     private static final Set<String> ZONE_IDS = Collections.singleton(UNKNOWN_ZONE_ID);

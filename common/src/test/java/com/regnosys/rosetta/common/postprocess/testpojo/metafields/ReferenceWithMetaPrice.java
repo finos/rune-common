@@ -23,7 +23,6 @@ package com.regnosys.rosetta.common.postprocess.testpojo.metafields;
 import com.regnosys.rosetta.common.postprocess.testpojo.Price;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaClass;
 import com.rosetta.model.lib.meta.BasicRosettaMetaData;
 import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
@@ -41,7 +40,6 @@ import static java.util.Optional.ofNullable;
 /**
  * @version 1
  */
-@RosettaClass
 public interface ReferenceWithMetaPrice extends RosettaModelObject, ReferenceWithMeta<Price> {
 
 	ReferenceWithMetaPriceMeta metaData = new ReferenceWithMetaPriceMeta();

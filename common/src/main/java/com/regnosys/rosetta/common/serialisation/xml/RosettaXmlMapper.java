@@ -29,8 +29,10 @@ import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.rosetta.model.lib.ModelSymbolId;
+import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -56,12 +58,14 @@ public class RosettaXmlMapper extends XmlMapper {
             throws IOException
     {
         JavaType typeFromRootElementName = getTypeFromRootElementName(p);
+        Object value;
         if (typeFromRootElementName != null) {
             checkRootTypeIsSubtypeOfProvidedType(typeFromRootElementName, valueType);
-            Object value = super._readValue(cfg, p, typeFromRootElementName);
-            return valueType.getRawClass().cast(value);
+            value = super._readValue(cfg, p, typeFromRootElementName);
+        } else {
+            value = super._readValue(cfg, p, valueType);
         }
-        return super._readValue(cfg, p, valueType);
+        return pruneObject(value);
     }
 
     @Override
@@ -69,12 +73,14 @@ public class RosettaXmlMapper extends XmlMapper {
             throws IOException
     {
         JavaType typeFromRootElementName = getTypeFromRootElementName(p);
+        Object value;
         if (typeFromRootElementName != null) {
             checkRootTypeIsSubtypeOfProvidedType(typeFromRootElementName, valueType);
-            Object value = super._readMapAndClose(p, typeFromRootElementName);
-            return valueType.getRawClass().cast(value);
+            value = super._readMapAndClose(p, typeFromRootElementName);
+        } else {
+            value = super._readMapAndClose(p, valueType);
         }
-        return super._readMapAndClose(p, valueType);
+        return pruneObject(value);
     }
     
     private void checkRootTypeIsSubtypeOfProvidedType(JavaType rootType, JavaType providedType) {
@@ -125,5 +131,15 @@ public class RosettaXmlMapper extends XmlMapper {
 
     private JavaType convertClassToJavaType(Class<?> clazz) {
         return getTypeFactory().constructType(clazz);
+    }
+
+    private Object pruneObject(Object value) {
+        if (value instanceof RosettaModelObjectBuilder) {
+            return ((RosettaModelObjectBuilder) value).prune();
+        }
+        if (value instanceof RosettaModelObject) {
+            return ((RosettaModelObject) value).toBuilder().prune().build();
+        }
+        return value;
     }
 }

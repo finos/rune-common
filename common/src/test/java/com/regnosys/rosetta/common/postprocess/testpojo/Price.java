@@ -22,7 +22,6 @@ package com.regnosys.rosetta.common.postprocess.testpojo;
 
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RosettaClass;
 import com.rosetta.model.lib.meta.RosettaMetaData;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.BuilderMerger;
@@ -37,7 +36,6 @@ import static java.util.Optional.ofNullable;
 /**
  * @version test
  */
-@RosettaClass
 public interface Price extends RosettaModelObject {
 
 	/*********************** Getter Methods  ***********************/

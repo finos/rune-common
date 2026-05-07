@@ -13,4 +13,5 @@ type Root:
   [rootType]
   typeA A (0..1)
   typeB B (0..1)
+  typeAList A (0..*)
 

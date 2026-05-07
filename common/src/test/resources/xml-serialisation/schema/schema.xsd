@@ -8,7 +8,7 @@
     <xs:element name="TopLevel" type="Document"/>
     <xs:complexType name="Document">
         <xs:sequence>
-            <xs:element name="Attr" type="Foo" />
+            <xs:element name="Attr" type="Foo" minOccurs="0"/>
             <xs:element name="Value" type="Measure" />
         </xs:sequence>
     </xs:complexType>
@@ -24,7 +24,7 @@
     </xs:complexType>
     <xs:complexType name="FooBase">
         <xs:sequence>
-            <xs:element name="XMLValue" type="xs:string" />
+            <xs:element name="XMLValue" type="xs:string" minOccurs="0" />
         </xs:sequence>
     </xs:complexType>
     <xs:complexType name="Foo">

@@ -29,6 +29,18 @@ choice ChoiceMixed:
    ChoiceData
    ChoiceBasic
 
+choice MiddleChoiceA:
+     ChoiceData
+     ChoiceBasic
+
+choice MiddleChoiceB:
+     ChoiceData
+     ChoiceBasic2
+
+choice ChoiceDeepNested:
+     MiddleChoiceA
+     MiddleChoiceB
+
 type Root:
   [rootType]
   choiceBasic ChoiceBasic (0..1)
@@ -36,3 +48,4 @@ type Root:
   choiceData ChoiceData (0..1)
   choiceMixed ChoiceMixed (0..1)
   choiceNested ChoiceNested (0..1)
+  choiceDeepNested ChoiceDeepNested (0..1)

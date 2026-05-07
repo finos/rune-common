@@ -1,0 +1,9 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.choicetype.Root",
+  "@version" : "0.0.0",
+  "choiceDeepNested" : {
+    "@type" : "int",
+    "@data" : 10
+  }
+}

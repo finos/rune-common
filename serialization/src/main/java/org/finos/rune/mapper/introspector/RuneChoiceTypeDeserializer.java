@@ -75,12 +75,11 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
     private Object resolveValue(String optionName, Class<?> optionType, String typeId, ObjectNode node, ObjectMapper mapper) throws IOException {
         if (RosettaModelObject.class.isAssignableFrom(optionType)) {
             if (optionType.isAnnotationPresent(RuneChoiceType.class)) {
-                try {
-                    RosettaModelObject nestedChoice = mapper.treeToValue(node, optionType.asSubclass(RosettaModelObject.class));
-                    return hasChoiceValue(nestedChoice) ? nestedChoice : null;
-                } catch (IOException e) {
+                if (!choiceCanResolveType(optionType, typeId)) {
                     return null;
                 }
+                RosettaModelObject nestedChoice = mapper.treeToValue(node, optionType.asSubclass(RosettaModelObject.class));
+                return hasChoiceValue(nestedChoice) ? nestedChoice : null;
             }
 
             if (typeId.equals(optionType.getCanonicalName()) || typeId.equals(optionType.getName())) {
@@ -94,6 +93,29 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             return data == null || data.isNull() ? null : mapper.treeToValue(data, optionType);
         }
         return null;
+    }
+
+    private boolean choiceCanResolveType(Class<?> choiceType, String typeId) throws IOException {
+        Object builder = newBuilder(choiceType);
+        for (Method method : builder.getClass().getMethods()) {
+            RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
+            if (attribute == null || method.getParameterCount() != 1 || RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
+                continue;
+            }
+
+            Class<?> optionType = method.getParameterTypes()[0];
+            if (RosettaModelObject.class.isAssignableFrom(optionType)) {
+                if (optionType.isAnnotationPresent(RuneChoiceType.class) && choiceCanResolveType(optionType, typeId)) {
+                    return true;
+                }
+                if (typeId.equals(optionType.getCanonicalName()) || typeId.equals(optionType.getName())) {
+                    return true;
+                }
+            } else if (typeId.equals(attribute.value())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private ObjectNode withoutType(ObjectNode node) {
@@ -124,6 +146,10 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
     }
 
     private Object newBuilder() throws IOException {
+        return newBuilder(choiceType);
+    }
+
+    private Object newBuilder(Class<?> choiceType) throws IOException {
         try {
             return choiceType.getMethod("builder").invoke(null);
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {

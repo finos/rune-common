@@ -27,8 +27,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
+import com.rosetta.model.lib.annotations.RuneDataType;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
@@ -54,7 +56,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         }
 
         String typeId = getTypeId(node, ctxt, p);
-        Object builder = newBuilder();
+        RosettaModelObjectBuilder builder = newBuilder(choiceType);
 
         for (Method setter : builder.getClass().getMethods()) {
             RuneAttribute attribute = setter.getAnnotation(RuneAttribute.class);
@@ -65,7 +67,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             Object value = resolveValue(attribute.value(), setter.getParameterTypes()[0], typeId, (ObjectNode) node, mapper);
             if (value != null) {
                 invoke(setter, builder, value);
-                return build(builder);
+                return builder.build();
             }
         }
 
@@ -145,23 +147,15 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         return type.asText();
     }
 
-    private Object newBuilder() throws IOException {
-        return newBuilder(choiceType);
-    }
-
-    private Object newBuilder(Class<?> choiceType) throws IOException {
-        try {
-            return choiceType.getMethod("builder").invoke(null);
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new IOException("Unable to create Rune choice type builder for " + choiceType.getName(), e);
+    private RosettaModelObjectBuilder newBuilder(Class<?> choiceType) throws IOException {
+        RuneDataType runeDataType = choiceType.getAnnotation(RuneDataType.class);
+        if (runeDataType == null) {
+            throw new IOException("Unable to find Rune data type metadata for " + choiceType.getName());
         }
-    }
-
-    private RosettaModelObject build(Object builder) throws IOException {
         try {
-            return (RosettaModelObject) builder.getClass().getMethod("build").invoke(builder);
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new IOException("Unable to build Rune choice type " + choiceType.getName(), e);
+            return runeDataType.builder().getDeclaredConstructor().newInstance();
+        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
+            throw new IOException("Unable to create Rune choice type builder for " + choiceType.getName(), e);
         }
     }
 

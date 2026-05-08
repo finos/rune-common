@@ -84,7 +84,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
                 return hasChoiceValue(nestedChoice) ? nestedChoice : null;
             }
 
-            if (runeType.equals(optionType.getCanonicalName()) || runeType.equals(optionType.getName())) {
+            if (runeType.equals(optionType.getName())) {
                 return mapper.treeToValue(withoutType(node), optionType);
             }
             return null;

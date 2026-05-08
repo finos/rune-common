@@ -63,16 +63,21 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             RosettaModelObject selectedRosettaValue = (RosettaModelObject) selectedValue;
             if (isChoiceType(selectedRosettaValue.getType())) {
                 ChoiceValue nestedChoiceValue = getChoiceValue(selectedRosettaValue);
-                if (nestedChoiceValue != null) {
-                    writeChoiceValue(nestedChoiceValue, gen, serializers);
+                if (nestedChoiceValue == null) {
+                    throw new IOException("Nested Rune choice has no selected value for " + selectedRosettaValue.getType().getName());
                 }
+                writeChoiceValue(nestedChoiceValue, gen, serializers);
                 return;
             }
 
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, selectedRosettaValue.getType().getCanonicalName());
+            Class<?> selectedType = selectedRosettaValue.getType();
+            if (selectedType == null) {
+                throw new IOException("Unable to resolve Rune choice value type");
+            }
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, selectedType.getName());
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.name);
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.runeType);
             gen.writeFieldName(DATA);
             serializers.defaultSerializeValue(selectedValue, gen);
         }
@@ -96,16 +101,24 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
     }
 
     private ChoiceValue getChoiceValue(RosettaModelObject value) throws IOException {
+        ChoiceValue selected = null;
         for (Method method : value.getClass().getMethods()) {
             RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
             if (attribute != null && method.getParameterCount() == 0 && !RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
                 Object selectedValue = invoke(method, value);
                 if (!isEmptyChoiceValue(selectedValue)) {
-                    return new ChoiceValue(attribute.value(), selectedValue);
+                    ChoiceValue candidate = new ChoiceValue(attribute.value(), selectedValue);
+                    if (selected != null) {
+                        // Choice types must have exactly one populated option.
+                        throw new IOException(
+                                String.format("Multiple Rune choice options selected for %s: %s and %s", value.getType().getName(), selected.runeType, candidate.runeType)
+                        );
+                    }
+                    selected = candidate;
                 }
             }
         }
-        return null;
+        return selected;
     }
 
     private Object invoke(Method method, Object target) throws IOException {
@@ -125,11 +138,11 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
     }
 
     private static class ChoiceValue {
-        private final String name;
+        private final String runeType;
         private final Object value;
 
-        private ChoiceValue(String name, Object value) {
-            this.name = name;
+        private ChoiceValue(String runeType, Object value) {
+            this.runeType = runeType;
             this.value = value;
         }
     }

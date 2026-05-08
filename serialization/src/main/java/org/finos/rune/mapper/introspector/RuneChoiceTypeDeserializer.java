@@ -110,7 +110,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
                 if (optionType.isAnnotationPresent(RuneChoiceType.class) && choiceCanResolveType(optionType, runeType)) {
                     return true;
                 }
-                if (runeType.equals(optionType.getCanonicalName()) || runeType.equals(optionType.getName())) {
+                if (runeType.equals(optionType.getName())) {
                     return true;
                 }
             } else if (runeType.equals(attribute.value())) {

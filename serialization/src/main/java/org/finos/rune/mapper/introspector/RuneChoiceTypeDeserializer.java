@@ -85,7 +85,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             }
 
             if (runeType.equals(optionType.getName())) {
-                return mapper.treeToValue(withoutType(node), optionType);
+                return mapper.treeToValue(node, optionType);
             }
             return null;
         }
@@ -118,12 +118,6 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             }
         }
         return false;
-    }
-
-    private ObjectNode withoutType(ObjectNode node) {
-        ObjectNode copy = node.deepCopy();
-        copy.remove(RuneJsonConfig.MetaProperties.TYPE);
-        return copy;
     }
 
     private boolean hasChoiceValue(RosettaModelObject choice) throws IOException {

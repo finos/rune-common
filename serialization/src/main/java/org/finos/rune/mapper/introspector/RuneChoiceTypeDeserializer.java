@@ -31,6 +31,7 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.annotations.RuneDataType;
+import com.rosetta.model.lib.annotations.RuneMetaType;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
@@ -87,6 +88,11 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             if (runeType.equals(optionType.getName())) {
                 return mapper.treeToValue(node, optionType);
             }
+            if (isMetaWrapperForType(optionType, runeType)) {
+                ObjectNode metaWrapperNode = node.deepCopy();
+                metaWrapperNode.remove(RuneJsonConfig.MetaProperties.TYPE);
+                return mapper.treeToValue(metaWrapperNode, optionType);
+            }
             return null;
         }
 
@@ -113,7 +119,26 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
                 if (runeType.equals(optionType.getName())) {
                     return true;
                 }
+                if (isMetaWrapperForType(optionType, runeType)) {
+                    return true;
+                }
             } else if (runeType.equals(attribute.value())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isMetaWrapperForType(Class<?> optionType, String runeType) throws IOException {
+        RosettaModelObjectBuilder builder = newBuilder(optionType);
+        for (Method method : builder.getClass().getMethods()) {
+            RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
+            if (attribute == null || method.getParameterCount() != 1 || !DATA.equals(attribute.value()) || !method.isAnnotationPresent(RuneMetaType.class)) {
+                continue;
+            }
+
+            Class<?> dataType = method.getParameterTypes()[0];
+            if (dataType != Object.class && runeType.equals(dataType.getName())) {
                 return true;
             }
         }

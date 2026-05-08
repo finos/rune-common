@@ -1,0 +1,12 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.choicetype.Root",
+  "@version" : "0.0.0",
+  "choiceData" : {
+    "@type" : "serialization.test.passing.choicetype.C",
+    "fieldC" : {
+      "@scheme" : "https://www.example.com/scheme1",
+      "@data" : "foo"
+    }
+  }
+}

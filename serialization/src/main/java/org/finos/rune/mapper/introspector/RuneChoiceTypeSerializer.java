@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
+import com.rosetta.model.lib.annotations.RuneMetaType;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
@@ -74,7 +75,8 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             if (selectedType == null) {
                 throw new IOException("Unable to resolve Rune choice value type");
             }
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, selectedType.getName());
+            String typeName = resolveChoiceTypeName(selectedRosettaValue);
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, typeName);
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
             gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.runeType);
@@ -135,6 +137,35 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
 
     private boolean isChoiceType(Class<?> type) {
         return type != null && type.isAnnotationPresent(RuneChoiceType.class);
+    }
+
+    private String resolveChoiceTypeName(RosettaModelObject selectedValue) throws IOException {
+        Class<?> selectedType = selectedValue.getType();
+        if (selectedType == null) {
+            throw new IOException("Unable to resolve Rune choice value type");
+        }
+
+        RosettaModelObject wrappedValue = findMetaWrappedValue(selectedValue);
+        if (wrappedValue != null && wrappedValue.getType() != null) {
+            return wrappedValue.getType().getName();
+        }
+
+        return selectedType.getName();
+    }
+
+    private RosettaModelObject findMetaWrappedValue(RosettaModelObject selectedValue) throws IOException {
+        for (Method method : selectedValue.getClass().getMethods()) {
+            RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
+            if (attribute == null || method.getParameterCount() != 0 || !DATA.equals(attribute.value()) || !method.isAnnotationPresent(RuneMetaType.class)) {
+                continue;
+            }
+
+            Object value = invoke(method, selectedValue);
+            if (value instanceof RosettaModelObject) {
+                return (RosettaModelObject) value;
+            }
+        }
+        return null;
     }
 
     private static class ChoiceValue {

@@ -16,9 +16,15 @@ type A:
 type B:
   fieldB string (1..1)
 
+type C:
+  fieldC string (1..1)
+  [metadata scheme]
+
 choice ChoiceData:
   A
   B
+  C
+  [metadata scheme]
 
 choice ChoiceMixed:
   A

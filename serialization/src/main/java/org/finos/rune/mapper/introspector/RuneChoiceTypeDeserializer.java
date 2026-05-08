@@ -55,7 +55,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             return (RosettaModelObject) ctxt.handleUnexpectedToken(choiceType, p);
         }
 
-        String typeId = getTypeId(node, ctxt, p);
+        String runeType = getRuneType(node, ctxt, p);
         RosettaModelObjectBuilder builder = newBuilder(choiceType);
 
         for (Method setter : builder.getClass().getMethods()) {
@@ -64,40 +64,40 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
                 continue;
             }
 
-            Object value = resolveValue(attribute.value(), setter.getParameterTypes()[0], typeId, (ObjectNode) node, mapper);
+            Object value = resolveValue(attribute.value(), setter.getParameterTypes()[0], runeType, (ObjectNode) node, mapper);
             if (value != null) {
                 invoke(setter, builder, value);
                 return builder.build();
             }
         }
 
-        throw ctxt.weirdStringException(typeId, choiceType, "Unable to resolve Rune choice option");
+        throw ctxt.weirdStringException(runeType, choiceType, "Unable to resolve Rune choice option");
     }
 
-    private Object resolveValue(String optionName, Class<?> optionType, String typeId, ObjectNode node, ObjectMapper mapper) throws IOException {
+    private Object resolveValue(String optionName, Class<?> optionType, String runeType, ObjectNode node, ObjectMapper mapper) throws IOException {
         if (RosettaModelObject.class.isAssignableFrom(optionType)) {
             if (optionType.isAnnotationPresent(RuneChoiceType.class)) {
-                if (!choiceCanResolveType(optionType, typeId)) {
+                if (!choiceCanResolveType(optionType, runeType)) {
                     return null;
                 }
                 RosettaModelObject nestedChoice = mapper.treeToValue(node, optionType.asSubclass(RosettaModelObject.class));
                 return hasChoiceValue(nestedChoice) ? nestedChoice : null;
             }
 
-            if (typeId.equals(optionType.getCanonicalName()) || typeId.equals(optionType.getName())) {
+            if (runeType.equals(optionType.getCanonicalName()) || runeType.equals(optionType.getName())) {
                 return mapper.treeToValue(withoutType(node), optionType);
             }
             return null;
         }
 
-        if (typeId.equals(optionName)) {
+        if (runeType.equals(optionName)) {
             JsonNode data = node.get(DATA);
             return data == null || data.isNull() ? null : mapper.treeToValue(data, optionType);
         }
         return null;
     }
 
-    private boolean choiceCanResolveType(Class<?> choiceType, String typeId) throws IOException {
+    private boolean choiceCanResolveType(Class<?> choiceType, String runeType) throws IOException {
         Object builder = newBuilder(choiceType);
         for (Method method : builder.getClass().getMethods()) {
             RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
@@ -107,13 +107,13 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
 
             Class<?> optionType = method.getParameterTypes()[0];
             if (RosettaModelObject.class.isAssignableFrom(optionType)) {
-                if (optionType.isAnnotationPresent(RuneChoiceType.class) && choiceCanResolveType(optionType, typeId)) {
+                if (optionType.isAnnotationPresent(RuneChoiceType.class) && choiceCanResolveType(optionType, runeType)) {
                     return true;
                 }
-                if (typeId.equals(optionType.getCanonicalName()) || typeId.equals(optionType.getName())) {
+                if (runeType.equals(optionType.getCanonicalName()) || runeType.equals(optionType.getName())) {
                     return true;
                 }
-            } else if (typeId.equals(attribute.value())) {
+            } else if (runeType.equals(attribute.value())) {
                 return true;
             }
         }
@@ -139,7 +139,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         return false;
     }
 
-    private String getTypeId(JsonNode node, DeserializationContext ctxt, JsonParser p) throws IOException {
+    private String getRuneType(JsonNode node, DeserializationContext ctxt, JsonParser p) throws IOException {
         JsonNode type = node.get(RuneJsonConfig.MetaProperties.TYPE);
         if (type == null || type.isNull()) {
             return (String) ctxt.handleUnexpectedToken(String.class, p);

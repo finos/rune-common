@@ -34,6 +34,8 @@ import com.google.common.collect.Lists;
 import com.rosetta.model.lib.annotations.*;
 import com.rosetta.model.metafields.MetaFields;
 import org.finos.rune.mapper.RuneJsonConfig;
+import org.finos.rune.mapper.serializer.RuneChoiceTypeDeserializer;
+import org.finos.rune.mapper.serializer.RuneChoiceTypeSerializer;
 
 import java.util.ArrayList;
 import java.util.Objects;

@@ -1,4 +1,4 @@
-package org.finos.rune.mapper.introspector;
+package org.finos.rune.mapper.serializer;
 
 /*-
  * ==============
@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
-import com.rosetta.model.lib.annotations.RuneMetaType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import org.finos.rune.mapper.RuneJsonConfig;
 

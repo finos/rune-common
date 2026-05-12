@@ -71,12 +71,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                 return;
             }
 
-            Class<?> selectedType = selectedRosettaValue.getType();
-            if (selectedType == null) {
-                throw new IOException("Unable to resolve Rune choice value type");
-            }
-            String typeName = resolveChoiceTypeName(selectedRosettaValue);
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, typeName);
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue));
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
             gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.runeType);

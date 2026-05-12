@@ -31,7 +31,7 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.annotations.RuneDataType;
-import com.rosetta.model.lib.annotations.RuneMetaType;
+import com.rosetta.model.lib.meta.FieldWithMeta;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
@@ -130,19 +130,11 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
     }
 
     private boolean isMetaWrapperForType(Class<?> optionType, String runeType) throws IOException {
-        RosettaModelObjectBuilder builder = newBuilder(optionType);
-        for (Method method : builder.getClass().getMethods()) {
-            RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
-            if (attribute == null || method.getParameterCount() != 1 || !DATA.equals(attribute.value()) || !method.isAnnotationPresent(RuneMetaType.class)) {
-                continue;
-            }
-
-            Class<?> dataType = method.getParameterTypes()[0];
-            if (dataType != Object.class && runeType.equals(dataType.getName())) {
-                return true;
-            }
+        if (!FieldWithMeta.class.isAssignableFrom(optionType)) {
+            return false;
         }
-        return false;
+        Class<?> valueType = ((FieldWithMeta<?>) newBuilder(optionType)).getValueType();
+        return valueType != null && runeType.equals(valueType.getName());
     }
 
     private boolean hasChoiceValue(RosettaModelObject choice) throws IOException {

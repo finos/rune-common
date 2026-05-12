@@ -13,6 +13,9 @@ choice ChoiceBasic2:
 type A:
   fieldA string (1..1)
 
+type ExtA extends A:
+  fieldExt string (1..1)
+
 type B:
   fieldB string (1..1)
 

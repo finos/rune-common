@@ -20,11 +20,20 @@ type C:
   fieldC string (1..1)
   [metadata scheme]
 
+type TypeWithLocation:
+    d D (1..1)
+      [metadata location]
+
+type D:
+  fieldD string (1..1)
+
 choice ChoiceData:
   A
   B
   C
   [metadata scheme]
+  D
+  [metadata address "pointsTo"=TypeWithLocation->d]
 
 choice ChoiceMixed:
   A
@@ -55,3 +64,4 @@ type Root:
   choiceMixed ChoiceMixed (0..1)
   choiceNested ChoiceNested (0..1)
   choiceDeepNested ChoiceDeepNested (0..1)
+  typeWithLocation TypeWithLocation (0..1)

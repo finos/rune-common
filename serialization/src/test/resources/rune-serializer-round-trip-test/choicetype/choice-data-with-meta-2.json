@@ -1,0 +1,15 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.choicetype.Root",
+  "@version" : "0.0.0",
+  "choiceData" : {
+    "@type" : "serialization.test.passing.choicetype.D",
+    "@ref:scoped" : "someLocation"
+  },
+  "typeWithLocation" : {
+    "d" : {
+      "@key:scoped" : "someLocation",
+      "fieldD" : "foo"
+    }
+  }
+}

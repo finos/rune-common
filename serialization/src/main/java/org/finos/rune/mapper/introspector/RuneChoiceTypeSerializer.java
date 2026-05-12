@@ -30,6 +30,7 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.annotations.RuneMetaType;
+import com.rosetta.model.lib.meta.FieldWithMeta;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
@@ -145,25 +146,17 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             throw new IOException("Unable to resolve Rune choice value type");
         }
 
-        RosettaModelObject wrappedValue = findMetaWrappedValue(selectedValue);
-        if (wrappedValue != null && wrappedValue.getType() != null) {
-            return wrappedValue.getType().getName();
+        Class<?> metaWrappedType = findMetaWrappedType(selectedValue);
+        if (metaWrappedType != null) {
+            return metaWrappedType.getName();
         }
 
         return selectedType.getName();
     }
 
-    private RosettaModelObject findMetaWrappedValue(RosettaModelObject selectedValue) throws IOException {
-        for (Method method : selectedValue.getClass().getMethods()) {
-            RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
-            if (attribute == null || method.getParameterCount() != 0 || !DATA.equals(attribute.value()) || !method.isAnnotationPresent(RuneMetaType.class)) {
-                continue;
-            }
-
-            Object value = invoke(method, selectedValue);
-            if (value instanceof RosettaModelObject) {
-                return (RosettaModelObject) value;
-            }
+    private Class<?> findMetaWrappedType(RosettaModelObject selectedValue) {
+        if (selectedValue instanceof FieldWithMeta) {
+            return ((FieldWithMeta<?>) selectedValue).getValueType();
         }
         return null;
     }

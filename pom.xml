@@ -266,6 +266,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>org.eclipse.xtext</groupId>
+                <artifactId>org.eclipse.xtext.ecore</artifactId>
+                <version>${xtext.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.xtext</groupId>
+                <artifactId>org.eclipse.xtext.xbase.lib</artifactId>
+                <version>${xtext.version}</version>
+            </dependency>
             <!-- test -->
             <dependency>
                 <groupId>org.hamcrest</groupId>

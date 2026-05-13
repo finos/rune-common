@@ -91,7 +91,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rosetta.dsl.version>9.79.0</rosetta.dsl.version>
+        <rosetta.dsl.version>9.81.0</rosetta.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
@@ -265,6 +265,16 @@
                 <version>${xtext.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.xtext</groupId>
+                <artifactId>org.eclipse.xtext.ecore</artifactId>
+                <version>${xtext.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.xtext</groupId>
+                <artifactId>org.eclipse.xtext.xbase.lib</artifactId>
+                <version>${xtext.version}</version>
             </dependency>
             <!-- test -->
             <dependency>

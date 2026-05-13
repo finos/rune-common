@@ -1,0 +1,13 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.choicetype.Root",
+  "@version" : "0.0.0",
+  "choiceData" : {
+    "@type" : "serialization.test.passing.choicetype.G",
+    "@ref:external" : "someExternalKey"
+  },
+  "typeG" : {
+    "@key:external" : "someExternalKey",
+    "fieldG" : "foo"
+  }
+}

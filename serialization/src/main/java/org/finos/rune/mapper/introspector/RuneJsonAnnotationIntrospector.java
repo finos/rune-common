@@ -34,6 +34,8 @@ import com.google.common.collect.Lists;
 import com.rosetta.model.lib.annotations.*;
 import com.rosetta.model.metafields.MetaFields;
 import org.finos.rune.mapper.RuneJsonConfig;
+import org.finos.rune.mapper.serializer.RuneChoiceTypeDeserializer;
+import org.finos.rune.mapper.serializer.RuneChoiceTypeSerializer;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -101,7 +103,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     @Override
     public JsonTypeInfo.Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated ann) {
         RuneDataType t = _findAnnotation(ann, RuneDataType.class);
-        if (t != null  && !isAnnotatedTypeMetaFields(ann)) {
+        if (t != null && !ann.hasAnnotation(RuneChoiceType.class) && !isAnnotatedTypeMetaFields(ann)) {
             return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
                     JsonTypeInfo.As.EXISTING_PROPERTY,
                     RuneJsonConfig.MetaProperties.TYPE,
@@ -110,6 +112,22 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
                     false);
         }
         return super.findPolymorphicTypeInfo(config, ann);
+    }
+
+    @Override
+    public Object findSerializer(Annotated a) {
+        if (a.hasAnnotation(RuneChoiceType.class)) {
+            return RuneChoiceTypeSerializer.class;
+        }
+        return super.findSerializer(a);
+    }
+
+    @Override
+    public Object findDeserializer(Annotated a) {
+        if (a instanceof AnnotatedClass && a.hasAnnotation(RuneChoiceType.class)) {
+            return new RuneChoiceTypeDeserializer(a.getRawType());
+        }
+        return super.findDeserializer(a);
     }
 
     @Override

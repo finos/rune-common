@@ -6,23 +6,82 @@ choice ChoiceBasic:
   string
   number
 
+choice ChoiceBasic2:
+  string
+  int
+
 type A:
   fieldA string (1..1)
+
+type ExtA extends A:
+  fieldExt string (1..1)
 
 type B:
   fieldB string (1..1)
 
+type C:
+  fieldC string (1..1)
+  [metadata scheme]
+
+type TypeWithLocation:
+    d D (1..1)
+      [metadata location]
+
+type D:
+  fieldD string (1..1)
+
+type F:
+  fieldF string (1..1)
+
+type TypeWithAddress:
+    f F (1..1)
+    [metadata address "pointsTo"=ChoiceData->F]
+
+type G:
+  [metadata key]
+  fieldG string (1..1)
+
 choice ChoiceData:
   A
   B
+  C
+  [metadata scheme]
+  D
+  [metadata address "pointsTo"=TypeWithLocation->d]
+  F
+  [metadata location]
+  G
+  [metadata reference]
 
 choice ChoiceMixed:
   A
   B
   string
 
+ choice ChoiceNested:
+   ChoiceData
+   ChoiceBasic
+
+choice MiddleChoiceA:
+     ChoiceData
+     ChoiceBasic
+
+choice MiddleChoiceB:
+     ChoiceData
+     ChoiceBasic2
+
+choice ChoiceDeepNested:
+     MiddleChoiceA
+     MiddleChoiceB
+
 type Root:
   [rootType]
   choiceBasic ChoiceBasic (0..1)
+  choiceBasic2 ChoiceBasic2 (0..1)
   choiceData ChoiceData (0..1)
   choiceMixed ChoiceMixed (0..1)
+  choiceNested ChoiceNested (0..1)
+  choiceDeepNested ChoiceDeepNested (0..1)
+  typeWithLocation TypeWithLocation (0..1)
+  typeWithAddress TypeWithAddress (0..1)
+  typeG G (0..1)

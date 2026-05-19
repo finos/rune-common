@@ -56,17 +56,19 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             return (RosettaModelObject) ctxt.handleUnexpectedToken(choiceType, p);
         }
 
-        String runeType = getRuneType(node, ctxt, p);
+        String runeType = getRuneType(node, ctxt);
         RosettaModelObject result = tryDeserialize((ObjectNode) node, runeType, choiceType, mapper);
         if (result != null) {
             return result;
         }
-        throw ctxt.weirdStringException(
-                runeType,
+        ctxt.reportInputMismatch(
                 choiceType,
-                "Unable to resolve Rune choice option '" + runeType + "' for choice type '" + choiceType.getName() + "'. "
-                        + "The @type value must exactly match one of the declared choice options."
+                "Unable to resolve Rune choice option '%s' for choice type '%s'. "
+                        + "The @type value must exactly match one of the declared choice options.",
+                runeType,
+                choiceType.getName()
         );
+        return null;
     }
 
     private RosettaModelObject tryDeserialize(ObjectNode node, String runeType, Class<?> targetChoiceType, ObjectMapper mapper) throws IOException {
@@ -122,10 +124,15 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         return valueType != null && runeType.equals(valueType.getName());
     }
 
-    private String getRuneType(JsonNode node, DeserializationContext ctxt, JsonParser p) throws IOException {
+    private String getRuneType(JsonNode node, DeserializationContext ctxt) throws IOException {
         JsonNode type = node.get(RuneJsonConfig.MetaProperties.TYPE);
         if (type == null || type.isNull()) {
-            return (String) ctxt.handleUnexpectedToken(String.class, p);
+            ctxt.reportInputMismatch(choiceType, "Missing required '%s' metadata property", RuneJsonConfig.MetaProperties.TYPE);
+            return null;
+        }
+        if (!type.isTextual()) {
+            ctxt.reportInputMismatch(choiceType, "'%s' metadata property must be a string", RuneJsonConfig.MetaProperties.TYPE);
+            return null;
         }
         return type.asText();
     }

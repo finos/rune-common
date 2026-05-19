@@ -391,7 +391,7 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
                 <configuration>
-                    <configLocation>${maven.multiModuleProjectDirectory}/checkstyle-for-deprecated-guice.xml</configLocation>
+                    <configLocation>checkstyle-for-deprecated-guice.xml</configLocation>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
                     <sourceDirectories>

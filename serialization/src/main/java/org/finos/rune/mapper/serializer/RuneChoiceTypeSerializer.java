@@ -140,16 +140,8 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
 
         RosettaModelObject selectedRosettaValue = (RosettaModelObject) choiceValue.value;
         Class<?> actualType = selectedRosettaValue.getType();
-        if (actualType == null) {
-            serializers.reportMappingProblem(
-                    "Unable to serialize Rune choice option '%s' for choice type '%s': runtime type is unavailable",
-                    choiceValue.choiceOptionType,
-                    choiceValue.choiceType
-            );
-            return;
-        }
 
-        if (!actualType.getName().equals(choiceValue.declaredType.getName())) {
+        if (!actualType.equals(choiceValue.declaredType)) {
             serializers.reportMappingProblem(
                     "Unable to serialize Rune choice option '%s' for choice type '%s': declared type is '%s' but runtime type is '%s'. "
                             + "The runtime type must exactly match the declared choice option type.",

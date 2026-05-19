@@ -1,0 +1,10 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.failing.invalidnestedchoiceoption.Root",
+  "@version" : "0.0.0",
+  "outerChoice" : {
+    "@type" : "serialization.test.failing.invalidnestedchoiceoption.ExtA",
+    "fieldA" : "foo",
+    "fieldExt" : "bar"
+  }
+}

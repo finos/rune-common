@@ -20,19 +20,16 @@ package org.finos.rune.serialization;
  * ==============
  */
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
-import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
@@ -54,19 +51,18 @@ public class RuneSerializerPruningTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new RuneJsonObjectMapper();
         dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
-        objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
+        objectMapper = newObjectMapper(dynamicCompiledClassLoader);
     }
 
     @Test
     void testMetaKeyOnObjectWithNoReferenceToItIsPruned() {
-        Path groupPath = getGroupPath("metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-without-ref-input.json"));
 
-        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
-        String result = toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
 
         String expected = readAsString(getFile(groupPath, "node-key-without-ref-expected.json"));
 
@@ -75,24 +71,24 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaKeyOnObjectWithReferenceIsNotPruned() {
-        Path groupPath = getGroupPath("metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-ref.json"));
 
-        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
-        String result = toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
 
         assertEquals(input, result);
     }
 
     @Test
     void testMetaIdOnAttributeWithNoReferenceToItIsPruned() {
-        Path groupPath = getGroupPath("metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "attribute-key-without-ref-input.json"));
 
-        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
-        String result = toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
 
         String expected = readAsString(getFile(groupPath, "attribute-key-without-ref-expected.json"));
 
@@ -101,24 +97,24 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaIdOnAttributeWithReferenceIsNotPruned() {
-        Path groupPath = getGroupPath("metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "attribute-key-with-ref.json"));
 
-        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
-        String result = toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
 
         assertEquals(input, result);
     }
 
     @Test
     void testDuplicateReferencesArePruned() {
-        Path groupPath = getGroupPath("metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-input.json"));
 
-        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
-        String result = toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
 
         String expected = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-expected.json"));
 
@@ -133,12 +129,12 @@ public class RuneSerializerPruningTest {
     @Disabled
     @Test
     void testRedundantGlobalKeyIsPrunedFromRootObject() {
-        Path groupPath = getGroupPath("metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-root-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-redundant-key-input.json"));
 
-        RosettaModelObject deserializedObject = fromJson(input, rootDataType);
-        String result = toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
 
         String expected = readAsString(getFile(groupPath, "node-key-with-redundant-key-expected.json"));
 
@@ -149,27 +145,6 @@ public class RuneSerializerPruningTest {
         Path rosetta = getFile(groupPath, fileName);
         String groupName = groupPath.getFileName().toString();
         return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, Collections.singletonList(rosetta), helper, dynamicCompiledClassLoader);
-    }
-
-    private Path getGroupPath(String groupName) {
-        return  Paths.get("src/test/resources").resolve(TEST_TYPE).resolve(groupName);
-    }
-
-    private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) {
-        try {
-            return objectMapper.readValue(runeJson, type);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private <T extends RosettaModelObject> String toJson(T runeObject) {
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(runeObject);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }

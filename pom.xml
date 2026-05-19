@@ -31,7 +31,7 @@
         <module>serialization</module>
     </modules>
 
-    <groupId>org.finos.rune</groupId>
+    <groupId>org.finos.rune-common</groupId>
     <artifactId>rune-common-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.0.0.main-SNAPSHOT</version>

@@ -30,6 +30,8 @@
         <module>common</module>
         <module>serialization</module>
     </modules>
+
+    <groupId>org.finos.rune</groupId>
     <artifactId>rune-common-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.0.0.main-SNAPSHOT</version>
@@ -389,7 +391,7 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
                 <configuration>
-                    <configLocation>checkstyle-for-deprecated-guice.xml</configLocation>
+                    <configLocation>${maven.multiModuleProjectDirectory}/checkstyle-for-deprecated-guice.xml</configLocation>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
                     <sourceDirectories>

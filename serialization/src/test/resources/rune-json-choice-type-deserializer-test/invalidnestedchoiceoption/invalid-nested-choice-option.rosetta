@@ -1,0 +1,23 @@
+namespace serialization.test.failing.invalidnestedchoiceoption
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type A:
+  fieldA string (1..1)
+
+type ExtA extends A:
+  fieldExt string (1..1)
+
+type B:
+  fieldB string (1..1)
+
+choice ChoiceOnlyA:
+  A
+  B
+
+choice OuterChoice:
+  ChoiceOnlyA
+
+type Root:
+  [rootType]
+  outerChoice OuterChoice (0..1)

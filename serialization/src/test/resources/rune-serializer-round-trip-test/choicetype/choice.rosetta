@@ -43,6 +43,7 @@ type G:
 
 choice ChoiceData:
   A
+  ExtA
   B
   C
   [metadata scheme]

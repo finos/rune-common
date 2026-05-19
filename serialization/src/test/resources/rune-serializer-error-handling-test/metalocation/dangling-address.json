@@ -1,8 +1,0 @@
-{
-  "@model" : "serialization",
-  "@type" : "serialization.test.failing.metalocation.Root",
-  "@version" : "0.0.0",
-  "bAddress" : {
-    "@ref:scoped" : "someLocation"
-  }
-}

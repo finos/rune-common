@@ -67,8 +67,7 @@ public class RuneJsonSerializerRoundTripTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new RuneJsonObjectMapper();
-        objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
+        objectMapper = newObjectMapper(dynamicCompiledClassLoader);
     }
 
     @Test
@@ -83,8 +82,8 @@ public class RuneJsonSerializerRoundTripTest {
     @ParameterizedTest(name = "{0} - {1}")
     @MethodSource("testCases")
     void testSerializationRoundTrip(String group, String testCaseName, Class<? extends RosettaModelObject> rosettaRootType, String jsonString) throws JsonProcessingException {
-        RosettaModelObject deserializedObject = fromJson(jsonString, rosettaRootType);
-        String serializedjsonString = toJson(deserializedObject);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, jsonString, rosettaRootType);
+        String serializedjsonString = toJson(objectMapper, deserializedObject);
         if (Arrays.asList(IGNORE_ORDERING_GROUPS).contains(group)) {
             assertJsonEqualsIgnoreOrdering(jsonString, serializedjsonString, testCaseName);
         } else {
@@ -114,23 +113,6 @@ public class RuneJsonSerializerRoundTripTest {
                                     ));
                         }
                 );
-    }
-
-    private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) {
-        try {
-            return objectMapper.readValue(runeJson, type);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private <T extends RosettaModelObject> String toJson(T runeObject) {
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(runeObject);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**

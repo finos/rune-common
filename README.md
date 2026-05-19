@@ -26,8 +26,8 @@ Add the library to your project using as a maven dependency as shown below:
 
 ``` xml
 <dependency>
-    <groupId>com.regnosys</groupId>
-    <artifactId>rosetta-common</artifactId>
+    <groupId>org.finos</groupId>
+    <artifactId>rune-common</artifactId>
     <version>0.0.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -37,7 +37,7 @@ For any questions, bugs or feature requests please open an [issue](https://githu
 For anything else please send an email to {project mailing list}.
 
 To submit a contribution:
-1. Fork it (<https://github.com/REGnosys/rosetta-common/fork>)
+1. Fork it (<https://github.com/finos/rune-common/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
 4. Commit your changes (`git commit -am 'Add some fooBar'`)

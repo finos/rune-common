@@ -30,7 +30,6 @@
         <module>common</module>
         <module>serialization</module>
     </modules>
-    <groupId>com.regnosys</groupId>
     <artifactId>rune-common-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.0.0.main-SNAPSHOT</version>
@@ -60,10 +59,10 @@
 
     <developers>
         <developer>
-            <id>minesh-s-patel</id>
-            <name>Minesh Patel</name>
+            <id>hugohills-regnosys</id>
+            <name>Hugo Hills</name>
             <email>infra@regnosys.com</email>
-            <url>http://github.com/minesh-s-patel</url>
+            <url>http://github.com/hugohills-regnosys</url>
             <organization>REGnosys</organization>
             <organizationUrl>https://regnosys.com</organizationUrl>
             <timezone>+1</timezone>
@@ -73,10 +72,10 @@
             </roles>
         </developer>
         <developer>
-            <id>hugohills-regnosys</id>
-            <name>Hugo Hills</name>
+            <id>JayasriR</id>
+            <name>Jayasri Radhakrishnan</name>
             <email>infra@regnosys.com</email>
-            <url>http://github.com/hugohills-regnosys</url>
+            <url>http://github.com/JayasriR</url>
             <organization>REGnosys</organization>
             <organizationUrl>https://regnosys.com</organizationUrl>
             <timezone>+1</timezone>

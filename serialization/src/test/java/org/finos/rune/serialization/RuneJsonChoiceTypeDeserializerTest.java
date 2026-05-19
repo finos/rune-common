@@ -32,13 +32,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 
 public class RuneJsonChoiceTypeDeserializerTest {
     private static final String TEST_TYPE = "rune-json-choice-type-deserializer-test";
+    private static final String PASSING_NAMESPACE_PREFIX = "serialization.test.passing.";
+    private static final String FAILING_NAMESPACE_PREFIX = "serialization.test.failing.";
+    private static final Set<String> FAILING_GROUPS = new HashSet<>(Arrays.asList("invalidchoiceoption", "invalidnestedchoiceoption"));
     private static final Map<Path, Class<RosettaModelObject>> ROOT_TYPES = new HashMap<>();
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     private static CodeGeneratorTestHelper helper;
@@ -132,7 +140,19 @@ public class RuneJsonChoiceTypeDeserializerTest {
             return existing;
         }
 
-        Class<RosettaModelObject> rootType = generateCompileAndLoadRootDataType(groupPath, helper, dynamicCompiledClassLoader);
+        String groupName = groupPath.getFileName().toString();
+        String namespacePrefix = FAILING_GROUPS.contains(groupName)
+                ? FAILING_NAMESPACE_PREFIX
+                : PASSING_NAMESPACE_PREFIX;
+        List<Path> rosettas = new ArrayList<>(listFiles(groupPath, ".rosetta"));
+
+        Class<RosettaModelObject> rootType = generateCompileAndGetRootDataType(
+                namespacePrefix,
+                groupName,
+                rosettas,
+                helper,
+                dynamicCompiledClassLoader
+        );
         ROOT_TYPES.put(groupPath, rootType);
         return rootType;
     }

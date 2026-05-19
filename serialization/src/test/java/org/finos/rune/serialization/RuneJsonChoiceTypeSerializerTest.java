@@ -42,6 +42,8 @@ import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 
 public class RuneJsonChoiceTypeSerializerTest {
     private static final String TEST_TYPE = "rune-json-choice-type-serializer-test";
+    private static final String PASSING_NAMESPACE_PREFIX = "serialization.test.passing.";
+    private static final String FAILING_NAMESPACE_PREFIX = "serialization.test.failing.";
     private static final Map<Path, RuneSerializerTestHelper.CompiledGroup> COMPILED_GROUPS = new HashMap<>();
 
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
@@ -135,7 +137,7 @@ public class RuneJsonChoiceTypeSerializerTest {
 
         JsonNode choiceDataAJson = objectMapper.readTree(toJson(rootA)).get("choiceData");
         Assertions.assertNotNull(choiceDataAJson);
-        Assertions.assertEquals("serialization.test.passing.extensionserializer.A", choiceDataAJson.get("@type").asText());
+        Assertions.assertEquals("serialization.test.passing.extension.A", choiceDataAJson.get("@type").asText());
         Assertions.assertEquals("alpha", choiceDataAJson.get("fieldA").asText());
 
         RosettaModelObjectBuilder bBuilder = newBuilder(group.getType("B"));
@@ -152,7 +154,7 @@ public class RuneJsonChoiceTypeSerializerTest {
 
         JsonNode choiceDataBJson = objectMapper.readTree(toJson(rootB)).get("choiceData");
         Assertions.assertNotNull(choiceDataBJson);
-        Assertions.assertEquals("serialization.test.passing.extensionserializer.B", choiceDataBJson.get("@type").asText());
+        Assertions.assertEquals("serialization.test.passing.extension.B", choiceDataBJson.get("@type").asText());
         Assertions.assertEquals("bravo", choiceDataBJson.get("fieldB").asText());
     }
 
@@ -183,7 +185,7 @@ public class RuneJsonChoiceTypeSerializerTest {
 
         JsonNode choiceDeepNestedJson = objectMapper.readTree(toJson(root)).get("choiceDeepNested");
         Assertions.assertNotNull(choiceDeepNestedJson);
-        Assertions.assertEquals("serialization.test.passing.extensionserializer.ExtA", choiceDeepNestedJson.get("@type").asText());
+        Assertions.assertEquals("serialization.test.passing.extension.ExtA", choiceDeepNestedJson.get("@type").asText());
         Assertions.assertEquals("foo", choiceDeepNestedJson.get("fieldA").asText());
         Assertions.assertEquals("bar", choiceDeepNestedJson.get("fieldExt").asText());
     }
@@ -195,7 +197,18 @@ public class RuneJsonChoiceTypeSerializerTest {
             return existing;
         }
 
-        RuneSerializerTestHelper.CompiledGroup compiledGroup = compileGroup(groupPath, helper, dynamicCompiledClassLoader);
+        String groupName = groupPath.getFileName().toString();
+        String namespacePrefix = "invalidruntimesubtype".equals(groupName)
+                ? FAILING_NAMESPACE_PREFIX
+                : PASSING_NAMESPACE_PREFIX;
+
+        RuneSerializerTestHelper.CompiledGroup compiledGroup = compileGroup(
+                namespacePrefix,
+                groupName,
+                listFiles(groupPath, ".rosetta"),
+                helper,
+                dynamicCompiledClassLoader
+        );
         COMPILED_GROUPS.put(groupPath, compiledGroup);
         return compiledGroup;
     }

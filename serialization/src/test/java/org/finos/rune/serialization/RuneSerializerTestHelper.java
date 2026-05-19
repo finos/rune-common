@@ -63,47 +63,29 @@ public class RuneSerializerTestHelper {
         Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-        Class<?> aClass = compiledCode.get(namespacePrefix + groupName + ".Root");
+        String rootClassName = namespacePrefix + groupName + ".Root";
+        Class<?> aClass = compiledCode.get(rootClassName);
+        if (aClass == null) {
+            throw new AssertionError("Unable to locate generated Root type " + rootClassName);
+        }
         return (Class<T>) aClass;
     }
 
-    @SuppressWarnings("unchecked")
-    public static Class<RosettaModelObject> generateCompileAndLoadRootDataType(
-            Path groupPath,
-            CodeGeneratorTestHelper helper,
-            DynamicCompiledClassLoader dynamicCompiledClassLoader) {
-        List<Path> rosettas = listFiles(groupPath, ".rosetta");
-        String[] rosettaFileContents = rosettas.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
-        Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
-        Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
-        dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-
-        String rootClassName = compiledCode.keySet().stream()
-                .filter(className -> className.endsWith(".Root"))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Unable to locate generated Root type for " + groupPath));
-
-        try {
-            return (Class<RosettaModelObject>) dynamicCompiledClassLoader.loadClass(rootClassName);
-        } catch (ClassNotFoundException e) {
-            throw new AssertionError("Unable to load generated Root type " + rootClassName, e);
-        }
-    }
-
     public static CompiledGroup compileGroup(
-            Path groupPath,
+            String namespacePrefix,
+            String groupName,
+            List<Path> rosettaPaths,
             CodeGeneratorTestHelper helper,
             DynamicCompiledClassLoader dynamicCompiledClassLoader) {
-        List<Path> rosettas = listFiles(groupPath, ".rosetta");
-        String[] rosettaFileContents = rosettas.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
+        String[] rosettaFileContents = rosettaPaths.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
         Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-
-        String rootClassName = compiledCode.keySet().stream()
-                .filter(className -> className.endsWith(".Root"))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Unable to locate generated Root type for " + groupPath));
+        String rootClassName = namespacePrefix + groupName + ".Root";
+        Class<?> rootClass = compiledCode.get(rootClassName);
+        if (rootClass == null) {
+            throw new AssertionError("Unable to locate generated Root type " + rootClassName);
+        }
 
         Map<String, String> classNamesBySimpleName = new HashMap<>();
         for (String className : compiledCode.keySet()) {
@@ -113,13 +95,9 @@ public class RuneSerializerTestHelper {
             }
         }
 
-        try {
-            @SuppressWarnings("unchecked")
-            Class<RosettaModelObject> rootType = (Class<RosettaModelObject>) dynamicCompiledClassLoader.loadClass(rootClassName);
-            return new CompiledGroup(rootType, classNamesBySimpleName, compiledCode, dynamicCompiledClassLoader);
-        } catch (ClassNotFoundException e) {
-            throw new AssertionError("Unable to load generated types for " + groupPath, e);
-        }
+        @SuppressWarnings("unchecked")
+        Class<RosettaModelObject> rootType = (Class<RosettaModelObject>) rootClass;
+        return new CompiledGroup(rootType, classNamesBySimpleName, compiledCode, dynamicCompiledClassLoader);
     }
 
     public static String readAsString(Path jsonPath) {

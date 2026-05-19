@@ -8,7 +8,7 @@
         <artifactId>rune-common-parent</artifactId>
         <version>0.0.0.main-SNAPSHOT</version>
     </parent>
-
+    <groupId>org.finos.rune</groupId>
     <artifactId>rune-common</artifactId>
     <name>Rune Common</name>
     <properties>

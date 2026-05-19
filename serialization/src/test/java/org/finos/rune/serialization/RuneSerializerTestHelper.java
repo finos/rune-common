@@ -20,6 +20,8 @@ package org.finos.rune.serialization;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -32,10 +34,15 @@ import com.regnosys.rosetta.config.RosettaGeneratorsConfiguration;
 import com.regnosys.rosetta.config.RosettaModelConfiguration;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import com.rosetta.model.lib.annotations.RuneDataType;
+import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.eclipse.xtext.common.TerminalsStandaloneSetup;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,7 +54,8 @@ public class RuneSerializerTestHelper {
     public static final String TEST_MODEL_NAME = "serialization";
 
     @SuppressWarnings("unchecked")
-    public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String namespacePrefix, String groupName,
+    public static <T extends RosettaModelObject> Class<T> generateCompileAndGetRootDataType(String namespacePrefix,
+                                                                                            String groupName,
                                                                                             List<Path> rosettaPaths,
                                                                                             CodeGeneratorTestHelper helper,
                                                                                             DynamicCompiledClassLoader dynamicCompiledClassLoader) {
@@ -57,6 +65,61 @@ public class RuneSerializerTestHelper {
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
         Class<?> aClass = compiledCode.get(namespacePrefix + groupName + ".Root");
         return (Class<T>) aClass;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Class<RosettaModelObject> generateCompileAndLoadRootDataType(
+            Path groupPath,
+            CodeGeneratorTestHelper helper,
+            DynamicCompiledClassLoader dynamicCompiledClassLoader) {
+        List<Path> rosettas = listFiles(groupPath, ".rosetta");
+        String[] rosettaFileContents = rosettas.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
+        Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
+        Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
+        dynamicCompiledClassLoader.setCompiledCode(compiledCode);
+
+        String rootClassName = compiledCode.keySet().stream()
+                .filter(className -> className.endsWith(".Root"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Unable to locate generated Root type for " + groupPath));
+
+        try {
+            return (Class<RosettaModelObject>) dynamicCompiledClassLoader.loadClass(rootClassName);
+        } catch (ClassNotFoundException e) {
+            throw new AssertionError("Unable to load generated Root type " + rootClassName, e);
+        }
+    }
+
+    public static CompiledGroup compileGroup(
+            Path groupPath,
+            CodeGeneratorTestHelper helper,
+            DynamicCompiledClassLoader dynamicCompiledClassLoader) {
+        List<Path> rosettas = listFiles(groupPath, ".rosetta");
+        String[] rosettaFileContents = rosettas.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
+        Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
+        Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
+        dynamicCompiledClassLoader.setCompiledCode(compiledCode);
+
+        String rootClassName = compiledCode.keySet().stream()
+                .filter(className -> className.endsWith(".Root"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Unable to locate generated Root type for " + groupPath));
+
+        Map<String, String> classNamesBySimpleName = new HashMap<>();
+        for (String className : compiledCode.keySet()) {
+            int lastDot = className.lastIndexOf('.');
+            if (lastDot > -1 && lastDot < className.length() - 1) {
+                classNamesBySimpleName.put(className.substring(lastDot + 1), className);
+            }
+        }
+
+        try {
+            @SuppressWarnings("unchecked")
+            Class<RosettaModelObject> rootType = (Class<RosettaModelObject>) dynamicCompiledClassLoader.loadClass(rootClassName);
+            return new CompiledGroup(rootType, classNamesBySimpleName, compiledCode, dynamicCompiledClassLoader);
+        } catch (ClassNotFoundException e) {
+            throw new AssertionError("Unable to load generated types for " + groupPath, e);
+        }
     }
 
     public static String readAsString(Path jsonPath) {
@@ -73,6 +136,10 @@ public class RuneSerializerTestHelper {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public static Path getGroupPath(String testType, String groupName) {
+        return Paths.get("src/test/resources").resolve(testType).resolve(groupName);
     }
 
     public static Path getFile(Path groupPath, String fileName) {
@@ -93,6 +160,124 @@ public class RuneSerializerTestHelper {
         }
     }
 
+    public static ObjectMapper newObjectMapper(ClassLoader classLoader) {
+        ObjectMapper objectMapper = new RuneJsonObjectMapper();
+        objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(classLoader));
+        return objectMapper;
+    }
+
+    public static <T extends RosettaModelObject> T fromJson(ObjectMapper objectMapper, String runeJson, Class<T> type) {
+        try {
+            return objectMapper.readValue(runeJson, type);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String toJson(ObjectMapper objectMapper, RosettaModelObject runeObject) {
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(runeObject);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static RosettaModelObjectBuilder newBuilder(Class<?> type) throws IOException {
+        RuneDataType runeDataType = type.getAnnotation(RuneDataType.class);
+        if (runeDataType == null) {
+            throw new IOException("Unable to find Rune data type metadata for " + type.getName());
+        }
+        try {
+            return runeDataType.builder().getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IOException("Unable to create builder for " + type.getName(), e);
+        }
+    }
+
+    public static RosettaModelObject build(Object builder) throws IOException {
+        try {
+            return (RosettaModelObject) builder.getClass().getMethod("build").invoke(builder);
+        } catch (ReflectiveOperationException e) {
+            throw new IOException("Unable to build Rosetta object from " + builder.getClass().getName(), e);
+        }
+    }
+
+    public static void invokeSetter(Object target, String setterName, Object value) throws IOException {
+        for (Method method : target.getClass().getMethods()) {
+            if (!method.getName().equals(setterName) || method.getParameterCount() != 1) {
+                continue;
+            }
+
+            Class<?> parameterType = method.getParameterTypes()[0];
+            if (value == null || parameterType.isInstance(value) || (parameterType.isPrimitive() && isPrimitiveCompatible(parameterType, value))) {
+                try {
+                    method.invoke(target, value);
+                    return;
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new IOException("Unable to invoke " + setterName + " on " + target.getClass().getName(), e);
+                }
+            }
+        }
+        throw new IOException("Unable to find compatible setter " + setterName + " on " + target.getClass().getName());
+    }
+
+    public static Object invokeGetter(Object target, String getterName) {
+        try {
+            return target.getClass().getMethod(getterName).invoke(target);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Unable to invoke " + getterName + " on " + target.getClass().getName(), e);
+        }
+    }
+
+    public static Object findNestedGetterResult(Object target, String... getterNames) {
+        Object current = target;
+        for (String getterName : getterNames) {
+            if (current == null) {
+                return null;
+            }
+            current = invokeGetter(current, getterName);
+        }
+        return current;
+    }
+
+    public static Object firstNonNull(Object... values) {
+        for (Object value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isPrimitiveCompatible(Class<?> primitiveType, Object value) {
+        if (primitiveType == int.class) {
+            return value instanceof Integer;
+        }
+        if (primitiveType == long.class) {
+            return value instanceof Long;
+        }
+        if (primitiveType == boolean.class) {
+            return value instanceof Boolean;
+        }
+        if (primitiveType == double.class) {
+            return value instanceof Double;
+        }
+        if (primitiveType == float.class) {
+            return value instanceof Float;
+        }
+        if (primitiveType == short.class) {
+            return value instanceof Short;
+        }
+        if (primitiveType == byte.class) {
+            return value instanceof Byte;
+        }
+        if (primitiveType == char.class) {
+            return value instanceof Character;
+        }
+        return false;
+    }
+
     public static Injector setupInjector() {
         RosettaStandaloneSetup rosettaStandaloneSetup = new RosettaStandaloneSetup();
         TerminalsStandaloneSetup.doSetup();
@@ -110,5 +295,43 @@ public class RuneSerializerTestHelper {
         Injector injector = Guice.createInjector(module);
         rosettaStandaloneSetup.register(injector);
         return injector;
+    }
+
+    public static class CompiledGroup {
+        private final Class<RosettaModelObject> rootType;
+        private final Map<String, String> classNamesBySimpleName;
+        private final Map<String, Class<?>> compiledCode;
+        private final DynamicCompiledClassLoader dynamicCompiledClassLoader;
+
+        private CompiledGroup(
+                Class<RosettaModelObject> rootType,
+                Map<String, String> classNamesBySimpleName,
+                Map<String, Class<?>> compiledCode,
+                DynamicCompiledClassLoader dynamicCompiledClassLoader) {
+            this.rootType = rootType;
+            this.classNamesBySimpleName = classNamesBySimpleName;
+            this.compiledCode = compiledCode;
+            this.dynamicCompiledClassLoader = dynamicCompiledClassLoader;
+        }
+
+        public Class<RosettaModelObject> getRootType() {
+            return rootType;
+        }
+
+        public Map<String, Class<?>> getCompiledCode() {
+            return compiledCode;
+        }
+
+        public Class<?> getType(String simpleName) throws IOException {
+            String className = classNamesBySimpleName.get(simpleName);
+            if (className == null) {
+                throw new IOException("Unable to resolve generated class for " + simpleName);
+            }
+            try {
+                return dynamicCompiledClassLoader.loadClass(className);
+            } catch (ClassNotFoundException e) {
+                throw new IOException("Unable to load generated class " + className, e);
+            }
+        }
     }
 }

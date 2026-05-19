@@ -26,22 +26,16 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
-import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static org.finos.rune.serialization.RuneSerializerTestHelper.getFile;
-import static org.finos.rune.serialization.RuneSerializerTestHelper.listFiles;
-import static org.finos.rune.serialization.RuneSerializerTestHelper.readAsString;
-import static org.finos.rune.serialization.RuneSerializerTestHelper.setupInjector;
+import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 
 public class RuneJsonChoiceTypeDeserializerTest {
     private static final String TEST_TYPE = "rune-json-choice-type-deserializer-test";
@@ -59,13 +53,12 @@ public class RuneJsonChoiceTypeDeserializerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new RuneJsonObjectMapper();
-        objectMapper.setTypeFactory(objectMapper.getTypeFactory().withClassLoader(dynamicCompiledClassLoader));
+        objectMapper = newObjectMapper(dynamicCompiledClassLoader);
     }
 
     @Test
     void shouldDeserializeChoiceDataUsingExactTypeFromTypeMetadata() throws JsonProcessingException {
-        Path groupPath = getGroupPath("extension");
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
         String json = readAsString(getFile(groupPath, "choice-data-extension.json"));
 
@@ -85,7 +78,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
 
     @Test
     void shouldDeserializeNestedChoiceDataUsingExactTypeFromTypeMetadata() throws JsonProcessingException {
-        Path groupPath = getGroupPath("extension");
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
         String json = readAsString(getFile(groupPath, "choice-deep-nested-extended.json"));
 
@@ -111,7 +104,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
 
     @Test
     void shouldFailWhenChoiceDoesNotDeclareTypeFromTypeMetadata() {
-        Path groupPath = getGroupPath("invalidchoiceoption");
+        Path groupPath = getGroupPath(TEST_TYPE, "invalidchoiceoption");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
         String json = readAsString(getFile(groupPath, "invalid-choice-option.json"));
 
@@ -123,7 +116,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
 
     @Test
     void shouldFailWhenNestedChoiceDoesNotDeclareTypeFromTypeMetadata() {
-        Path groupPath = getGroupPath("invalidnestedchoiceoption");
+        Path groupPath = getGroupPath(TEST_TYPE, "invalidnestedchoiceoption");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
         String json = readAsString(getFile(groupPath, "invalid-nested-choice-option.json"));
 
@@ -133,65 +126,18 @@ public class RuneJsonChoiceTypeDeserializerTest {
         Assertions.assertTrue(exception.getMessage().contains("Unable to resolve Rune choice option"));
     }
 
-    private static Path getGroupPath(String groupName) {
-        return Paths.get("src/test/resources").resolve(TEST_TYPE).resolve(groupName);
-    }
-
-    @SuppressWarnings("unchecked")
     private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath) {
         Class<RosettaModelObject> existing = ROOT_TYPES.get(groupPath);
         if (existing != null) {
             return existing;
         }
 
-        List<Path> rosettas = listFiles(groupPath, ".rosetta");
-        String[] rosettaFileContents = rosettas.stream().map(RuneSerializerTestHelper::readAsString).toArray(String[]::new);
-        Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
-        Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
-        dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-        String rootClassName = compiledCode.keySet().stream()
-                .filter(className -> className.endsWith(".Root"))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Unable to locate generated Root type for " + groupPath));
-
-        try {
-            Class<RosettaModelObject> rootType = (Class<RosettaModelObject>) dynamicCompiledClassLoader.loadClass(rootClassName);
-            ROOT_TYPES.put(groupPath, rootType);
-            return rootType;
-        } catch (ClassNotFoundException e) {
-            throw new AssertionError("Unable to load generated Root type " + rootClassName, e);
-        }
+        Class<RosettaModelObject> rootType = generateCompileAndLoadRootDataType(groupPath, helper, dynamicCompiledClassLoader);
+        ROOT_TYPES.put(groupPath, rootType);
+        return rootType;
     }
 
     private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) throws JsonProcessingException {
         return objectMapper.readValue(runeJson, type);
-    }
-
-    private Object invokeGetter(Object target, String getterName) {
-        try {
-            return target.getClass().getMethod(getterName).invoke(target);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError("Unable to invoke " + getterName + " on " + target.getClass().getName(), e);
-        }
-    }
-
-    private Object findNestedGetterResult(Object target, String... getterNames) {
-        Object current = target;
-        for (String getterName : getterNames) {
-            if (current == null) {
-                return null;
-            }
-            current = invokeGetter(current, getterName);
-        }
-        return current;
-    }
-
-    private Object firstNonNull(Object... values) {
-        for (Object value : values) {
-            if (value != null) {
-                return value;
-            }
-        }
-        return null;
     }
 }

@@ -61,7 +61,12 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         if (result != null) {
             return result;
         }
-        throw ctxt.weirdStringException(runeType, choiceType, "Unable to resolve Rune choice option");
+        throw ctxt.weirdStringException(
+                runeType,
+                choiceType,
+                "Unable to resolve Rune choice option '" + runeType + "' for choice type '" + choiceType.getName() + "'. "
+                        + "The @type value must exactly match one of the declared choice options."
+        );
     }
 
     private RosettaModelObject tryDeserialize(ObjectNode node, String runeType, Class<?> targetChoiceType, ObjectMapper mapper) throws IOException {
@@ -87,7 +92,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
                 return tryDeserialize(node, runeType, optionType, mapper);
             }
 
-            if (isAssignableRuneType(optionType, runeType, mapper)) {
+            if (isExactRuneType(optionType, runeType)) {
                 return mapper.treeToValue(node, optionType);
             }
             if (isMetaWrapperForType(optionType, runeType)) {
@@ -105,19 +110,8 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         return null;
     }
 
-    private boolean isAssignableRuneType(Class<?> optionType, String runeType, ObjectMapper mapper) {
-        if (runeType.equals(optionType.getName())) {
-            return true;
-        }
-        try {
-            ClassLoader classLoader = mapper.getTypeFactory().getClassLoader();
-            Class<?> loaded = classLoader != null
-                    ? Class.forName(runeType, false, classLoader)
-                    : Class.forName(runeType);
-            return optionType.isAssignableFrom(loaded);
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
+    private boolean isExactRuneType(Class<?> optionType, String runeType) {
+        return runeType.equals(optionType.getName());
     }
 
     private boolean isMetaWrapperForType(Class<?> optionType, String runeType) throws IOException {

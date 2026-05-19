@@ -1,0 +1,34 @@
+namespace serialization.test.passing.extensionserializer
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type A:
+  fieldA string (1..1)
+
+type ExtA extends A:
+  fieldExt string (1..1)
+
+type B:
+  fieldB string (1..1)
+
+choice ChoiceData:
+  A
+  ExtA
+  B
+
+choice MiddleChoiceA:
+  ChoiceData
+  string
+
+choice MiddleChoiceB:
+  ChoiceData
+  int
+
+choice ChoiceDeepNested:
+  MiddleChoiceA
+  MiddleChoiceB
+
+type Root:
+  [rootType]
+  choiceData ChoiceData (0..1)
+  choiceDeepNested ChoiceDeepNested (0..1)

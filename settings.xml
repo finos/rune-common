@@ -32,5 +32,4 @@
             </properties>
         </profile>
     </profiles>
-    <localRepository>${env.CICD_REPO}</localRepository>
 </settings>

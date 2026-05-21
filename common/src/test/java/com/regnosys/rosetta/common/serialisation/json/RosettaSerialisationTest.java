@@ -54,6 +54,24 @@ class RosettaSerialisationTest {
     CodeGeneratorTestHelper codeGeneratorTestHelper;
 
     @Test
+    void testChoiceListSerialisation() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+
+        String rosetta = "type A:\n" +
+                "           fieldA string (0..1)\n" +
+                "        type B:\n" +
+                "           fieldB string (0..1)\n" +
+                "        choice ChoiceData:\n" +
+                "           A\n" +
+                "           B" +
+                "         type Root:" +
+                "           choiceDataList ChoiceData (0..*)";
+
+        String expectedJson = "{\"choiceDataList\":[{\"A\":{\"fieldA\":\"foo\"}},{\"B\":{\"fieldB\":\"foo\"}}]}";
+        assertJsonSerialisation(mapper,  rosetta, expectedJson, "com.rosetta.test.model.Root");
+    }
+
+    @Test
     void testBasicSerialisation() throws JsonProcessingException {
         ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
 

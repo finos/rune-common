@@ -53,6 +53,24 @@ class RosettaSerialisationTest {
     @Inject
     CodeGeneratorTestHelper codeGeneratorTestHelper;
 
+    @Disabled("Legacy serialiser does not support polymorphic lists, use Rune serialiser instead")
+    @Test
+    void testPolymorphicListSerialisation() throws JsonProcessingException {
+        ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
+
+        String rosetta = "type A:\n" +
+                "  fieldA string (1..1)\n" +
+                "\n" +
+                "type B extends A:\n" +
+                "  fieldB string (1..1)\n" +
+                "\n" +
+                "type Root:\n" +
+                "  typeAList A (0..*)";
+
+        String expectedJson = "{\"typeAList\":[{\"fieldA\": \"foo\"},{\"fieldA\": \"foo\",\"fieldB\":\"bar\"}]}";
+        assertJsonSerialisation(mapper,  rosetta, expectedJson, "com.rosetta.test.model.Root");
+    }
+
     @Test
     void testChoiceListSerialisation() throws JsonProcessingException {
         ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();

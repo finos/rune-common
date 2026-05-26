@@ -83,6 +83,7 @@ type Root:
   choiceMixed ChoiceMixed (0..1)
   choiceNested ChoiceNested (0..1)
   choiceDeepNested ChoiceDeepNested (0..1)
+  choiceDataList ChoiceData (0..*)
   typeWithLocation TypeWithLocation (0..1)
   typeWithAddress TypeWithAddress (0..1)
   typeG G (0..1)

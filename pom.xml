@@ -397,6 +397,7 @@
                         <sourceDirectory>src/main/java</sourceDirectory>
                         <sourceDirectory>src/test/java</sourceDirectory>
                     </sourceDirectories>
+                    <resourceIncludes>**/*.xml</resourceIncludes>
                 </configuration>
                 <executions>
                     <execution>
@@ -461,15 +462,6 @@
                     <sectionDelimiter>==============</sectionDelimiter>
                     <processEndTag>   ==============</processEndTag>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>first</id>
-                        <goals>
-                            <goal>update-file-header</goal>
-                        </goals>
-                        <phase>process-sources</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

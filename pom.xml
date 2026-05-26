@@ -27,8 +27,8 @@
 
     <name>Rune Common Parent</name>
     <modules>
-        <module>common</module>
         <module>serialization</module>
+        <module>common</module>
     </modules>
 
     <groupId>org.finos.rune-common</groupId>

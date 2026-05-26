@@ -21,7 +21,7 @@
             <artifactId>rune-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.finos</groupId>
+            <groupId>org.finos.rune-common</groupId>
             <artifactId>serialization</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

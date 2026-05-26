@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLTypeConfigLookup;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
@@ -44,12 +45,14 @@ import java.util.Optional;
  */
 public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     private final SubstitutionMapLoader substitutionMapLoader;
-    private final RosettaXMLTypeConfigResolver typeConfigResolver;
+    private final RosettaXMLConfiguration rosettaXMLConfiguration;
+    private final VirtualPathBuilderHelper virtualPathBuilderHelper;
 
     public RosettaBeanDeserializerModifier(SubstitutionMapLoader substitutionMapLoader,
                                            RosettaXMLConfiguration rosettaXMLConfiguration) {
         this.substitutionMapLoader = substitutionMapLoader;
-        this.typeConfigResolver = new RosettaXMLTypeConfigResolver(rosettaXMLConfiguration);
+        this.rosettaXMLConfiguration = rosettaXMLConfiguration;
+        this.virtualPathBuilderHelper = new VirtualPathBuilderHelper();
     }
 
     @Override
@@ -64,7 +67,8 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config,
                                                   BeanDescription beanDesc,
                                                   JsonDeserializer<?> deserializer) {
-        Optional<TypeXMLConfiguration> typeConfig = typeConfigResolver.getConfigForBean(beanDesc);
+        Optional<TypeXMLConfiguration> typeConfig = RosettaXMLTypeConfigLookup.getTypeXMLConfiguration(
+                rosettaXMLConfiguration, config, beanDesc);
         if (!typeConfig.isPresent()) {
             return deserializer;
         }
@@ -79,7 +83,8 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
                 deserializer,
                 beanDesc.getBeanClass(),
                 typeConfig.get(),
-                contentModel.get());
+                contentModel.get(),
+                virtualPathBuilderHelper);
     }
 
     private void addSubstitutionProperties(DeserializationConfig config,

@@ -30,11 +30,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Reflection helpers for materializing virtual object graphs from routed XML content-model
@@ -50,8 +50,7 @@ import java.util.Map;
  */
 final class VirtualPathBuilderHelper {
 
-    private VirtualPathBuilderHelper() {
-    }
+    private final Map<CacheKey, AttributeAccessor> attributeAccessorCache = new ConcurrentHashMap<>();
 
     /**
      * Apply the supplied routed assignments to the parent builder instance.
@@ -60,9 +59,9 @@ final class VirtualPathBuilderHelper {
      * @param assignments   ordered list of routed leaf assignments produced by the matcher and the
      *                      buffered values for those leaves.
      */
-    static void applyAssignments(Object parentBuilder,
-                                 List<RoutedAssignment> assignments,
-                                 DeserializationContext ctxt) throws IOException {
+    void applyAssignments(Object parentBuilder,
+                          List<RoutedAssignment> assignments,
+                          DeserializationContext ctxt) throws IOException {
         if (assignments.isEmpty()) {
             return;
         }
@@ -77,9 +76,9 @@ final class VirtualPathBuilderHelper {
         }
     }
 
-    private static void attachAttribute(Object parentBuilder,
-                                        VirtualNode attributeNode,
-                                        DeserializationContext ctxt) throws IOException {
+    private void attachAttribute(Object parentBuilder,
+                                 VirtualNode attributeNode,
+                                 DeserializationContext ctxt) throws IOException {
         String attribute = attributeNode.attributeName;
         // Each entry in childrenByOccurrence is one repetition of the virtual attribute.
         for (VirtualNode occurrence : attributeNode.childrenByOccurrence) {
@@ -88,12 +87,12 @@ final class VirtualPathBuilderHelper {
         }
     }
 
-    private static Object materialise(Class<?> ownerBuilderClass,
-                                      String attribute,
-                                      VirtualNode occurrence,
-                                      DeserializationContext ctxt) throws IOException {
+    private Object materialise(Class<?> ownerBuilderClass,
+                               String attribute,
+                               VirtualNode occurrence,
+                               DeserializationContext ctxt) throws IOException {
         // Find the attribute Rosetta type via the parent's add* or set* method signature.
-        AttributeAccessor accessor = AttributeAccessor.lookup(ownerBuilderClass, attribute);
+        AttributeAccessor accessor = lookupAccessor(ownerBuilderClass, attribute);
         Class<?> attributeType = accessor.parameterType;
         // Get builder for that attribute type via static builder() method.
         Object subBuilder;
@@ -127,9 +126,9 @@ final class VirtualPathBuilderHelper {
         }
     }
 
-    private static void applyLeaf(Object builder, String leafAttribute, BufferedLeaf leaf,
-                                  DeserializationContext ctxt) throws IOException {
-        AttributeAccessor accessor = AttributeAccessor.lookup(builder.getClass(), leafAttribute);
+    private void applyLeaf(Object builder, String leafAttribute, BufferedLeaf leaf,
+                           DeserializationContext ctxt) throws IOException {
+        AttributeAccessor accessor = lookupAccessor(builder.getClass(), leafAttribute);
         Class<?> leafType = accessor.parameterType;
         JavaType javaType = ctxt.constructType(leafType);
         com.fasterxml.jackson.databind.JsonDeserializer<Object> deser = ctxt.findRootValueDeserializer(javaType);
@@ -140,8 +139,8 @@ final class VirtualPathBuilderHelper {
         invokeAttach(builder, leafAttribute, value);
     }
 
-    private static void invokeAttach(Object builder, String attribute, Object value) throws IOException {
-        AttributeAccessor accessor = AttributeAccessor.lookup(builder.getClass(), attribute);
+    private void invokeAttach(Object builder, String attribute, Object value) throws IOException {
+        AttributeAccessor accessor = lookupAccessor(builder.getClass(), attribute);
         try {
             accessor.method.invoke(builder, value);
         } catch (IllegalAccessException | InvocationTargetException e) {
@@ -242,31 +241,24 @@ final class VirtualPathBuilderHelper {
      * Resolved Rosetta attribute access: a single-argument {@code addX}/{@code setX} method on the
      * builder type, plus the attribute value type.
      */
-    private static final class AttributeAccessor {
-        private static final Map<CacheKey, AttributeAccessor> CACHE = new HashMap<>();
+    private AttributeAccessor lookupAccessor(Class<?> builderClass, String attribute) throws IOException {
+        CacheKey key = new CacheKey(builderClass, attribute);
+        AttributeAccessor cached = attributeAccessorCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        AttributeAccessor resolved = AttributeAccessor.resolve(builderClass, attribute);
+        AttributeAccessor previous = attributeAccessorCache.putIfAbsent(key, resolved);
+        return previous != null ? previous : resolved;
+    }
 
+    private static final class AttributeAccessor {
         final Method method;
         final Class<?> parameterType;
 
         private AttributeAccessor(Method method, Class<?> parameterType) {
             this.method = method;
             this.parameterType = parameterType;
-        }
-
-        static AttributeAccessor lookup(Class<?> builderClass, String attribute) throws IOException {
-            CacheKey key = new CacheKey(builderClass, attribute);
-            AttributeAccessor cached;
-            synchronized (CACHE) {
-                cached = CACHE.get(key);
-            }
-            if (cached != null) {
-                return cached;
-            }
-            AttributeAccessor resolved = resolve(builderClass, attribute);
-            synchronized (CACHE) {
-                CACHE.put(key, resolved);
-            }
-            return resolved;
         }
 
         private static AttributeAccessor resolve(Class<?> builderClass, String attribute) throws IOException {
@@ -316,27 +308,28 @@ final class VirtualPathBuilderHelper {
             return value.substring(0, 1).toUpperCase(Locale.ROOT) + value.substring(1);
         }
 
-        private static final class CacheKey {
-            final Class<?> builderClass;
-            final String attribute;
+    }
 
-            CacheKey(Class<?> builderClass, String attribute) {
-                this.builderClass = builderClass;
-                this.attribute = attribute;
-            }
+    private static final class CacheKey {
+        final Class<?> builderClass;
+        final String attribute;
 
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (!(o instanceof CacheKey)) return false;
-                CacheKey k = (CacheKey) o;
-                return builderClass == k.builderClass && attribute.equals(k.attribute);
-            }
+        CacheKey(Class<?> builderClass, String attribute) {
+            this.builderClass = builderClass;
+            this.attribute = attribute;
+        }
 
-            @Override
-            public int hashCode() {
-                return System.identityHashCode(builderClass) * 31 + attribute.hashCode();
-            }
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey k = (CacheKey) o;
+            return builderClass == k.builderClass && attribute.equals(k.attribute);
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(builderClass) * 31 + attribute.hashCode();
         }
     }
 

@@ -70,11 +70,13 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
     private final Set<String> routedXmlNames;
     private final boolean hasAnyNode;
     private final Set<String> attributeNames;
+    private final VirtualPathBuilderHelper virtualPathBuilderHelper;
 
     XMLContentModelDisambiguatingDeserializer(JsonDeserializer<?> delegatee,
                                               Class<?> beanClass,
                                               TypeXMLConfiguration typeConfig,
-                                              XMLContentModel contentModel) {
+                                              XMLContentModel contentModel,
+                                              VirtualPathBuilderHelper virtualPathBuilderHelper) {
         super(delegatee);
         this.beanClass = beanClass;
         this.typeConfig = typeConfig;
@@ -82,11 +84,12 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         this.routedXmlNames = collectXmlNames(contentModel);
         this.hasAnyNode = containsAnyNode(contentModel);
         this.attributeNames = collectXmlAttributeNames(typeConfig);
+        this.virtualPathBuilderHelper = virtualPathBuilderHelper;
     }
 
     @Override
     protected JsonDeserializer<?> newDelegatingInstance(JsonDeserializer<?> newDelegatee) {
-        return new XMLContentModelDisambiguatingDeserializer(newDelegatee, beanClass, typeConfig, contentModel);
+        return new XMLContentModelDisambiguatingDeserializer(newDelegatee, beanClass, typeConfig, contentModel, virtualPathBuilderHelper);
     }
 
     @Override
@@ -175,7 +178,7 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         }
         RosettaModelObject obj = (RosettaModelObject) result;
         Object builder = obj.toBuilder();
-        VirtualPathBuilderHelper.applyAssignments(builder, assignments, ctxt);
+        virtualPathBuilderHelper.applyAssignments(builder, assignments, ctxt);
         try {
             Object built = builder.getClass().getMethod("build").invoke(builder);
             return built;

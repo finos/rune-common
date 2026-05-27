@@ -190,11 +190,8 @@ final class XMLContentModelMatcher {
         if (!requiredName.isPresent() || !requiredName.get().equals(input.getXmlName())) {
             return Collections.emptyList();
         }
-        Optional<String> requiredNs = node.getNamespace();
-        if (requiredNs.isPresent()) {
-            if (!input.getNamespace().isPresent() || !requiredNs.get().equals(input.getNamespace().get())) {
-                return Collections.emptyList();
-            }
+        if (!namespaceMatches(node, input)) {
+            return Collections.emptyList();
         }
         List<Assignment> assignments;
         if (node.getPath().isPresent()) {
@@ -303,11 +300,8 @@ final class XMLContentModelMatcher {
             return Collections.emptyList();
         }
         RoutingInput input = inputs.get(inputIndex);
-        Optional<String> requiredNs = node.getNamespace();
-        if (requiredNs.isPresent()) {
-            if (!input.getNamespace().isPresent() || !requiredNs.get().equals(input.getNamespace().get())) {
-                return Collections.emptyList();
-            }
+        if (!namespaceMatches(node, input)) {
+            return Collections.emptyList();
         }
         List<Assignment> assignments;
         if (node.getPath().isPresent()) {
@@ -316,6 +310,26 @@ final class XMLContentModelMatcher {
             assignments = Collections.emptyList();
         }
         return Collections.singletonList(new MatchResult(inputIndex + 1, assignments));
+    }
+
+    private static boolean namespaceMatches(XMLContentModel node, RoutingInput input) {
+        Optional<String> requiredNs = node.getNamespace();
+        if (!requiredNs.isPresent()) {
+            return true;
+        }
+
+        RoutingInput.Namespace inputNs = input.getNamespace();
+        if (inputNs.isUnknown()) {
+            // TokenBuffer replay preserves the child token structure but not the original StAX
+            // namespace context. Treat unknown namespace as permissive local-name matching here;
+            // if namespace loss leaves multiple valid routes, the top-level route method still
+            // reports AMBIGUOUS rather than picking one silently. A known absent namespace from
+            // real XML remains a mismatch when the content model requires a namespace.
+            return true;
+        }
+        return inputNs.getValue()
+                .map(requiredNs.get()::equals)
+                .orElse(false);
     }
 
     private static <T> List<T> concat(List<T> a, List<T> b) {

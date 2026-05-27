@@ -33,9 +33,9 @@ final class RoutingInput {
 
     private final int fieldIndex;
     private final String xmlName;
-    private final Optional<String> namespace;
+    private final Namespace namespace;
 
-    RoutingInput(int fieldIndex, String xmlName, Optional<String> namespace) {
+    RoutingInput(int fieldIndex, String xmlName, Namespace namespace) {
         this.fieldIndex = fieldIndex;
         this.xmlName = xmlName;
         this.namespace = namespace;
@@ -49,12 +49,61 @@ final class RoutingInput {
         return xmlName;
     }
 
-    Optional<String> getNamespace() {
+    Namespace getNamespace() {
         return namespace;
     }
 
     @Override
     public String toString() {
         return xmlName + "@" + fieldIndex;
+    }
+
+    /**
+     * Namespace state for a routed XML field.
+     *
+     * <p>The distinction between {@link State#ABSENT} and {@link State#UNKNOWN} is deliberate.
+     * Real XML parsed by {@code FromXmlParser} can tell us that an element has no namespace, and
+     * that should still fail when the content model requires one. Replayed content from Jackson's
+     * {@code TokenBuffer} has lost the original StAX namespace context, so it is unknown rather
+     * than absent. In that case the matcher may fall back to local-name routing, while still
+     * reporting ambiguity if namespace loss leaves multiple possible routes.</p>
+     */
+    static final class Namespace {
+        private static final Namespace ABSENT = new Namespace(State.ABSENT, Optional.empty());
+        private static final Namespace UNKNOWN = new Namespace(State.UNKNOWN, Optional.empty());
+
+        private final State state;
+        private final Optional<String> value;
+
+        private Namespace(State state, Optional<String> value) {
+            this.state = state;
+            this.value = value;
+        }
+
+        static Namespace present(String namespace) {
+            return new Namespace(State.PRESENT, Optional.of(namespace));
+        }
+
+        static Namespace absent() {
+            return ABSENT;
+        }
+
+        static Namespace unknown() {
+            return UNKNOWN;
+        }
+
+        boolean isUnknown() {
+            return state == State.UNKNOWN;
+        }
+
+        Optional<String> getValue() {
+            return value;
+        }
+
+        private enum State {
+            PRESENT,
+            ABSENT,
+            UNKNOWN
+        }
     }
 }

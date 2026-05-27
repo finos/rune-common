@@ -33,6 +33,7 @@ import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLRepresen
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
 import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModelNodeType;
+import com.regnosys.rosetta.common.serialisation.xml.deserialization.RoutingInput.Namespace;
 import com.regnosys.rosetta.common.serialisation.xml.deserialization.VirtualPathBuilderHelper.BufferedLeaf;
 import com.regnosys.rosetta.common.serialisation.xml.deserialization.VirtualPathBuilderHelper.RoutedAssignment;
 import com.regnosys.rosetta.common.serialisation.xml.deserialization.XMLContentModelMatcher.OccurrenceKey;
@@ -193,7 +194,7 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         JsonToken token = p.nextToken();
         while (token == JsonToken.FIELD_NAME) {
             String xmlName = p.currentName();
-            Optional<String> namespace = currentNamespace(p);
+            Namespace namespace = currentNamespace(p);
             JsonToken valueToken = p.nextToken();
             if (valueToken == null) {
                 throw JsonMappingException.from(p, "Unexpected end of XML object while reading "
@@ -212,17 +213,19 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         return fields;
     }
 
-    private Optional<String> currentNamespace(JsonParser p) {
+    private Namespace currentNamespace(JsonParser p) {
         if (p instanceof FromXmlParser) {
             XMLStreamReader reader = ((FromXmlParser) p).getStaxReader();
             if (reader != null) {
                 String namespace = reader.getNamespaceURI();
                 if (namespace != null && !namespace.isEmpty()) {
-                    return Optional.of(namespace);
+                    return Namespace.present(namespace);
                 }
+                return Namespace.absent();
             }
+            return Namespace.unknown();
         }
-        return Optional.empty();
+        return Namespace.unknown();
     }
 
     private String formatNoMatchError(List<RoutingInput> inputs) {
@@ -355,11 +358,11 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
      */
     static final class BufferedField {
         final String xmlName;
-        final Optional<String> namespace;
+        final Namespace namespace;
         final boolean xmlAttribute;
         final TokenBuffer value;
 
-        BufferedField(String xmlName, Optional<String> namespace, boolean xmlAttribute,
+        BufferedField(String xmlName, Namespace namespace, boolean xmlAttribute,
                       TokenBuffer value) {
             this.xmlName = xmlName;
             this.namespace = namespace;

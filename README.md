@@ -26,7 +26,7 @@ Add the library to your project using as a maven dependency as shown below:
 
 ``` xml
 <dependency>
-    <groupId>org.finos</groupId>
+    <groupId>org.finos.rune-common</groupId>
     <artifactId>rune-common</artifactId>
     <version>0.0.0-SNAPSHOT</version>
 </dependency>

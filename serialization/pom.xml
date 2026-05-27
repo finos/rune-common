@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.finos.rune-common</groupId>
-        <artifactId>rune-common-parent</artifactId>
+        <artifactId>parent</artifactId>
         <version>0.0.0.main-SNAPSHOT</version>
     </parent>
 

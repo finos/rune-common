@@ -32,7 +32,7 @@
     </modules>
 
     <groupId>org.finos.rune-common</groupId>
-    <artifactId>rune-common-parent</artifactId>
+    <artifactId>parent</artifactId>
     <packaging>pom</packaging>
     <version>0.0.0.main-SNAPSHOT</version>
     <url>https://github.com/finos/rune-common</url>

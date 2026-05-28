@@ -15,7 +15,16 @@
     </module>
     <module name="RegexpSingleline">
         <property name="format" value=".*jakarta\.inject.*" />
+        <property name="fileExtensions" value="java"/>
         <property name="message" value="The use of 'jakarta.inject' is forbidden in Rune model code." />
+        <property name="severity" value="error"/>
+    </module>
+    <module name="RegexpSingleline">
+        <property name="format" value="Licensed under the Apache License, Version 2\.0" />
+        <property name="fileExtensions" value="java,xml"/>
+        <property name="minimum" value="1" />
+        <property name="maximum" value="999" />
+        <property name="message" value="Missing Apache 2.0 license header. Run `mvn license:update-file-header` to fix." />
         <property name="severity" value="error"/>
     </module>
     <module name="BeforeExecutionExclusionFileFilter">

@@ -99,7 +99,7 @@ public class RosettaXMLModule extends SimpleModule {
         final SubstitutionMapLoader substitutionMapLoader = new SubstitutionMapLoader(classLoader);
         context.addBeanSerializerModifier(new RosettaBeanSerializerModifier(substitutionMapLoader));
         context.addBeanSerializerModifier(new XmlBeanSerializerModifier());
-        context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier(substitutionMapLoader));
+        context.addBeanDeserializerModifier(new RosettaBeanDeserializerModifier(substitutionMapLoader, rosettaXMLConfiguration));
         context.addBeanDeserializerModifier(new XmlBeanDeserializerModifier(FromXmlParser.DEFAULT_UNNAMED_TEXT_PROPERTY));
 
         context.insertAnnotationIntrospector(new RosettaXMLAnnotationIntrospector(mapper, rosettaXMLConfiguration, supportNativeEnumValue));

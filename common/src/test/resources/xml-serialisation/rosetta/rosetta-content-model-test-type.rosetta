@@ -1,0 +1,69 @@
+namespace com.rosetta.test
+version "${project.version}"
+
+type FpmlTextValue:
+    value string (1..1)
+    scheme string (0..1)
+
+type FpmlReference:
+    href string (1..1)
+
+type FpmlRegion:
+    id string (0..1)
+
+type FpmlPivot:
+    id string (0..1)
+
+type FpmlTradeIdentifier:
+    id string (0..1)
+    issuer FpmlTextValue (0..1)
+    tradeId FpmlTextValue (0..1)
+    partyReference FpmlReference (0..1)
+    accountReference FpmlReference (0..1)
+    tradeIdentifierChoice FpmlTradeIdentifierChoice (0..*)
+
+type FpmlTradeIdentifierChoice:
+    tradeId FpmlTextValue (0..1)
+    versionedTradeId FpmlTextValue (0..1)
+
+type FpmlFxTargetKnockoutForward:
+    pivot FpmlPivot (0..1)
+    constantPayoffRegion FpmlRegion (0..*)
+    linearPayoffRegion FpmlRegion (0..1)
+    fxTargetKnockoutForwardChoice FpmlFxTargetKnockoutForwardChoice (0..*)
+    barrier FpmlRegion (0..*)
+
+type FpmlFxTargetKnockoutForwardChoice:
+    constantPayoffRegion FpmlRegion (0..1)
+    linearPayoffRegion FpmlRegion (0..1)
+
+type MultiLeafContainer:
+    entry MultiLeafEntry (0..*)
+
+type MultiLeafEntry:
+    firstValue FpmlTextValue (0..1)
+    secondValue FpmlTextValue (0..1)
+
+type AllVirtualContainer:
+    entry AllVirtualEntry (0..*)
+
+type AllVirtualEntry:
+    firstValue FpmlTextValue (0..1)
+    secondValue FpmlTextValue (0..1)
+
+type AnyVirtualContainer:
+    knownValue FpmlTextValue (0..1)
+    entry AnyVirtualEntry (0..*)
+
+type AnyVirtualEntry:
+    wildcardValue FpmlTextValue (0..1)
+
+type MultiLayerContainer:
+    outer MultiLayerOuter (0..*)
+
+type MultiLayerOuter:
+    inner MultiLayerInner (0..*)
+
+type MultiLayerInner:
+    firstValue FpmlTextValue (0..1)
+    secondValue FpmlTextValue (0..1)

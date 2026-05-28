@@ -25,23 +25,34 @@ import com.fasterxml.jackson.databind.deser.*;
 import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLAnnotationIntrospector;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLTypeConfigLookup;
+import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
  * Support for deserialising substitution groups by adding additional properties
- * to the `BeanDeserializerBuilder` for each additional name of a substitution.
+ * to the `BeanDeserializerBuilder` for each additional name of a substitution. Also wraps the
+ * generated deserializer with a {@link XMLContentModelDisambiguatingDeserializer} for Rosetta
+ * types whose XML configuration provides a {@code contentModel}.
  */
 public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     private final SubstitutionMapLoader substitutionMapLoader;
+    private final RosettaXMLConfiguration rosettaXMLConfiguration;
+    private final VirtualPathBuilderHelper virtualPathBuilderHelper;
 
-    public RosettaBeanDeserializerModifier(SubstitutionMapLoader substitutionMapLoader) {
+    public RosettaBeanDeserializerModifier(SubstitutionMapLoader substitutionMapLoader,
+                                           RosettaXMLConfiguration rosettaXMLConfiguration) {
         this.substitutionMapLoader = substitutionMapLoader;
+        this.rosettaXMLConfiguration = rosettaXMLConfiguration;
+        this.virtualPathBuilderHelper = new VirtualPathBuilderHelper();
     }
 
     @Override
@@ -50,6 +61,30 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
         final AnnotationIntrospector intr = config.getAnnotationIntrospector();
         addSubstitutionProperties(config, builder, intr);
         return builder;
+    }
+
+    @Override
+    public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config,
+                                                  BeanDescription beanDesc,
+                                                  JsonDeserializer<?> deserializer) {
+        Optional<TypeXMLConfiguration> typeConfig = RosettaXMLTypeConfigLookup.getTypeXMLConfiguration(
+                rosettaXMLConfiguration, config, beanDesc);
+        if (!typeConfig.isPresent()) {
+            return deserializer;
+        }
+        Optional<XMLContentModel> contentModel = typeConfig.get().getContentModel();
+        if (!contentModel.isPresent()) {
+            return deserializer;
+        }
+        if (!XMLContentModelDisambiguatingDeserializer.requiresRouting(contentModel.get())) {
+            return deserializer;
+        }
+        return new XMLContentModelDisambiguatingDeserializer(
+                deserializer,
+                beanDesc.getBeanClass(),
+                typeConfig.get(),
+                contentModel.get(),
+                virtualPathBuilderHelper);
     }
 
     private void addSubstitutionProperties(DeserializationConfig config,

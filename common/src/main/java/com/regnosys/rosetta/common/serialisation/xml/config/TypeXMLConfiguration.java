@@ -38,36 +38,28 @@ public class TypeXMLConfiguration {
 	private final Optional<Map<String, String>> xmlAttributes;
 	private final Optional<Map<String, AttributeXMLConfiguration>> attributes;
 	private final Optional<Map<String, String>> enumValues;
+	private final Optional<XMLContentModel> contentModel;
 
 	@JsonCreator
 	public TypeXMLConfiguration(
-            @JsonProperty("substitutionFor") @Deprecated Optional<ModelSymbolId> substitutionFor,
-            @JsonProperty("substitutionGroup") Optional<String> substitutionGroup,
-            @JsonProperty("xmlElementName") Optional<String> xmlElementName,
-            @JsonProperty("xmlElementFullyQualifiedName") Optional<String> xmlElementFullyQualifiedName,
+			@JsonProperty("substitutionFor") @Deprecated Optional<ModelSymbolId> substitutionFor,
+			@JsonProperty("substitutionGroup") Optional<String> substitutionGroup,
+			@JsonProperty("xmlElementName") Optional<String> xmlElementName,
+			@JsonProperty("xmlElementFullyQualifiedName") Optional<String> xmlElementFullyQualifiedName,
 			@JsonProperty("abstract") Optional<Boolean> isAbstract,
-            @JsonProperty("xmlAttributes") Optional<Map<String, String>> xmlAttributes,
-            @JsonProperty("attributes") Optional<Map<String, AttributeXMLConfiguration>> attributes,
-            @JsonProperty("enumValues") Optional<Map<String, String>> enumValues) {
+			@JsonProperty("xmlAttributes") Optional<Map<String, String>> xmlAttributes,
+			@JsonProperty("attributes") Optional<Map<String, AttributeXMLConfiguration>> attributes,
+			@JsonProperty("enumValues") Optional<Map<String, String>> enumValues,
+			@JsonProperty("contentModel") Optional<XMLContentModel> contentModel) {
 		this.substitutionFor = substitutionFor;
 		this.substitutionGroup = substitutionGroup;
-        this.xmlElementName = xmlElementName;
-        this.xmlElementFullyQualifiedName = xmlElementFullyQualifiedName;
-        this.isAbstract = isAbstract;
-        this.xmlAttributes = xmlAttributes;
+		this.xmlElementName = xmlElementName;
+		this.xmlElementFullyQualifiedName = xmlElementFullyQualifiedName;
+		this.isAbstract = isAbstract;
+		this.xmlAttributes = xmlAttributes;
 		this.attributes = attributes;
 		this.enumValues = enumValues;
-	}
-	
-	public TypeXMLConfiguration(
-			Optional<String> substitutionGroup,
-			Optional<String> xmlElementName,
-			Optional<String> xmlElementFullyQualifiedName,
-			Optional<Boolean> isAbstract,
-			Optional<Map<String, String>> xmlAttributes,
-			Optional<Map<String, AttributeXMLConfiguration>> attributes,
-			Optional<Map<String, String>> enumValues) {
-		this(Optional.empty(), substitutionGroup, xmlElementName, xmlElementFullyQualifiedName, isAbstract, xmlAttributes, attributes, enumValues);
+		this.contentModel = contentModel;
 	}
 	
 	@Deprecated // Use getSubstitutionGroup instead
@@ -103,9 +95,13 @@ public class TypeXMLConfiguration {
 		return enumValues;
 	}
 
+	public Optional<XMLContentModel> getContentModel() {
+		return contentModel;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(substitutionGroup, xmlAttributes, xmlElementName, xmlElementFullyQualifiedName, isAbstract, attributes, enumValues);
+		return Objects.hash(substitutionGroup, xmlAttributes, xmlElementName, xmlElementFullyQualifiedName, isAbstract, attributes, enumValues, contentModel);
 	}
 
 	@Override
@@ -123,6 +119,7 @@ public class TypeXMLConfiguration {
 				&& Objects.equals(xmlElementFullyQualifiedName, other.xmlElementFullyQualifiedName)
 				&& Objects.equals(isAbstract, other.isAbstract)
 				&& Objects.equals(attributes, other.attributes)
-				&& Objects.equals(enumValues, other.enumValues);
+				&& Objects.equals(enumValues, other.enumValues)
+				&& Objects.equals(contentModel, other.contentModel);
 	}
 }

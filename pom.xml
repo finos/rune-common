@@ -92,7 +92,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rune.dsl.version>10.0.0-dev.8</rune.dsl.version>
+        <rune.dsl.version>10.0.0-dev.10</rune.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
@@ -398,6 +398,7 @@
                         <sourceDirectory>src/main/java</sourceDirectory>
                         <sourceDirectory>src/test/java</sourceDirectory>
                     </sourceDirectories>
+                    <resourceIncludes>**/*.xml</resourceIncludes>
                 </configuration>
                 <executions>
                     <execution>
@@ -462,15 +463,6 @@
                     <sectionDelimiter>==============</sectionDelimiter>
                     <processEndTag>   ==============</processEndTag>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>first</id>
-                        <goals>
-                            <goal>update-file-header</goal>
-                        </goals>
-                        <phase>process-sources</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

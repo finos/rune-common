@@ -531,7 +531,8 @@ public class XmlSerialisationTest {
                             Optional.empty(), //blank out abstract as per legacy format
                             typeXMLConfiguration.getXmlAttributes(),
                             newAttributeXmlConfiguration,
-                            typeXMLConfiguration.getEnumValues()
+                            typeXMLConfiguration.getEnumValues(),
+                            Optional.empty()
                     );
                     newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);
                 }
@@ -587,7 +588,8 @@ public class XmlSerialisationTest {
                             Optional.empty(), //blank out abstract as per legacy format
                             typeXMLConfiguration.getXmlAttributes(),
                             newAttributeXmlConfiguration,
-                            typeXMLConfiguration.getEnumValues()
+                            typeXMLConfiguration.getEnumValues(),
+                            Optional.empty()
                     );
                     newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);
                 }

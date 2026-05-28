@@ -1,0 +1,131 @@
+{
+  "com.rosetta.test.FpmlTextValue": {
+    "attributes": {
+      "value": { "xmlRepresentation": "VALUE" },
+      "scheme": { "xmlRepresentation": "ATTRIBUTE" }
+    }
+  },
+  "com.rosetta.test.FpmlReference": {
+    "attributes": {
+      "href": { "xmlRepresentation": "ATTRIBUTE" }
+    }
+  },
+  "com.rosetta.test.FpmlRegion": {
+    "attributes": {
+      "id": { "xmlRepresentation": "ATTRIBUTE" }
+    }
+  },
+  "com.rosetta.test.FpmlPivot": {
+    "attributes": {
+      "id": { "xmlRepresentation": "ATTRIBUTE" }
+    }
+  },
+  "com.rosetta.test.FpmlTradeIdentifier": {
+    "attributes": {
+      "id": { "xmlRepresentation": "ATTRIBUTE" },
+      "tradeIdentifierChoice": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "CHOICE",
+      "children": [
+        {
+          "nodeType": "SEQUENCE",
+          "children": [
+            { "nodeType": "ELEMENT", "xmlName": "issuer", "path": ["issuer"], "minOccurs": 1, "maxOccurs": 1 },
+            { "nodeType": "ELEMENT", "xmlName": "tradeId", "path": ["tradeId"], "minOccurs": 1, "maxOccurs": 1 }
+          ]
+        },
+        {
+          "nodeType": "SEQUENCE",
+          "children": [
+            { "nodeType": "ELEMENT", "xmlName": "partyReference", "path": ["partyReference"], "minOccurs": 1, "maxOccurs": 1 },
+            { "nodeType": "ELEMENT", "xmlName": "accountReference", "path": ["accountReference"], "minOccurs": 0, "maxOccurs": 1 },
+            {
+              "nodeType": "CHOICE",
+              "minOccurs": 0,
+              "maxOccurs": "unbounded",
+              "children": [
+                { "nodeType": "ELEMENT", "xmlName": "tradeId", "path": ["tradeIdentifierChoice", "tradeId"], "minOccurs": 1, "maxOccurs": 1 },
+                { "nodeType": "ELEMENT", "xmlName": "versionedTradeId", "path": ["tradeIdentifierChoice", "versionedTradeId"], "minOccurs": 1, "maxOccurs": 1 }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "com.rosetta.test.FpmlFxTargetKnockoutForward": {
+    "attributes": {
+      "fxTargetKnockoutForwardChoice": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "SEQUENCE",
+      "children": [
+        { "nodeType": "ELEMENT", "xmlName": "pivot", "path": ["pivot"], "minOccurs": 0, "maxOccurs": 1 },
+        { "nodeType": "ELEMENT", "xmlName": "constantPayoffRegion", "path": ["constantPayoffRegion"], "minOccurs": 0, "maxOccurs": "unbounded" },
+        { "nodeType": "ELEMENT", "xmlName": "linearPayoffRegion", "path": ["linearPayoffRegion"], "minOccurs": 1, "maxOccurs": 1 },
+        {
+          "nodeType": "CHOICE",
+          "minOccurs": 0,
+          "maxOccurs": "unbounded",
+          "children": [
+            { "nodeType": "ELEMENT", "xmlName": "constantPayoffRegion", "path": ["fxTargetKnockoutForwardChoice", "constantPayoffRegion"], "minOccurs": 1, "maxOccurs": 1 },
+            { "nodeType": "ELEMENT", "xmlName": "linearPayoffRegion", "path": ["fxTargetKnockoutForwardChoice", "linearPayoffRegion"], "minOccurs": 1, "maxOccurs": 1 }
+          ]
+        }
+      ]
+    }
+  },
+  "com.rosetta.test.MultiLeafContainer": {
+    "attributes": {
+      "entry": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "SEQUENCE",
+      "minOccurs": 0,
+      "maxOccurs": "unbounded",
+      "children": [
+        { "nodeType": "ELEMENT", "xmlName": "firstValue", "path": ["entry", "firstValue"], "minOccurs": 1, "maxOccurs": 1 },
+        { "nodeType": "ELEMENT", "xmlName": "secondValue", "path": ["entry", "secondValue"], "minOccurs": 1, "maxOccurs": 1 }
+      ]
+    }
+  },
+  "com.rosetta.test.AllVirtualContainer": {
+    "attributes": {
+      "entry": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "ALL",
+      "children": [
+        { "nodeType": "ELEMENT", "xmlName": "firstValue", "path": ["entry", "firstValue"], "minOccurs": 1, "maxOccurs": 1 },
+        { "nodeType": "ELEMENT", "xmlName": "secondValue", "path": ["entry", "secondValue"], "minOccurs": 1, "maxOccurs": 1 }
+      ]
+    }
+  },
+  "com.rosetta.test.AnyVirtualContainer": {
+    "attributes": {
+      "entry": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "SEQUENCE",
+      "children": [
+        { "nodeType": "ANY", "path": ["entry", "wildcardValue"], "minOccurs": 1, "maxOccurs": 1 },
+        { "nodeType": "ELEMENT", "xmlName": "knownValue", "path": ["knownValue"], "minOccurs": 1, "maxOccurs": 1 }
+      ]
+    }
+  },
+  "com.rosetta.test.MultiLayerContainer": {
+    "attributes": {
+      "outer": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "SEQUENCE",
+      "minOccurs": 0,
+      "maxOccurs": "unbounded",
+      "children": [
+        { "nodeType": "ELEMENT", "xmlName": "firstValue", "path": ["outer", "inner", "firstValue"], "minOccurs": 1, "maxOccurs": 1 },
+        { "nodeType": "ELEMENT", "xmlName": "secondValue", "path": ["outer", "inner", "secondValue"], "minOccurs": 1, "maxOccurs": 1 }
+      ]
+    }
+  }
+}

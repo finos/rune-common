@@ -29,6 +29,7 @@ import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLConfigur
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.rosetta.model.lib.ModelSymbolId;
+import com.rosetta.model.lib.records.Date;
 import com.rosetta.test.*;
 import com.rosetta.util.DottedPath;
 import org.junit.jupiter.api.Disabled;
@@ -170,6 +171,18 @@ public class XmlSerialisationTest {
 
         // Test deserialisation
         TimeContainer actual = xmlMapper.readValue(xml, TimeContainer.class);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testDateAttributeDeserialisationOnConfiguredRootElement() throws JsonProcessingException {
+        DateAttributeContainer expected = DateAttributeContainer.builder()
+                .setTradeDate(Date.of(2026, 5, 9))
+                .build();
+        String xml = "<DateAttributeContainer TradeDate=\"2026-05-09\"/>";
+
+        DateAttributeContainer actual = xmlMapper.readValue(xml, DateAttributeContainer.class);
+
         assertEquals(expected, actual);
     }
 

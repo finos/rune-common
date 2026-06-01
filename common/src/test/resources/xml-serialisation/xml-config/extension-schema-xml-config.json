@@ -42,6 +42,16 @@
     "xmlElementFullyQualifiedName" : "urn:my.schema/cow",
     "abstract" : false
   },
+  "com.rosetta.test.DateAttributeContainer" : {
+    "xmlElementName" : "DateAttributeContainer",
+    "abstract" : false,
+    "attributes" : {
+      "tradeDate" : {
+        "xmlName" : "TradeDate",
+        "xmlRepresentation" : "ATTRIBUTE"
+      }
+    }
+  },
   "com.rosetta.test.Document" : {
     "attributes" : {
       "attr" : {

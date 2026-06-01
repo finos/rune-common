@@ -21,6 +21,7 @@ package com.regnosys.rosetta.common.serialisation.xml;
  */
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
@@ -91,6 +92,9 @@ public class RosettaXmlMapper extends XmlMapper {
     }
     
     private JavaType getTypeFromRootElementName(JsonParser p) {
+        if (!isRootValueRead(p)) {
+            return null;
+        }
         String rootElementName = getRootXMLElementName(p);
         if (rootElementName == null) {
             return null;
@@ -98,6 +102,11 @@ public class RosettaXmlMapper extends XmlMapper {
         return getValueTypeForElement(rootElementName)
                 .map(this::convertClassToJavaType)
                 .orElse(null);
+    }
+
+    private boolean isRootValueRead(JsonParser p) {
+        JsonStreamContext context = p.getParsingContext();
+        return context == null || context.inRoot();
     }
     
     private String getRootXMLElementName(JsonParser p) {

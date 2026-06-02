@@ -60,6 +60,11 @@ type DateAttributeContainer:
 
     tradeDate date (1..1)
 
+
+type ZonedDateTimeAttributeContainer:
+
+    timestamp zonedDateTime (1..1)
+
 type MulticardinalityContainer:
 
     foo Foo (0..*)

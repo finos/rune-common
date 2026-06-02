@@ -49,6 +49,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,7 +133,7 @@ public class XmlSerialisationTest {
         String xml = Resources.toString(Resources.getResource("xml-serialisation/expected/top-level-prune.xml"), StandardCharsets.UTF_8);
 
         TopLevel actual = xmlMapper.readValue(xml, TopLevel.class);
-        
+
         assertEquals(BigDecimal.ONE, actual.getValue().getValue());
         assertEquals(UnitEnum.METER, actual.getValue().getUnit());
         // empty Attr object should have been pruned
@@ -257,6 +258,18 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testZonedDateTimeAttributeDeserialisationOnConfiguredRootElement() throws JsonProcessingException {
+        ZonedDateTimeAttributeContainer expected = ZonedDateTimeAttributeContainer.builder()
+                .setTimestamp(ZonedDateTime.of(2006, 4, 2, 0, 0, 0, 0, ZoneId.of("Z")))
+                .build();
+        String xml = "<ZonedDateTimeAttributeContainer Timestamp=\"2006-04-02Z\"/>";
+
+        ZonedDateTimeAttributeContainer actual = xmlMapper.readValue(xml, ZonedDateTimeAttributeContainer.class);
+
+        assertEquals(expected, actual);
+    }
+    
+    @Test
     public void testElementNamedTypeDeserialisation() throws IOException {
         TypeWithTypeElement t = TypeWithTypeElement.builder()
                 .setFirstElement("first")
@@ -344,8 +357,8 @@ public class XmlSerialisationTest {
 
         AnimalContainer expected = AnimalContainer.builder()
                 .setAnimal(com.rosetta.extension.test.Snake.builder().setName("Snakee")
-                                .setSnakeExtensionModel(SnakeExtensionModel.builder().setDeadliness("MostlyHarmless"))
-                        ).build();
+                        .setSnakeExtensionModel(SnakeExtensionModel.builder().setDeadliness("MostlyHarmless"))
+                ).build();
 
         assertEquals(expected, actual);
     }
@@ -359,9 +372,9 @@ public class XmlSerialisationTest {
 
         WrappedAnimalContainer expected = WrappedAnimalContainer.builder()
                 .setWrappedAnimalContainerModel(WrappedAnimalContainerModel.builder()
-                    .setAnimal(com.rosetta.extension.test.Snake.builder().setName("Snakee")
-                            .setSnakeExtensionModel(SnakeExtensionModel.builder().setDeadliness("MostlyHarmless"))
-                )).build();
+                        .setAnimal(com.rosetta.extension.test.Snake.builder().setName("Snakee")
+                                .setSnakeExtensionModel(SnakeExtensionModel.builder().setDeadliness("MostlyHarmless"))
+                        )).build();
 
         assertEquals(expected, actual);
     }

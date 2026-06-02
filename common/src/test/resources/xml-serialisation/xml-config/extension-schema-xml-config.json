@@ -52,6 +52,16 @@
       }
     }
   },
+  "com.rosetta.test.ZonedDateTimeAttributeContainer" : {
+    "xmlElementName" : "ZonedDateTimeAttributeContainer",
+    "abstract" : false,
+    "attributes" : {
+      "tradeDate" : {
+        "xmlName" : "Timestamp",
+        "xmlRepresentation" : "ATTRIBUTE"
+      }
+    }
+  },
   "com.rosetta.test.Document" : {
     "attributes" : {
       "attr" : {

@@ -23,9 +23,7 @@ package org.finos.rune.mapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.PrettyPrinter;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -80,21 +78,6 @@ public class RuneJsonObjectMapper extends ObjectMapper {
 
     public static List<String> getMetaProperties() {
         return RuneJsonConfig.getMetaProperties();
-    }
-  
-    @Override
-    protected ObjectWriter _newWriter(SerializationConfig config) {
-        return new RuneJsonObjectWriter(this, config);
-    }
-
-    @Override
-    protected ObjectWriter _newWriter(SerializationConfig config, FormatSchema schema) {
-        return new RuneJsonObjectWriter(this, config, schema);
-    }
-
-    @Override
-    protected ObjectWriter _newWriter(SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
-        return new RuneJsonObjectWriter(this, config, rootType, pp);
     }
 
     private static ObjectMapper create() {

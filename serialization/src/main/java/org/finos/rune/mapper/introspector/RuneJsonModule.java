@@ -22,6 +22,7 @@ package org.finos.rune.mapper.introspector;
 
 import com.fasterxml.jackson.core.json.PackageVersion;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.finos.rune.mapper.serializer.PreProcessingSerializerModifier;
 import org.finos.rune.mapper.serializer.PruningDeserializerModifier;
 
 /**
@@ -38,6 +39,7 @@ public class RuneJsonModule extends SimpleModule {
     @Override
     public void setupModule(SetupContext context) {
         super.setupModule(context);
+        context.addBeanSerializerModifier(new PreProcessingSerializerModifier());
         context.addBeanDeserializerModifier(new PruningDeserializerModifier());
         context.insertAnnotationIntrospector(new RuneJsonAnnotationIntrospector());
     }

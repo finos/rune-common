@@ -29,15 +29,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class RuneSerializerPruningTest {
-    public static final String TEST_TYPE = "rune-serializer-key-pruning-test";
+    public static final String TEST_TYPE = "rune-serializer-pruning-test";
     public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
+    public static final String GROUP_META_KEY = "metakey";
+    public static final String GROUP_OBJECT_PRUNING = "objectprune";
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     private ObjectMapper objectMapper;
 
@@ -53,6 +57,19 @@ public class RuneSerializerPruningTest {
     void setUp() {
         dynamicCompiledClassLoader = new DynamicCompiledClassLoader();
         objectMapper = newObjectMapper(dynamicCompiledClassLoader);
+    }
+
+    @Test
+    void testStringWithEmptyMetaPrunesOnDeserialise() throws NoSuchFieldException, IllegalAccessException {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_OBJECT_PRUNING);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "object-prune.rosetta");
+        String input = readAsString(getFile(groupPath, "string-with-empty-meta.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+
+        Object fieldA = getFieldValue(deserializedObject, "fieldA");
+        Object meta = getFieldValue(fieldA, "meta");
+        assertNull(meta);
     }
 
     @Test
@@ -129,7 +146,7 @@ public class RuneSerializerPruningTest {
     @Disabled
     @Test
     void testRedundantGlobalKeyIsPrunedFromRootObject() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-root-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-redundant-key-input.json"));
 
@@ -147,4 +164,10 @@ public class RuneSerializerPruningTest {
         return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, Collections.singletonList(rosetta), helper, dynamicCompiledClassLoader);
     }
 
+    public static Object getFieldValue(Object obj, String fieldName)
+            throws NoSuchFieldException, IllegalAccessException {
+        Field field = obj.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(obj);
+    }
 }

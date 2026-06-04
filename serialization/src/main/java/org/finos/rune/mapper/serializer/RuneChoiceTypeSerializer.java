@@ -42,7 +42,6 @@ import java.util.Map;
 public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject> {
 
     private static final String DATA = "@data";
-    private static final String META = "meta";
 
     @Override
     public void serialize(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers) throws IOException {

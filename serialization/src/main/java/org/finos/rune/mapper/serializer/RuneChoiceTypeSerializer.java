@@ -30,6 +30,7 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
@@ -102,7 +103,10 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         ChoiceValue selected = null;
         for (Method method : value.getClass().getMethods()) {
             RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
-            if (attribute != null && method.getParameterCount() == 0 && !RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
+            if (attribute != null
+                    && method.getParameterCount() == 0
+                    && !RuneJsonConfig.getMetaProperties().contains(attribute.value())
+                    && !isChoiceMetadataAttribute(method)) {
                 Object selectedValue = invoke(method, value);
                 if (!isEmptyChoiceValue(selectedValue)) {
                     Class<?> choiceType = value.getType();
@@ -123,6 +127,10 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             }
         }
         return selected;
+    }
+
+    private boolean isChoiceMetadataAttribute(Method method) {
+        return GlobalKeyFields.class.isAssignableFrom(method.getReturnType());
     }
 
     private Object invoke(Method method, Object target) throws IOException {

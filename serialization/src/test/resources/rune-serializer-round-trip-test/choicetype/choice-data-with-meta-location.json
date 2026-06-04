@@ -3,8 +3,8 @@
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
   "choiceData" : {
-    "@type" : "serialization.test.passing.choicetype.F",
     "@key:scoped" : "someLocation",
+    "@type" : "serialization.test.passing.choicetype.F",
     "fieldF" : "foo"
   },
   "typeWithAddress" : {

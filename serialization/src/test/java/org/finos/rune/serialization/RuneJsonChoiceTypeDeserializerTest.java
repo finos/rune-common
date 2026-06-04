@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.metafields.MetaFields;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RuneJsonChoiceTypeDeserializerTest {
     private static final String TEST_TYPE = "rune-json-choice-type-deserializer-test";
@@ -62,6 +64,27 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @BeforeEach
     void setUp() {
         objectMapper = newObjectMapper(dynamicCompiledClassLoader);
+    }
+
+    @Test
+    void shouldDeserializeChoiceDataWithMetadataKey() throws JsonProcessingException {
+        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        String json = readAsString(getFile(groupPath, "choice-data-metakey.json"));
+
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
+
+        Object choiceData = invokeGetter(deserializedObject, "getChoiceData");
+        Assertions.assertNotNull(choiceData);
+
+        Object a = invokeGetter(choiceData, "getA");
+        Assertions.assertEquals("foo", invokeGetter(a, "getFieldA"));
+
+        Object meta = invokeGetter(choiceData, "getMeta");
+        Assertions.assertNotNull(meta);
+        assertInstanceOf(MetaFields.class, meta);
+        MetaFields metaFields = (MetaFields) meta;
+        assertEquals("someExternalKey", metaFields.getExternalKey());
     }
 
     @Test
@@ -119,7 +142,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
         MismatchedInputException exception = Assertions.assertThrows(MismatchedInputException.class,
                 () -> fromJson(json, rootDataType));
 
-        Assertions.assertTrue(exception.getMessage().contains("Unable to resolve Rune choice option"));
+        assertTrue(exception.getMessage().contains("Unable to resolve Rune choice option"));
     }
 
     @Test
@@ -131,7 +154,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
         MismatchedInputException exception = Assertions.assertThrows(MismatchedInputException.class,
                 () -> fromJson(json, rootDataType));
 
-        Assertions.assertTrue(exception.getMessage().contains("Unable to resolve Rune choice option"));
+        assertTrue(exception.getMessage().contains("Unable to resolve Rune choice option"));
     }
 
     private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath) {

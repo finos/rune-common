@@ -29,17 +29,14 @@ import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
-import com.rosetta.model.lib.annotations.RuneMetaType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject> {
 
@@ -48,12 +45,10 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
     @Override
     public void serialize(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         ChoiceValue choiceValue = getChoiceValue(value);
-        Set<String> writtenFields = new HashSet<>();
 
         gen.writeStartObject();
-        writeChoiceMetadata(value, gen, serializers, writtenFields);
         if (choiceValue != null) {
-            writeChoiceValue(choiceValue, gen, serializers, writtenFields);
+            writeChoiceValue(choiceValue, gen, serializers);
         }
         gen.writeEndObject();
     }
@@ -63,7 +58,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         return RosettaModelObject.class;
     }
 
-    private void writeChoiceValue(ChoiceValue choiceValue, JsonGenerator gen, SerializerProvider serializers, Set<String> writtenFields) throws IOException {
+    private void writeChoiceValue(ChoiceValue choiceValue, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         Object selectedValue = choiceValue.value;
         validateDeclaredChoiceOptionType(choiceValue, serializers);
         if (selectedValue instanceof RosettaModelObject) {
@@ -73,22 +68,20 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                 if (nestedChoiceValue == null) {
                     throw new IOException("Nested Rune choice has no selected value for " + selectedRosettaValue.getType().getName());
                 }
-                writeChoiceValue(nestedChoiceValue, gen, serializers, writtenFields);
+                writeChoiceValue(nestedChoiceValue, gen, serializers);
                 return;
             }
 
-            writeStringFieldIfAbsent(RuneJsonConfig.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue), gen, writtenFields);
-            writeRosettaFields(selectedRosettaValue, gen, serializers, writtenFields);
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue));
+            writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
-            writeStringFieldIfAbsent(RuneJsonConfig.MetaProperties.TYPE, choiceValue.choiceOptionType, gen, writtenFields);
-            if (writtenFields.add(DATA)) {
-                gen.writeFieldName(DATA);
-                serializers.defaultSerializeValue(selectedValue, gen);
-            }
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.choiceOptionType);
+            gen.writeFieldName(DATA);
+            serializers.defaultSerializeValue(selectedValue, gen);
         }
     }
 
-    private void writeRosettaFields(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers, Set<String> writtenFields) throws IOException {
+    private void writeRosettaFields(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         TokenBuffer buffer = new TokenBuffer(gen.getCodec(), false);
         serializers.defaultSerializeValue(value, buffer);
         JsonNode node = gen.getCodec().readTree(buffer.asParser());
@@ -97,7 +90,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> field = fields.next();
-                if (!RuneJsonConfig.getMetaProperties().contains(field.getKey()) && writtenFields.add(field.getKey())) {
+                if (!RuneJsonConfig.getMetaProperties().contains(field.getKey())) {
                     gen.writeFieldName(field.getKey());
                     gen.writeTree(field.getValue());
                 }
@@ -109,10 +102,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         ChoiceValue selected = null;
         for (Method method : value.getClass().getMethods()) {
             RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
-            if (attribute != null
-                    && method.getParameterCount() == 0
-                    && !RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())
-                    && !method.isAnnotationPresent(RuneMetaType.class)) {
+            if (attribute != null && method.getParameterCount() == 0 && !RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
                 Object selectedValue = invoke(method, value);
                 if (!isEmptyChoiceValue(selectedValue)) {
                     Class<?> choiceType = value.getType();
@@ -133,51 +123,6 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             }
         }
         return selected;
-    }
-
-    private void writeChoiceMetadata(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers, Set<String> writtenFields) throws IOException {
-        Set<String> serializedMetadataAttributes = new HashSet<>();
-        for (Method method : value.getClass().getMethods()) {
-            RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
-            if (attribute == null || method.getParameterCount() != 0 || !method.isAnnotationPresent(RuneMetaType.class)) {
-                continue;
-            }
-            if (!serializedMetadataAttributes.add(attribute.value())) {
-                continue;
-            }
-
-            Object metadataValue = invoke(method, value);
-            if (metadataValue == null) {
-                continue;
-            }
-
-            writeUnwrappedObjectFields(metadataValue, gen, serializers, writtenFields);
-        }
-    }
-
-    private void writeUnwrappedObjectFields(Object value, JsonGenerator gen, SerializerProvider serializers, Set<String> writtenFields) throws IOException {
-        TokenBuffer buffer = new TokenBuffer(gen.getCodec(), false);
-        serializers.defaultSerializeValue(value, buffer);
-        JsonNode node = gen.getCodec().readTree(buffer.asParser());
-
-        if (node instanceof ObjectNode) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
-                if (RuneJsonConfig.getMetaProperties().contains(field.getKey())
-                        || !writtenFields.add(field.getKey())) {
-                    continue;
-                }
-                gen.writeFieldName(field.getKey());
-                gen.writeTree(field.getValue());
-            }
-        }
-    }
-
-    private void writeStringFieldIfAbsent(String fieldName, String value, JsonGenerator gen, Set<String> writtenFields) throws IOException {
-        if (writtenFields.add(fieldName)) {
-            gen.writeStringField(fieldName, value);
-        }
     }
 
     private Object invoke(Method method, Object target) throws IOException {

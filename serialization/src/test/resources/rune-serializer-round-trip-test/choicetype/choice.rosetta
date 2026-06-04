@@ -42,7 +42,6 @@ type G:
   fieldG string (1..1)
 
 choice ChoiceData:
-  [metadata key]
   A
   ExtA
   B
@@ -88,5 +87,3 @@ type Root:
   typeWithLocation TypeWithLocation (0..1)
   typeWithAddress TypeWithAddress (0..1)
   typeG G (0..1)
-  choiceDataReference ChoiceData (0..1)
-    [metadata reference]

@@ -31,15 +31,12 @@ import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.annotations.RuneDataType;
-import com.rosetta.model.lib.annotations.RuneMetaType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.Map;
 
 public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObject> {
 
@@ -76,48 +73,19 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
 
     private RosettaModelObject tryDeserialize(ObjectNode node, String runeType, Class<?> targetChoiceType, ObjectMapper mapper) throws IOException {
         RosettaModelObjectBuilder builder = newBuilder(targetChoiceType);
-        boolean selectedOptionResolved = false;
         for (Method setter : builder.getClass().getMethods()) {
             RuneAttribute attribute = setter.getAnnotation(RuneAttribute.class);
-            if (attribute == null || setter.getParameterCount() != 1) {
-                continue;
-            }
-
-            if (setter.isAnnotationPresent(RuneMetaType.class)) {
-                Object metadata = resolveChoiceMetadata(setter.getParameterTypes()[0], node, mapper);
-                if (metadata != null) {
-                    invoke(setter, builder, metadata);
-                }
-                continue;
-            }
-
-            if (RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value()) || selectedOptionResolved) {
+            if (attribute == null || setter.getParameterCount() != 1 || RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
                 continue;
             }
 
             Object value = resolveValue(attribute.value(), setter.getParameterTypes()[0], runeType, node, mapper);
             if (value != null) {
                 invoke(setter, builder, value);
-                selectedOptionResolved = true;
+                return builder.build();
             }
         }
-        return selectedOptionResolved ? builder.build() : null;
-    }
-
-    private Object resolveChoiceMetadata(Class<?> metadataType, ObjectNode node, ObjectMapper mapper) throws IOException {
-        ObjectNode metadataNode = mapper.createObjectNode();
-        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
-            String fieldName = field.getKey();
-            if (fieldName.startsWith("@") && !RuneJsonConfig.MetaProperties.TYPE.equals(fieldName)) {
-                metadataNode.set(fieldName, field.getValue());
-            }
-        }
-        if (metadataNode.isEmpty()) {
-            return null;
-        }
-        return mapper.treeToValue(metadataNode, metadataType);
+        return null;
     }
 
     private Object resolveValue(String optionName, Class<?> optionType, String runeType, ObjectNode node, ObjectMapper mapper) throws IOException {

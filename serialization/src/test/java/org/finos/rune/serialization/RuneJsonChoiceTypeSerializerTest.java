@@ -28,7 +28,6 @@ import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.metafields.MetaFields;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,31 +61,6 @@ public class RuneJsonChoiceTypeSerializerTest {
     @BeforeEach
     void setUp() {
         objectMapper = newObjectMapper(dynamicCompiledClassLoader);
-    }
-
-    @Test
-    void shouldSerializeChoiceWithMetadataKey() throws IOException {
-        RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "metakey"));
-
-        RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
-        invokeSetter(aBuilder, "setFieldA", "foo");
-        RosettaModelObject a = build(aBuilder);
-
-        RosettaModelObjectBuilder choiceDataABuilder = newBuilder(group.getType("ChoiceData"));
-        invokeSetter(choiceDataABuilder, "setA", a);
-        MetaFields someGlobalKey = MetaFields.builder().setExternalKey("someExternalKey").build();
-        invokeSetter(choiceDataABuilder, "setMeta", someGlobalKey);
-        RosettaModelObject choiceDataA = build(choiceDataABuilder);
-
-        RosettaModelObjectBuilder rootBuilder = newBuilder(group.getRootType());
-        invokeSetter(rootBuilder, "setChoiceData", choiceDataA);
-        RosettaModelObject root = build(rootBuilder);
-
-        JsonNode choiceDataJson = objectMapper.readTree(toJson(root)).get("choiceData");
-        Assertions.assertNotNull(choiceDataJson);
-        Assertions.assertEquals("serialization.test.passing.metakey.A", choiceDataJson.get("@type").asText());
-        Assertions.assertEquals("foo", choiceDataJson.get("fieldA").asText());
-        Assertions.assertEquals("someExternalKey", choiceDataJson.get("@key:external").asText());
     }
 
     @Test

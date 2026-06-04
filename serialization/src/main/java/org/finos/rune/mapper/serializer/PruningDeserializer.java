@@ -30,6 +30,7 @@ import java.io.IOException;
 
 public class PruningDeserializer<T> extends DelegatingDeserializer {
     private static final long serialVersionUID = 1L;
+    private static final String PRUNING_DEPTH_ATTRIBUTE = PruningDeserializer.class.getName() + ".pruningDepth";
 
     public PruningDeserializer(JsonDeserializer<?> delegatee) {
         super(delegatee);
@@ -42,15 +43,28 @@ public class PruningDeserializer<T> extends DelegatingDeserializer {
 
     @Override
     public T deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        @SuppressWarnings("unchecked")
-        T obj = (T) _delegatee.deserialize(p, ctxt);
+        Integer pruningDepth = (Integer) ctxt.getAttribute(PRUNING_DEPTH_ATTRIBUTE);
+        int currentDepth = pruningDepth == null ? 0 : pruningDepth;
+        ctxt.setAttribute(PRUNING_DEPTH_ATTRIBUTE, currentDepth + 1);
 
-        if (obj instanceof RosettaModelObject) {
+        T obj;
+        try {
+            @SuppressWarnings("unchecked")
+            T deserialized = (T) _delegatee.deserialize(p, ctxt);
+            obj = deserialized;
+        } finally {
+            if (currentDepth == 0) {
+                ctxt.setAttribute(PRUNING_DEPTH_ATTRIBUTE, null);
+            } else {
+                ctxt.setAttribute(PRUNING_DEPTH_ATTRIBUTE, currentDepth);
+            }
+        }
+
+        if (currentDepth == 0 && obj instanceof RosettaModelObject) {
             @SuppressWarnings("unchecked")
             T prunedObject = (T) ((RosettaModelObject) obj).toBuilder().prune().build();
             return prunedObject;
         }
-
         return obj;
     }
 }

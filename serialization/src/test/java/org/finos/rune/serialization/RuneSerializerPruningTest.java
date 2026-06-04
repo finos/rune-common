@@ -74,7 +74,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaKeyOnObjectWithNoReferenceToItIsPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-without-ref-input.json"));
 
@@ -88,7 +88,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaKeyOnObjectWithReferenceIsNotPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-ref.json"));
 
@@ -100,7 +100,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaIdOnAttributeWithNoReferenceToItIsPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "attribute-key-without-ref-input.json"));
 
@@ -114,7 +114,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaIdOnAttributeWithReferenceIsNotPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "attribute-key-with-ref.json"));
 
@@ -126,7 +126,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testDuplicateReferencesArePruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-input.json"));
 

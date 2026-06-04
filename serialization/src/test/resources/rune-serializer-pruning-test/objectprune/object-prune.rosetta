@@ -1,0 +1,8 @@
+namespace serialization.test.passing.objectprune
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+type Root:
+  [rootType]
+  fieldA string (1..1)
+    [metadata scheme]

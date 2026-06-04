@@ -1,0 +1,8 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.objectprune.Root",
+  "@version" : "0.0.0",
+  "fieldA" : {
+    "@data" : "foo"
+  }
+}

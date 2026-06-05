@@ -65,7 +65,7 @@ public class RuneJsonChoiceTypeSerializerTest {
     }
 
     @Test
-    void shouldSerializeSameChoiceTypeInList() throws IOException {
+    void shouldSerializeSameChoiceTypeInListWhenNotBuiltInWrapper() throws IOException {
         RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "list"));
 
         RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
@@ -86,7 +86,7 @@ public class RuneJsonChoiceTypeSerializerTest {
 
         RosettaModelObjectBuilder rootBuilder = newBuilder(group.getRootType());
         invokeSetter(rootBuilder, "setProduct", productBuilder);
-        NonRosettaWrapper wrapperWithBuilders = new NonRosettaWrapper((RosettaModelObject) rootBuilder);
+        NonRosettaWrapper wrapperWithBuilders = new NonRosettaWrapper(rootBuilder);
 
         JsonMappingException exception = Assertions.assertThrows(
                 JsonMappingException.class,
@@ -98,7 +98,7 @@ public class RuneJsonChoiceTypeSerializerTest {
     }
 
     @Test
-    void shouldSerializeSameChoiceTypeInListWhenBuilt() throws IOException {
+    void shouldSerializeSameChoiceTypeInListWhenBuiltInWrapper() throws IOException {
         RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "list"));
 
         RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
@@ -123,8 +123,16 @@ public class RuneJsonChoiceTypeSerializerTest {
         RosettaModelObject builtRoot = build(rootBuilder);
         NonRosettaWrapper wrapperWithBuiltObject = new NonRosettaWrapper(builtRoot);
         String builtJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(wrapperWithBuiltObject);
-        Assertions.assertNotNull(builtJson);
-        Assertions.assertFalse(builtJson.isEmpty());
+        JsonNode payoutJson = objectMapper.readTree(builtJson)
+                .path("root")
+                .path("product")
+                .path("economicTerms")
+                .path("payout");
+
+        Assertions.assertTrue(payoutJson.isArray());
+        Assertions.assertEquals(2, payoutJson.size());
+        Assertions.assertEquals("foo", payoutJson.get(0).path("fieldA").asText());
+        Assertions.assertEquals("foo2", payoutJson.get(1).path("fieldA").asText());
     }
 
     @Test

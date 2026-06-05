@@ -88,13 +88,52 @@ public class RuneJsonChoiceTypeSerializerTest {
         invokeSetter(rootBuilder, "setProduct", productBuilder);
         NonRosettaWrapper wrapperWithBuilders = new NonRosettaWrapper(rootBuilder);
 
-        JsonMappingException exception = Assertions.assertThrows(
-                JsonMappingException.class,
-                () -> objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(wrapperWithBuilders)
-        );
+        String builtJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(wrapperWithBuilders);
+        JsonNode payoutJson = objectMapper.readTree(builtJson)
+                .path("root")
+                .path("product")
+                .path("economicTerms")
+                .path("payout");
 
-        Assertions.assertTrue(exception.getMessage().contains("Multiple Rune choice options selected for"));
-        Assertions.assertTrue(exception.getMessage().contains(": A and A"));
+        Assertions.assertTrue(payoutJson.isArray());
+        Assertions.assertEquals(2, payoutJson.size());
+        Assertions.assertEquals("foo", payoutJson.get(0).path("fieldA").asText());
+        Assertions.assertEquals("foo2", payoutJson.get(1).path("fieldA").asText());
+    }
+
+    @Test
+    void shouldSerializeSameChoiceTypeInListWhenNotBuiltWithoutWrapper() throws IOException {
+        RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "list"));
+
+        RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
+        invokeSetter(aBuilder, "setFieldA", "foo");
+        RosettaModelObjectBuilder choiceDataABuilder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataABuilder, "setA", aBuilder);
+
+        RosettaModelObjectBuilder a2Builder = newBuilder(group.getType("A"));
+        invokeSetter(a2Builder, "setFieldA", "foo2");
+        RosettaModelObjectBuilder choiceDataA2Builder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataA2Builder, "setA", a2Builder);
+
+        RosettaModelObjectBuilder economicTermsBuilder = newBuilder(group.getType("EconomicTerms"));
+        invokeSetter(economicTermsBuilder, "setPayout", Arrays.asList(choiceDataABuilder, choiceDataA2Builder));
+
+        RosettaModelObjectBuilder productBuilder = newBuilder(group.getType("Product"));
+        invokeSetter(productBuilder, "setEconomicTerms", economicTermsBuilder);
+
+        RosettaModelObjectBuilder rootBuilder = newBuilder(group.getRootType());
+        invokeSetter(rootBuilder, "setProduct", productBuilder);
+
+        String builtJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootBuilder);
+        JsonNode payoutJson = objectMapper.readTree(builtJson)
+                .path("product")
+                .path("economicTerms")
+                .path("payout");
+
+        Assertions.assertTrue(payoutJson.isArray());
+        Assertions.assertEquals(2, payoutJson.size());
+        Assertions.assertEquals("foo", payoutJson.get(0).path("fieldA").asText());
+        Assertions.assertEquals("foo2", payoutJson.get(1).path("fieldA").asText());
     }
 
     @Test

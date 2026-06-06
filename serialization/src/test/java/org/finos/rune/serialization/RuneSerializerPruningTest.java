@@ -59,18 +59,6 @@ public class RuneSerializerPruningTest {
         objectMapper = newObjectMapper(dynamicCompiledClassLoader);
     }
 
-    /*
-    Old RosettaObjectMapper (see RosettaObjectMapperCreator#create) registered a Jackson filter:
-
-    .setFilterProvider(new SimpleFilterProvider()
-        .addFilter("ReferenceFilter", new ReferenceFilter()))
-    .addMixIn(ReferenceWithMeta.class, ReferenceWithMetaMixIn.class)
-
-    ReferenceWithMetaMixIn is annotated @JsonFilter("ReferenceFilter"), and ReferenceFilter#filterOut
-    returns true for the property named value whenever globalReference (or address) is
-    set on the ReferenceWithMeta. So value was silently dropped on output even though it
-    was fully populated in the builder. Output: bare { globalReference, externalReference }
-     */
     @Test
     void testReferenceWithInlinedBodyIsPrunedWhenSiblingKeyedBodyExists() {
         Path groupPath = getGroupPath(TEST_TYPE, GROUP_OBJECT_PRUNING);

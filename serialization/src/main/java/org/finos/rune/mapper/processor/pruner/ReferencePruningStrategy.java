@@ -77,6 +77,17 @@ public class ReferencePruningStrategy implements PruningStrategy {
             referenceWithMetaBuilder.setGlobalReference(null);
         }
 
+        // If the reference still points to another object via any key type, the inlined value is
+        // redundant: the resolved object is serialized at its keyed location, so drop the duplicate body here.
+        if (hasReference(referenceWithMetaBuilder)) {
+            referenceWithMetaBuilder.setValue(null);
+        }
+    }
+
+    private boolean hasReference(ReferenceWithMeta.ReferenceWithMetaBuilder<?> builder) {
+        return builder.getGlobalReference() != null
+                || builder.getExternalReference() != null
+                || (builder.getReference() != null && builder.getReference().getReference() != null);
     }
 
     private void addReferencedObject(Set<Object> referencedObjects, String reference,

@@ -1,0 +1,14 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.objectprune.Root",
+  "@version" : "0.0.0",
+  "counterparty" : [ {
+    "partyReference" : {
+      "@ref:external" : "party2"
+    }
+  } ],
+  "party" : [ {
+    "@key:external" : "party2",
+    "name" : "Bank Y"
+  } ]
+}

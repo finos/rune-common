@@ -71,12 +71,12 @@ public class KeyCollectorStrategy implements CollectorStrategy {
     private final Map<KeyRecord, Object> addressToValueObjectMap = new HashMap<>();
 
     @Override
-    public void collect(RosettaModelObject instance, RosettaModelObject parent) {
-        // A reference holder points to a keyed object defined elsewhere. Neither the holder itself nor the body
-        // it inlines is the canonical definition of the keyed object - both carry keys that are redundant
-        // duplicates of the real definition. Collecting them would overwrite the genuine definition in the lookup
-        // maps and break reference de-duplication, so skip the holder and anything nested directly within it.
-        if (isReferenceHolder(instance) || isReferenceHolder(parent)) {
+    public void collect(RosettaModelObject instance) {
+        // A reference holder points to a keyed object defined elsewhere, so any key it carries is a redundant
+        // duplicate of that real definition and must not be registered as a lookup target - otherwise it would
+        // overwrite the genuine definition and break reference de-duplication. The holder's inlined value subtree
+        // is redundant for the same reason and is excluded from traversal entirely via shouldCollectChildren.
+        if (isReferenceHolder(instance)) {
             return;
         }
         if (instance instanceof GlobalKey) {
@@ -104,6 +104,14 @@ public class KeyCollectorStrategy implements CollectorStrategy {
             }
         }
 
+    }
+
+    @Override
+    public boolean shouldCollectChildren(RosettaModelObject instance) {
+        // Whenever a reference is present the holder's inlined body is dropped before serialization, so every key
+        // nested anywhere within it is a redundant duplicate of a real definition. Excluding the whole subtree
+        // keeps those keys (at any depth) from overwriting the genuine definitions in the lookup maps.
+        return !isReferenceHolder(instance);
     }
 
     public KeyLookupService getKeyLookupService() {

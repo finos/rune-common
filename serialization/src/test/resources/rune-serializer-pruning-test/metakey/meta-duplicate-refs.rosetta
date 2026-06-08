@@ -14,6 +14,7 @@ type AttributeRef:
 type KeyedThing:
   [metadata key]
   name string (1..1)
+  nested KeyedThing (0..1)
 
 type ObjectRef:
   someField string (1..1)

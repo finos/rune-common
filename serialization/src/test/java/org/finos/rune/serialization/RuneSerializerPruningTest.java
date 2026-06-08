@@ -88,6 +88,20 @@ public class RuneSerializerPruningTest {
     }
 
     @Test
+    void testGlobalKeyRefPairIsPrunedWhenAnotherObjectSharesTheSameGlobalKey() {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
+        String input = readAsString(getFile(groupPath, "global-ref-pruned-when-another-object-shares-global-key-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "global-ref-pruned-when-another-object-shares-global-key-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
     void testReferenceWithInlinedBodyIsPrunedWhenSiblingKeyedBodyExists() {
         Path groupPath = getGroupPath(TEST_TYPE, GROUP_OBJECT_PRUNING);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "object-prune.rosetta");

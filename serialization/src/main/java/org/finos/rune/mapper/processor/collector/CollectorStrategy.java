@@ -42,12 +42,4 @@ import com.rosetta.model.lib.RosettaModelObject;
  */
 public interface CollectorStrategy {
     void collect(RosettaModelObject instance);
-
-    /**
-     * Controls whether the children of {@code instance} should be traversed and collected from. Returning
-     * {@code false} excludes the entire subtree below {@code instance} from collection. Defaults to {@code true}.
-     */
-    default boolean shouldCollectChildren(RosettaModelObject instance) {
-        return true;
-    }
 }

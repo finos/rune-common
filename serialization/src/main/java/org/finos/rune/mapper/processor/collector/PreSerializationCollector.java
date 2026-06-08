@@ -44,7 +44,7 @@ public class PreSerializationCollector implements Processor {
     @Override
     public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType, R instance, RosettaModelObject parent, AttributeMeta... metas) {
         for (CollectorStrategy collectorStrategy : collectorStrategies) {
-            collectorStrategy.collect(instance);
+            collectorStrategy.collect(instance, parent);
         }
         return true;
     }

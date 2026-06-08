@@ -59,6 +59,31 @@ public class RuneSerializerPruningTest {
         objectMapper = newObjectMapper(dynamicCompiledClassLoader);
     }
 
+    /**
+     * Reproduces Issue 1 from RUNE-SERIALISER-ISSUES.md: when a reference holder carries
+     * both a global @ref and an @ref:external plus an inlined value, AND the target keyed
+     * object carries both @key and @key:external, the serializer must prune the redundant
+     * global @key/@ref pair (leaving only the higher-precedence external pair).
+     *
+     * The inlined value on the reference holder must not register its own (duplicate) @key as a
+     * lookup target, otherwise the redundant global @ref is not detected and serialisation becomes
+     * non-idempotent across a serialise -> deserialise -> serialise round-trip.
+     * See RUNE-SERIALISER-ISSUES.md Issue 1.
+     */
+    @Test
+    void testGlobalKeyRefPairIsPrunedWhenExternalKeyRefAndInlinedValuePresentForMetadataKey() {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
+        String input = readAsString(getFile(groupPath, "global-and-external-key-with-inlined-body-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "global-and-external-key-with-inlined-body-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
     @Test
     void testReferenceWithInlinedBodyIsPrunedWhenSiblingKeyedBodyExists() {
         Path groupPath = getGroupPath(TEST_TYPE, GROUP_OBJECT_PRUNING);

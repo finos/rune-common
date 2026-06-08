@@ -25,6 +25,7 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
+import com.rosetta.model.lib.meta.ReferenceWithMeta;
 import org.finos.rune.mapper.processor.KeyRecord;
 import org.finos.rune.mapper.processor.pruner.ReferencePruningStrategy;
 
@@ -70,7 +71,14 @@ public class KeyCollectorStrategy implements CollectorStrategy {
     private final Map<KeyRecord, Object> addressToValueObjectMap = new HashMap<>();
 
     @Override
-    public void collect(RosettaModelObject instance) {
+    public void collect(RosettaModelObject instance, RosettaModelObject parent) {
+        // A reference holder points to a keyed object defined elsewhere. Neither the holder itself nor the body
+        // it inlines is the canonical definition of the keyed object - both carry keys that are redundant
+        // duplicates of the real definition. Collecting them would overwrite the genuine definition in the lookup
+        // maps and break reference de-duplication, so skip the holder and anything nested directly within it.
+        if (isReferenceHolder(instance) || isReferenceHolder(parent)) {
+            return;
+        }
         if (instance instanceof GlobalKey) {
             GlobalKey globalKey = (GlobalKey) instance;
             Object value = getValue(instance);
@@ -100,6 +108,16 @@ public class KeyCollectorStrategy implements CollectorStrategy {
 
     public KeyLookupService getKeyLookupService() {
         return new KeyLookupService(globalKeyToValueObjectMap, externalKeyToValueObjectMap, addressToValueObjectMap);
+    }
+
+    private boolean isReferenceHolder(RosettaModelObject instance) {
+        if (instance instanceof ReferenceWithMeta) {
+            ReferenceWithMeta<?> reference = (ReferenceWithMeta<?>) instance;
+            return reference.getGlobalReference() != null
+                    || reference.getExternalReference() != null
+                    || (reference.getReference() != null && reference.getReference().getReference() != null);
+        }
+        return false;
     }
 
     private Object getValue(RosettaModelObject instance) {

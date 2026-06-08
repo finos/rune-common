@@ -41,5 +41,5 @@ import com.rosetta.model.lib.RosettaModelObject;
  * @see RosettaModelObject
  */
 public interface CollectorStrategy {
-    void collect(RosettaModelObject instance);
+    void collect(RosettaModelObject instance, RosettaModelObject parent);
 }

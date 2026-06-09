@@ -2,7 +2,17 @@ namespace serialization.test.passing.objectprune
 
 annotation rootType: <"Mark a type as a root of the rosetta model">
 
+type Party:
+  [metadata key]
+  name string (1..1)
+
+type Counterparty:
+  partyReference Party (1..1)
+    [metadata reference]
+
 type Root:
   [rootType]
-  fieldA string (1..1)
+  fieldA string (0..1)
     [metadata scheme]
+  counterparty Counterparty (0..*)
+  party Party (0..*)

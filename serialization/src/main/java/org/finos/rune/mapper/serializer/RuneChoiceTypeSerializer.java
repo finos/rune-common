@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
@@ -105,6 +106,12 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
             if (attribute != null
                     && method.getParameterCount() == 0
+                    // When serializing a builder, each choice option is exposed twice: by the
+                    // covariant builder getter (e.g. A.ABuilder getA()) and by the synthetic
+                    // bridge that satisfies the base interface (A getA()). Ignore the builder-typed
+                    // getter and keep the base-typed accessor, so a single option counts once and
+                    // declaredType matches the runtime built type in validateDeclaredChoiceOptionType.
+                    && !RosettaModelObjectBuilder.class.isAssignableFrom(method.getReturnType())
                     && !RuneJsonConfig.getMetaProperties().contains(attribute.value())
                     && !isChoiceMetadataAttribute(method)) {
                 Object selectedValue = invoke(method, value);

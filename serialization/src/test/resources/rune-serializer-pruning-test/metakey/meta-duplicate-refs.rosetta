@@ -11,6 +11,18 @@ type AttributeRef:
     [metadata reference]
     [metadata address "pointsTo"=AttributeRef->dateField]
 
+type KeyedThing:
+  [metadata key]
+  name string (1..1)
+  nested KeyedThing (0..1)
+
+type ObjectRef:
+  someField string (1..1)
+  keyedThing KeyedThing (0..1)
+  keyedThingReference KeyedThing (0..1)
+    [metadata reference]
+
 type Root:
   [rootType]
   attributeRefs AttributeRef (0..*)
+  objectRefs ObjectRef (0..*)

@@ -20,6 +20,7 @@ package org.finos.rune.serialization;
  * ==============
  */
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -36,8 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 
@@ -62,6 +62,116 @@ public class RuneJsonChoiceTypeSerializerTest {
     @BeforeEach
     void setUp() {
         objectMapper = newObjectMapper(dynamicCompiledClassLoader);
+    }
+
+    @Test
+    void shouldSerializeSameChoiceTypeInListWhenNotBuiltInWrapper() throws IOException {
+        RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "list"));
+
+        RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
+        invokeSetter(aBuilder, "setFieldA", "foo");
+        RosettaModelObjectBuilder choiceDataABuilder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataABuilder, "setA", aBuilder);
+
+        RosettaModelObjectBuilder a2Builder = newBuilder(group.getType("A"));
+        invokeSetter(a2Builder, "setFieldA", "foo2");
+        RosettaModelObjectBuilder choiceDataA2Builder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataA2Builder, "setA", a2Builder);
+
+        RosettaModelObjectBuilder economicTermsBuilder = newBuilder(group.getType("EconomicTerms"));
+        invokeSetter(economicTermsBuilder, "setPayout", Arrays.asList(choiceDataABuilder, choiceDataA2Builder));
+
+        RosettaModelObjectBuilder productBuilder = newBuilder(group.getType("Product"));
+        invokeSetter(productBuilder, "setEconomicTerms", economicTermsBuilder);
+
+        RosettaModelObjectBuilder rootBuilder = newBuilder(group.getRootType());
+        invokeSetter(rootBuilder, "setProduct", productBuilder);
+        NonRosettaWrapper wrapperWithBuilders = new NonRosettaWrapper(rootBuilder);
+
+        String builtJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(wrapperWithBuilders);
+        JsonNode payoutJson = objectMapper.readTree(builtJson)
+                .path("root")
+                .path("product")
+                .path("economicTerms")
+                .path("payout");
+
+        Assertions.assertTrue(payoutJson.isArray());
+        Assertions.assertEquals(2, payoutJson.size());
+        Assertions.assertEquals("foo", payoutJson.get(0).path("fieldA").asText());
+        Assertions.assertEquals("foo2", payoutJson.get(1).path("fieldA").asText());
+    }
+
+    @Test
+    void shouldSerializeSameChoiceTypeInListWhenNotBuiltWithoutWrapper() throws IOException {
+        RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "list"));
+
+        RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
+        invokeSetter(aBuilder, "setFieldA", "foo");
+        RosettaModelObjectBuilder choiceDataABuilder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataABuilder, "setA", aBuilder);
+
+        RosettaModelObjectBuilder a2Builder = newBuilder(group.getType("A"));
+        invokeSetter(a2Builder, "setFieldA", "foo2");
+        RosettaModelObjectBuilder choiceDataA2Builder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataA2Builder, "setA", a2Builder);
+
+        RosettaModelObjectBuilder economicTermsBuilder = newBuilder(group.getType("EconomicTerms"));
+        invokeSetter(economicTermsBuilder, "setPayout", Arrays.asList(choiceDataABuilder, choiceDataA2Builder));
+
+        RosettaModelObjectBuilder productBuilder = newBuilder(group.getType("Product"));
+        invokeSetter(productBuilder, "setEconomicTerms", economicTermsBuilder);
+
+        RosettaModelObjectBuilder rootBuilder = newBuilder(group.getRootType());
+        invokeSetter(rootBuilder, "setProduct", productBuilder);
+
+        String builtJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootBuilder);
+        JsonNode payoutJson = objectMapper.readTree(builtJson)
+                .path("product")
+                .path("economicTerms")
+                .path("payout");
+
+        Assertions.assertTrue(payoutJson.isArray());
+        Assertions.assertEquals(2, payoutJson.size());
+        Assertions.assertEquals("foo", payoutJson.get(0).path("fieldA").asText());
+        Assertions.assertEquals("foo2", payoutJson.get(1).path("fieldA").asText());
+    }
+
+    @Test
+    void shouldSerializeSameChoiceTypeInListWhenBuiltInWrapper() throws IOException {
+        RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "list"));
+
+        RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
+        invokeSetter(aBuilder, "setFieldA", "foo");
+        RosettaModelObjectBuilder choiceDataABuilder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataABuilder, "setA", aBuilder);
+
+        RosettaModelObjectBuilder a2Builder = newBuilder(group.getType("A"));
+        invokeSetter(a2Builder, "setFieldA", "foo2");
+        RosettaModelObjectBuilder choiceDataA2Builder = newBuilder(group.getType("ChoiceData"));
+        invokeSetter(choiceDataA2Builder, "setA", a2Builder);
+
+        RosettaModelObjectBuilder economicTermsBuilder = newBuilder(group.getType("EconomicTerms"));
+        invokeSetter(economicTermsBuilder, "setPayout", Arrays.asList(choiceDataABuilder, choiceDataA2Builder));
+
+        RosettaModelObjectBuilder productBuilder = newBuilder(group.getType("Product"));
+        invokeSetter(productBuilder, "setEconomicTerms", economicTermsBuilder);
+
+        RosettaModelObjectBuilder rootBuilder = newBuilder(group.getRootType());
+        invokeSetter(rootBuilder, "setProduct", productBuilder);
+
+        RosettaModelObject builtRoot = build(rootBuilder);
+        NonRosettaWrapper wrapperWithBuiltObject = new NonRosettaWrapper(builtRoot);
+        String builtJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(wrapperWithBuiltObject);
+        JsonNode payoutJson = objectMapper.readTree(builtJson)
+                .path("root")
+                .path("product")
+                .path("economicTerms")
+                .path("payout");
+
+        Assertions.assertTrue(payoutJson.isArray());
+        Assertions.assertEquals(2, payoutJson.size());
+        Assertions.assertEquals("foo", payoutJson.get(0).path("fieldA").asText());
+        Assertions.assertEquals("foo2", payoutJson.get(1).path("fieldA").asText());
     }
 
     @Test
@@ -241,4 +351,18 @@ public class RuneJsonChoiceTypeSerializerTest {
     private String toJson(RosettaModelObject runeObject) throws JsonProcessingException {
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(runeObject);
     }
+
+    private static class NonRosettaWrapper {
+        @JsonProperty
+        private final RosettaModelObject root;
+
+        private NonRosettaWrapper(RosettaModelObject root) {
+            this.root = root;
+        }
+
+        public RosettaModelObject getRoot() {
+            return root;
+        }
+    }
+
 }

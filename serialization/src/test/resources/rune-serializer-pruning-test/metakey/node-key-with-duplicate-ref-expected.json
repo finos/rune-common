@@ -49,5 +49,33 @@
     "dateReference" : {
       "@ref" : "someKey5"
     }
+  } ],
+  "objectRefs" : [ {
+    "someField" : "bar1",
+    "keyedThing" : {
+      "@key:external" : "objExternalKey1",
+      "name" : "thing-1"
+    },
+    "keyedThingReference" : {
+      "@ref:external" : "objExternalKey1"
+    }
+  }, {
+    "someField" : "bar2",
+    "keyedThing" : {
+      "@key:scoped" : "objScopedKey2",
+      "name" : "thing-2"
+    },
+    "keyedThingReference" : {
+      "@ref:scoped" : "objScopedKey2"
+    }
+  }, {
+    "someField" : "bar3",
+    "keyedThing" : {
+      "@key" : "objKey3",
+      "name" : "thing-3"
+    },
+    "keyedThingReference" : {
+      "@ref" : "objKey3"
+    }
   } ]
 }

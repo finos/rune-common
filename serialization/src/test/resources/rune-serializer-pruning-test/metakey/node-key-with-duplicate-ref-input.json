@@ -63,5 +63,45 @@
         "@ref": "someKey5"
       }
     }
+  ],
+  "objectRefs": [
+    {
+      "someField" : "bar1",
+      "keyedThing": {
+        "@key": "objKey1",
+        "@key:external": "objExternalKey1",
+        "name": "thing-1"
+      },
+      "keyedThingReference": {
+        "@ref": "objKey1",
+        "@ref:external": "objExternalKey1",
+        "@key": "objKey1",
+        "name": "thing-1"
+      }
+    },
+    {
+      "someField" : "bar2",
+      "keyedThing": {
+        "@key": "objKey2",
+        "@key:scoped": "objScopedKey2",
+        "name": "thing-2"
+      },
+      "keyedThingReference": {
+        "@ref": "objKey2",
+        "@ref:scoped": "objScopedKey2",
+        "@key": "objKey2",
+        "name": "thing-2"
+      }
+    },
+    {
+      "someField" : "bar3",
+      "keyedThing": {
+        "@key": "objKey3",
+        "name": "thing-3"
+      },
+      "keyedThingReference": {
+        "@ref": "objKey3"
+      }
+    }
   ]
 }

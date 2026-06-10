@@ -26,6 +26,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * @deprecated The synonym-based mapping framework has been superseded: synonym syntax was removed from the
+ * Rune DSL and its only consumer, the {@code rosetta-translate} ingestion library, is being retired.
+ * Retained for backwards compatibility and scheduled for removal in a future release.
+ */
+@Deprecated
 public interface MappingDelegate {
 
 	void map(Path synonymPath, Optional<RosettaModelObjectBuilder> builder, RosettaModelObjectBuilder parent);

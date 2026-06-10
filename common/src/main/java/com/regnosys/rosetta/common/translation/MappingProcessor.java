@@ -30,7 +30,12 @@ import java.util.function.Consumer;
 
 /**
  * Base implementation does not do any mapping, but each mapping method can be overridden.
+ *
+ * @deprecated The synonym-based mapping framework has been superseded: synonym syntax was removed from the
+ * Rune DSL and its only consumer, the {@code rosetta-translate} ingestion library, is being retired.
+ * Retained for backwards compatibility and scheduled for removal in a future release.
  */
+@Deprecated
 public abstract class MappingProcessor implements MappingDelegate {
 
 	private final RosettaPath modelPath;
@@ -108,6 +113,10 @@ public abstract class MappingProcessor implements MappingDelegate {
 		return MappingProcessorUtils.getValueAndUpdateMappings(synonymPath, getMappings(), modelPath);
 	}
 
+	/**
+	 * @deprecated Enum synonyms have been removed from the Rune DSL.
+	 */
+	@Deprecated
 	protected SynonymToEnumMap getSynonymToEnumMap() {
 		return context.getSynonymToEnumMap();
 	}

@@ -24,7 +24,6 @@ import com.regnosys.rosetta.common.util.SimpleProcessor;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
-import com.rosetta.model.lib.meta.TemplateFields;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.process.AttributeMeta;
 import com.rosetta.model.lib.process.Processor;
@@ -95,10 +94,6 @@ public class NonNullHashCollector extends SimpleProcessor {
 			// do not include meta folder in hash, however it's contents maybe included
 			return new Result(false, true);
 		}
-		if (isTemplateFields(instance)) {
-			// do not include template folder in hash
-			return new Result(false, false);
-		}
 		if (isReferenceWithMeta(instance)) {
 			// do not include reference folder in hash, however it's contents maybe included
 			// (e.g if it's a value with no reference)
@@ -130,10 +125,6 @@ public class NonNullHashCollector extends SimpleProcessor {
 
 	private boolean isGlobalKeyFields(RosettaModelObject instance) {
 		return instance instanceof GlobalKeyFields;
-	}
-
-	private boolean isTemplateFields(RosettaModelObject instance) {
-		return instance instanceof TemplateFields;
 	}
 
 	private boolean metaContains(AttributeMeta[] metas, AttributeMeta attributeMeta) {

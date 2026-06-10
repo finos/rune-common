@@ -22,6 +22,12 @@ package com.regnosys.rosetta.common.translation.flat;
 
 import java.util.Map;
 
+/**
+ * @deprecated The synonym-based mapping framework has been superseded: synonym syntax was removed from the
+ * Rune DSL and its only consumer, the {@code rosetta-translate} ingestion library, is being retired.
+ * Retained for backwards compatibility and scheduled for removal in a future release.
+ */
+@Deprecated
 public class Capture {
 
 	private final Map<String,Integer> indexes;

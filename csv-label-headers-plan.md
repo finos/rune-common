@@ -4,11 +4,11 @@
 
 ## START HERE — read before doing anything
 
-This document is the spec. Treat it as the source of truth, but **confirm the two
-open assumptions before writing much code** (see "Step 0" below). The hard
-investigation is already done and captured here; the risk in this task is not
-capability, it is acting on an unverified assumption and having it cascade. Verify
-first, then implement.
+This document is the spec. Treat it as the source of truth. The hard investigation
+is done **and the two previously-open assumptions are now VERIFIED** (see "Step 0",
+which is marked DONE). You do not need to re-verify before coding — proceed to
+Steps 1–4. (If you change the target function/type, re-run the Step 0 checks for the
+new case.)
 
 ### Prerequisite: working directories (required)
 
@@ -24,14 +24,11 @@ below cannot be resolved and you will re-investigate or guess:
 
 If any are missing, stop and ask for them to be added before continuing.
 
-### Order of work (do not reorder)
+### Order of work
 
-1. **Step 0 — verify the two open assumptions** by generating/inspecting the
-   actual classes. Do this *first*, before writing the resolver or any other code.
-2. Only once Step 0 holds, proceed to Steps 1–4 in order.
-3. If Step 0 contradicts an assumption, **stop and surface it** with the concrete
-   finding rather than improvising a workaround — the design may need a small
-   pivot (see "Step 0" for the specific fallbacks).
+1. **Step 0 — already DONE (both assumptions verified).** Read it for the evidence,
+   but no action is required before coding.
+2. Proceed to Steps 1–4 in order.
 
 ---
 
@@ -82,6 +79,24 @@ Target:
   exactly (all attributes are simple `string`/`number`, no nesting, no meta
   wrapping, so JSON property name == attribute name == path element).
 - **Write side only** for headers. Read-side implications are noted below.
+
+### Configurability — opt-in, disabled by default (required)
+
+Label headers must be **opt-in**, controlled by a new serialisation format
+`CSV_LABELLED`. Plain `CSV` is **unchanged forever** (attribute-name headers, no
+provider resolution); only `CSV_LABELLED` resolves the label provider and emits
+label headers.
+
+This is not merely a preference — it is a correctness guard. **Every projection and
+report function gets a `@RuneLabelProvider` generated** (that is the only way labels
+are exposed at runtime; see below). So an "auto-detect: use labels if a provider
+exists" approach would silently flip essentially every existing CSV
+projection/report pipeline from attribute-name headers to label headers — a silent
+breaking change for downstream consumers. The opt-in format avoids that entirely.
+
+The opt-in carrier is the value already persisted in the pipeline config and already
+used as the serialiser dispatch key: `PipelineModel.Serialisation.Format`
+(`transform/PipelineModel.java:207`).
 
 ---
 
@@ -139,8 +154,11 @@ BNP PR #4707
     "inputType" : "bnpp.regulation.bnm.trade.BNMTransactionReport",
     "outputType" : "bnpp.projection.csv.bnm.trade.BnmCsvIRSType"
 },
-"outputSerialisation" : { "format" : "CSV" }
+"outputSerialisation" : { "format" : "CSV_LABELLED" }
 ```
+
+(To opt in, the BNP pipeline config must set `"format" : "CSV_LABELLED"`. With plain
+`"format" : "CSV"` the output keeps attribute-name headers.)
 
 - `PipelineModel.Transform` carries `function` (transform class FQN) and
   `outputType` (`BnmCsvIRSType` FQN). (`transform/PipelineModel.java:109-139`)
@@ -213,38 +231,87 @@ remain distinct by position.
 
 ## Implementation steps
 
-### Step 0 — verify the two open assumptions FIRST (before writing the resolver)
+### Step 0 — verify the two open assumptions ✅ DONE (both PASS)
 
-Do this before writing `LabelProviderResolver` or any other code. Both checks are
-about the generated `LabelProvider` for the BNM projection function. Generate /
-compile the model so the generated Java classes exist, then inspect them.
+> **Status: VERIFIED — 2026-06-14.** Both assumptions hold. Verified
+> authoritatively against the rune-dsl code generator and its integration-test
+> fixtures (which compile *and run* the generated provider), rather than by
+> building bnpp — the generator is the deterministic source of truth for what the
+> generated class looks like, and bnpp itself is not buildable locally (it needs
+> the private ISDA GCP Artifact Registry / auth). Implementer: you do **not** need
+> to re-run this before Step 1. Evidence is recorded below.
 
-How to get the generated classes:
-- Build the BNP model (or the relevant module) so codegen runs, e.g. compile the
-  `bnpp` rosetta-source. The generated `*LabelProvider` and the
-  `Project_BnmTransactionReport_IrSwap_ToBnmCsv` function class will appear under
-  the generated-sources / `target` output.
-- Locate the function class named in the pipeline config:
-  `bnpp.projection.csv.bnm.trade.functions.Project_BnmTransactionReport_IrSwap_ToBnmCsv`.
+Evidence (all in the `rune-dsl` working dir):
+- Generator template:
+  `rune-lang/.../generator/java/function/LabelProviderGenerator.xtend:94-122`.
+- Integration test (compiles + runs generated provider):
+  `rune-integration-tests/.../function/LabelProviderGeneratorTest.java`
+  (`testFunctionWithIngestAnnotationGeneratesLabelProvider`, lines 133-159).
+- Expected generated fixture:
+  `rune-integration-tests/src/test/resources/label-annotations/func-ingest/MyFuncLabelProvider.java`.
+- `@RuneLabelProvider` is attached to the function/report class:
+  `FunctionGenerator.xtend:125-126`, `ReportGenerator.xtend:40-41`
+  (annotation FQN `com.rosetta.model.lib.annotations.RuneLabelProvider`).
+- `GraphBasedLabelProvider implements com.rosetta.model.lib.functions.LabelProvider`
+  (`rune-runtime/.../labelprovider/GraphBasedLabelProvider.java:10`).
 
-**Verification A — provider instantiation.**
-- Confirm the function class is annotated with
-  `@RuneLabelProvider(labelProvider = ...LabelProvider.class)`.
-- Open that generated `*LabelProvider` class and confirm it has a **public no-arg
-  constructor** (the resolver will call `labelProvider().getDeclaredConstructor().newInstance()`).
-- If there is no usable no-arg constructor, **stop and surface it** — the resolver
-  in Step 1 needs a different instantiation strategy (e.g. an injected instance).
+**Verification A — provider instantiation. ✅ PASS.**
+The generated provider has a **public no-arg constructor**. The generator emits
+exactly:
+```java
+public class MyFuncLabelProvider extends GraphBasedLabelProvider {
+    public MyFuncLabelProvider() {
+        super(new LabelNode());
+        startNode.addLabel(Arrays.asList("attr"), "My attribute");
+    }
+}
+```
+So `labelProvider().getDeclaredConstructor().newInstance()` works. (Note: the DSL
+test instantiates it via Guice `injector.getInstance(clazz)`, which also resolves
+the public no-arg constructor — so either strategy is fine; reflection is simplest
+for the resolver and needs no DI.) The function class carries
+`@RuneLabelProvider(labelProvider = ...LabelProvider.class)` as expected.
 
-**Verification B — flat top-level path lookup.**
-- Instantiate that provider and confirm:
-  `getLabel(RosettaPath.valueOf("csv001_Action"))` returns `"001 - Action"`
-  (and similar for a couple of other columns).
-- This proves the projection function's own provider keys the flat top-level
-  attribute paths **directly** — not only via the `BnmCsvChoice` wrapper.
-- If it returns `null` (i.e. labels are only reachable through the choice/another
-  path), **stop and surface it**: the design must instead resolve the provider for
-  the actual serialised runtime type, or prepend the wrapper path element before
-  lookup. Do not paper over this with a guess.
+**Verification B — flat top-level path lookup. ✅ PASS.**
+A flat top-level `[label ...]` attribute is keyed at a **single-element**
+`RosettaPath` equal to the attribute name, and `getLabel` returns it directly. The
+generator emits `startNode.addLabel(Arrays.asList("attr"), "My attribute")` and the
+integration test asserts:
+- `getLabel(RosettaPath.valueOf("attr"))` → `"My attribute"`, and
+- `getLabel(RosettaPath.valueOf("other"))` → `null` (unlabelled → per-column
+  fallback applies).
+
+This is exactly the `BnmCsvIRSType` shape. The `BnmCsvChoice` wrapper concern does
+**not** apply to our function: `Project_BnmTransactionReport_IrSwap_ToBnmCsv` outputs
+`BnmCsvIRSType` **directly** (not the choice), so the generator's `startNode` is
+`BnmCsvIRSType` and labels are keyed at `csv001_Action`, `csv002_AD_Ref_No`, … with
+no wrapper prefix. Therefore `getLabel(RosettaPath.valueOf("csv001_Action"))` returns
+`"001 - Action"`. The resolver must use the **projection function** itself
+(`...ToBnmCsv`), not the choice-returning `Project_BnmTransactionReportToBnmCsv`.
+
+**Confirmed against the real bnpp 9.83.0 codegen.** A full bnpp build was run and
+the actual generated provider inspected:
+`rosetta-source/src/generated/java/bnpp/projection/csv/bnm/trade/labels/Project_BnmTransactionReport_IrSwap_ToBnmCsvLabelProvider.java`.
+It matches the prediction exactly — public no-arg constructor, and all 24 flat
+top-level labels keyed directly on `startNode`:
+```java
+public class Project_BnmTransactionReport_IrSwap_ToBnmCsvLabelProvider extends GraphBasedLabelProvider {
+    public Project_BnmTransactionReport_IrSwap_ToBnmCsvLabelProvider() {
+        super(new LabelNode());
+        startNode.addLabel(Arrays.asList("csv001_Action"), "001 - Action");
+        startNode.addLabel(Arrays.asList("csv002_AD_Ref_No"), "002 - Ad Ref No");
+        ...
+        startNode.addLabel(Arrays.asList("csv012_Pay_Rate__OP_1_CP__Num"), "012 - Pay Rate (1)");
+        startNode.addLabel(Arrays.asList("csv012_Pay_Rate__OP_1_CP_"),     "012 - Pay Rate (1)"); // duplicate label, distinct key
+        ...
+        startNode.addLabel(Arrays.asList("csv022_Approval_Code"), "022 - Approval Code");
+    }
+}
+```
+The function class carries
+`@RuneLabelProvider(labelProvider=Project_BnmTransactionReport_IrSwap_ToBnmCsvLabelProvider.class)`.
+Provider package is `bnpp.projection.csv.bnm.trade.labels` (the `labels`
+sub-package). No remaining open checks.
 
 Only once both A and B hold, continue to Step 1.
 
@@ -276,7 +343,7 @@ Only once both A and B hold, continue to Step 1.
 - Emit `headerLine + "\n" + bodyWithoutHeader`.
 - With no provider, output is byte-for-byte identical to today.
 
-### 4. Wire into the transform/pipeline path
+### 4. Wire into the transform/pipeline path (opt-in via `CSV_LABELLED`)
 
 Key constraint: the label provider needs `transform.function`, but the existing
 hook `TestPackUtils.getObjectMapper(PipelineModel.Serialisation)`
@@ -287,16 +354,29 @@ callers inside rune-common** — they are invoked by external projection-runner
 tooling that holds the whole `PipelineModel`.
 
 Plan:
-- Add `RosettaObjectMapperCreator.forCSV(LabelProvider)` (and/or
-  `forCSV(Class<? extends RosettaFunction>)`), leaving the no-arg `forCSV()`
-  untouched for backwards compatibility.
-- Add an overload `TestPackUtils.getObjectMapper(PipelineModel, ClassLoader)`
-  (and matching `getObjectWriter`) that, for the `CSV` format, resolves the
-  provider from `pipelineModel.getTransform().getFunction()` via the
-  `LabelProviderResolver` and calls `forCSV(provider)`. Non-CSV branches delegate
-  to the existing logic; keep the old `Serialisation`-only method working
-  (CSV-without-labels) so nothing breaks.
-- External runners switch to the `PipelineModel` overload to get labelled headers.
+- **New format.** Add `CSV_LABELLED("csv")` to
+  `PipelineModel.Serialisation.Format` (`transform/PipelineModel.java:207-222`),
+  alongside the existing `CSV("csv")` — same `.csv` file extension, distinct
+  dispatch.
+- **Mapper creators.** Keep the no-arg `forCSV()` untouched (plain, no provider).
+  Add `RosettaObjectMapperCreator.forCSV(LabelProvider)` (and/or
+  `forCSV(Class<? extends RosettaFunction>)`), used only by the `CSV_LABELLED` path.
+- **Function-aware overload.** Add
+  `TestPackUtils.getObjectMapper(PipelineModel, ClassLoader)` (and matching
+  `getObjectWriter`) that:
+  - `CSV_LABELLED` → resolve the provider from
+    `pipelineModel.getTransform().getFunction()` via `LabelProviderResolver` and
+    call `forCSV(provider)`;
+  - `CSV` → plain `forCSV()` (unchanged);
+  - all other formats → delegate to the existing per-`Serialisation` logic.
+- **Legacy method.** In `getObjectMapper(PipelineModel.Serialisation)`:
+  - `CSV` → plain `forCSV()` as today (unchanged);
+  - `CSV_LABELLED` → **throw** `IllegalArgumentException` (or similar) stating the
+    labelled format requires the transform function and that callers must use the
+    `getObjectMapper(PipelineModel, ClassLoader)` overload. It must **not** silently
+    fall back to plain CSV.
+- External runners that want labelled headers switch to the `PipelineModel`
+  overload **and** set `outputSerialisation.format = CSV_LABELLED`.
 
 ---
 
@@ -324,12 +404,19 @@ Add tests under `common/src/test/java/.../serialisation/csv/`:
    and value cells are correct and correctly ordered.
 2. **Label absent → attribute-name header** (per-column fallback).
 3. **Mixed** labelled/unlabelled attributes.
-4. **No provider configured** → output identical to current behaviour (regression
-   guard; reuse the existing `User` fixture).
+4. **Plain `CSV` unchanged** → output byte-for-byte identical to current behaviour
+   (regression guard; reuse the existing `User` fixture). The `CSV_LABELLED` path is
+   the only one that emits labels.
 5. **Duplicate labels** (mirror `csv012`/`csv016`) → both columns emit the same
    header text, values stay in their own columns.
 6. **`LabelProviderResolver`** unit test: function class → `@RuneLabelProvider` →
    provider, plus the no-annotation case.
+7. **Legacy method rejects `CSV_LABELLED`** →
+   `getObjectMapper(PipelineModel.Serialisation)` throws for the labelled format
+   (no function available), with the message pointing at the `PipelineModel`
+   overload.
+8. **`CSV_LABELLED` via the `PipelineModel` overload** → label headers emitted end
+   to end (provider resolved from `transform.function`).
 
 Per CLAUDE.md, run `mvn test-compile` first — generated types land in
 `target/test-classes/serialisation/java/`.
@@ -369,28 +456,33 @@ CANCEL_F,452175062BF,,,...
 - `CsvMapper.schemaFor` column order is alphabetical, not declaration order
   (header-rewrite is order-agnostic, so this is fine). ✔
 
-## Remaining things to confirm at implementation time
+## Previously-open assumptions — now VERIFIED (see Step 0)
 
-These are the **two open assumptions** — they are verified in **Step 0** above
-(do them first, before writing the resolver). Restated here for reference:
+Both former open assumptions have been confirmed (2026-06-14). They are no longer
+blockers; full evidence is in **Step 0** above.
 
-1. The generated provider
-   (`...Project_BnmTransactionReport_IrSwap_ToBnmCsvLabelProvider` or similar) has
-   a public no-arg constructor.
-2. `getLabel(RosettaPath.valueOf("csv001_Action"))` against *that* function's
-   provider returns `"001 - Action"` — i.e. it keys the flat top-level paths
-   directly, not only via the `BnmCsvChoice` wrapper.
+1. ✅ The generated provider
+   (`...Project_BnmTransactionReport_IrSwap_ToBnmCsvLabelProvider`) has a public
+   no-arg constructor — confirmed from the generator template and fixture.
+2. ✅ `getLabel(RosettaPath.valueOf("csv001_Action"))` keys flat top-level paths
+   directly (single-element `RosettaPath` == attribute name); the `BnmCsvChoice`
+   wrapper does not apply because the projection function outputs `BnmCsvIRSType`
+   directly. Unlabelled attributes return `null` → per-column attribute-name
+   fallback.
 
-If either fails, stop and surface it (see Step 0 for the specific fallbacks)
-rather than working around it.
+3. ✅ Confirmed against bnpp's exact DSL `9.83.0`: a full bnpp build was run and the
+   real generated `Project_BnmTransactionReport_IrSwap_ToBnmCsvLabelProvider`
+   matches exactly (all 24 labels keyed at single-element paths, public no-arg ctor,
+   `@RuneLabelProvider` on the function class). **No remaining checks.**
 
 ---
 
 ## Files likely to change
 
+- `common/.../transform/PipelineModel.java` — add `CSV_LABELLED("csv")` to the `Format` enum.
 - `common/.../serialisation/RosettaCsvMapper.java` — provider plumbing + header rewrite.
 - `common/.../serialisation/RosettaObjectMapperCreator.java` — `forCSV(LabelProvider)` overload.
 - `common/.../serialisation/csv/LabelProviderResolver.java` — **new**.
-- `common/.../transform/TestPackUtils.java` — resolve provider for the `CSV` branch.
+- `common/.../transform/TestPackUtils.java` — new `getObjectMapper(PipelineModel, ClassLoader)` overload dispatching `CSV_LABELLED`; legacy `Serialisation`-only method throws for `CSV_LABELLED`.
 - `common/.../transform/FunctionNameHelper.java` — reuse `getOutputType` (no change expected).
 - Tests + a small `.rosetta` test model under `common/src/test/resources/rosetta/`.

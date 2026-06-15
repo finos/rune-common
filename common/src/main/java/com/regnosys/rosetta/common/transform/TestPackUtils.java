@@ -186,9 +186,12 @@ public class TestPackUtils {
         if (serialisation.getFormat() == PipelineModel.Serialisation.Format.CSV_LABELLED) {
             PipelineModel.Transform transform = pipelineModel.getTransform();
             String functionClassName = transform != null ? transform.getFunction() : null;
-            LabelProvider labelProvider = functionClassName != null
-                    ? LabelProviderResolver.fromTransformFunction(functionClassName, classLoader)
-                    : null;
+            if (functionClassName == null) {
+                throw new IllegalArgumentException(
+                        "CSV_LABELLED format requires a transform function to resolve the label provider, " +
+                        "but the pipeline model has no transform function.");
+            }
+            LabelProvider labelProvider = LabelProviderResolver.fromTransformFunction(functionClassName, classLoader);
             return Optional.of(RosettaObjectMapperCreator.forCSV(labelProvider).create());
         }
         return getObjectMapper(serialisation);

@@ -216,6 +216,38 @@ class TestPackUtilsTest {
     }
 
     @Test
+    void shouldThrowIllegalArgumentWhenCsvLabelledPipelineModelHasNoTransformFunction() {
+        // CSV_LABELLED with a transform that carries no function name must not silently
+        // fall back to plain CSV — it should throw.
+        PipelineModel.Transform transform = new PipelineModel.Transform(
+                TransformType.PROJECTION, null, "InputType", "OutputType");
+        PipelineModel.Serialisation outputSerialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+        PipelineModel pipelineModel = new PipelineModel(
+                "pipeline-id", "Test Pipeline", transform, null, null, outputSerialisation, null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                TestPackUtils.getObjectMapper(pipelineModel, Thread.currentThread().getContextClassLoader()));
+
+        assertTrue(ex.getMessage().contains("CSV_LABELLED"),
+                "Exception message should mention CSV_LABELLED");
+        assertTrue(ex.getMessage().contains("transform function"),
+                "Exception message should explain the missing transform function");
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentWhenCsvLabelledPipelineModelHasNoTransform() {
+        // CSV_LABELLED with no transform block at all must also throw rather than degrade.
+        PipelineModel.Serialisation outputSerialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+        PipelineModel pipelineModel = new PipelineModel(
+                "pipeline-id", "Test Pipeline", null, null, null, outputSerialisation, null);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                TestPackUtils.getObjectMapper(pipelineModel, Thread.currentThread().getContextClassLoader()));
+    }
+
+    @Test
     void shouldReturnEmptyWhenGetObjectMapperCalledWithNullOutputSerialisation() {
         PipelineModel pipelineModel = new PipelineModel(
                 "pipeline-id", "Test Pipeline", null, null, null, null, null);

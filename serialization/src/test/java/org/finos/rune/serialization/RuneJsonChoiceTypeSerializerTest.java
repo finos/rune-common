@@ -180,12 +180,12 @@ public class RuneJsonChoiceTypeSerializerTest {
 
         RosettaModelObjectBuilder aBuilder = newBuilder(group.getType("A"));
         invokeSetter(aBuilder, "setFieldA", "foo");
+        MetaFields someGlobalKey = MetaFields.builder().setExternalKey("someExternalKey").build();
+        invokeSetter(aBuilder, "setMeta", someGlobalKey);
         RosettaModelObject a = build(aBuilder);
 
         RosettaModelObjectBuilder choiceDataABuilder = newBuilder(group.getType("ChoiceData"));
         invokeSetter(choiceDataABuilder, "setA", a);
-        MetaFields someGlobalKey = MetaFields.builder().setExternalKey("someExternalKey").build();
-        invokeSetter(choiceDataABuilder, "setMeta", someGlobalKey);
         RosettaModelObject choiceDataA = build(choiceDataABuilder);
 
         RosettaModelObjectBuilder rootBuilder = newBuilder(group.getRootType());

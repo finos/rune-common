@@ -26,8 +26,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.regnosys.rosetta.common.serialisation.csv.LabelProviderResolver;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
+import com.rosetta.model.lib.functions.LabelProvider;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 
 import java.io.IOException;
@@ -161,12 +163,39 @@ public class TestPackUtils {
                 return Optional.of(new RuneJsonObjectMapper());
             case CSV:
                 return Optional.of(RosettaObjectMapperCreator.forCSV().create());
+            case CSV_LABELLED:
+                throw new IllegalArgumentException(
+                        "CSV_LABELLED format requires the transform function to resolve the label provider. " +
+                        "Use getObjectMapper(PipelineModel, ClassLoader) instead.");
         }
         return Optional.empty();
     }
 
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
         return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    }
+
+    public static Optional<ObjectMapper> getObjectMapper(PipelineModel pipelineModel, ClassLoader classLoader) {
+        if (pipelineModel == null) {
+            return Optional.empty();
+        }
+        PipelineModel.Serialisation serialisation = pipelineModel.getOutputSerialisation();
+        if (serialisation == null || serialisation.getFormat() == null) {
+            return Optional.empty();
+        }
+        if (serialisation.getFormat() == PipelineModel.Serialisation.Format.CSV_LABELLED) {
+            PipelineModel.Transform transform = pipelineModel.getTransform();
+            String functionClassName = transform != null ? transform.getFunction() : null;
+            LabelProvider labelProvider = functionClassName != null
+                    ? LabelProviderResolver.fromTransformFunction(functionClassName, classLoader)
+                    : null;
+            return Optional.of(RosettaObjectMapperCreator.forCSV(labelProvider).create());
+        }
+        return getObjectMapper(serialisation);
+    }
+
+    public static Optional<ObjectWriter> getObjectWriter(PipelineModel pipelineModel, ClassLoader classLoader) {
+        return getObjectMapper(pipelineModel, classLoader).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
     public static String getReportTestPackName(String reportId) {

@@ -20,10 +20,14 @@ package com.regnosys.rosetta.common.transform;
  * ==============
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.serialisation.csv.LabelProviderResolverTest;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -137,5 +141,113 @@ class TestPackUtilsTest {
     void shouldCreatePipelineIdWithoutModelId() {
         String pipelineId = TestPackUtils.createPipelineId(TransformType.REPORT, null, "com.example.MyReportFunction");
         assertEquals("pipeline-report-my", pipelineId);
+    }
+
+    // ---------------------------------------------------------------------------
+    // New tests — CSV_LABELLED pipeline wiring (#7 & #8)
+    // ---------------------------------------------------------------------------
+
+    @Test
+    void shouldThrowIllegalArgumentWhenGetObjectMapperCalledWithCsvLabelledSerialisation() {
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> TestPackUtils.getObjectMapper(serialisation));
+
+        assertTrue(ex.getMessage().contains("CSV_LABELLED"),
+                "Exception message should mention CSV_LABELLED");
+        assertTrue(ex.getMessage().contains("getObjectMapper(PipelineModel, ClassLoader)"),
+                "Exception message should point callers at the PipelineModel overload");
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentWhenGetObjectWriterCalledWithCsvLabelledSerialisation() {
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> TestPackUtils.getObjectWriter(serialisation));
+    }
+
+    @Test
+    void shouldEmitLabelHeadersWhenGetObjectMapperCalledWithCsvLabelledPipelineModel() throws IOException {
+        String functionFqn = LabelProviderResolverTest.StubFunctionWithProvider.class.getName();
+        PipelineModel.Transform transform = new PipelineModel.Transform(
+                TransformType.PROJECTION, functionFqn, "InputType", "OutputType");
+        PipelineModel.Serialisation outputSerialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+        PipelineModel pipelineModel = new PipelineModel(
+                "pipeline-id", "Test Pipeline", transform, null, null, outputSerialisation, null);
+
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
+                pipelineModel, Thread.currentThread().getContextClassLoader());
+
+        assertTrue(mapperOpt.isPresent(), "Expected a non-empty ObjectMapper for CSV_LABELLED");
+
+        StubCsvRow row = new StubCsvRow("hello");
+        String csv = mapperOpt.get().writerWithDefaultPrettyPrinter().writeValueAsString(row);
+
+        assertTrue(csv.startsWith("My Attribute Label") || csv.startsWith("\"My Attribute Label\""),
+                "Expected label header 'My Attribute Label' (possibly quoted) but got: " + csv);
+        assertTrue(csv.contains("hello"),
+                "Expected value 'hello' in CSV body but got: " + csv);
+    }
+
+    @Test
+    void shouldEmitAttributeNameHeadersWhenGetObjectMapperCalledWithPlainCsvPipelineModel() throws IOException {
+        PipelineModel.Transform transform = new PipelineModel.Transform(
+                TransformType.PROJECTION, "some.Function", "InputType", "OutputType");
+        PipelineModel.Serialisation outputSerialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV, null);
+        PipelineModel pipelineModel = new PipelineModel(
+                "pipeline-id", "Test Pipeline", transform, null, null, outputSerialisation, null);
+
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
+                pipelineModel, Thread.currentThread().getContextClassLoader());
+
+        assertTrue(mapperOpt.isPresent());
+
+        StubCsvRow row = new StubCsvRow("hello");
+        String csv = mapperOpt.get().writerWithDefaultPrettyPrinter().writeValueAsString(row);
+
+        assertTrue(csv.startsWith("attr"),
+                "Expected attribute-name header 'attr' for plain CSV but got: " + csv);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenGetObjectMapperCalledWithNullOutputSerialisation() {
+        PipelineModel pipelineModel = new PipelineModel(
+                "pipeline-id", "Test Pipeline", null, null, null, null, null);
+
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
+                pipelineModel, Thread.currentThread().getContextClassLoader());
+
+        assertFalse(mapperOpt.isPresent());
+    }
+
+    @Test
+    void shouldReturnEmptyWhenGetObjectMapperCalledWithNullPipelineModel() {
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
+                null, Thread.currentThread().getContextClassLoader());
+
+        assertFalse(mapperOpt.isPresent());
+    }
+
+    // ---------------------------------------------------------------------------
+    // Minimal POJO for CSV serialisation tests
+    // ---------------------------------------------------------------------------
+
+    /** Single-field POJO whose field name matches the stub provider's labelled attribute. */
+    public static class StubCsvRow {
+        private final String attr;
+
+        public StubCsvRow(String attr) {
+            this.attr = attr;
+        }
+
+        public String getAttr() {
+            return attr;
+        }
     }
 }

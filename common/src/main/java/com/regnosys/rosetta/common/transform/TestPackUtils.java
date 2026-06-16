@@ -28,6 +28,7 @@ import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
+import com.rosetta.model.lib.functions.LabelProvider;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 
 import java.io.IOException;
@@ -161,12 +162,51 @@ public class TestPackUtils {
                 return Optional.of(new RuneJsonObjectMapper());
             case CSV:
                 return Optional.of(RosettaObjectMapperCreator.forCSV().create());
+            case CSV_LABELLED:
+                throw new IllegalArgumentException(
+                        "CSV_LABELLED format requires a LabelProvider resolved from the transform function. " +
+                        "Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.");
         }
         return Optional.empty();
     }
 
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
         return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    }
+
+    /**
+     * Resolves an {@link ObjectMapper} for the given serialisation, using the supplied
+     * {@link LabelProvider} for the {@code CSV_LABELLED} format.
+     *
+     * <p>The provider is only consulted for {@code CSV_LABELLED}; all other formats delegate
+     * to {@link #getObjectMapper(PipelineModel.Serialisation)} and ignore it. Callers resolve
+     * the provider from the (already-loaded) transform function class via
+     * {@link LabelProviderResolver}, so this method
+     * does not need a {@link ClassLoader}.
+     *
+     * @param serialisation the output serialisation (may be {@code null})
+     * @param labelProvider the provider to use for {@code CSV_LABELLED}; must be non-null for
+     *                      that format
+     * @return the resolved mapper, or empty when {@code serialisation} (or its format) is null
+     * @throws IllegalArgumentException if the format is {@code CSV_LABELLED} but
+     *                                  {@code labelProvider} is null
+     */
+    public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
+        if (serialisation == null || serialisation.getFormat() == null) {
+            return Optional.empty();
+        }
+        if (serialisation.getFormat() == PipelineModel.Serialisation.Format.CSV_LABELLED) {
+            if (labelProvider == null) {
+                throw new IllegalArgumentException(
+                        "CSV_LABELLED format requires a non-null LabelProvider resolved from the transform function.");
+            }
+            return Optional.of(RosettaObjectMapperCreator.forCSV(labelProvider).create());
+        }
+        return getObjectMapper(serialisation);
+    }
+
+    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
+        return getObjectMapper(serialisation, labelProvider).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
     public static String getReportTestPackName(String reportId) {

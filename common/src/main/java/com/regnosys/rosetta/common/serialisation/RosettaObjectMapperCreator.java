@@ -34,6 +34,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.rosetta.model.lib.functions.LabelProvider;
 import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
@@ -106,6 +107,11 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
     public static RosettaObjectMapperCreator forCSV() {
         RosettaCsvMapper csvMapper = new RosettaCsvMapper();
+        return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
+    }
+
+    public static RosettaObjectMapperCreator forCSV(LabelProvider labelProvider) {
+        RosettaCsvMapper csvMapper = new RosettaCsvMapper(labelProvider);
         return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
     }
 

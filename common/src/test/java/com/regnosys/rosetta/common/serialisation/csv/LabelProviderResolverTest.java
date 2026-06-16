@@ -20,6 +20,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
  * ==============
  */
 
+import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;

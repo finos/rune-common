@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.csv;
+package com.regnosys.rosetta.common.transform;
 
 /*-
  * ==============

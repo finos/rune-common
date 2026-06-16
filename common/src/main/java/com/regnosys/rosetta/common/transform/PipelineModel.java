@@ -208,7 +208,8 @@ public class PipelineModel {
             JSON("json"),
             RUNE_JSON("json"),
             XML("xml"),
-            CSV("csv");
+            CSV("csv"),
+            CSV_LABELLED("csv");
 
             private final String fileExtension;
 

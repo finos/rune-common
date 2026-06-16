@@ -27,15 +27,25 @@ import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.rosetta.model.lib.functions.LabelProvider;
+import com.rosetta.model.lib.path.RosettaPath;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RosettaCsvMapper extends CsvMapper  {
     private final CsvSchema defaultSchema;
+    private final LabelProvider labelProvider;
 
     public RosettaCsvMapper() {
+        this(null);
+    }
+
+    public RosettaCsvMapper(LabelProvider labelProvider) {
         this.defaultSchema = CsvSchema.emptySchema().withHeader();
+        this.labelProvider = labelProvider;
     }
 
     @Override
@@ -55,35 +65,56 @@ public class RosettaCsvMapper extends CsvMapper  {
         return super.readerFor(valueType).with(defaultSchema).readValue(src, valueType);
     }
 
+    //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
     @Override
     public String writeValueAsString(Object value) throws JsonProcessingException {
         SerializationConfig config = getSerializationConfig();
-        RosettaCsvObjectWriter rosettaCsvObjectWriter = new RosettaCsvObjectWriter(this, config);
+        RosettaCsvObjectWriter rosettaCsvObjectWriter = new RosettaCsvObjectWriter(this, config, labelProvider);
         return rosettaCsvObjectWriter.writeValueAsString(value);
     }
 
     @Override
     public ObjectWriter writerWithDefaultPrettyPrinter() {
         SerializationConfig config = getSerializationConfig();
-        return new RosettaCsvObjectWriter(this, config);
+        return new RosettaCsvObjectWriter(this, config, labelProvider);
     }
 
     private static class RosettaCsvObjectWriter extends ObjectWriter {
         private final CsvMapper mapper;
-        protected RosettaCsvObjectWriter(CsvMapper mapper, SerializationConfig config) {
+        private final LabelProvider labelProvider;
+
+        protected RosettaCsvObjectWriter(CsvMapper mapper, SerializationConfig config, LabelProvider labelProvider) {
             super(mapper, config);
             this.mapper = mapper;
+            this.labelProvider = labelProvider;
         }
 
+        //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
         @Override
         public String writeValueAsString(Object value) throws JsonProcessingException {
-            CsvSchema schema = mapper.schemaFor(value.getClass()).withHeader();
-            ObjectWriter writer = mapper.writer(schema);
-            return writer.writeValueAsString(value);
+            if (labelProvider == null) {
+                CsvSchema schema = mapper.schemaFor(value.getClass()).withHeader();
+                return mapper.writer(schema).writeValueAsString(value);
+            }
+            CsvSchema schema = mapper.schemaFor(value.getClass()).withoutHeader();
+            String body = mapper.writer(schema).writeValueAsString(value);
+            List<String> headers = new ArrayList<>();
+            for (CsvSchema.Column column : schema) {
+                String name = column.getName();
+                String label = labelProvider.getLabel(RosettaPath.valueOf(name));
+                headers.add(label != null ? label : name);
+            }
+            CsvSchema headerSchema = CsvSchema.emptySchema().withoutHeader();
+            String headerLine = mapper.writer(headerSchema).writeValueAsString(headers.toArray(new String[0]));
+            return headerLine + body;
         }
     }
 
     public static RosettaCsvMapper createCsvObjectMapper() {
         return (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV().create();
+    }
+
+    public static RosettaCsvMapper createCsvObjectMapper(LabelProvider labelProvider) {
+        return (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(labelProvider).create();
     }
 }

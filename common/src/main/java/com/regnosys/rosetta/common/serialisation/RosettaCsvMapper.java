@@ -65,6 +65,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         return super.readerFor(valueType).with(defaultSchema).readValue(src, valueType);
     }
 
+    //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
     @Override
     public String writeValueAsString(Object value) throws JsonProcessingException {
         SerializationConfig config = getSerializationConfig();
@@ -88,6 +89,7 @@ public class RosettaCsvMapper extends CsvMapper  {
             this.labelProvider = labelProvider;
         }
 
+        //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
         @Override
         public String writeValueAsString(Object value) throws JsonProcessingException {
             if (labelProvider == null) {

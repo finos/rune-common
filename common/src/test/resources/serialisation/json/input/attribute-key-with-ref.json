@@ -1,14 +1,14 @@
 {
-  "@model" : "com",
-  "@type" : "com.rosetta.test.Root",
-  "@version" : "0.0.0",
-  "attributeRef" : {
-    "dateField" : {
-      "@key" : "someKey",
-      "@data" : "2024-12-12"
+  "@model": "com",
+  "@type": "com.rosetta.test.Root",
+  "@version": "0.0.0",
+  "attributeRef": {
+    "dateField": {
+      "@key": "someKey",
+      "@data": "2024-12-12"
     },
-    "dateReference" : {
-      "@ref" : "someKey"
+    "dateReference": {
+      "@ref": "someKey"
     }
   }
 }

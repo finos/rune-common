@@ -22,6 +22,7 @@ package com.regnosys.rosetta.common.transform;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.common.serialisation.csv.LabelProviderResolverTest;
+import com.rosetta.model.lib.functions.LabelProvider;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -145,10 +146,20 @@ class TestPackUtilsTest {
 
     // ---------------------------------------------------------------------------
     // New tests — CSV_LABELLED pipeline wiring (#7 & #8)
+    //
+    // Resolution of the LabelProvider happens at the call site (from the already-loaded
+    // transform function class), so TestPackUtils receives the resolved provider directly
+    // via getObjectMapper/getObjectWriter(Serialisation, LabelProvider) — no ClassLoader.
     // ---------------------------------------------------------------------------
 
+    /** Real provider for the StubCsvRow's "attr" field, resolved via @RuneLabelProvider. */
+    private static LabelProvider stubLabelProvider() {
+        return LabelProviderResolver.fromTransformFunction(
+                LabelProviderResolverTest.StubFunctionWithProvider.class);
+    }
+
     @Test
-    void shouldThrowIllegalArgumentWhenGetObjectMapperCalledWithCsvLabelledSerialisation() {
+    void shouldThrowIllegalArgumentWhenSerialisationOnlyGetObjectMapperCalledWithCsvLabelled() {
         PipelineModel.Serialisation serialisation =
                 new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
 
@@ -157,12 +168,12 @@ class TestPackUtilsTest {
 
         assertTrue(ex.getMessage().contains("CSV_LABELLED"),
                 "Exception message should mention CSV_LABELLED");
-        assertTrue(ex.getMessage().contains("getObjectMapper(PipelineModel, ClassLoader)"),
-                "Exception message should point callers at the PipelineModel overload");
+        assertTrue(ex.getMessage().contains("getObjectMapper(PipelineModel.Serialisation, LabelProvider)"),
+                "Exception message should point callers at the LabelProvider overload");
     }
 
     @Test
-    void shouldThrowIllegalArgumentWhenGetObjectWriterCalledWithCsvLabelledSerialisation() {
+    void shouldThrowIllegalArgumentWhenSerialisationOnlyGetObjectWriterCalledWithCsvLabelled() {
         PipelineModel.Serialisation serialisation =
                 new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
 
@@ -171,17 +182,11 @@ class TestPackUtilsTest {
     }
 
     @Test
-    void shouldEmitLabelHeadersWhenGetObjectMapperCalledWithCsvLabelledPipelineModel() throws IOException {
-        String functionFqn = LabelProviderResolverTest.StubFunctionWithProvider.class.getName();
-        PipelineModel.Transform transform = new PipelineModel.Transform(
-                TransformType.PROJECTION, functionFqn, "InputType", "OutputType");
-        PipelineModel.Serialisation outputSerialisation =
+    void shouldEmitLabelHeadersWhenGetObjectMapperCalledWithCsvLabelledAndProvider() throws IOException {
+        PipelineModel.Serialisation serialisation =
                 new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
-        PipelineModel pipelineModel = new PipelineModel(
-                "pipeline-id", "Test Pipeline", transform, null, null, outputSerialisation, null);
 
-        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
-                pipelineModel, Thread.currentThread().getContextClassLoader());
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(serialisation, stubLabelProvider());
 
         assertTrue(mapperOpt.isPresent(), "Expected a non-empty ObjectMapper for CSV_LABELLED");
 
@@ -195,16 +200,27 @@ class TestPackUtilsTest {
     }
 
     @Test
-    void shouldEmitAttributeNameHeadersWhenGetObjectMapperCalledWithPlainCsvPipelineModel() throws IOException {
-        PipelineModel.Transform transform = new PipelineModel.Transform(
-                TransformType.PROJECTION, "some.Function", "InputType", "OutputType");
-        PipelineModel.Serialisation outputSerialisation =
-                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV, null);
-        PipelineModel pipelineModel = new PipelineModel(
-                "pipeline-id", "Test Pipeline", transform, null, null, outputSerialisation, null);
+    void shouldThrowIllegalArgumentWhenGetObjectMapperCalledWithCsvLabelledAndNullProvider() {
+        // CSV_LABELLED must never silently degrade to plain CSV — a null provider must throw.
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
 
-        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
-                pipelineModel, Thread.currentThread().getContextClassLoader());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> TestPackUtils.getObjectMapper(serialisation, null));
+
+        assertTrue(ex.getMessage().contains("CSV_LABELLED"),
+                "Exception message should mention CSV_LABELLED");
+        assertTrue(ex.getMessage().contains("LabelProvider"),
+                "Exception message should explain a LabelProvider is required");
+    }
+
+    @Test
+    void shouldEmitAttributeNameHeadersWhenGetObjectMapperCalledWithPlainCsvIgnoringProvider() throws IOException {
+        // For plain CSV the provider is ignored — even when supplied, headers stay attribute names.
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV, null);
+
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(serialisation, stubLabelProvider());
 
         assertTrue(mapperOpt.isPresent());
 
@@ -216,52 +232,8 @@ class TestPackUtilsTest {
     }
 
     @Test
-    void shouldThrowIllegalArgumentWhenCsvLabelledPipelineModelHasNoTransformFunction() {
-        // CSV_LABELLED with a transform that carries no function name must not silently
-        // fall back to plain CSV — it should throw.
-        PipelineModel.Transform transform = new PipelineModel.Transform(
-                TransformType.PROJECTION, null, "InputType", "OutputType");
-        PipelineModel.Serialisation outputSerialisation =
-                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
-        PipelineModel pipelineModel = new PipelineModel(
-                "pipeline-id", "Test Pipeline", transform, null, null, outputSerialisation, null);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                TestPackUtils.getObjectMapper(pipelineModel, Thread.currentThread().getContextClassLoader()));
-
-        assertTrue(ex.getMessage().contains("CSV_LABELLED"),
-                "Exception message should mention CSV_LABELLED");
-        assertTrue(ex.getMessage().contains("transform function"),
-                "Exception message should explain the missing transform function");
-    }
-
-    @Test
-    void shouldThrowIllegalArgumentWhenCsvLabelledPipelineModelHasNoTransform() {
-        // CSV_LABELLED with no transform block at all must also throw rather than degrade.
-        PipelineModel.Serialisation outputSerialisation =
-                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
-        PipelineModel pipelineModel = new PipelineModel(
-                "pipeline-id", "Test Pipeline", null, null, null, outputSerialisation, null);
-
-        assertThrows(IllegalArgumentException.class, () ->
-                TestPackUtils.getObjectMapper(pipelineModel, Thread.currentThread().getContextClassLoader()));
-    }
-
-    @Test
-    void shouldReturnEmptyWhenGetObjectMapperCalledWithNullOutputSerialisation() {
-        PipelineModel pipelineModel = new PipelineModel(
-                "pipeline-id", "Test Pipeline", null, null, null, null, null);
-
-        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
-                pipelineModel, Thread.currentThread().getContextClassLoader());
-
-        assertFalse(mapperOpt.isPresent());
-    }
-
-    @Test
-    void shouldReturnEmptyWhenGetObjectMapperCalledWithNullPipelineModel() {
-        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(
-                null, Thread.currentThread().getContextClassLoader());
+    void shouldReturnEmptyWhenGetObjectMapperWithProviderCalledWithNullSerialisation() {
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(null, stubLabelProvider());
 
         assertFalse(mapperOpt.isPresent());
     }

@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
-import com.regnosys.rosetta.common.serialisation.csv.LabelProviderResolver;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.functions.LabelProvider;
@@ -165,8 +164,8 @@ public class TestPackUtils {
                 return Optional.of(RosettaObjectMapperCreator.forCSV().create());
             case CSV_LABELLED:
                 throw new IllegalArgumentException(
-                        "CSV_LABELLED format requires the transform function to resolve the label provider. " +
-                        "Use getObjectMapper(PipelineModel, ClassLoader) instead.");
+                        "CSV_LABELLED format requires a LabelProvider resolved from the transform function. " +
+                        "Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.");
         }
         return Optional.empty();
     }
@@ -175,30 +174,39 @@ public class TestPackUtils {
         return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
-    public static Optional<ObjectMapper> getObjectMapper(PipelineModel pipelineModel, ClassLoader classLoader) {
-        if (pipelineModel == null) {
-            return Optional.empty();
-        }
-        PipelineModel.Serialisation serialisation = pipelineModel.getOutputSerialisation();
+    /**
+     * Resolves an {@link ObjectMapper} for the given serialisation, using the supplied
+     * {@link LabelProvider} for the {@code CSV_LABELLED} format.
+     *
+     * <p>The provider is only consulted for {@code CSV_LABELLED}; all other formats delegate
+     * to {@link #getObjectMapper(PipelineModel.Serialisation)} and ignore it. Callers resolve
+     * the provider from the (already-loaded) transform function class via
+     * {@link LabelProviderResolver}, so this method
+     * does not need a {@link ClassLoader}.
+     *
+     * @param serialisation the output serialisation (may be {@code null})
+     * @param labelProvider the provider to use for {@code CSV_LABELLED}; must be non-null for
+     *                      that format
+     * @return the resolved mapper, or empty when {@code serialisation} (or its format) is null
+     * @throws IllegalArgumentException if the format is {@code CSV_LABELLED} but
+     *                                  {@code labelProvider} is null
+     */
+    public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
         if (serialisation == null || serialisation.getFormat() == null) {
             return Optional.empty();
         }
         if (serialisation.getFormat() == PipelineModel.Serialisation.Format.CSV_LABELLED) {
-            PipelineModel.Transform transform = pipelineModel.getTransform();
-            String functionClassName = transform != null ? transform.getFunction() : null;
-            if (functionClassName == null) {
+            if (labelProvider == null) {
                 throw new IllegalArgumentException(
-                        "CSV_LABELLED format requires a transform function to resolve the label provider, " +
-                        "but the pipeline model has no transform function.");
+                        "CSV_LABELLED format requires a non-null LabelProvider resolved from the transform function.");
             }
-            LabelProvider labelProvider = LabelProviderResolver.fromTransformFunction(functionClassName, classLoader);
             return Optional.of(RosettaObjectMapperCreator.forCSV(labelProvider).create());
         }
         return getObjectMapper(serialisation);
     }
 
-    public static Optional<ObjectWriter> getObjectWriter(PipelineModel pipelineModel, ClassLoader classLoader) {
-        return getObjectMapper(pipelineModel, classLoader).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
+        return getObjectMapper(serialisation, labelProvider).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
     public static String getReportTestPackName(String reportId) {

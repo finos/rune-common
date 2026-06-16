@@ -63,7 +63,7 @@ public class XmlContentModelDisambiguationTest {
 
     public XmlContentModelDisambiguationTest() throws IOException {
         try (InputStream inputStream = Resources.getResource(
-                "xml-serialisation/xml-config/content-model-xml-config.json").openStream()) {
+                "serialisation/xml/xml-config/content-model-xml-config.json").openStream()) {
             xmlMapper = RosettaObjectMapperCreator.forXML(inputStream).create();
         }
     }
@@ -346,7 +346,7 @@ public class XmlContentModelDisambiguationTest {
 
     private static RosettaXMLConfiguration loadConfig() throws IOException {
         try (InputStream inputStream = Resources.getResource(
-                "xml-serialisation/xml-config/content-model-xml-config.json").openStream()) {
+                "serialisation/xml/xml-config/content-model-xml-config.json").openStream()) {
             return RosettaXMLConfiguration.load(inputStream);
         }
     }

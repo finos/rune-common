@@ -1,0 +1,14 @@
+{
+  "@model" : "com",
+  "@type" : "com.rosetta.test.Root",
+  "@version" : "0.0.0",
+  "nodeRef" : {
+    "typeA" : {
+      "@key" : "someKey",
+      "fieldA" : "foo"
+    },
+    "aReference" : {
+      "@ref" : "someKey"
+    }
+  }
+}

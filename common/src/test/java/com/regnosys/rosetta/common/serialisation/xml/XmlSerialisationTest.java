@@ -57,7 +57,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class XmlSerialisationTest {
-    private static final String XSD_SCHEMA = "/xml-serialisation/schema/extension-schema.xsd";
+    private static final String XSD_SCHEMA = "/serialisation/xml/schema/extension-schema.xsd";
+    private static final String XML_TEST_RESOURCES = "serialisation/xml/";
 
     private final Validator xsdValidator;
     private final ObjectMapper xmlMapper;
@@ -71,7 +72,7 @@ public class XmlSerialisationTest {
         xsdValidator = schema.newValidator();
 
         // Create an XML mapper with the generated XML configuration based on the XSD schema
-        configUrl = Resources.getResource("xml-serialisation/xml-config/extension-schema-xml-config.json");
+        configUrl = Resources.getResource(XML_TEST_RESOURCES + "xml-config/extension-schema-xml-config.json");
         try (InputStream inputStream = configUrl.openStream()) {
             xmlMapper = RosettaObjectMapperCreator.forXML(inputStream).create();
         }
@@ -85,12 +86,12 @@ public class XmlSerialisationTest {
         TopLevel document = TopLevel.builder().setAttr(foo).setValue(measure).build();
 
         // Test serialisation
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         ObjectWriter xmlWriter = xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
         String actualXML = licenseHeader + xmlWriter.writeValueAsString(document);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/document.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/document.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test serialised document matches the XSD schema
@@ -109,12 +110,12 @@ public class XmlSerialisationTest {
         Document document = TopLevelExtension.builder().setAttr(foo).setValue(measure).setDocumentExtensionAttr("Document Extension Attribute Value").build();
 
         // Test serialisation
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         ObjectWriter xmlWriter = xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd");
         String actualXML = licenseHeader + xmlWriter.writeValueAsString(document);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/extended-top-level-document.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/extended-top-level-document.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test serialised document matches the XSD schema
@@ -128,7 +129,7 @@ public class XmlSerialisationTest {
 
     @Test
     public void testTopLevelDeserialisationPrunesEmpty() throws IOException {
-        String xml = Resources.toString(Resources.getResource("xml-serialisation/expected/top-level-prune.xml"), StandardCharsets.UTF_8);
+        String xml = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/top-level-prune.xml"), StandardCharsets.UTF_8);
 
         TopLevel actual = xmlMapper.readValue(xml, TopLevel.class);
         
@@ -250,12 +251,12 @@ public class XmlSerialisationTest {
                 .setType("My type")
                 .build();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(t);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/element-named-type.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/element-named-type.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -271,12 +272,12 @@ public class XmlSerialisationTest {
                 .addFoo(Foo.builder().setXmlValue("foo2").addAttr1("Qux").build())
                 .build();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(multicardinalityContainer);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/multicardinality-container.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/multicardinality-container.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -294,12 +295,12 @@ public class XmlSerialisationTest {
                 .addNestedContainerSequence1(NestedContainerSequence1.builder().setC(4).setD(5).build())
                 .build();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(nestedContainer);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/nested-container.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/nested-container.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -309,7 +310,7 @@ public class XmlSerialisationTest {
 
     @Test
     public void testPolymorphicDeserialisation() throws IOException {
-        String input = Resources.toString(Resources.getResource("xml-serialisation/input/polymorphic.xml"), StandardCharsets.UTF_8);
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/polymorphic.xml"), StandardCharsets.UTF_8);
 
         // Test deserialisation
         AnimalContainer actual = xmlMapper.readValue(input, AnimalContainer.class);
@@ -324,7 +325,7 @@ public class XmlSerialisationTest {
 
     @Test
     public void testPolymorphicReplacementDeserialisation() throws IOException {
-        String input = Resources.toString(Resources.getResource("xml-serialisation/input/polymorphic-replacement.xml"), StandardCharsets.UTF_8);
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/polymorphic-replacement.xml"), StandardCharsets.UTF_8);
 
         // Test deserialisation
         AnimalContainer actual = xmlMapper.readValue(input, AnimalContainer.class);
@@ -339,7 +340,7 @@ public class XmlSerialisationTest {
 
     @Test
     public void testPolymorphicReplacementDeserialisationWithTokenBufferParser() throws IOException {
-        String input = Resources.toString(Resources.getResource("xml-serialisation/input/polymorphic-replacement-token-buffer-parser.xml"), StandardCharsets.UTF_8);
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/polymorphic-replacement-token-buffer-parser.xml"), StandardCharsets.UTF_8);
 
         // Test deserialisation
         WrappedAnimalContainer actual = xmlMapper.readValue(input, WrappedAnimalContainer.class);
@@ -355,7 +356,7 @@ public class XmlSerialisationTest {
 
     @Test
     public void testPolymorphicReplacementDeserialisationAmbiguousChoice() throws IOException {
-        String input = Resources.toString(Resources.getResource("xml-serialisation/input/polymorphic-replacement-ambiguous-choice.xml"), StandardCharsets.UTF_8);
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/polymorphic-replacement-ambiguous-choice.xml"), StandardCharsets.UTF_8);
 
         // Test deserialisation
         WrappedAnimalContainer actual = xmlMapper.readValue(input, WrappedAnimalContainer.class);
@@ -376,12 +377,12 @@ public class XmlSerialisationTest {
                 .setAnimal(Goat.builder().setName("Goatee").build())
                 .build();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(animalContainer);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/substitution-group.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -398,12 +399,12 @@ public class XmlSerialisationTest {
                 .addAnimal(Salmon.builder().setName("Sashimi").build())
                 .build();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(zoo);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group-multi.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/substitution-group-multi.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -421,12 +422,12 @@ public class XmlSerialisationTest {
                         .addPartyId("myId2"))
                 .build();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + xmlMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(party);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/virtual-attributes.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/virtual-attributes.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -442,12 +443,12 @@ public class XmlSerialisationTest {
 
         ObjectMapper legacyObjectMapper = getLegacyV2ObjectMapper();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + legacyObjectMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(animalContainer);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/substitution-group.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -464,12 +465,12 @@ public class XmlSerialisationTest {
 
         ObjectMapper legacyObjectMapper = getLegacyV2ObjectMapper();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + legacyObjectMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(zoo);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group-multi-legacy.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/substitution-group-multi-legacy.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation
@@ -485,12 +486,12 @@ public class XmlSerialisationTest {
 
         ObjectMapper legacyObjectMapper = getLegacyV1ObjectMapper();
 
-        String licenseHeader = Resources.toString(Resources.getResource("xml-serialisation/expected/license-header.xml"), StandardCharsets.UTF_8);
+        String licenseHeader = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/license-header.xml"), StandardCharsets.UTF_8);
         // Test serialisation
         String actualXML = licenseHeader + legacyObjectMapper
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(animalContainer);
-        String expectedXML = Resources.toString(Resources.getResource("xml-serialisation/expected/substitution-group.xml"), StandardCharsets.UTF_8);
+        String expectedXML = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "expected/substitution-group.xml"), StandardCharsets.UTF_8);
         assertEquals(expectedXML, actualXML);
 
         // Test deserialisation

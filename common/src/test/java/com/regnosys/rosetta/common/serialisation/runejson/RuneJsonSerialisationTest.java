@@ -39,7 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.regnosys.rosetta.common.util.ResourceUtils.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
@@ -60,11 +60,17 @@ public class RuneJsonSerialisationTest {
         String input = readAsString(RUNE_JSON_TEST_RESOURCES_PATH.resolve("node-key-with-ref.json"));
 
         Root deserializedObject = fromJson(objectMapper, input, Root.class);
+
+        // assert that the reference is unresolved
+        NodeRef deserializedNodeRef = deserializedObject.getNodeRef();
+        assertNotNull(deserializedNodeRef.getTypeA());
+        assertNull(deserializedNodeRef.getAReference().getValue());
+        
         Root resolvedObject = resolveReferences(deserializedObject);
 
-        // assert that the reference was resolved
-        NodeRef nodeRef = resolvedObject.getNodeRef();
-        assertEquals(nodeRef.getTypeA(), nodeRef.getAReference().getValue());
+        // assert that the reference is resolved
+        NodeRef resolvedNodeRef = resolvedObject.getNodeRef();
+        assertEquals(resolvedNodeRef.getTypeA(), resolvedNodeRef.getAReference().getValue());
         
         // assert the resolved reference is not serialised
         String result = toJson(objectMapper, resolvedObject);
@@ -76,6 +82,12 @@ public class RuneJsonSerialisationTest {
         String input = readAsString(RUNE_JSON_TEST_RESOURCES_PATH.resolve("attribute-key-with-ref.json"));
 
         Root deserializedObject = fromJson(objectMapper, input, Root.class);
+
+        // assert that the reference is unresolved
+        AttributeRef deserializedAttributeRef = deserializedObject.getAttributeRef();
+        assertNotNull(deserializedAttributeRef.getDateField().getValue());
+        assertNull(deserializedAttributeRef.getDateReference().getValue());
+        
         Root resolvedObject = resolveReferences(deserializedObject);
         
         // assert that the reference was resolved

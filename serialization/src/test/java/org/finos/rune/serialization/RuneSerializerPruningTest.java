@@ -175,7 +175,6 @@ public class RuneSerializerPruningTest {
         String input = readAsString(getFile(groupPath, "attribute-key-with-ref.json"));
 
         RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
-        
         String result = toJson(objectMapper, deserializedObject);
 
         assertEquals(input, result);

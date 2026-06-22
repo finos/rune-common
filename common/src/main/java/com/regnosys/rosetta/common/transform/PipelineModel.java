@@ -68,10 +68,23 @@ public class PipelineModel {
         return upstreamPipelineId;
     }
 
+    /**
+     * @deprecated the serialisation format and config are now sourced from the {@code @Ingest}/
+     *         {@code @Projection} annotation on the generated transform function class rather than from the
+     *         pipeline JSON. See {@link com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory}.
+     *         Kept for backward compatibility.
+     */
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public Serialisation getInputSerialisation() {
         return inputSerialisation;
     }
 
+    /**
+     * @deprecated see {@link #getInputSerialisation()}.
+     */
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public Serialisation getOutputSerialisation() {
         return outputSerialisation;
     }
@@ -163,6 +176,13 @@ public class PipelineModel {
         }
     }
 
+    /**
+     * @deprecated the serialisation format and config are now sourced from the {@code @Ingest}/
+     *         {@code @Projection} annotation on the generated transform function class rather than from the
+     *         pipeline JSON. See {@link com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory}.
+     *         Kept for backward compatibility.
+     */
+    @Deprecated
     public static class Serialisation {
         private final Format format;
         private final String configPath;
@@ -204,6 +224,11 @@ public class PipelineModel {
                     '}';
         }
 
+        /**
+         * @deprecated see {@link Serialisation}. The canonical serialization format enum is now
+         *         {@code com.rosetta.model.lib.transform.SerializationFormat}. Kept for backward compatibility.
+         */
+        @Deprecated
         public enum Format {
             JSON("json"),
             RUNE_JSON("json"),

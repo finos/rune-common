@@ -46,7 +46,7 @@ public class PreProcessingSerializer<T> extends JsonSerializer<T> implements Con
     private final JsonSerializer<T> delegate;
     private final SerializationPreProcessor serializationPreProcessor;
     private static final String MASTER_SNAPSHOT_VERSION = "0.0.0.master-SNAPSHOT";
-    private static final String NORMALISE_SAMPLE_SNAPSHOT_VERSION = "NORMALISE_SAMPLE_SNAPSHOT_VERSION";
+    private static final String NORMALISE_SAMPLE_VERSION = "NORMALISE_SAMPLE_VERSION";
 
 
     public PreProcessingSerializer(JsonSerializer<?> delegate) {
@@ -160,10 +160,7 @@ public class PreProcessingSerializer<T> extends JsonSerializer<T> implements Con
 
     private String getVersion(RuneDataType runeDataType) {
         String version = runeDataType.version();
-        if (Boolean.parseBoolean(System.getenv(NORMALISE_SAMPLE_SNAPSHOT_VERSION))
-                && version != null
-                && version.startsWith("0.0.0.")
-                && version.endsWith("-SNAPSHOT")) {
+        if (Boolean.parseBoolean(System.getenv(NORMALISE_SAMPLE_VERSION))) {
             return MASTER_SNAPSHOT_VERSION;
         }
         return version;

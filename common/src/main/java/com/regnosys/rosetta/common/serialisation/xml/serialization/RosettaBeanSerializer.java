@@ -36,7 +36,14 @@ import com.regnosys.rosetta.common.serialisation.xml.VirtualXMLAttribute;
 
 import javax.xml.namespace.QName;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -56,24 +63,37 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
 
     private final SubstitutionMap _substitutionMap;
 
+    // When present, child elements are serialised in the order dictated by the XSD content model
+    // (computed per object against the present data), rather than the default property order.
+    private final XMLContentModelOrderer _contentModelOrderer;
+
     public RosettaBeanSerializer(XmlBeanSerializer src, SubstitutionMap substitutionMap) {
+        this(src, substitutionMap, null);
+    }
+
+    public RosettaBeanSerializer(XmlBeanSerializer src, SubstitutionMap substitutionMap,
+                                 XMLContentModelOrderer contentModelOrderer) {
         super(src);
         this._substitutionMap = substitutionMap;
+        this._contentModelOrderer = contentModelOrderer;
     }
 
     public RosettaBeanSerializer(RosettaBeanSerializer src, ObjectIdWriter objectIdWriter, Object filterId) {
         super(src, objectIdWriter, filterId);
         this._substitutionMap = src._substitutionMap;
+        this._contentModelOrderer = src._contentModelOrderer;
     }
 
     public RosettaBeanSerializer(RosettaBeanSerializer src, Set<String> toIgnore, Set<String> toInclude) {
         super(src, toIgnore, toInclude);
         this._substitutionMap = src._substitutionMap;
+        this._contentModelOrderer = src._contentModelOrderer;
     }
 
     protected RosettaBeanSerializer(RosettaBeanSerializer src, BeanPropertyWriter[] properties, BeanPropertyWriter[] filteredProperties) {
         super(src, properties, filteredProperties);
         this._substitutionMap = src._substitutionMap;
+        this._contentModelOrderer = src._contentModelOrderer;
     }
 
     @Override
@@ -128,6 +148,17 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
         g.writeEndObject();
     }
 
+    // For non-root beans the base XmlBeanSerializer.serialize() delegates here; reorder child
+    // elements to follow the XSD content model when an orderer is configured.
+    @Override
+    protected void serializeFields(Object bean, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        if (_contentModelOrderer != null && gen instanceof ToXmlGenerator) {
+            serializeFieldsAndAddSchemaLocation(bean, (ToXmlGenerator) gen, provider);
+        } else {
+            super.serializeFields(bean, gen, provider);
+        }
+    }
+
     // Serialize fields as usual, but add the `schemaLocation` attribute at the end of all XML attributes.
     protected void serializeFieldsAndAddSchemaLocation(Object bean, ToXmlGenerator xgen, SerializerProvider provider)
             throws IOException {
@@ -145,11 +176,16 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
         int i = 0;
         final BitSet cdata = _cdata;
 
+        // Permutation of property indices that realises the content-model order. Identity when no
+        // orderer is configured or when the order cannot be improved/derived (safe fallback).
+        final int[] order = computeContentModelOrder(bean, props, textIndex);
+
         try {
             if (props.length == 0) {
                 writeSchemaLocation(xgen, provider);
             }
             for (final int len = props.length; i < len; ++i) {
+                final int pi = order[i];
                 // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer
                 // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.
                 if (i == attrCount && !isUnwrappingSerializer()) {
@@ -160,10 +196,10 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
                 if (i == textIndex) {
                     xgen.setNextIsUnwrapped(true);
                 }
-                xgen.setNextName(xmlNames[i]);
-                BeanPropertyWriter prop = props[i];
+                xgen.setNextName(xmlNames[pi]);
+                BeanPropertyWriter prop = props[pi];
                 if (prop != null) { // can have nulls in filtered list
-                    if ((cdata != null) && cdata.get(i)) {
+                    if ((cdata != null) && cdata.get(pi)) {
                         xgen.setNextIsCData(true);
                         prop.serializeAsField(bean, xgen, provider);
                         xgen.setNextIsCData(false);
@@ -184,14 +220,90 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
                 _anyGetterWriter.getAndSerialize(bean, xgen, provider);
             }
         } catch (Exception e) {
-            String name = (i == props.length) ? "[anySetter]" : props[i].getName();
+            String name = (i == props.length) ? "[anySetter]" : props[order[i]].getName();
             wrapAndThrow(provider, e, bean, name);
         } catch (StackOverflowError e) { // Bit tricky, can't do more calls as stack is full; so:
             JsonMappingException mapE = JsonMappingException.from(xgen,
                     "Infinite recursion (StackOverflowError)");
-            String name = (i == props.length) ? "[anySetter]" : props[i].getName();
+            String name = (i == props.length) ? "[anySetter]" : props[order[i]].getName();
             mapE.prependPath(new JsonMappingException.Reference(bean, name));
             throw mapE;
+        }
+    }
+
+    /**
+     * Computes a permutation of property indices that emits the content-model properties in the
+     * order required by the XSD content model, leaving every other property (and all attributes) in
+     * place. Only the slots occupied by <em>present</em> content-model properties are permuted among
+     * themselves, so absent properties and non-content-model properties never move. Returns the
+     * identity permutation when no orderer is set, when a text/unwrapped property is present (where
+     * reordering is unsafe), or when the present set cannot be ordered.
+     */
+    private int[] computeContentModelOrder(Object bean, BeanPropertyWriter[] props, int textIndex) {
+        final int len = props.length;
+        final int[] order = new int[len];
+        for (int i = 0; i < len; i++) {
+            order[i] = i;
+        }
+        if (_contentModelOrderer == null || textIndex >= 0) {
+            return order;
+        }
+        final Set<String> contentModelProperties = _contentModelOrderer.getContentModelProperties();
+        final List<Integer> presentSlots = new ArrayList<>();
+        final Map<String, Integer> presentNameToIndex = new LinkedHashMap<>();
+        final Set<String> present = new LinkedHashSet<>();
+        for (int i = _attributeCount; i < len; i++) {
+            final BeanPropertyWriter prop = props[i];
+            if (prop == null) {
+                continue;
+            }
+            final String name = prop.getName();
+            if (!contentModelProperties.contains(name) || !isPresent(prop, bean)) {
+                continue;
+            }
+            presentSlots.add(i);
+            presentNameToIndex.put(name, i);
+            present.add(name);
+        }
+        if (presentSlots.size() <= 1) {
+            return order;
+        }
+        final List<String> ordered = _contentModelOrderer.order(present);
+        if (ordered == null || ordered.size() != presentSlots.size()) {
+            return order; // fallback: keep default order
+        }
+        Collections.sort(presentSlots);
+        for (int k = 0; k < presentSlots.size(); k++) {
+            final Integer target = presentNameToIndex.get(ordered.get(k));
+            if (target == null) {
+                return identity(len); // inconsistent; bail safely
+            }
+            order[presentSlots.get(k)] = target;
+        }
+        return order;
+    }
+
+    private static int[] identity(int len) {
+        int[] order = new int[len];
+        for (int i = 0; i < len; i++) {
+            order[i] = i;
+        }
+        return order;
+    }
+
+    private static boolean isPresent(BeanPropertyWriter prop, Object bean) {
+        try {
+            final Object value = prop.get(bean);
+            if (value == null) {
+                return false;
+            }
+            if (value instanceof Collection) {
+                return !((Collection<?>) value).isEmpty();
+            }
+            return true;
+        } catch (Exception e) {
+            // If we cannot read the value, assume present so it keeps its slot.
+            return true;
         }
     }
 

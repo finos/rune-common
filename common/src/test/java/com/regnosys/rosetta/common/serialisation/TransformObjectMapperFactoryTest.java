@@ -33,6 +33,7 @@ import com.rosetta.model.lib.transform.SerializationFormat;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,81 +88,59 @@ class TransformObjectMapperFactoryTest {
 
     @Test
     void buildsXmlMapperFromSchemaConfigPath() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(XmlSchemaIngest.class);
-        assertNotNull(mapper);
+        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(XmlSchemaIngest.class).get();
         assertInstanceOf(XmlMapper.class, mapper);
     }
 
     @Test
     void buildsXmlMapperForBareFormatWithoutConfigPath() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(BareXmlIngest.class);
-        assertNotNull(mapper);
+        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(BareXmlIngest.class).get();
         assertInstanceOf(XmlMapper.class, mapper);
     }
 
     @Test
     void buildsJsonMapperForJsonIngest() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(JsonIngest.class);
-        assertNotNull(mapper);
+        assertTrue(TransformObjectMapperFactory.forTransformFunction(JsonIngest.class).isPresent());
     }
 
     @Test
     void buildsRuneJsonMapperForRuneJsonProjection() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(RuneJsonProjection.class);
+        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(RuneJsonProjection.class).get();
         assertInstanceOf(RuneJsonObjectMapper.class, mapper);
     }
 
     @Test
     void buildsCsvMapperForCsvProjection() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(CsvProjection.class);
-        assertNotNull(mapper);
+        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvProjection.class).isPresent());
     }
 
     @Test
     void buildsCsvMapperForCsvLabelledProjectionUsingAnnotatedLabelProvider() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjection.class);
+        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjection.class).isPresent());
+    }
+
+    @Test
+    void csvLabelledWithoutRuneLabelProviderFallsBackToPlainCsv() {
+        // No @RuneLabelProvider (e.g. a non-generated function): degrade to plain CSV rather than fail.
+        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjectionWithoutLabelProvider.class).isPresent());
+    }
+
+    @Test
+    void csvLabelledFromFormatAloneFallsBackToPlainCsv() {
+        // Built from the format alone (no function class -> no label provider): plain CSV, no exception.
+        ObjectMapper mapper = TransformObjectMapperFactory.create(SerializationFormat.CSV_LABELLED, null,
+                TransformObjectMapperFactoryTest.class.getClassLoader());
         assertNotNull(mapper);
     }
 
     @Test
-    void csvLabelledWithoutRuneLabelProviderIsRejected() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjectionWithoutLabelProvider.class));
-        assertTrue(e.getMessage().contains("@RuneLabelProvider"));
-    }
-
-    @Test
-    void csvLabelledCannotBeBuiltFromFormatAlone() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> TransformObjectMapperFactory.create(SerializationFormat.CSV_LABELLED, null,
-                        TransformObjectMapperFactoryTest.class.getClassLoader()));
-        assertTrue(e.getMessage().contains("CSV_LABELLED"));
-    }
-
-    @Test
-    void forIngestReadsAnnotationDirectly() {
-        Ingest ingest = JsonIngest.class.getAnnotation(Ingest.class);
-        assertNotNull(TransformObjectMapperFactory.forIngest(ingest, JsonIngest.class.getClassLoader()));
-    }
-
-    @Test
-    void forProjectionReadsAnnotationDirectly() {
-        Projection projection = CsvProjection.class.getAnnotation(Projection.class);
-        assertNotNull(TransformObjectMapperFactory.forProjection(projection, CsvProjection.class.getClassLoader()));
-    }
-
-    @Test
     void enrichTransformHasNoObjectMapper() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> TransformObjectMapperFactory.forTransformFunction(Enricher.class));
-        assertTrue(e.getMessage().contains("@Enrich"));
+        assertFalse(TransformObjectMapperFactory.forTransformFunction(Enricher.class).isPresent());
     }
 
     @Test
-    void unannotatedClassIsRejected() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> TransformObjectMapperFactory.forTransformFunction(NotAnnotated.class));
-        assertTrue(e.getMessage().contains("not annotated"));
+    void unannotatedClassHasNoObjectMapper() {
+        assertFalse(TransformObjectMapperFactory.forTransformFunction(NotAnnotated.class).isPresent());
     }
 
     @Test

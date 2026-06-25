@@ -26,11 +26,12 @@ import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfigurat
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
-import com.rosetta.model.lib.transform.Enrich;
 import com.rosetta.model.lib.transform.Ingest;
 import com.rosetta.model.lib.transform.Projection;
 import com.rosetta.model.lib.transform.SerializationFormat;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Builds the {@link ObjectMapper} that (de)serializes the input or output of a transform function,
@@ -58,40 +60,16 @@ import java.util.Objects;
  */
 public final class TransformObjectMapperFactory {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransformObjectMapperFactory.class);
+
     private TransformObjectMapperFactory() {
-    }
-
-    /**
-     * Builds the deserializing mapper for an {@link Ingest}-annotated function.
-     * <p>
-     * Note that the {@code CSV_LABELLED} format additionally needs a {@link LabelProvider}, which is not
-     * carried by the {@link Ingest} annotation itself but by a separate {@code @RuneLabelProvider}
-     * annotation on the function class. Use {@link #forTransformFunction(Class, ClassLoader)} to build a
-     * {@code CSV_LABELLED} mapper.
-     */
-    public static ObjectMapper forIngest(Ingest ingest, ClassLoader classLoader) {
-        Objects.requireNonNull(ingest, "ingest annotation must not be null");
-        return create(ingest.format(), ingest.configPath(), classLoader);
-    }
-
-    /**
-     * Builds the serializing mapper for a {@link Projection}-annotated function.
-     * <p>
-     * Note that the {@code CSV_LABELLED} format additionally needs a {@link LabelProvider}, which is not
-     * carried by the {@link Projection} annotation itself but by a separate {@code @RuneLabelProvider}
-     * annotation on the function class. Use {@link #forTransformFunction(Class, ClassLoader)} to build a
-     * {@code CSV_LABELLED} mapper.
-     */
-    public static ObjectMapper forProjection(Projection projection, ClassLoader classLoader) {
-        Objects.requireNonNull(projection, "projection annotation must not be null");
-        return create(projection.format(), projection.configPath(), classLoader);
     }
 
     /**
      * Reflectively reads the {@link Ingest}/{@link Projection} annotation off the given function class and
      * builds the corresponding mapper, resolving resources against the function class's own classloader.
      */
-    public static ObjectMapper forTransformFunction(Class<?> functionClass) {
+    public static Optional<ObjectMapper> forTransformFunction(Class<?> functionClass) {
         return forTransformFunction(functionClass, functionClass.getClassLoader());
     }
 
@@ -99,30 +77,29 @@ public final class TransformObjectMapperFactory {
      * Reflectively reads the {@link Ingest}/{@link Projection} annotation off the given function class and
      * builds the corresponding mapper, resolving resources against the supplied classloader.
      * <p>
-     * For the {@code CSV_LABELLED} format, the required {@link LabelProvider} is derived from the
-     * {@code @RuneLabelProvider} annotation the Rune code generator places on the function class (via
-     * {@link LabelProviderResolver}).
-     *
-     * @throws IllegalArgumentException if the class carries no {@code @Ingest}/{@code @Projection}
-     *         annotation, or is an {@code @Enrich} transform (which does not (de)serialize); or if the
-     *         format is {@code CSV_LABELLED} but the function class carries no {@code @RuneLabelProvider}.
+     * Returns {@link Optional#empty()} when the class carries no (de)serializing transform annotation — i.e.
+     * an {@code @Enrich} transform (which does not (de)serialize) or a function with no
+     * {@code @Ingest}/{@code @Projection} at all — so callers can fall back (to a pipeline config, a default
+     * mapper, …) without catching an exception.
+     * <p>
+     * For the {@code CSV_LABELLED} format the {@link LabelProvider} is derived from the
+     * {@code @RuneLabelProvider} annotation the Rune code generator places on every transform function; if
+     * that annotation is absent (e.g. a hand-written / non-generated function), the mapper falls back to
+     * plain (unlabelled) CSV rather than failing.
      */
-    public static ObjectMapper forTransformFunction(Class<?> functionClass, ClassLoader classLoader) {
+    public static Optional<ObjectMapper> forTransformFunction(Class<?> functionClass, ClassLoader classLoader) {
         Objects.requireNonNull(functionClass, "functionClass must not be null");
         Ingest ingest = functionClass.getAnnotation(Ingest.class);
         if (ingest != null) {
-            return create(ingest.format(), ingest.configPath(), classLoader, functionClass);
+            return Optional.of(create(ingest.format(), ingest.configPath(), classLoader, functionClass));
         }
         Projection projection = functionClass.getAnnotation(Projection.class);
         if (projection != null) {
-            return create(projection.format(), projection.configPath(), classLoader, functionClass);
+            return Optional.of(create(projection.format(), projection.configPath(), classLoader, functionClass));
         }
-        if (functionClass.isAnnotationPresent(Enrich.class)) {
-            throw new IllegalArgumentException("Transform function " + functionClass.getName()
-                    + " is annotated with @Enrich, which does not (de)serialize and therefore has no ObjectMapper");
-        }
-        throw new IllegalArgumentException("Transform function " + functionClass.getName()
-                + " is not annotated with @Ingest or @Projection");
+        // @Enrich does not (de)serialize, and a non-transform function has no mapper; return empty so the
+        // caller can fall back rather than handle an exception.
+        return Optional.empty();
     }
 
     /**
@@ -130,9 +107,9 @@ public final class TransformObjectMapperFactory {
      * classloader preserves the legacy classpath-resource lookup (Guava {@link Resources}); a non-null
      * classloader resolves the XML config and model types against that loader.
      * <p>
-     * The {@code CSV_LABELLED} format cannot be built from the format alone — it needs a
-     * {@link LabelProvider} resolved from the function class. Use
-     * {@link #forTransformFunction(Class, ClassLoader)} for that format.
+     * The {@code CSV_LABELLED} format needs a {@link LabelProvider} resolved from the function class; when
+     * called without one (as here), it falls back to plain (unlabelled) CSV. Use
+     * {@link #forTransformFunction(Class, ClassLoader)} to get labelled CSV.
      */
     public static ObjectMapper create(SerializationFormat format, String configPath, ClassLoader classLoader) {
         return create(format, configPath, classLoader, null);
@@ -148,8 +125,16 @@ public final class TransformObjectMapperFactory {
                 return new RuneJsonObjectMapper();
             case CSV:
                 return RosettaObjectMapperCreator.forCSV().create();
-            case CSV_LABELLED:
-                return RosettaObjectMapperCreator.forCSV(resolveLabelProvider(functionClass)).create();
+            case CSV_LABELLED: {
+                LabelProvider labelProvider = resolveLabelProvider(functionClass);
+                if (labelProvider == null) {
+                    LOGGER.warn("CSV_LABELLED requested but no @RuneLabelProvider could be resolved{}; "
+                            + "falling back to unlabelled CSV.",
+                            functionClass != null ? " from " + functionClass.getName() : "");
+                    return RosettaObjectMapperCreator.forCSV().create();
+                }
+                return RosettaObjectMapperCreator.forCSV(labelProvider).create();
+            }
             case XML:
                 return createXmlMapper(configPath, classLoader);
             default:
@@ -158,27 +143,18 @@ public final class TransformObjectMapperFactory {
     }
 
     /**
-     * Resolves the {@link LabelProvider} for a {@code CSV_LABELLED} mapper from the {@code @RuneLabelProvider}
-     * annotation on the function class.
+     * Tries to resolve the {@link LabelProvider} for a {@code CSV_LABELLED} mapper from the
+     * {@code @RuneLabelProvider} annotation on the function class. Returns {@code null} when none is
+     * available — no function class, the class is not a {@link RosettaFunction}, or it carries no
+     * {@code @RuneLabelProvider} (e.g. a hand-written / non-generated function) — so the caller can fall
+     * back to unlabelled CSV.
      */
     @SuppressWarnings("unchecked")
     private static LabelProvider resolveLabelProvider(Class<?> functionClass) {
-        if (functionClass == null) {
-            throw new IllegalArgumentException("CSV_LABELLED requires a LabelProvider resolved from the "
-                    + "transform function and cannot be built from the format alone. Use "
-                    + "forTransformFunction(Class, ClassLoader) instead.");
+        if (functionClass == null || !RosettaFunction.class.isAssignableFrom(functionClass)) {
+            return null;
         }
-        if (!RosettaFunction.class.isAssignableFrom(functionClass)) {
-            throw new IllegalArgumentException("Transform function " + functionClass.getName()
-                    + " does not implement RosettaFunction and therefore cannot carry a @RuneLabelProvider");
-        }
-        LabelProvider labelProvider = LabelProviderResolver.fromTransformFunction(
-                (Class<? extends RosettaFunction>) functionClass);
-        if (labelProvider == null) {
-            throw new IllegalArgumentException("CSV_LABELLED requires a LabelProvider, but transform function "
-                    + functionClass.getName() + " carries no @RuneLabelProvider annotation");
-        }
-        return labelProvider;
+        return LabelProviderResolver.fromTransformFunction((Class<? extends RosettaFunction>) functionClass);
     }
 
     private static ObjectMapper createXmlMapper(String configPath, ClassLoader classLoader) {

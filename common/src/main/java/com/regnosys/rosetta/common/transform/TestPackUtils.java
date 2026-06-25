@@ -254,15 +254,15 @@ public class TestPackUtils {
         if (functionClass == null || !functionClass.isAnnotationPresent(Ingest.class)) {
             return Optional.empty();
         }
-        return Optional.of(TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader()));
+        return TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader());
     }
 
     private static Optional<ObjectWriter> projectionObjectWriter(Class<?> functionClass) {
         if (functionClass == null || !functionClass.isAnnotationPresent(Projection.class)) {
             return Optional.empty();
         }
-        return Optional.of(TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader())
-                .writerWithDefaultPrettyPrinter());
+        return TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader())
+                .map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
     public static String getReportTestPackName(String reportId) {

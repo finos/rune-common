@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.xml.stream.XMLStreamReader;
 
@@ -434,7 +435,7 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         return hasNested[0] || hasDuplicate[0];
     }
 
-    private static void walk(XMLContentModel node, java.util.function.Consumer<XMLContentModel> visitor) {
+    private static void walk(XMLContentModel node, Consumer<XMLContentModel> visitor) {
         visitor.accept(node);
         node.getChildren().ifPresent(children -> {
             for (XMLContentModel child : children) {

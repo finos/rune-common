@@ -19,10 +19,13 @@ import com.rosetta.test.FpmlReference;
 import com.rosetta.test.FpmlTextValue;
 import com.rosetta.test.FpmlTradeIdentifier;
 import com.rosetta.test.FpmlTradeIdentifierChoice;
+import com.rosetta.test.SchemaLocationContainer;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,5 +86,32 @@ public class XmlContentModelSerializationOrderTest {
         } catch (Exception e) {
             fail("Re-deserialisation of serializer output failed: " + e.getMessage());
         }
+    }
+
+    @Test
+    public void schemaLocationIsEmittedOnlyOnTheRootNotNestedContentModelElements() throws IOException {
+        // A root containing a nested type that itself has a content model (and therefore a
+        // content-model orderer). The xsi:schemaLocation attribute must be written on the root
+        // element only, never on the nested content-model element.
+        SchemaLocationContainer container = SchemaLocationContainer.builder()
+                .setTradeIdentifier(FpmlTradeIdentifier.builder()
+                        .setPartyReference(FpmlReference.builder().setHref("party-1").build())
+                        .addTradeIdentifierChoice(FpmlTradeIdentifierChoice.builder()
+                                .setVersionedTradeId(FpmlTextValue.builder().setValue("V-1").build())
+                                .build())
+                        .build())
+                .build();
+
+        String xml = xmlMapper.writerWithDefaultPrettyPrinter()
+                .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd")
+                .writeValueAsString(container);
+        System.out.println("=== SERIALISED (with schemaLocation) ===\n" + xml);
+
+        Matcher matcher = Pattern.compile("xsi:schemaLocation").matcher(xml);
+        int count = 0;
+        while (matcher.find()) {
+            count++;
+        }
+        assertEquals(1, count, "xsi:schemaLocation must appear exactly once (root only):\n" + xml);
     }
 }

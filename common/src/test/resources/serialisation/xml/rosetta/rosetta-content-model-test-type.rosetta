@@ -8,6 +8,9 @@ type FpmlTextValue:
 type FpmlReference:
     href string (1..1)
 
+type SchemaLocationContainer:
+    tradeIdentifier FpmlTradeIdentifier (1..1)
+
 type FpmlRegion:
     id string (0..1)
 

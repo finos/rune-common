@@ -149,11 +149,12 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
     }
 
     // For non-root beans the base XmlBeanSerializer.serialize() delegates here; reorder child
-    // elements to follow the XSD content model when an orderer is configured.
+    // elements to follow the XSD content model when an orderer is configured. schemaLocation is a
+    // root-only attribute, so nested beans must NOT emit it (addSchemaLocation = false).
     @Override
     protected void serializeFields(Object bean, JsonGenerator gen, SerializerProvider provider) throws IOException {
         if (_contentModelOrderer != null && gen instanceof ToXmlGenerator) {
-            serializeFieldsAndAddSchemaLocation(bean, (ToXmlGenerator) gen, provider);
+            serializeFieldsInContentModelOrder(bean, (ToXmlGenerator) gen, provider, false);
         } else {
             super.serializeFields(bean, gen, provider);
         }
@@ -161,6 +162,15 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
 
     // Serialize fields as usual, but add the `schemaLocation` attribute at the end of all XML attributes.
     protected void serializeFieldsAndAddSchemaLocation(Object bean, ToXmlGenerator xgen, SerializerProvider provider)
+            throws IOException {
+        serializeFieldsInContentModelOrder(bean, xgen, provider, true);
+    }
+
+    // Shared field-serialisation loop. Child elements are emitted in content-model order; the
+    // xsi:schemaLocation attribute is written (after the regular attributes) only when
+    // addSchemaLocation is true, which is the case for the root element exclusively.
+    private void serializeFieldsInContentModelOrder(Object bean, ToXmlGenerator xgen, SerializerProvider provider,
+                                                    boolean addSchemaLocation)
             throws IOException {
         final BeanPropertyWriter[] props;
         if (_filteredProps != null && provider.getActiveView() != null) {
@@ -181,7 +191,7 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
         final int[] order = computeContentModelOrder(bean, props, textIndex);
 
         try {
-            if (props.length == 0) {
+            if (addSchemaLocation && props.length == 0) {
                 writeSchemaLocation(xgen, provider);
             }
             for (final int len = props.length; i < len; ++i) {
@@ -189,7 +199,9 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
                 // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer
                 // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.
                 if (i == attrCount && !isUnwrappingSerializer()) {
-                    writeSchemaLocation(xgen, provider);
+                    if (addSchemaLocation) {
+                        writeSchemaLocation(xgen, provider);
+                    }
                     xgen.setNextIsAttribute(false);
                 }
                 // also: if this is property to write as text ("unwrap"), need to:

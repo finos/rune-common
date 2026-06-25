@@ -28,6 +28,8 @@ import com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.functions.LabelProvider;
+import com.rosetta.model.lib.transform.Ingest;
+import com.rosetta.model.lib.transform.Projection;
 import com.rosetta.model.lib.transform.SerializationFormat;
 
 import java.io.IOException;
@@ -208,6 +210,58 @@ public class TestPackUtils {
     @SuppressWarnings("deprecation")
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
         return getObjectMapper(serialisation, labelProvider).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    }
+
+    /**
+     * Resolves the input de-serialising {@link ObjectMapper} for a transform function, preferring the
+     * pipeline's {@code inputSerialisation} when present, then the function's {@code @Ingest} annotation
+     * (which a serialisation-agnostic pipeline omits, since the annotation already expresses it), and
+     * finally the supplied default mapper.
+     *
+     * @param inputSerialisation  the pipeline input serialisation (may be {@code null})
+     * @param functionClass       the generated transform function class (may be {@code null})
+     * @param defaultObjectMapper the fallback when neither a pipeline serialisation nor an annotation applies
+     */
+    public static ObjectMapper getInputObjectMapper(PipelineModel.Serialisation inputSerialisation,
+                                                    Class<?> functionClass,
+                                                    ObjectMapper defaultObjectMapper) {
+        return getObjectMapper(inputSerialisation)
+                .orElseGet(() -> ingestObjectMapper(functionClass).orElse(defaultObjectMapper));
+    }
+
+    /**
+     * Resolves the output serialising {@link ObjectWriter} for a transform function, preferring the
+     * pipeline's {@code outputSerialisation} when present, then the function's {@code @Projection}
+     * annotation (which a serialisation-agnostic pipeline omits, since the annotation already expresses
+     * it), and finally the supplied default writer.
+     *
+     * @param outputSerialisation the pipeline output serialisation (may be {@code null})
+     * @param functionClass       the generated transform function class (may be {@code null})
+     * @param labelProvider       the provider for a {@code CSV_LABELLED} pipeline serialisation (the
+     *                            annotation path resolves its own from {@code @RuneLabelProvider})
+     * @param defaultObjectWriter the fallback when neither a pipeline serialisation nor an annotation applies
+     */
+    public static ObjectWriter getOutputObjectWriter(PipelineModel.Serialisation outputSerialisation,
+                                                     Class<?> functionClass,
+                                                     LabelProvider labelProvider,
+                                                     ObjectWriter defaultObjectWriter) {
+        return getObjectWriter(outputSerialisation, labelProvider)
+                .orElseGet(() -> projectionObjectWriter(functionClass).orElse(defaultObjectWriter));
+    }
+
+    private static Optional<ObjectMapper> ingestObjectMapper(Class<?> functionClass) {
+        if (functionClass == null || !functionClass.isAnnotationPresent(Ingest.class)) {
+            return Optional.empty();
+        }
+        return Optional.of(TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader()));
+    }
+
+    private static Optional<ObjectWriter> projectionObjectWriter(Class<?> functionClass) {
+        if (functionClass == null || !functionClass.isAnnotationPresent(Projection.class)) {
+            return Optional.empty();
+        }
+        return Optional.of(TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader())
+                .writerWithDefaultPrettyPrinter());
     }
 
     public static String getReportTestPackName(String reportId) {

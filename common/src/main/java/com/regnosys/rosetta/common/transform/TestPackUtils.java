@@ -155,7 +155,8 @@ public class TestPackUtils {
             return Optional.empty();
         }
         if (serialisation.getFormat() == PipelineModel.Serialisation.Format.CSV_LABELLED) {
-            // CSV_LABELLED has no equivalent in the DSL SerializationFormat enum and needs a LabelProvider.
+            // CSV_LABELLED additionally needs a LabelProvider, which this overload can't supply.
+            // Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.
             throw new IllegalArgumentException(
                     "CSV_LABELLED format requires a LabelProvider resolved from the transform function. " +
                     "Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.");

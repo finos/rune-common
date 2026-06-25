@@ -21,8 +21,13 @@ package com.regnosys.rosetta.common.transform;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.regnosys.rosetta.common.serialisation.csv.LabelProviderResolverTest;
 import com.rosetta.model.lib.functions.LabelProvider;
+import com.rosetta.model.lib.functions.RosettaFunction;
+import com.rosetta.model.lib.transform.Ingest;
+import com.rosetta.model.lib.transform.Projection;
+import com.rosetta.model.lib.transform.SerializationFormat;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -253,5 +258,59 @@ class TestPackUtilsTest {
         public String getAttr() {
             return attr;
         }
+    }
+
+    @Ingest(format = SerializationFormat.JSON)
+    private static class JsonIngestFunction implements RosettaFunction {
+    }
+
+    @Projection(format = SerializationFormat.JSON)
+    private static class JsonProjectionFunction implements RosettaFunction {
+    }
+
+    private static class UnannotatedFunction implements RosettaFunction {
+    }
+
+    @Test
+    void getInputObjectMapperPrefersPipelineSerialisation() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        PipelineModel.Serialisation jsonInput = new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.JSON, null);
+        ObjectMapper resolved = TestPackUtils.getInputObjectMapper(jsonInput, UnannotatedFunction.class, defaultMapper);
+        assertNotNull(resolved);
+        assertNotSame(defaultMapper, resolved, "the pipeline serialisation should build its own mapper");
+    }
+
+    @Test
+    void getInputObjectMapperFallsBackToIngestAnnotation() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        // No pipeline serialisation: the @Ingest annotation supplies the input mapper.
+        ObjectMapper resolved = TestPackUtils.getInputObjectMapper(null, JsonIngestFunction.class, defaultMapper);
+        assertNotNull(resolved);
+        assertNotSame(defaultMapper, resolved, "the @Ingest annotation should build the mapper");
+    }
+
+    @Test
+    void getInputObjectMapperFallsBackToDefaultWhenNeitherPresent() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        assertSame(defaultMapper, TestPackUtils.getInputObjectMapper(null, UnannotatedFunction.class, defaultMapper));
+        assertSame(defaultMapper, TestPackUtils.getInputObjectMapper(null, null, defaultMapper));
+        // A @Projection (not @Ingest) does not supply an input mapper.
+        assertSame(defaultMapper, TestPackUtils.getInputObjectMapper(null, JsonProjectionFunction.class, defaultMapper));
+    }
+
+    @Test
+    void getOutputObjectWriterFallsBackToProjectionAnnotation() {
+        ObjectWriter defaultWriter = new ObjectMapper().writer();
+        ObjectWriter resolved = TestPackUtils.getOutputObjectWriter(null, JsonProjectionFunction.class, null, defaultWriter);
+        assertNotNull(resolved);
+        assertNotSame(defaultWriter, resolved, "the @Projection annotation should build the writer");
+    }
+
+    @Test
+    void getOutputObjectWriterFallsBackToDefaultWhenNeitherPresent() {
+        ObjectWriter defaultWriter = new ObjectMapper().writer();
+        assertSame(defaultWriter, TestPackUtils.getOutputObjectWriter(null, UnannotatedFunction.class, null, defaultWriter));
+        // An @Ingest (not @Projection) does not supply an output writer.
+        assertSame(defaultWriter, TestPackUtils.getOutputObjectWriter(null, JsonIngestFunction.class, null, defaultWriter));
     }
 }

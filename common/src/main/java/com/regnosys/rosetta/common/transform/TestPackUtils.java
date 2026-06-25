@@ -23,16 +23,16 @@ package com.regnosys.rosetta.common.transform;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Resources;
-import com.regnosys.rosetta.common.serialisation.RosettaObjectMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.functions.LabelProvider;
-import org.finos.rune.mapper.RuneJsonObjectMapper;
+import com.rosetta.model.lib.transform.Ingest;
+import com.rosetta.model.lib.transform.Projection;
+import com.rosetta.model.lib.transform.SerializationFormat;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -40,7 +40,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -144,32 +143,35 @@ public class TestPackUtils {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @deprecated this resolves the mapper from a pipeline JSON's {@code inputSerialisation}/
+     *         {@code outputSerialisation}. Prefer {@link TransformObjectMapperFactory}, which reads the
+     *         format and config file from the {@code @Ingest}/{@code @Projection} annotation on the generated
+     *         function class — making the model the single source of truth. Kept for backward compatibility.
+     */
+    @Deprecated
     public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation) {
         if (serialisation == null || serialisation.getFormat() == null) {
             return Optional.empty();
         }
-        switch (serialisation.getFormat()) {
-            case XML:
-                URL xmlConfigPath = Objects.requireNonNull(Resources.getResource(serialisation.getConfigPath()));
-                try (InputStream inputStream = xmlConfigPath.openStream()) {
-                    return Optional.of(RosettaObjectMapperCreator.forXML(inputStream).create());
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            case JSON:
-                return Optional.of(RosettaObjectMapper.getNewRosettaObjectMapper());
-            case RUNE_JSON:
-                return Optional.of(new RuneJsonObjectMapper());
-            case CSV:
-                return Optional.of(RosettaObjectMapperCreator.forCSV().create());
-            case CSV_LABELLED:
-                throw new IllegalArgumentException(
-                        "CSV_LABELLED format requires a LabelProvider resolved from the transform function. " +
-                        "Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.");
+        if (serialisation.getFormat() == PipelineModel.Serialisation.Format.CSV_LABELLED) {
+            // CSV_LABELLED additionally needs a LabelProvider, which this overload can't supply.
+            // Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.
+            throw new IllegalArgumentException(
+                    "CSV_LABELLED format requires a LabelProvider resolved from the transform function. " +
+                    "Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.");
         }
-        return Optional.empty();
+        // Delegate to the shared per-format construction in TransformObjectMapperFactory. A null classloader
+        // preserves the legacy Guava Resources classpath lookup historically used by this method.
+        SerializationFormat format = SerializationFormat.valueOf(serialisation.getFormat().name());
+        return Optional.of(TransformObjectMapperFactory.create(format, serialisation.getConfigPath(), null));
     }
 
+    /**
+     * @deprecated see {@link #getObjectMapper(PipelineModel.Serialisation)}.
+     */
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
         return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
@@ -191,6 +193,7 @@ public class TestPackUtils {
      * @throws IllegalArgumentException if the format is {@code CSV_LABELLED} but
      *                                  {@code labelProvider} is null
      */
+    @SuppressWarnings("deprecation")
     public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
         if (serialisation == null || serialisation.getFormat() == null) {
             return Optional.empty();
@@ -205,8 +208,61 @@ public class TestPackUtils {
         return getObjectMapper(serialisation);
     }
 
+    @SuppressWarnings("deprecation")
     public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
         return getObjectMapper(serialisation, labelProvider).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    }
+
+    /**
+     * Resolves the input de-serialising {@link ObjectMapper} for a transform function, preferring the
+     * pipeline's {@code inputSerialisation} when present, then the function's {@code @Ingest} annotation
+     * (which a serialisation-agnostic pipeline omits, since the annotation already expresses it), and
+     * finally the supplied default mapper.
+     *
+     * @param inputSerialisation  the pipeline input serialisation (may be {@code null})
+     * @param functionClass       the generated transform function class (may be {@code null})
+     * @param defaultObjectMapper the fallback when neither a pipeline serialisation nor an annotation applies
+     */
+    public static ObjectMapper getInputObjectMapper(PipelineModel.Serialisation inputSerialisation,
+                                                    Class<?> functionClass,
+                                                    ObjectMapper defaultObjectMapper) {
+        return getObjectMapper(inputSerialisation)
+                .orElseGet(() -> ingestObjectMapper(functionClass).orElse(defaultObjectMapper));
+    }
+
+    /**
+     * Resolves the output serialising {@link ObjectWriter} for a transform function, preferring the
+     * pipeline's {@code outputSerialisation} when present, then the function's {@code @Projection}
+     * annotation (which a serialisation-agnostic pipeline omits, since the annotation already expresses
+     * it), and finally the supplied default writer.
+     *
+     * @param outputSerialisation the pipeline output serialisation (may be {@code null})
+     * @param functionClass       the generated transform function class (may be {@code null})
+     * @param labelProvider       the provider for a {@code CSV_LABELLED} pipeline serialisation (the
+     *                            annotation path resolves its own from {@code @RuneLabelProvider})
+     * @param defaultObjectWriter the fallback when neither a pipeline serialisation nor an annotation applies
+     */
+    public static ObjectWriter getOutputObjectWriter(PipelineModel.Serialisation outputSerialisation,
+                                                     Class<?> functionClass,
+                                                     LabelProvider labelProvider,
+                                                     ObjectWriter defaultObjectWriter) {
+        return getObjectWriter(outputSerialisation, labelProvider)
+                .orElseGet(() -> projectionObjectWriter(functionClass).orElse(defaultObjectWriter));
+    }
+
+    private static Optional<ObjectMapper> ingestObjectMapper(Class<?> functionClass) {
+        if (functionClass == null || !functionClass.isAnnotationPresent(Ingest.class)) {
+            return Optional.empty();
+        }
+        return TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader());
+    }
+
+    private static Optional<ObjectWriter> projectionObjectWriter(Class<?> functionClass) {
+        if (functionClass == null || !functionClass.isAnnotationPresent(Projection.class)) {
+            return Optional.empty();
+        }
+        return TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader())
+                .map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
     public static String getReportTestPackName(String reportId) {

@@ -20,7 +20,6 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
@@ -48,7 +47,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -251,15 +249,18 @@ public class XmlContentModelDisambiguationTest {
     // -------------- Failure cases --------------
 
     @Test
-    public void testFxMissingRequiredLinearPayoffRegionFails() {
+    public void testFxMissingRequiredLinearPayoffRegionIsLenient() throws IOException {
+        // Previously a hard failure. The deserializer is now lenient: rather than rejecting the
+        // whole document it keeps the elements it can place (by name) and skips the rest.
         String xml = "<FpmlFxTargetKnockoutForward>"
                 + "<constantPayoffRegion id=\"base-constant\"/>"
                 + "</FpmlFxTargetKnockoutForward>";
 
-        JsonMappingException ex = assertThrows(JsonMappingException.class,
-                () -> xmlMapper.readValue(xml, FpmlFxTargetKnockoutForward.class));
-        assertTrue(ex.getMessage().contains("FpmlFxTargetKnockoutForward"),
-                "Expected target type name in message: " + ex.getMessage());
+        FpmlFxTargetKnockoutForward actual = xmlMapper.readValue(xml, FpmlFxTargetKnockoutForward.class);
+
+        assertNotNull(actual.getConstantPayoffRegion());
+        assertEquals(1, actual.getConstantPayoffRegion().size());
+        assertEquals("base-constant", actual.getConstantPayoffRegion().get(0).getId());
     }
 
     /**
@@ -286,17 +287,42 @@ public class XmlContentModelDisambiguationTest {
     }
 
     @Test
-    public void testTradeIdentifierAmbiguousFails() {
+    public void testTradeIdentifierAmbiguousIsLenient() throws IOException {
+        // Genuinely ambiguous against the content model (issuer belongs to one branch,
+        // partyReference to another). Previously a hard failure; the deserializer now skips the
+        // element it cannot uniquely route (tradeId is ambiguous) and keeps the rest by name.
         String xml = "<FpmlTradeIdentifier id=\"ti-ambiguous\">"
                 + "<issuer scheme=\"urn:issuer\">BANK-A</issuer>"
                 + "<partyReference href=\"party-1\"/>"
                 + "<tradeId scheme=\"urn:trade-id\">ABC-123</tradeId>"
                 + "</FpmlTradeIdentifier>";
 
-        JsonMappingException ex = assertThrows(JsonMappingException.class,
-                () -> xmlMapper.readValue(xml, FpmlTradeIdentifier.class));
-        assertTrue(ex.getMessage().contains("FpmlTradeIdentifier"),
-                "Expected target type name in message: " + ex.getMessage());
+        FpmlTradeIdentifier actual = xmlMapper.readValue(xml, FpmlTradeIdentifier.class);
+
+        assertEquals("ti-ambiguous", actual.getId());
+        assertEquals("BANK-A", actual.getIssuer().getValue());
+        assertNotNull(actual.getPartyReference());
+        assertEquals("party-1", actual.getPartyReference().getHref());
+        // No exception is thrown; the document is deserialised best-effort.
+    }
+
+    @Test
+    public void testMisorderedInputIsReorderedAndDeserialised() throws IOException {
+        // Safety net: an XML document whose elements are valid but out of schema order
+        // (versionedTradeId before partyReference) must still deserialise, by being stably
+        // reordered into content-model order rather than rejected.
+        String xml = "<FpmlTradeIdentifier>"
+                + "<versionedTradeId scheme=\"urn:version\">V-1</versionedTradeId>"
+                + "<partyReference href=\"party-1\"/>"
+                + "</FpmlTradeIdentifier>";
+
+        FpmlTradeIdentifier actual = xmlMapper.readValue(xml, FpmlTradeIdentifier.class);
+
+        assertNotNull(actual.getPartyReference());
+        assertEquals("party-1", actual.getPartyReference().getHref());
+        assertNotNull(actual.getTradeIdentifierChoice());
+        assertEquals(1, actual.getTradeIdentifierChoice().size());
+        assertEquals("V-1", actual.getTradeIdentifierChoice().get(0).getVersionedTradeId().getValue());
     }
 
     // -------------- Config loading tests --------------

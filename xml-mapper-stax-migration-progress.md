@@ -3,6 +3,11 @@
 Unified progress log for all steps of the StAX binder migration
 (`xml-mapper-stax-migration-plan.md`). Living document — updated as sub-steps complete.
 
+> **For agents updating this report:** Add each step's section in ascending order
+> (Step 0 first, Step 6 last). When a step completes, update its status row and
+> add implementation notes immediately below it — do not move completed sections
+> to the top. Keep the `## Step N` headings so the document stays scannable top-to-bottom.
+
 Legend: ✅ done · 🔄 in progress · ⬜ not started
 
 ---
@@ -200,6 +205,129 @@ All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/st
 
 ---
 
+## Step 2 — Scalar & value conversion — ✅ COMPLETE (2026-06-24)
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 2.1 | `StaxScalarConverter` production class | Sonnet (main) | ✅ |
+| 2.2 | `StaxScalarConverterTest` (23 cases) | Sonnet (main) | ✅ |
+
+**Step 2 exit status: COMPLETE.** All 23 tests pass; checkstyle clean.
+
+### Step 2.1 — Production file
+
+`common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/convert/StaxScalarConverter.java`
+
+| Scalar type | `toXmlString` | `fromXmlString` |
+|---|---|---|
+| `String` | identity | identity |
+| `BigDecimal` | `toPlainString()` (no sci notation) | `new BigDecimal(text)` |
+| `Integer` / `int` | `toString()` | `Integer.parseInt` |
+| `Boolean` / `boolean` | `toString()` | `Boolean.parseBoolean` |
+| `LocalTime` | `ISO_TIME` + UTC offset (`HH:mm:ssZ`) | strip offset from `OffsetTime`, fallback `LocalTime.parse` |
+| `ZonedDateTime` | `ISO_LOCAL_DATE_TIME` if Unknown zone; else `ISO_ZONED_DATE_TIME` | 5-format cascade (see below) |
+| `Date` (Rune) | `date.toString()` → ISO date | `Date.parse(text)` |
+| `Enum` | config override → `toDisplayString()` → `toString()` | config reverse → `fromDisplayName()` → `toString()` → `name()` |
+
+**ZonedDateTime 5-format cascade (ported verbatim from `RosettaXMLModule`):**
+1. `ISO_ZONED_DATE_TIME` (full, with zone ID)
+2. `ISO_OFFSET_DATE_TIME` → `toZonedDateTime()`
+3. `ISO_LOCAL_DATE_TIME` → `atZone(UNKNOWN_ZONE)`
+4. Date + offset (3 offset patterns: `+01:00`, `+0100`, `+01`)
+5. `ISO_LOCAL_DATE` → midnight `atStartOfDay(UNKNOWN_ZONE)`
+
+**Enum serialization priority:**
+1. Config `enumValues` map keyed by `RosettaEnumValue.value()` (logical enum name, e.g. `"METER"`)
+2. `toDisplayString()` via reflection (generated enums always have this)
+3. `toString()` fallback
+
+**`UnknownZoneProvider` registration:** `static` block registers it once if not already present, exactly as in `RosettaXMLModule`.
+
+### Step 2.2 — Test file
+
+`common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/convert/StaxScalarConverterTest.java`
+— 23 test cases covering all types. Time/ZonedDateTime cases mirror `XmlSerialisationTest.testTime*` / `testZonedDateTime*` exactly:
+
+| Test group | Cases |
+|---|---|
+| String, BigDecimal, Integer, Boolean | round-trip + edge cases |
+| Rune `Date` | `2026-05-09` round-trip |
+| `LocalTime` | serialize, deserialize (no TZ, UTC Z, +02:00 offset) |
+| `ZonedDateTime` | serialize Unknown-zone, + all 5 deserialize formats |
+| `Enum` with config (`UnitEnum`) | serialize + deserialize with config override |
+| `Enum` without config (`SnakeDeadlinessEnum`) | serialize + deserialize via `toDisplayString`/`fromDisplayName` |
+
+---
+
+## Step 3 — Serializer (writer) — ✅ COMPLETE (2026-06-24)
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 3a | `StaxWriter` core + root handling | Sonnet sub-agent | ✅ |
+| 3b | Substitution groups on write | Sonnet sub-agent | ✅ |
+| 3c | VIRTUAL/unwrapped types + full suite green | Sonnet sub-agent | ✅ |
+
+**Step 3 exit status: COMPLETE.** Full `common` module: **262 tests pass, 0 failures, 3 skipped** (pre-existing `@Disabled`). Checkstyle clean across all three sub-steps.
+
+**Deliverables:**
+- `StaxWriter.java` — pure StAX serializer with ELEMENT/ATTRIBUTE/VALUE/VIRTUAL/substitution support
+- `StaxWriterTest.java` (4 tests), `StaxWriterSubstitutionTest.java` (5 tests), `StaxWriterVirtualTest.java` (2 tests)
+
+**Key implementation notes for Step 4:**
+- The writer uses `((RosettaModelObject) obj).getType()` to get the interface class for introspection (immutable impls don't carry `@RuneDataType`).
+- Substitution group resolution: `attr.getElementRef().isPresent()` → look up concrete type's `TypeBinding.getXmlElementName()` via the introspector.
+- VIRTUAL handling uses a `writeChildAttributes` helper that writes children at the parent's depth with no wrapper element — Step 4 will need the mirror-image read logic.
+
+### Step 3a — Basic emission + root handling ✅
+
+**Files created:**
+- `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriter.java` — production StAX serializer
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterTest.java` — 4 tests
+
+**Tests (all pass):** `testDocumentSerialisation`, `testTopLevelExtensionSerialisation`, `testElementNamedTypeSerialisation`, `testTimeSerialisation`.
+
+**Key implementation decisions:**
+
+- **Type resolution:** Immutable impl classes (e.g. `TopLevel.TopLevelImpl`) don't carry `@RuneDataType` — only interfaces do. Fixed by calling `((RosettaModelObject) obj).getType()` to obtain the interface class before calling `introspector.introspect(...)`.
+- **Getter invocation:** `AttributeBinding` getters come from the builder impl class. Serializing immutable impls (which share the same interface) required a try/catch fallback that re-looks up the method by name on the actual object's class.
+- **Pretty-print algorithm:** `boolean[] hasChildElement` array indexed by depth. Before writing a child element at depth `d`, sets `hasChildElement[d] = true`. Before writing `</tag>`, checks `hasChildElement[depth]` to decide whether to emit `\n` + indent. A trailing `\n` is appended after the root element to match fixture files.
+- **Namespace handling:** Constant `xmlAttributes` entries with key `"xmlns"` → `writeDefaultNamespace()`; `"xmlns:prefix"` → `writeNamespace(prefix, uri)` + record in local `prefixToNs` map. Extra root attrs with colon (e.g. `"xsi:schemaLocation"`) → look up namespace from `prefixToNs`, call `writeAttribute(namespaceUri, localName, value)`. Woodstox emits the registered prefix automatically.
+- **VIRTUAL attributes:** Skipped (placeholder) — handled in 3c.
+- All 4 test fixtures matched byte-for-byte on first run.
+
+### Step 3b — Substitution groups on write ✅
+
+**Files modified/created:**
+- `StaxWriter.java` — added `resolveElementName(AttributeBinding, Object)` helper; applied in both single and multi-cardinality ELEMENT branches for `isRosettaModelObject()` values
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterSubstitutionTest.java` — 5 tests
+
+**Tests (all pass):** `testSubstitutionGroupSerialisation`, `testMultiCardinalitySubstitutionGroupSerialisation`, `testSubstitutionGroupLegacyV2Serialisation`, `testMultiCardinalitySubstitutionGroupLegacyV2Serialisation`, `testSubstitutionGroupLegacyV1Serialisation`.
+
+**Key implementation decisions:**
+
+- `resolveElementName(attr, value)` checks `attr.getElementRef().isPresent()` and `value instanceof RosettaModelObject`. If both true, calls `introspector.introspect(((RosettaModelObject) value).getType(), config).getXmlElementName()` to get the substituted element name. Otherwise returns `attr.getXmlName()`.
+- `AttributeBinding.getElementRef()` already handles legacy V1/V2 config formats via the fallback to `getSubstitutionGroup()` in `RuneTypeIntrospector` — no extra logic needed in the writer for legacy.
+- Legacy configs are built in the test class using the same transformation logic as `XmlSerialisationTest.getLegacyV1/V2RosettaXMLConfiguration()`.
+- All 5 fixtures matched byte-for-byte on first run; 0 regressions in `StaxWriterTest`.
+
+### Step 3c — VIRTUAL/unwrapped types + full suite green ✅
+
+**Files modified/created:**
+- `StaxWriter.java` — added step 6 in `writeObject` for VIRTUAL representation; added `writeChildAttributes(virtualValue, virtualTypeBinding, writer, depth, prettyPrint, hasChildElement)` helper (~85 lines)
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterVirtualTest.java` — 2 tests
+
+**Tests (all pass):** `testVirtualAttributes`, `testMultiCardinalitySerialisation`.
+
+**Key implementation decisions:**
+
+- `writeChildAttributes` accepts the parent's `depth` and `hasChildElement[]` array. No depth change occurs (no element is started for VIRTUAL), so all children are written at `depth+1` from the parent's perspective, and `hasChildElement[depth]` is set to `true` when any child element is written — ensuring the parent's closing tag gets its `\n` + indent.
+- VIRTUAL recursion: `writeChildAttributes` handles `VIRTUAL` attributes by calling itself recursively at the same `depth`, supporting arbitrarily nested VIRTUAL wrappers.
+- Loop separation: main `writeObject` processes ATTRIBUTE/VALUE/ELEMENT first; VIRTUAL last (step 6). `writeChildAttributes` uses a single switch over all four representations.
+- Multi-cardinality inside VIRTUAL (e.g. `partyId` list inside `PartyModel` VIRTUAL): handled by the `ELEMENT + isMulti()` branch of `writeChildAttributes`.
+- Both fixtures matched byte-for-byte on first run.
+
+---
+
 ## Step 4 — Deserializer (reader) — 🔄 IN PROGRESS
 
 | Sub-step | What | Owner | Status |
@@ -255,116 +383,18 @@ All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/st
   reflection method lookup; all generated builders implement `RosettaModelObjectBuilder`.
 - Java 8 compatible: no `List.of`, no `var`.
 
----
+**Not yet covered (Step 4b):** substitution groups, `@type`-driven polymorphism.
+**Not yet covered (Step 4c):** content-model disambiguation.
+**Not yet covered (Step 4d):** repeated unwrapped groups (issue 7).
 
-## Step 3 — Serializer (writer) — ✅ COMPLETE (2026-06-24)
+### Step 4b — Substitution groups on read ⬜
 
-| Sub-step | What | Owner | Status |
-|---|---|---|---|
-| 3a | `StaxWriter` core + root handling | Sonnet sub-agent | ✅ |
-| 3b | Substitution groups on write | Sonnet sub-agent | ✅ |
-| 3c | VIRTUAL/unwrapped types + full suite green | Sonnet sub-agent | ✅ |
+### Step 4c — Content-model disambiguation ⬜
 
-**Step 3 exit status: COMPLETE.** Full `common` module: **262 tests pass, 0 failures, 3 skipped** (pre-existing `@Disabled`). Checkstyle clean across all three sub-steps.
-
-### Step 3a — Basic emission + root handling ✅
-
-**Files created:**
-- `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriter.java` — production StAX serializer
-- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterTest.java` — 4 tests
-
-**Tests (all pass):** `testDocumentSerialisation`, `testTopLevelExtensionSerialisation`, `testElementNamedTypeSerialisation`, `testTimeSerialisation`.
-
-**Key implementation decisions:**
-
-- **Type resolution:** Immutable impl classes (e.g. `TopLevel.TopLevelImpl`) don't carry `@RuneDataType` — only interfaces do. Fixed by calling `((RosettaModelObject) obj).getType()` to obtain the interface class before calling `introspector.introspect(...)`.
-- **Getter invocation:** `AttributeBinding` getters come from the builder impl class. Serializing immutable impls (which share the same interface) required a try/catch fallback that re-looks up the method by name on the actual object's class.
-- **Pretty-print algorithm:** `boolean[] hasChildElement` array indexed by depth. Before writing a child element at depth `d`, sets `hasChildElement[d] = true`. Before writing `</tag>`, checks `hasChildElement[depth]` to decide whether to emit `\n` + indent. A trailing `\n` is appended after the root element to match fixture files.
-- **Namespace handling:** Constant `xmlAttributes` entries with key `"xmlns"` → `writeDefaultNamespace()`; `"xmlns:prefix"` → `writeNamespace(prefix, uri)` + record in local `prefixToNs` map. Extra root attrs with colon (e.g. `"xsi:schemaLocation"`) → look up namespace from `prefixToNs`, call `writeAttribute(namespaceUri, localName, value)`. Woodstox emits the registered prefix automatically.
-- **VIRTUAL attributes:** Skipped (placeholder) — handled in 3c.
-- All 4 test fixtures matched byte-for-byte on first run.
-
-### Step 3b — Substitution groups on write ✅
-
-**Files modified/created:**
-- `StaxWriter.java` — added `resolveElementName(AttributeBinding, Object)` helper; applied in both single and multi-cardinality ELEMENT branches for `isRosettaModelObject()` values
-- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterSubstitutionTest.java` — 5 tests
-
-**Tests (all pass):** `testSubstitutionGroupSerialisation`, `testMultiCardinalitySubstitutionGroupSerialisation`, `testSubstitutionGroupLegacyV2Serialisation`, `testMultiCardinalitySubstitutionGroupLegacyV2Serialisation`, `testSubstitutionGroupLegacyV1Serialisation`.
-
-**Key implementation decisions:**
-
-- `resolveElementName(attr, value)` checks `attr.getElementRef().isPresent()` and `value instanceof RosettaModelObject`. If both true, calls `introspector.introspect(((RosettaModelObject) value).getType(), config).getXmlElementName()` to get the substituted element name. Otherwise returns `attr.getXmlName()`.
-- `AttributeBinding.getElementRef()` already handles legacy V1/V2 config formats via the fallback to `getSubstitutionGroup()` in `RuneTypeIntrospector` — no extra logic needed in the writer for legacy.
-- Legacy configs are built in the test class using the same transformation logic as `XmlSerialisationTest.getLegacyV1/V2RosettaXMLConfiguration()`.
-- All 5 fixtures matched byte-for-byte on first run; 0 regressions in `StaxWriterTest`.
-
-### Step 3c — VIRTUAL/unwrapped types + full suite green ✅
-
-**Files modified/created:**
-- `StaxWriter.java` — added step 6 in `writeObject` for VIRTUAL representation; added `writeChildAttributes(virtualValue, virtualTypeBinding, writer, depth, prettyPrint, hasChildElement)` helper (~85 lines)
-- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterVirtualTest.java` — 2 tests
-
-**Tests (all pass):** `testVirtualAttributes`, `testMultiCardinalitySerialisation`.
-
-**Key implementation decisions:**
-
-- `writeChildAttributes` accepts the parent's `depth` and `hasChildElement[]` array. No depth change occurs (no element is started for VIRTUAL), so all children are written at `depth+1` from the parent's perspective, and `hasChildElement[depth]` is set to `true` when any child element is written — ensuring the parent's closing tag gets its `\n` + indent.
-- VIRTUAL recursion: `writeChildAttributes` handles `VIRTUAL` attributes by calling itself recursively at the same `depth`, supporting arbitrarily nested VIRTUAL wrappers.
-- Loop separation: main `writeObject` processes ATTRIBUTE/VALUE/ELEMENT first; VIRTUAL last (step 6). `writeChildAttributes` uses a single switch over all four representations.
-- Multi-cardinality inside VIRTUAL (e.g. `partyId` list inside `PartyModel` VIRTUAL): handled by the `ELEMENT + isMulti()` branch of `writeChildAttributes`.
-- Both fixtures matched byte-for-byte on first run.
+### Step 4d — Multi-cardinality accumulation + full suite green ⬜
 
 ---
 
-## Step 2 — Scalar & value conversion — ✅ COMPLETE (2026-06-24)
+## Step 5 — Wire into the public entry point — ⬜ NOT STARTED
 
-| Sub-step | What | Owner | Status |
-|---|---|---|---|
-| 2.1 | `StaxScalarConverter` production class | Sonnet (main) | ✅ |
-| 2.2 | `StaxScalarConverterTest` (23 cases) | Sonnet (main) | ✅ |
-
-**Step 2 exit status: COMPLETE.** All 23 tests pass; checkstyle clean.
-
-### Step 2.1 — Production file
-
-`common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/convert/StaxScalarConverter.java`
-
-| Scalar type | `toXmlString` | `fromXmlString` |
-|---|---|---|
-| `String` | identity | identity |
-| `BigDecimal` | `toPlainString()` (no sci notation) | `new BigDecimal(text)` |
-| `Integer` / `int` | `toString()` | `Integer.parseInt` |
-| `Boolean` / `boolean` | `toString()` | `Boolean.parseBoolean` |
-| `LocalTime` | `ISO_TIME` + UTC offset (`HH:mm:ssZ`) | strip offset from `OffsetTime`, fallback `LocalTime.parse` |
-| `ZonedDateTime` | `ISO_LOCAL_DATE_TIME` if Unknown zone; else `ISO_ZONED_DATE_TIME` | 5-format cascade (see below) |
-| `Date` (Rune) | `date.toString()` → ISO date | `Date.parse(text)` |
-| `Enum` | config override → `toDisplayString()` → `toString()` | config reverse → `fromDisplayName()` → `toString()` → `name()` |
-
-**ZonedDateTime 5-format cascade (ported verbatim from `RosettaXMLModule`):**
-1. `ISO_ZONED_DATE_TIME` (full, with zone ID)
-2. `ISO_OFFSET_DATE_TIME` → `toZonedDateTime()`
-3. `ISO_LOCAL_DATE_TIME` → `atZone(UNKNOWN_ZONE)`
-4. Date + offset (3 offset patterns: `+01:00`, `+0100`, `+01`)
-5. `ISO_LOCAL_DATE` → midnight `atStartOfDay(UNKNOWN_ZONE)`
-
-**Enum serialization priority:**
-1. Config `enumValues` map keyed by `RosettaEnumValue.value()` (logical enum name, e.g. `"METER"`)
-2. `toDisplayString()` via reflection (generated enums always have this)
-3. `toString()` fallback
-
-**`UnknownZoneProvider` registration:** `static` block registers it once if not already present, exactly as in `RosettaXMLModule`.
-
-### Step 2.2 — Test file
-
-`common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/convert/StaxScalarConverterTest.java`
-— 23 test cases covering all types. Time/ZonedDateTime cases mirror `XmlSerialisationTest.testTime*` / `testZonedDateTime*` exactly:
-
-| Test group | Cases |
-|---|---|
-| String, BigDecimal, Integer, Boolean | round-trip + edge cases |
-| Rune `Date` | `2026-05-09` round-trip |
-| `LocalTime` | serialize, deserialize (no TZ, UTC Z, +02:00 offset) |
-| `ZonedDateTime` | serialize Unknown-zone, + all 5 deserialize formats |
-| `Enum` with config (`UnitEnum`) | serialize + deserialize with config override |
-| `Enum` without config (`SnakeDeadlinessEnum`) | serialize + deserialize via `toDisplayString`/`fromDisplayName` |
+## Step 6 — Full test pass, performance, cleanup — ⬜ NOT STARTED

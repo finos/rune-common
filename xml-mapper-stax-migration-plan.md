@@ -380,7 +380,7 @@ Write the StAX reader driven by Steps 1–2. Split across four sessions (4a → 
 4d). Step 4c carries the highest design complexity; use Opus for that session if
 available (see model note at the top of this file).
 
-### Step 4a — Basic stream → builder + attribute/element collision fix (fresh session)
+### Step 4a — Basic stream → builder + attribute/element collision fix (fresh session) — ✅ COMPLETE (2026-06-28)
 
 1. Stream elements, attributes, and text content into the builder via the introspection
    plan from Step 1; distinguish attribute vs element natively at the StAX token level —
@@ -389,6 +389,44 @@ available (see model note at the top of this file).
    + subtype check.
 3. Post-deserialization pruning: `toBuilder().prune().build()` (port
    `RosettaXmlMapper.pruneObject`).
+
+> **STATUS: DONE.** `StaxReader.java` in
+> `common/.../serialisation/xml/stax/read/StaxReader.java`. 18 tests pass, 0 failures.
+> Full `common` module: **280 tests pass, 0 failures, 3 skipped** (pre-existing
+> `@Disabled`). Checkstyle clean.
+>
+> **Deliverables:**
+> - `StaxReader.java` — StAX deserialiser with ELEMENT/ATTRIBUTE/VALUE/VIRTUAL support,
+>   root-element type inference, and post-deserialisation pruning
+> - `StaxReaderTest.java` (18 tests) — covers basic scalars, nested objects,
+>   multi-cardinality, VIRTUAL, time/date types, ZonedDateTime (6 formats), pruning,
+>   root-element type inference (TopLevelExtension as Document), and criterion-13 style
+>   attribute/element distinction
+>
+> **Key implementation notes for Step 4b:**
+> - `read(String, Class<T>)` is the entry point; it advances past comments/PIs to the
+>   first START_ELEMENT, infers the concrete type via `inferTypeFromRootElement`, then
+>   calls `readObject` and prunes.
+> - `readObject` reads XML attributes from the START_ELEMENT token (via
+>   `getAttributeCount()`/`getAttributeLocalName`/`getAttributeValue`), then loops
+>   child events until END_ELEMENT, routing each START_ELEMENT child to the matching
+>   AttributeBinding (by `xmlName`). Attribute/element collision is structurally
+>   impossible — different StAX API paths.
+> - VIRTUAL: child elements not matched by direct ELEMENT bindings are searched one level
+>   deep into VIRTUAL types. Virtual builders are created lazily and applied after the
+>   child loop. Multi-cardinality inside VIRTUAL works (e.g. `Party.partyModel.partyId`).
+> - Scalar types at root level (e.g. `ZonedDateTime`) are detected via `isScalarType`
+>   (no `@RuneDataType`/`@RosettaDataType`) and read via `getElementText()` + converter.
+> - `getElementText()` footgun: after the call the reader is on END_ELEMENT; the outer
+>   loop's `reader.next()` advances past it correctly. Same contract for `readObject`.
+> - `skipElement` skips unknown child elements by tracking nesting depth.
+> - Java 8 compatible: no `List.of`, no `var`.
+>
+> **Not yet covered (Step 4b):** substitution groups, `@type`-driven polymorphism.
+> **Not yet covered (Step 4c):** content-model disambiguation.
+> **Not yet covered (Step 4d):** repeated unwrapped groups (issue 7).
+>
+> **Next: Step 4b — Polymorphism + substitution-group resolution on read.**
 
 Exit: simple scalar and nested-object round-trips work. Criterion 13 (same-local-name
 attribute vs element, e.g. `RepoTransactionLeg`) passes with no data loss. Basic

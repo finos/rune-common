@@ -200,6 +200,63 @@ All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/st
 
 ---
 
+## Step 4 — Deserializer (reader) — 🔄 IN PROGRESS
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 4a | `StaxReader` core + root inference + VIRTUAL + pruning | Sonnet (main) | ✅ |
+| 4b | Substitution groups on read | — | ⬜ |
+| 4c | Content-model disambiguation | — | ⬜ |
+| 4d | Multi-cardinality accumulation + full suite green | — | ⬜ |
+
+### Step 4a — Basic stream → builder + attribute/element collision fix ✅ (2026-06-28)
+
+**Files created:**
+- `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/StaxReader.java` — production StAX deserialiser
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/StaxReaderTest.java` — 18 tests
+
+**Tests (all pass):**
+`testDocumentDeserialisation`, `testTopLevelExtensionDeserialisation`, `testPrunesEmptyNestedObject`,
+`testDateAttribute`, `testMeasureValueAndAttribute`, `testTimeDeserialisation`,
+`testTimeDeserialisationWithoutTimezone`, `testTimeDeserialisationWithTimeOffset`,
+`testZonedDateTimeWithUnknownTimezone`, `testZonedDateTimeWithUnknownTimeAndUnknownTimezone`,
+`testZonedDateTimeWithUnknownTimeAndZuluTimezone`,
+`testZonedDateTimeWithUnknownTimeAndStandardOffsetTimezone`,
+`testZonedDateTimeWithUnknownTimeAndCompactOffsetTimezone`,
+`testZonedDateTimeWithUnknownTimeAndShortOffsetTimezone`,
+`testElementNamedTypeDeserialisation`, `testMultiCardinalityDeserialisation`,
+`testVirtualAttributeDeserialisation`, `testAttributeAndElementSameLocalNameAreDistinct`
+
+**Full module: 280 tests pass, 0 failures, 3 skipped.**
+
+**Key implementation decisions:**
+
+- **Attribute/element distinction (criterion 13 fix):** XML attributes are read from
+  the START_ELEMENT token via `reader.getAttributeCount()` / `getAttributeValue()`.
+  Child elements are routed in the child-event loop (START_ELEMENT events). The two paths
+  never collide — different StAX APIs.
+- **Root-element type inference:** `inferTypeFromRootElement` scans `config.getTypeConfigMap()`
+  for types whose `xmlElementName` matches the root local name, then checks
+  `hintType.isAssignableFrom(candidate)` — ports `RosettaXmlMapper.getTypeFromRootElementName`.
+- **Scalar types at root level:** detected via `isScalarType` (no `@RuneDataType`/
+  `@RosettaDataType`); read via `getElementText()` + converter (handles `ZonedDateTime`).
+- **VIRTUAL (one level deep):** child elements not matched by direct ELEMENT bindings are
+  searched in VIRTUAL types' bindings. Virtual builders are created lazily via
+  `getOrCreateVirtualBuilder`; applied after the child-event loop via
+  `((RosettaModelObjectBuilder) vBuilder).build()` + parent setter.
+- **Post-deserialisation pruning:** `pruneObject` calls `toBuilder().prune().build()`,
+  porting `RosettaXmlMapper.pruneObject`.
+- **`getElementText()` footgun:** after the call the reader is on END_ELEMENT of the
+  element; the outer loop's `reader.next()` advances past it correctly. `readObject`
+  has the same contract — returns on END_ELEMENT.
+- **Builder instantiation:** `binding.getBuilderType().getDeclaredConstructor().newInstance()`
+  (inner classes of interfaces are implicitly static; no enclosing-instance needed).
+- **Builder invocation:** `((RosettaModelObjectBuilder) builder).build()` — avoids
+  reflection method lookup; all generated builders implement `RosettaModelObjectBuilder`.
+- Java 8 compatible: no `List.of`, no `var`.
+
+---
+
 ## Step 3 — Serializer (writer) — ✅ COMPLETE (2026-06-24)
 
 | Sub-step | What | Owner | Status |

@@ -60,6 +60,11 @@ import java.util.Map;
  *
  * <p>Post-deserialisation pruning: {@code toBuilder().prune().build()} is applied
  * to the final root object, matching the Jackson path behaviour.
+ *
+ * <p>Substitution-group member elements (attributes whose config carries an
+ * {@code elementRef}) are resolved via {@link SubstitutionResolver}, which picks the
+ * concrete type by namespace-aware lookup first, falling back to local-name-only lookup
+ * (criteria 15/16) — see {@link #resolveElementMatch}.
  */
 public class StaxReader {
 
@@ -67,12 +72,14 @@ public class StaxReader {
     private final RuneTypeIntrospector introspector;
     private final StaxScalarConverter converter;
     private final ClassLoader classLoader;
+    private final SubstitutionResolver substitutionResolver;
 
     public StaxReader(RosettaXMLConfiguration config, ClassLoader classLoader) {
         this.config = config;
         this.introspector = new RuneTypeIntrospector();
         this.converter = new StaxScalarConverter(config);
         this.classLoader = classLoader;
+        this.substitutionResolver = new SubstitutionResolver(config, classLoader);
     }
 
     /**
@@ -295,7 +302,8 @@ public class StaxReader {
 
     /**
      * Handles a child START_ELEMENT by routing it to the right attribute binding on
-     * {@code binding} (direct ELEMENT) or one level into a VIRTUAL type's bindings.
+     * {@code binding} (direct ELEMENT or substitution-group ELEMENT) or one level into a
+     * VIRTUAL type's bindings.
      *
      * <p>On return the reader is positioned at the END_ELEMENT of the child element.
      */
@@ -306,15 +314,13 @@ public class StaxReader {
             Object builder,
             Map<AttributeBinding, Object> virtualBuilders) throws Exception {
 
-        // 1. Direct ELEMENT bindings
-        for (AttributeBinding attr : binding.getAttributes()) {
-            if (attr.getXmlRepresentation() != AttributeXMLRepresentation.ELEMENT) {
-                continue;
-            }
-            if (attr.getXmlName().equals(childLocalName)) {
-                applyChildElement(attr, reader, builder);
-                return;
-            }
+        String childNamespaceURI = reader.getNamespaceURI();
+
+        // 1. Direct or substitution-group ELEMENT bindings
+        ElementMatch match = resolveElementMatch(childLocalName, childNamespaceURI, binding);
+        if (match != null) {
+            applyChildElement(match.attribute, match.concreteType, reader, builder);
+            return;
         }
 
         // 2. One level into VIRTUAL types
@@ -324,10 +330,10 @@ public class StaxReader {
             }
             TypeBinding virtualBinding = introspector.introspect(
                     virtualAttr.getValueType(), config);
-            AttributeBinding matchedAttr = findDirectElementAttr(childLocalName, virtualBinding);
-            if (matchedAttr != null) {
+            ElementMatch virtualMatch = resolveElementMatch(childLocalName, childNamespaceURI, virtualBinding);
+            if (virtualMatch != null) {
                 Object vBuilder = getOrCreateVirtualBuilder(virtualAttr, virtualBuilders);
-                applyChildElement(matchedAttr, reader, vBuilder);
+                applyChildElement(virtualMatch.attribute, virtualMatch.concreteType, reader, vBuilder);
                 return;
             }
         }
@@ -337,14 +343,52 @@ public class StaxReader {
     }
 
     /**
-     * Finds an ELEMENT-representation binding by XML name on {@code binding}'s
-     * direct (non-virtual) attributes only.
+     * One attribute binding matched to a child element, together with the concrete type to
+     * deserialise it as. For a direct (non-substitution) match, {@code concreteType} is simply
+     * {@link AttributeBinding#getValueType()}. For a substitution-group match, it is the
+     * polymorphic concrete type resolved by {@link SubstitutionResolver} from the element's
+     * actual name/namespace (criteria 15/16, and the "@type"-driven-polymorphism case, e.g.
+     * {@code testPolymorphicDeserialisation}).
      */
-    private AttributeBinding findDirectElementAttr(String xmlName, TypeBinding binding) {
+    private static final class ElementMatch {
+        final AttributeBinding attribute;
+        final Class<?> concreteType;
+
+        ElementMatch(AttributeBinding attribute, Class<?> concreteType) {
+            this.attribute = attribute;
+            this.concreteType = concreteType;
+        }
+    }
+
+    /**
+     * Finds the ELEMENT-representation binding on {@code binding} that matches a child element
+     * named {@code childLocalName} (namespace {@code childNamespaceURI}).
+     *
+     * <p>Direct (non-substitution) bindings are checked first, matching purely by local name —
+     * the config carries no per-attribute namespace for direct elements (a Section 2-B gap, not
+     * a Section 1 blocker). Substitution-group ({@code elementRef}) bindings are checked second:
+     * {@link SubstitutionResolver} resolves the polymorphic concrete type by exact
+     * namespace-qualified match first, local-name-only fallback second.
+     */
+    private ElementMatch resolveElementMatch(
+            String childLocalName, String childNamespaceURI, TypeBinding binding) {
         for (AttributeBinding attr : binding.getAttributes()) {
-            if (attr.getXmlRepresentation() == AttributeXMLRepresentation.ELEMENT
-                    && attr.getXmlName().equals(xmlName)) {
-                return attr;
+            if (attr.getXmlRepresentation() != AttributeXMLRepresentation.ELEMENT) {
+                continue;
+            }
+            if (!attr.getElementRef().isPresent() && attr.getXmlName().equals(childLocalName)) {
+                return new ElementMatch(attr, attr.getValueType());
+            }
+        }
+        for (AttributeBinding attr : binding.getAttributes()) {
+            if (attr.getXmlRepresentation() != AttributeXMLRepresentation.ELEMENT
+                    || !attr.getElementRef().isPresent()) {
+                continue;
+            }
+            Class<?> substituted = substitutionResolver.resolve(
+                    attr.getElementRef().get(), attr.getValueType(), childLocalName, childNamespaceURI);
+            if (substituted != null) {
+                return new ElementMatch(attr, substituted);
             }
         }
         return null;
@@ -353,8 +397,9 @@ public class StaxReader {
     /**
      * Applies a matched child element's content to the target builder.
      *
-     * <p>For nested Rune objects, recurses via {@link #readObject}. For scalars, reads
-     * the text content via {@link XMLStreamReader#getElementText()}.
+     * <p>For nested Rune objects, recurses via {@link #readObject} using {@code concreteType}
+     * (the polymorphic/substituted type when applicable, otherwise {@code attr.getValueType()}).
+     * For scalars, reads the text content via {@link XMLStreamReader#getElementText()}.
      *
      * <p>On return the reader is positioned at the END_ELEMENT of the child element.
      * This is guaranteed both when calling {@code readObject} (its contract) and when
@@ -362,10 +407,11 @@ public class StaxReader {
      */
     private void applyChildElement(
             AttributeBinding attr,
+            Class<?> concreteType,
             XMLStreamReader reader,
             Object targetBuilder) throws Exception {
         if (attr.isRosettaModelObject()) {
-            Object childObj = readObject(reader, attr.getValueType());
+            Object childObj = readObject(reader, concreteType);
             setOnBuilder(targetBuilder, attr, childObj);
         } else {
             // getElementText() reads text content and leaves reader on END_ELEMENT

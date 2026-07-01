@@ -422,7 +422,6 @@ available (see model note at the top of this file).
 > - `skipElement` skips unknown child elements by tracking nesting depth.
 > - Java 8 compatible: no `List.of`, no `var`.
 >
-> **Not yet covered (Step 4b):** substitution groups, `@type`-driven polymorphism.
 > **Not yet covered (Step 4c):** content-model disambiguation.
 > **Not yet covered (Step 4d):** repeated unwrapped groups (issue 7).
 >
@@ -432,7 +431,7 @@ Exit: simple scalar and nested-object round-trips work. Criterion 13 (same-local
 attribute vs element, e.g. `RepoTransactionLeg`) passes with no data loss. Basic
 `XmlSerialisationTest` deserialization cases are green.
 
-### Step 4b — Polymorphism + substitution-group resolution on read (fresh session)
+### Step 4b — Polymorphism + substitution-group resolution on read (fresh session) — ✅ COMPLETE (2026-07-01)
 
 Port the `SubstitutedMethodProperty` routing logic so the reader resolves substituted
 element names directly from the StAX element name + namespace, replacing the old
@@ -447,6 +446,57 @@ element names directly from the StAX element name + namespace, replacing the old
 
 Exit: substitution-group deserialization tests pass. Criteria 15 and 16 (namespace-aware
 substitution) are green.
+
+> **STATUS: DONE.** New `SubstitutionResolver.java` in
+> `common/.../serialisation/xml/stax/read/` is the read-side (reverse) counterpart to the
+> Jackson-era `RosettaXMLAnnotationIntrospector#findSubstitutionMap` / `SubstitutedMethodProperty`
+> — it builds the same substitution-group index directly from `RosettaXMLConfiguration`
+> (no Jackson `JavaType`) and resolves plain `Class<?>` candidates by exact
+> namespace-qualified match first, local-name fallback second. `StaxReader` now routes
+> `elementRef`-bearing attributes through it. 7 new tests in `StaxReaderSubstitutionTest`,
+> all pass; full `common` module: **287 tests pass, 0 failures, 3 skipped** (pre-existing
+> `@Disabled`). Checkstyle clean.
+>
+> **Criterion 16 (namespace-aware substitution) is fully green** — proven against the
+> synthetic `extension-schema-xml-config.json` fixture, which independently reproduces the
+> exact issue-6 shape (same local name `camel`/`snake` substituting the same group from two
+> different namespaces, `urn:my.schema` vs `urn:my.extension`) without needing the BNPP repo.
+>
+> **Criterion 15 is only partially closed by this step.** The mechanism now correctly
+> distinguishes a substitution candidate from an unrelated direct element when their XML
+> local names differ (the general case). But the acceptance criterion's specific shape — a
+> *direct* element and a *substitution* candidate sharing the *same* local name in one
+> type — is a genuine content-model-position ambiguity (Section 2-A / Step 4c territory);
+> per-attribute namespace isn't in the config for direct elements (Section 2-B gap), so
+> nothing but document order/position can disambiguate that exact case. The traceability
+> table already listed issue 5 as needing **both** substitution (this step) and content model
+> (4c) — this step delivers the substitution half only. Full closure — and a real
+> `TradeUnderlyer2` regression test — lands in Step 6 once 4c's routing exists.
+>
+> **Key implementation notes for Step 4c:**
+> - `StaxReader.resolveElementMatch` is the single chokepoint for child-element routing: it
+>   now returns an `ElementMatch(AttributeBinding, Class<?> concreteType)` pair instead of a
+>   bare `AttributeBinding`, so 4c's content-model routing can slot in as a third resolution
+>   phase (after direct-name, before/instead of substitution) without changing the call sites
+>   in `handleChildElement` or `applyChildElement`.
+> - `SubstitutionResolver` caches one `SubstitutionGroup` (qualified-name map + local-name
+>   multimap) per `elementRef` string, built lazily and reused across the whole read.
+> - Transitive substitution-group walk (e.g. `fish` substitutes `animal`; `salmon` substitutes
+>   `fish`) recurses using the intermediate type's own `xmlElementFullyQualifiedName` as the
+>   next group key — **exactly mirrors the Jackson-era limitation**: if a legacy V2 config
+>   blanks that field (as `getLegacyV2RosettaXMLConfiguration` does in the tests), the chain
+>   breaks after one hop. Verified: legacy V2 `Zoo` resolves `goat`/`cow` but not
+>   `shark`/`salmon` — matches the pre-existing write-side legacy V2 test's fixture
+>   (`substitution-group-multi-legacy.xml` only has goat/cow), so this is a faithful port, not
+>   a regression.
+> - Legacy V1 `substitutionFor` fallback is implemented (`populateFromLegacySubstitutionFor`,
+>   keyed off the attribute's statically declared head type, e.g. `Animal.class`) but has no
+>   dedicated read-side test yet — no V1 read fixture existed before this step, and the write
+>   side only exercises V1 for single-cardinality `Goat`. Low risk, but flag for Step 6 if V1
+>   read fidelity needs explicit coverage.
+> - Direct (non-substitution) ELEMENT bindings are still matched by local name only — the
+>   config carries no per-attribute namespace for them. This is unchanged from 4a and is the
+>   root cause of criterion 15's partial closure above.
 
 ### Step 4c — Content-model disambiguation (fresh session — Opus recommended)
 

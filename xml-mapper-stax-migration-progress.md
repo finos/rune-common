@@ -333,7 +333,7 @@ All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/st
 | Sub-step | What | Owner | Status |
 |---|---|---|---|
 | 4a | `StaxReader` core + root inference + VIRTUAL + pruning | Sonnet (main) | ✅ |
-| 4b | Substitution groups on read | — | ⬜ |
+| 4b | Substitution groups + polymorphism on read | Sonnet (main) | ✅ |
 | 4c | Content-model disambiguation | — | ⬜ |
 | 4d | Multi-cardinality accumulation + full suite green | — | ⬜ |
 
@@ -387,7 +387,94 @@ All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/st
 **Not yet covered (Step 4c):** content-model disambiguation.
 **Not yet covered (Step 4d):** repeated unwrapped groups (issue 7).
 
-### Step 4b — Substitution groups on read ⬜
+### Step 4b — Substitution groups + polymorphism on read ✅ (2026-07-01)
+
+**Files created:**
+- `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/SubstitutionResolver.java`
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/StaxReaderSubstitutionTest.java` — 7 tests
+
+**Files modified:**
+- `StaxReader.java` — `handleChildElement` now delegates to a new `resolveElementMatch` helper
+  that returns an `ElementMatch(AttributeBinding, Class<?> concreteType)` pair; `applyChildElement`
+  takes the resolved `concreteType` instead of always using `attr.getValueType()`.
+
+**Tests (all pass):** `testSubstitutionGroupDeserialisation`,
+`testMultiCardinalitySubstitutionGroupDeserialisation`,
+`testMultiCardinalitySubstitutionGroupLegacyV2Deserialisation`, `testPolymorphicDeserialisation`,
+`testPolymorphicReplacementDeserialisation`,
+`testPolymorphicReplacementDeserialisationThroughVirtualWrapper`,
+`testNamespaceAwareSubstitutionResolvesLocalNameCollision`.
+
+**Full module: 287 tests pass, 0 failures, 3 skipped.** Checkstyle clean.
+
+**Key design: `SubstitutionResolver` is the read-side mirror of the Jackson-era mechanism.**
+`RosettaXMLAnnotationIntrospector#findSubstitutionMap` built a Jackson `SubstitutionMap` keyed
+by `JavaType`, consulted at deserialize time via `SubstitutedMethodProperty.getActualType()`
+reaching into `FromXmlParser.getStaxReader().getName()` — a documented Jackson-era back door
+into the StAX namespace the JSON-shaped property model had already discarded. `SubstitutionResolver`
+builds the equivalent index directly from `RosettaXMLConfiguration` (no Jackson dependency) and
+resolves plain `Class<?>` candidates, since the StAX reader already has the real namespace state
+natively — no back door needed.
+
+**Resolution order (mirrors `SubstitutedMethodProperty` exactly):**
+1. Exact match on `(namespace URI, local name)` — the namespace-aware path (issue 6 / criterion 16).
+2. Local-name-only fallback (single unambiguous candidate, or legacy configs with no namespace).
+
+**Group-membership algorithm (mirrors `RosettaXMLAnnotationIntrospector.buildSubstitutionLogicIndexes`
++ `populateSubstitutionMapFor*`):**
+- `elementIndex`: `Map<String fqn, ModelSymbolId>` — catches the case where the group head element
+  itself is concrete.
+- `substitutionGroupIndex`: `Map<String group, List<ModelSymbolId>>` — direct members.
+- Transitive walk: each member's own `xmlElementFullyQualifiedName` becomes the next group key,
+  so multi-level chains resolve (`fish` substitutes `animal`; `shark`/`salmon` substitute `fish`).
+  Abstract types (e.g. `fish`) are excluded from the final candidate list but still relay the walk.
+- Legacy V1 `substitutionFor` (deprecated direct `ModelSymbolId` back-reference) is also consulted,
+  keyed off the attribute's statically declared head type (e.g. `Animal.class`), mirroring
+  `lookupLegacySubstitutionsForType`.
+
+**`StaxReader` integration:**
+- `resolveElementMatch(childLocalName, childNamespaceURI, binding)` is the single chokepoint for
+  child-element routing. It checks direct (non-`elementRef`) ELEMENT bindings first (by local
+  name only — the config has no per-attribute namespace for direct elements, a Section 2-B gap),
+  then `elementRef` bindings second, resolving the polymorphic concrete type via
+  `SubstitutionResolver`.
+- Used both for the root type's own bindings and (already-existing) one-level-deep VIRTUAL
+  bindings, so substitution inside a VIRTUAL wrapper (e.g. `WrappedAnimalContainerModel.animal`)
+  works with no extra code.
+- `applyChildElement` now takes the resolved `concreteType` and recurses via
+  `readObject(reader, concreteType)` for `RosettaModelObject` values — this is what makes
+  `@type`-driven polymorphism work (e.g. `<snake>` resolves to `com.rosetta.test.Snake`,
+  `<ext:snake>` resolves to `com.rosetta.extension.test.Snake`, purely from element name +
+  namespace, no `@type` XML attribute needed — verified no such attribute mechanism exists
+  in the codebase; the plan's "`@type`-driven polymorphism" bullet refers to this
+  element-name-driven resolution, matching the `testPolymorphic*` test names it was written for).
+
+**Test fixtures — all synthetic, no BNPP repo dependency:**
+- Substitution round-trip: `AnimalContainer`/`Zoo` reading `expected/substitution-group.xml`,
+  `expected/substitution-group-multi.xml` (goat/cow/shark/salmon — exercises the full transitive
+  `fish` chain) and `expected/substitution-group-multi-legacy.xml` against a legacy V2 config
+  (goat/cow only — the V2 chain-break is a faithful port of the Jackson-era limitation, not
+  a regression: confirmed by comparing against the pre-existing write-side V2 test fixture).
+- Polymorphism + criterion 16: reuses the *existing* Jackson-test input fixtures
+  `input/polymorphic.xml`, `input/polymorphic-replacement.xml`,
+  `input/polymorphic-replacement-token-buffer-parser.xml`,
+  `input/polymorphic-replacement-ambiguous-choice.xml`. The last one is the key criterion-16
+  proof: `com.rosetta.test.Camel` (`urn:my.schema/camel`) and `com.rosetta.extension.test.Camel`
+  (`urn:my.extension/camel`) both substitute the same group with the same local name `camel` —
+  exactly the issue-6 shape (FiML vs FpML `commodityOption`) — and the exact-namespace-match
+  correctly resolves `<ext:camel>` to the extension type, not "first wins".
+
+**Criterion 15 boundary (documented, not a bug):** the acceptance criterion's specific shape —
+a *direct* element and a *substitution* candidate sharing the *same* local name in one type
+(`TradeUnderlyer2.referenceEntity`) — needs content-model position to disambiguate when the
+config carries no per-attribute namespace for the direct side. That is Step 4c's job; this step
+delivers the substitution-resolution half of issue 5 (correct routing when names don't collide,
+and correct namespace-based routing when they do and namespace is known on the substitution
+side). Full closure + a real `TradeUnderlyer2` regression test lands in Step 6.
+
+**Carry-forward for Step 4c:** `resolveElementMatch` in `StaxReader` is the intended integration
+point — content-model routing should slot in as an additional resolution phase without changing
+`handleChildElement`/`applyChildElement`'s call shape (`ElementMatch(AttributeBinding, Class<?>)`).
 
 ### Step 4c — Content-model disambiguation ⬜
 

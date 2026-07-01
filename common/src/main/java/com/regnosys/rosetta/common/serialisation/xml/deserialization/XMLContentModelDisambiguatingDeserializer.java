@@ -39,15 +39,22 @@ import com.regnosys.rosetta.common.serialisation.xml.deserialization.VirtualPath
 import com.regnosys.rosetta.common.serialisation.xml.deserialization.XMLContentModelMatcher.OccurrenceKey;
 import com.regnosys.rosetta.common.serialisation.xml.deserialization.XMLContentModelMatcher.RoutingResult;
 import com.rosetta.model.lib.RosettaModelObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.xml.stream.XMLStreamReader;
 
@@ -65,6 +72,8 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
 
     private static final long serialVersionUID = 1L;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLContentModelDisambiguatingDeserializer.class);
+
     private final Class<?> beanClass;
     private final TypeXMLConfiguration typeConfig;
     private final XMLContentModel contentModel;
@@ -72,6 +81,11 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
     private final boolean hasAnyNode;
     private final Set<String> attributeNames;
     private final VirtualPathBuilderHelper virtualPathBuilderHelper;
+    // Canonical document-order position of each element name (first occurrence in a DFS of the
+    // content model). Used to stably reorder misordered input before a lenient re-match.
+    private final Map<String, Integer> canonicalPosition;
+    // Element names that map to exactly one path, hence routable regardless of order.
+    private final Set<String> uniquelyRoutableNames;
 
     XMLContentModelDisambiguatingDeserializer(JsonDeserializer<?> delegatee,
                                               Class<?> beanClass,
@@ -86,6 +100,31 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         this.hasAnyNode = containsAnyNode(contentModel);
         this.attributeNames = collectXmlAttributeNames(typeConfig);
         this.virtualPathBuilderHelper = virtualPathBuilderHelper;
+        this.canonicalPosition = new HashMap<>();
+        this.uniquelyRoutableNames = new HashSet<>();
+        indexElementNames(contentModel);
+    }
+
+    private void indexElementNames(XMLContentModel root) {
+        Map<String, Set<List<String>>> pathsByName = new HashMap<>();
+        int[] counter = {0};
+        walk(root, node -> {
+            if (node.getNodeType() != XMLContentModelNodeType.ELEMENT
+                    && node.getNodeType() != XMLContentModelNodeType.ANY) {
+                return;
+            }
+            node.getXmlName().ifPresent(name -> {
+                canonicalPosition.putIfAbsent(name, counter[0]);
+                node.getPath().ifPresent(path ->
+                        pathsByName.computeIfAbsent(name, k -> new HashSet<>()).add(path));
+            });
+            counter[0]++;
+        });
+        pathsByName.forEach((name, paths) -> {
+            if (paths.size() == 1) {
+                uniquelyRoutableNames.add(name);
+            }
+        });
     }
 
     @Override
@@ -117,11 +156,12 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
 
         RoutingResult routing = XMLContentModelMatcher.route(contentModel, inputs);
 
-        if (routing.getStatus() == RoutingResult.Status.NO_MATCH) {
-            throw JsonMappingException.from(p, formatNoMatchError(inputs));
-        }
-        if (routing.getStatus() == RoutingResult.Status.AMBIGUOUS) {
-            throw JsonMappingException.from(p, formatAmbiguousError(inputs, routing));
+        if (routing.getStatus() != RoutingResult.Status.SUCCESS) {
+            // Lenient handling: rather than failing the whole document on a content-model mismatch
+            // (which would violate the "be lenient, skip what you cannot place" philosophy and the
+            // disabled FAIL_ON_UNKNOWN_PROPERTIES), recover what we can. Elements we cannot route
+            // are skipped; with FAIL_ON_UNKNOWN_PROPERTIES disabled the delegate ignores them.
+            routing = lenientRoute(inputs);
         }
 
         Map<Integer, List<String>> routesByIndex = routing.getPathByIndex();
@@ -167,6 +207,81 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
             result = applyVirtualAssignments(result, nestedAssignments, ctxt);
         }
         return result;
+    }
+
+    /**
+     * Best-effort routing used when strict, ordered matching fails. The strategy, in order:
+     * <ol>
+     *   <li>the elements may merely be out of schema order, so stably reorder them into canonical
+     *       content-model order and re-match (this reuses the matcher's occurrence handling);</li>
+     *   <li>otherwise drop elements whose name cannot be uniquely routed and re-match the rest;</li>
+     *   <li>otherwise skip all content-model routing.</li>
+     * </ol>
+     * Any element not present in the returned routing is left in the token stream and ignored by the
+     * delegate (FAIL_ON_UNKNOWN_PROPERTIES is disabled). Every recovery path emits a WARN.
+     */
+    private RoutingResult lenientRoute(List<RoutingInput> inputs) {
+        // Attempt 1: treat as a pure ordering problem.
+        RoutingResult reordered = routeReordered(inputs, inputs);
+        if (reordered != null) {
+            LOGGER.warn("XML content for {} was not in schema order; elements were reordered to deserialize. "
+                    + "XML child sequence: {}", beanClass.getName(), xmlSequence(inputs));
+            return reordered;
+        }
+        // Attempt 2: keep only uniquely-routable elements, skip the rest.
+        List<RoutingInput> keep = new ArrayList<>();
+        List<RoutingInput> dropped = new ArrayList<>();
+        for (RoutingInput input : inputs) {
+            if (uniquelyRoutableNames.contains(input.getXmlName())) {
+                keep.add(input);
+            } else {
+                dropped.add(input);
+            }
+        }
+        if (!dropped.isEmpty() && !keep.isEmpty()) {
+            RoutingResult partial = routeReordered(keep, inputs);
+            if (partial != null) {
+                LOGGER.warn("Skipped {} XML element(s) of {} that could not be routed by the content model: {}",
+                        dropped.size(), beanClass.getName(), xmlSequence(dropped));
+                return partial;
+            }
+        }
+        // Attempt 3: give up on content-model routing entirely.
+        LOGGER.warn("{} Skipping content-model routing; un-routable elements will be ignored.",
+                formatNoMatchError(inputs));
+        return RoutingResult.success(new LinkedHashMap<>(), new LinkedHashMap<>());
+    }
+
+    /**
+     * Stably reorder {@code subset} into canonical content-model order, run the strict matcher, and
+     * if it succeeds remap the routing back to indices in {@code originalInputs}. Returns
+     * {@code null} when the reordered subset still does not match uniquely.
+     */
+    private RoutingResult routeReordered(List<RoutingInput> subset, List<RoutingInput> originalInputs) {
+        List<RoutingInput> sorted = new ArrayList<>(subset);
+        // List.sort is stable, so elements sharing an XML name keep their original relative order
+        // (preserving e.g. the order of repeated choice entries).
+        sorted.sort(Comparator.comparingInt(
+                input -> canonicalPosition.getOrDefault(input.getXmlName(), Integer.MAX_VALUE)));
+
+        RoutingResult result = XMLContentModelMatcher.route(contentModel, sorted);
+        if (result.getStatus() != RoutingResult.Status.SUCCESS) {
+            return null;
+        }
+
+        IdentityHashMap<RoutingInput, Integer> originalIndex = new IdentityHashMap<>();
+        for (int i = 0; i < originalInputs.size(); i++) {
+            originalIndex.put(originalInputs.get(i), i);
+        }
+        Map<Integer, List<String>> pathByIndex = new LinkedHashMap<>();
+        Map<Integer, OccurrenceKey> occurrenceByIndex = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<String>> entry : result.getPathByIndex().entrySet()) {
+            RoutingInput input = sorted.get(entry.getKey());
+            int original = originalIndex.get(input);
+            pathByIndex.put(original, entry.getValue());
+            occurrenceByIndex.put(original, result.getOccurrenceByIndex().get(entry.getKey()));
+        }
+        return RoutingResult.success(pathByIndex, occurrenceByIndex);
     }
 
     private Object applyVirtualAssignments(Object result,
@@ -236,35 +351,11 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         return sb.toString();
     }
 
-    private String formatAmbiguousError(List<RoutingInput> inputs, RoutingResult routing) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Ambiguous XML content for ").append(beanClass.getName()).append(".\n");
-        sb.append("XML child sequence: ").append(xmlSequence(inputs)).append("\n");
-        sb.append("Remaining candidate paths:");
-        for (List<List<String>> candidate : routing.getCandidatePaths()) {
-            sb.append("\n- ");
-            for (int i = 0; i < candidate.size(); i++) {
-                if (i > 0) sb.append(", ");
-                sb.append(joinPath(candidate.get(i)));
-            }
-        }
-        return sb.toString();
-    }
-
     private static String xmlSequence(List<RoutingInput> inputs) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < inputs.size(); i++) {
             if (i > 0) sb.append(", ");
             sb.append(inputs.get(i).getXmlName());
-        }
-        return sb.toString();
-    }
-
-    private static String joinPath(List<String> path) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < path.size(); i++) {
-            if (i > 0) sb.append(".");
-            sb.append(path.get(i));
         }
         return sb.toString();
     }
@@ -344,7 +435,7 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
         return hasNested[0] || hasDuplicate[0];
     }
 
-    private static void walk(XMLContentModel node, java.util.function.Consumer<XMLContentModel> visitor) {
+    private static void walk(XMLContentModel node, Consumer<XMLContentModel> visitor) {
         visitor.accept(node);
         node.getChildren().ifPresent(children -> {
             for (XMLContentModel child : children) {

@@ -25,21 +25,31 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializer;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLTypeConfigLookup;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
+import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Support for serialising substitution groups by replacing property writers
  * with {@code SubstitutingBeanPropertyWriter}, which will serialise the right
- * property name based on the type of the value.
+ * property name based on the type of the value. Also installs an
+ * {@link XMLContentModelOrderer} on the {@link RosettaBeanSerializer} for types whose XML
+ * configuration provides a {@code contentModel}, so that child elements are emitted in XSD order.
  */
 public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
     private final SubstitutionMapLoader substitutionMapLoader;
+    private final RosettaXMLConfiguration rosettaXMLConfiguration;
 
-    public RosettaBeanSerializerModifier(SubstitutionMapLoader substitutionMapLoader) {
+    public RosettaBeanSerializerModifier(SubstitutionMapLoader substitutionMapLoader,
+                                         RosettaXMLConfiguration rosettaXMLConfiguration) {
         this.substitutionMapLoader = substitutionMapLoader;
+        this.rosettaXMLConfiguration = rosettaXMLConfiguration;
     }
 
     @Override
@@ -65,8 +75,17 @@ public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
         if (!(serializer instanceof XmlBeanSerializer)) {
             return serializer;
         }
-        final AnnotationIntrospector intr = config.getAnnotationIntrospector();
 
-        return new RosettaBeanSerializer((XmlBeanSerializer) serializer, null);
+        XMLContentModelOrderer contentModelOrderer = null;
+        Optional<TypeXMLConfiguration> typeConfig =
+                RosettaXMLTypeConfigLookup.getTypeXMLConfiguration(rosettaXMLConfiguration, config, beanDesc);
+        if (typeConfig.isPresent()) {
+            Optional<XMLContentModel> contentModel = typeConfig.get().getContentModel();
+            if (contentModel.isPresent()) {
+                contentModelOrderer = new XMLContentModelOrderer(contentModel.get());
+            }
+        }
+
+        return new RosettaBeanSerializer((XmlBeanSerializer) serializer, null, contentModelOrderer);
     }
 }

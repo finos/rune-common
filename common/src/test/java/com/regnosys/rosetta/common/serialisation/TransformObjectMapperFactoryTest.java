@@ -88,41 +88,41 @@ class TransformObjectMapperFactoryTest {
 
     @Test
     void buildsXmlMapperFromSchemaConfigPath() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(XmlSchemaIngest.class).get();
+        ObjectMapper mapper = TransformObjectMapperFactory.inputForTransformFunction(XmlSchemaIngest.class).get();
         assertInstanceOf(XmlMapper.class, mapper);
     }
 
     @Test
     void buildsXmlMapperForBareFormatWithoutConfigPath() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(BareXmlIngest.class).get();
+        ObjectMapper mapper = TransformObjectMapperFactory.inputForTransformFunction(BareXmlIngest.class).get();
         assertInstanceOf(XmlMapper.class, mapper);
     }
 
     @Test
     void buildsJsonMapperForJsonIngest() {
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(JsonIngest.class).isPresent());
+        assertTrue(TransformObjectMapperFactory.inputForTransformFunction(JsonIngest.class).isPresent());
     }
 
     @Test
     void buildsRuneJsonMapperForRuneJsonProjection() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(RuneJsonProjection.class).get();
+        ObjectMapper mapper = TransformObjectMapperFactory.outputForTransformFunction(RuneJsonProjection.class).get();
         assertInstanceOf(RuneJsonObjectMapper.class, mapper);
     }
 
     @Test
     void buildsCsvMapperForCsvProjection() {
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvProjection.class).isPresent());
+        assertTrue(TransformObjectMapperFactory.outputForTransformFunction(CsvProjection.class).isPresent());
     }
 
     @Test
     void buildsCsvMapperForCsvLabelledProjectionUsingAnnotatedLabelProvider() {
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjection.class).isPresent());
+        assertTrue(TransformObjectMapperFactory.outputForTransformFunction(CsvLabelledProjection.class).isPresent());
     }
 
     @Test
     void csvLabelledWithoutRuneLabelProviderFallsBackToPlainCsv() {
         // No @RuneLabelProvider (e.g. a non-generated function): degrade to plain CSV rather than fail.
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjectionWithoutLabelProvider.class).isPresent());
+        assertTrue(TransformObjectMapperFactory.outputForTransformFunction(CsvLabelledProjectionWithoutLabelProvider.class).isPresent());
     }
 
     @Test
@@ -135,12 +135,23 @@ class TransformObjectMapperFactoryTest {
 
     @Test
     void enrichTransformHasNoObjectMapper() {
-        assertFalse(TransformObjectMapperFactory.forTransformFunction(Enricher.class).isPresent());
+        assertFalse(TransformObjectMapperFactory.inputForTransformFunction(Enricher.class).isPresent());
+        assertFalse(TransformObjectMapperFactory.outputForTransformFunction(Enricher.class).isPresent());
     }
 
     @Test
     void unannotatedClassHasNoObjectMapper() {
-        assertFalse(TransformObjectMapperFactory.forTransformFunction(NotAnnotated.class).isPresent());
+        assertFalse(TransformObjectMapperFactory.inputForTransformFunction(NotAnnotated.class).isPresent());
+        assertFalse(TransformObjectMapperFactory.outputForTransformFunction(NotAnnotated.class).isPresent());
+    }
+
+    @Test
+    void inputAndOutputResolveOnlyTheirOwnSide() {
+        // an @Ingest class has an input mapper but no output mapper, and vice-versa
+        assertTrue(TransformObjectMapperFactory.inputForTransformFunction(JsonIngest.class).isPresent());
+        assertFalse(TransformObjectMapperFactory.outputForTransformFunction(JsonIngest.class).isPresent());
+        assertTrue(TransformObjectMapperFactory.outputForTransformFunction(CsvProjection.class).isPresent());
+        assertFalse(TransformObjectMapperFactory.inputForTransformFunction(CsvProjection.class).isPresent());
     }
 
     @Test

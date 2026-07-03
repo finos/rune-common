@@ -28,8 +28,6 @@ import com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.functions.LabelProvider;
-import com.rosetta.model.lib.transform.Ingest;
-import com.rosetta.model.lib.transform.Projection;
 import com.rosetta.model.lib.transform.SerializationFormat;
 
 import java.io.IOException;
@@ -251,17 +249,19 @@ public class TestPackUtils {
     }
 
     private static Optional<ObjectMapper> ingestObjectMapper(Class<?> functionClass) {
-        if (functionClass == null || !functionClass.isAnnotationPresent(Ingest.class)) {
+        if (functionClass == null) {
             return Optional.empty();
         }
-        return TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader());
+        // The input mapper is driven by the @Ingest annotation only; a class without one yields empty.
+        return TransformObjectMapperFactory.inputForTransformFunction(functionClass, functionClass.getClassLoader());
     }
 
     private static Optional<ObjectWriter> projectionObjectWriter(Class<?> functionClass) {
-        if (functionClass == null || !functionClass.isAnnotationPresent(Projection.class)) {
+        if (functionClass == null) {
             return Optional.empty();
         }
-        return TransformObjectMapperFactory.forTransformFunction(functionClass, functionClass.getClassLoader())
+        // The output mapper is driven by the @Projection annotation only; a class without one yields empty.
+        return TransformObjectMapperFactory.outputForTransformFunction(functionClass, functionClass.getClassLoader())
                 .map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 

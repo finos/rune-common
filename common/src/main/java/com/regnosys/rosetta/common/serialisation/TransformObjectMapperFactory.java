@@ -66,39 +66,65 @@ public final class TransformObjectMapperFactory {
     }
 
     /**
-     * Reflectively reads the {@link Ingest}/{@link Projection} annotation off the given function class and
-     * builds the corresponding mapper, resolving resources against the function class's own classloader.
+     * Builds the mapper that <b>deserializes the input</b> of a transform function, from the
+     * {@link Ingest} annotation the Rune code generator places on it. Resources resolve against the
+     * function class's own classloader. See {@link #inputForTransformFunction(Class, ClassLoader)}.
      */
-    public static Optional<ObjectMapper> forTransformFunction(Class<?> functionClass) {
-        return forTransformFunction(functionClass, functionClass.getClassLoader());
+    public static Optional<ObjectMapper> inputForTransformFunction(Class<?> functionClass) {
+        return inputForTransformFunction(functionClass, functionClass.getClassLoader());
     }
 
     /**
-     * Reflectively reads the {@link Ingest}/{@link Projection} annotation off the given function class and
-     * builds the corresponding mapper, resolving resources against the supplied classloader.
+     * Builds the mapper that <b>deserializes the input</b> of a transform function, from its
+     * {@link Ingest} annotation, resolving resources against the supplied classloader.
      * <p>
-     * Returns {@link Optional#empty()} when the class carries no (de)serializing transform annotation — i.e.
-     * an {@code @Enrich} transform (which does not (de)serialize) or a function with no
-     * {@code @Ingest}/{@code @Projection} at all — so callers can fall back (to a pipeline config, a default
-     * mapper, …) without catching an exception.
+     * The serialized (annotation-described) side of a transform input is the {@code @Ingest} of a
+     * translate. Returns {@link Optional#empty()} when the class carries no {@code @Ingest} — e.g. the
+     * (non-serialized, plain JSON) input of a projection, an {@code @Enrich} transform, or a non-transform
+     * function — so callers can fall back (to a pipeline config, a default mapper, …) without catching an
+     * exception.
      * <p>
      * For the {@code CSV_LABELLED} format the {@link LabelProvider} is derived from the
      * {@code @RuneLabelProvider} annotation the Rune code generator places on every transform function; if
      * that annotation is absent (e.g. a hand-written / non-generated function), the mapper falls back to
      * plain (unlabelled) CSV rather than failing.
      */
-    public static Optional<ObjectMapper> forTransformFunction(Class<?> functionClass, ClassLoader classLoader) {
+    public static Optional<ObjectMapper> inputForTransformFunction(Class<?> functionClass, ClassLoader classLoader) {
         Objects.requireNonNull(functionClass, "functionClass must not be null");
         Ingest ingest = functionClass.getAnnotation(Ingest.class);
         if (ingest != null) {
             return Optional.of(create(ingest.format(), ingest.configPath(), classLoader, functionClass));
         }
+        return Optional.empty();
+    }
+
+    /**
+     * Builds the mapper that <b>serializes the output</b> of a transform function, from the
+     * {@link Projection} annotation the Rune code generator places on it. Resources resolve against the
+     * function class's own classloader. See {@link #outputForTransformFunction(Class, ClassLoader)}.
+     */
+    public static Optional<ObjectMapper> outputForTransformFunction(Class<?> functionClass) {
+        return outputForTransformFunction(functionClass, functionClass.getClassLoader());
+    }
+
+    /**
+     * Builds the mapper that <b>serializes the output</b> of a transform function, from its
+     * {@link Projection} annotation, resolving resources against the supplied classloader.
+     * <p>
+     * The serialized (annotation-described) side of a transform output is the {@code @Projection} of a
+     * projection. Returns {@link Optional#empty()} when the class carries no {@code @Projection} — e.g. the
+     * (non-serialized, plain JSON) output of a translate, an {@code @Enrich} transform, or a non-transform
+     * function — so callers can fall back (to a pipeline config, a default mapper, …) without catching an
+     * exception.
+     * <p>
+     * {@code CSV_LABELLED} labels are resolved as described on {@link #inputForTransformFunction(Class, ClassLoader)}.
+     */
+    public static Optional<ObjectMapper> outputForTransformFunction(Class<?> functionClass, ClassLoader classLoader) {
+        Objects.requireNonNull(functionClass, "functionClass must not be null");
         Projection projection = functionClass.getAnnotation(Projection.class);
         if (projection != null) {
             return Optional.of(create(projection.format(), projection.configPath(), classLoader, functionClass));
         }
-        // @Enrich does not (de)serialize, and a non-transform function has no mapper; return empty so the
-        // caller can fall back rather than handle an exception.
         return Optional.empty();
     }
 
@@ -109,7 +135,8 @@ public final class TransformObjectMapperFactory {
      * <p>
      * The {@code CSV_LABELLED} format needs a {@link LabelProvider} resolved from the function class; when
      * called without one (as here), it falls back to plain (unlabelled) CSV. Use
-     * {@link #forTransformFunction(Class, ClassLoader)} to get labelled CSV.
+     * {@link #inputForTransformFunction(Class, ClassLoader)} / {@link #outputForTransformFunction(Class, ClassLoader)}
+     * to get labelled CSV.
      */
     public static ObjectMapper create(SerializationFormat format, String configPath, ClassLoader classLoader) {
         return create(format, configPath, classLoader, null);

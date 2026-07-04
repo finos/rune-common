@@ -384,6 +384,47 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testBaseNamespaceSubstitutionDeserialisation() throws IOException {
+        // The input document is valid against schema.xsd: the unprefixed <llama> element
+        // inherits the default namespace urn:my.schema, so per XML namespace semantics it
+        // can only be the base com.rosetta.test.Llama (urn:my.schema/llama), never the
+        // extension one — even though its content is also acceptable to the extension
+        // type's content model.
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/base-namespace-substitution.xml"), StandardCharsets.UTF_8);
+
+        AnimalContainer actual = xmlMapper.readValue(input, AnimalContainer.class);
+
+        AnimalContainer expected = AnimalContainer.builder()
+                .setAnimal(Llama.builder().setName("Fluffy").setFluffiness(3))
+                .build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testBaseNamespaceSubstitutionDeserialisationWithTokenBufferParser() throws IOException {
+        // Same schema-valid document as testBaseNamespaceSubstitutionDeserialisation, but
+        // the substituted attribute sits inside a VIRTUAL wrapper. The unwrapped property
+        // is buffered through a TokenBuffer, which discards XML namespace information, so
+        // SubstitutedMethodProperty cannot do the namespace lookup and instead guesses
+        // between all types registered under the local name "llama", keeping whichever
+        // populates the most fields. The identical content fills more fields on the
+        // extension Llama (its VIRTUAL llamaDetailsModel wrapper object is counted too),
+        // so this currently resolves to com.rosetta.extension.test.Llama even though the
+        // element's namespace unambiguously identifies the base Llama (urn:my.schema/llama).
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/base-namespace-substitution-token-buffer-parser.xml"), StandardCharsets.UTF_8);
+
+        WrappedAnimalContainer actual = xmlMapper.readValue(input, WrappedAnimalContainer.class);
+
+        WrappedAnimalContainer expected = WrappedAnimalContainer.builder()
+                .setWrappedAnimalContainerModel(WrappedAnimalContainerModel.builder()
+                        .setAnimal(Llama.builder().setName("Fluffy").setFluffiness(3)))
+                .build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
     // TODO: test non-substituted groups should not perform substitution
     public void testSubstitutionGroupSerialisation() throws IOException {
         AnimalContainer animalContainer = AnimalContainer.builder()

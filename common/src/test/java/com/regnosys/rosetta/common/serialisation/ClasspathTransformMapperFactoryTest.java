@@ -4,7 +4,7 @@ package com.regnosys.rosetta.common.serialisation;
  * ==============
  * Rune Common
  * ==============
- * Copyright (C) 2018 - 2025 REGnosys
+ * Copyright (C) 2018 - 2026 REGnosys
  * ==============
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,15 +33,31 @@ import com.rosetta.model.lib.transform.SerializationFormat;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TransformObjectMapperFactoryTest {
+/**
+ * Covers the end-to-end annotation-driven path: {@link TransformSerializationResolver} decides,
+ * {@link ClasspathTransformMapperFactory} constructs.
+ */
+class ClasspathTransformMapperFactoryTest {
 
     private static final String XML_CONFIG = "serialisation/xml/xml-config/extension-schema-xml-config.json";
+
+    private final ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
+
+    private Optional<ObjectMapper> inputMapper(Class<?> functionClass) {
+        return TransformSerializationResolver.input(functionClass).map(s -> factory.create(s, functionClass));
+    }
+
+    private Optional<ObjectMapper> outputMapper(Class<?> functionClass) {
+        return TransformSerializationResolver.output(functionClass).map(s -> factory.create(s, functionClass));
+    }
 
     @Ingest(id = "extensionSchema", format = SerializationFormat.XML, configPath = XML_CONFIG)
     private static class XmlSchemaIngest {
@@ -88,66 +104,73 @@ class TransformObjectMapperFactoryTest {
 
     @Test
     void buildsXmlMapperFromSchemaConfigPath() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(XmlSchemaIngest.class).get();
-        assertInstanceOf(XmlMapper.class, mapper);
+        assertInstanceOf(XmlMapper.class, inputMapper(XmlSchemaIngest.class).get());
     }
 
     @Test
     void buildsXmlMapperForBareFormatWithoutConfigPath() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(BareXmlIngest.class).get();
-        assertInstanceOf(XmlMapper.class, mapper);
+        assertInstanceOf(XmlMapper.class, inputMapper(BareXmlIngest.class).get());
     }
 
     @Test
     void buildsJsonMapperForJsonIngest() {
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(JsonIngest.class).isPresent());
+        assertTrue(inputMapper(JsonIngest.class).isPresent());
     }
 
     @Test
     void buildsRuneJsonMapperForRuneJsonProjection() {
-        ObjectMapper mapper = TransformObjectMapperFactory.forTransformFunction(RuneJsonProjection.class).get();
-        assertInstanceOf(RuneJsonObjectMapper.class, mapper);
+        assertInstanceOf(RuneJsonObjectMapper.class, outputMapper(RuneJsonProjection.class).get());
     }
 
     @Test
     void buildsCsvMapperForCsvProjection() {
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvProjection.class).isPresent());
+        assertTrue(outputMapper(CsvProjection.class).isPresent());
     }
 
     @Test
     void buildsCsvMapperForCsvLabelledProjectionUsingAnnotatedLabelProvider() {
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjection.class).isPresent());
+        assertTrue(outputMapper(CsvLabelledProjection.class).isPresent());
     }
 
     @Test
     void csvLabelledWithoutRuneLabelProviderFallsBackToPlainCsv() {
         // No @RuneLabelProvider (e.g. a non-generated function): degrade to plain CSV rather than fail.
-        assertTrue(TransformObjectMapperFactory.forTransformFunction(CsvLabelledProjectionWithoutLabelProvider.class).isPresent());
+        assertTrue(outputMapper(CsvLabelledProjectionWithoutLabelProvider.class).isPresent());
     }
 
     @Test
     void csvLabelledFromFormatAloneFallsBackToPlainCsv() {
         // Built from the format alone (no function class -> no label provider): plain CSV, no exception.
-        ObjectMapper mapper = TransformObjectMapperFactory.create(SerializationFormat.CSV_LABELLED, null,
-                TransformObjectMapperFactoryTest.class.getClassLoader());
+        ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null), null);
         assertNotNull(mapper);
     }
 
     @Test
     void enrichTransformHasNoObjectMapper() {
-        assertFalse(TransformObjectMapperFactory.forTransformFunction(Enricher.class).isPresent());
+        assertFalse(inputMapper(Enricher.class).isPresent());
+        assertFalse(outputMapper(Enricher.class).isPresent());
     }
 
     @Test
     void unannotatedClassHasNoObjectMapper() {
-        assertFalse(TransformObjectMapperFactory.forTransformFunction(NotAnnotated.class).isPresent());
+        assertFalse(inputMapper(NotAnnotated.class).isPresent());
+        assertFalse(outputMapper(NotAnnotated.class).isPresent());
+    }
+
+    @Test
+    void inputAndOutputResolveOnlyTheirOwnSide() {
+        // an @Ingest class has an input mapper but no output mapper, and vice-versa
+        assertTrue(inputMapper(JsonIngest.class).isPresent());
+        assertFalse(outputMapper(JsonIngest.class).isPresent());
+        assertTrue(outputMapper(CsvProjection.class).isPresent());
+        assertFalse(inputMapper(CsvProjection.class).isPresent());
     }
 
     @Test
     void missingXmlConfigResourceIsReported() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
-                () -> TransformObjectMapperFactory.create(SerializationFormat.XML, "does/not/exist.json",
-                        TransformObjectMapperFactoryTest.class.getClassLoader()));
+                () -> factory.create(new TransformSerialization(SerializationFormat.XML, "does/not/exist.json"),
+                        ClasspathTransformMapperFactoryTest.class));
         assertTrue(e.getMessage().contains("does/not/exist.json"));
     }
 }

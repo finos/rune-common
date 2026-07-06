@@ -66,7 +66,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
             case JSON:
                 return jsonMapper();
             case RUNE_JSON:
-                return runeJsonMapper();
+                return runeJsonMapper(functionClass);
             case CSV:
                 return csvMapper();
             case CSV_LABELLED:
@@ -82,8 +82,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return RosettaObjectMapper.getNewRosettaObjectMapper();
     }
 
-    protected ObjectMapper runeJsonMapper() {
-        return new RuneJsonObjectMapper();
+    protected ObjectMapper runeJsonMapper(Class<?> functionClass) {
+        // Rune JSON resolves model types (e.g. for global-key hashing) so it needs the model classloader.
+        ClassLoader classLoader = classLoader(functionClass);
+        return classLoader != null ? new RuneJsonObjectMapper(classLoader) : new RuneJsonObjectMapper();
     }
 
     protected ObjectMapper csvMapper() {

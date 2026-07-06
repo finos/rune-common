@@ -23,9 +23,10 @@ package com.regnosys.rosetta.common.transform;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
+import com.regnosys.rosetta.common.serialisation.ClasspathTransformMapperFactory;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
-import com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory;
 import com.regnosys.rosetta.common.serialisation.TransformMapperFactory;
+import com.regnosys.rosetta.common.serialisation.TransformSerialization;
 import com.regnosys.rosetta.common.serialisation.TransformSerializationResolver;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.DeprecationLogger;
@@ -49,6 +50,9 @@ import java.util.stream.Collectors;
 public class TestPackUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestPackUtils.class);
+
+    // Used only by the deprecated shims below; models on these paths live on the application classpath.
+    private static final TransformMapperFactory CLASSPATH_FACTORY = new ClasspathTransformMapperFactory();
 
     public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
     public static final Path PROJECTION_CONFIG_PATH = PROJECTION_PATH.resolve("config");
@@ -188,10 +192,10 @@ public class TestPackUtils {
                     "CSV_LABELLED format requires a LabelProvider resolved from the transform function. " +
                     "Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.");
         }
-        // Delegate to the shared per-format construction. A null classloader preserves the legacy Guava
-        // Resources classpath lookup historically used by this method.
+        // Delegate to the shared per-format construction. The null function class preserves the legacy
+        // Guava Resources classpath lookup historically used by this method.
         SerializationFormat format = SerializationFormat.valueOf(serialisation.getFormat().name());
-        return Optional.of(TransformObjectMapperFactory.create(format, serialisation.getConfigPath(), null));
+        return Optional.of(CLASSPATH_FACTORY.create(new TransformSerialization(format, serialisation.getConfigPath()), null));
     }
 
     /**
@@ -269,9 +273,8 @@ public class TestPackUtils {
         DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getInputObjectMapper",
                 "TestPackUtils.getInputObjectMapper is deprecated; resolve the serialization with "
                         + "TransformSerializationResolver and construct through a TransformMapperFactory.");
-        Optional<ObjectMapper> fromAnnotation = functionClass == null
-                ? Optional.empty()
-                : TransformObjectMapperFactory.inputForTransformFunction(functionClass, functionClass.getClassLoader());
+        Optional<ObjectMapper> fromAnnotation = TransformSerializationResolver.input(functionClass)
+                .map(serialization -> CLASSPATH_FACTORY.create(serialization, functionClass));
         return fromAnnotation
                 .orElseGet(() -> legacyObjectMapper(inputSerialisation).orElse(defaultObjectMapper));
     }
@@ -297,10 +300,8 @@ public class TestPackUtils {
         DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getOutputObjectWriter",
                 "TestPackUtils.getOutputObjectWriter is deprecated; resolve the serialization with "
                         + "TransformSerializationResolver and construct through a TransformMapperFactory.");
-        Optional<ObjectWriter> fromAnnotation = functionClass == null
-                ? Optional.empty()
-                : TransformObjectMapperFactory.outputForTransformFunction(functionClass, functionClass.getClassLoader())
-                        .map(ObjectMapper::writerWithDefaultPrettyPrinter);
+        Optional<ObjectWriter> fromAnnotation = TransformSerializationResolver.output(functionClass)
+                .map(serialization -> CLASSPATH_FACTORY.createWriter(serialization, functionClass));
         return fromAnnotation
                 .orElseGet(() -> legacyObjectMapper(outputSerialisation, labelProvider)
                         .map(ObjectMapper::writerWithDefaultPrettyPrinter)

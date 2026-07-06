@@ -29,8 +29,9 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * A {@link TransformMapperFactory} decorator that builds each distinct {@link TransformSerialization}
- * once and caches it, so implementors get per-instance mapper reuse without writing any caching
- * themselves.
+ * once and caches it. Mapper construction is not cheap — Jackson module registration, and for XML a
+ * full parse of the serialization config — while a runtime requests a mapper on every transform
+ * execution, so implementors get per-instance reuse without writing any caching themselves.
  * <p>
  * The cache lives and dies with this factory instance, and cached mappers may hold references into the
  * classloader they were built against. So the factory must be owned by the component whose model/

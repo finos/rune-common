@@ -128,7 +128,7 @@ public final class TransformSerializationResolver {
     /**
      * Output-side resolution with an externally-sourced legacy fallback.
      *
-     * @deprecated see {@link #input(Class, TransformSerialization)}.
+     * @deprecated see {@link #inputWithFallback(Class, TransformSerialization)}.
      */
     @Deprecated
     public static Optional<TransformSerialization> outputWithFallback(Class<?> functionClass, TransformSerialization legacyFallback) {

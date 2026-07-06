@@ -78,7 +78,7 @@ public final class TransformObjectMapperFactory {
     public static Optional<ObjectMapper> inputForTransformFunction(Class<?> functionClass, ClassLoader classLoader) {
         Objects.requireNonNull(functionClass, "functionClass must not be null");
         return TransformSerializationResolver.input(functionClass)
-                .map(s -> ClasspathTransformMapperFactory.build(s.getFormat(), s.getConfigPath(), classLoader, functionClass));
+                .map(s -> withClassLoader(classLoader).create(s, functionClass));
     }
 
     /**
@@ -106,7 +106,7 @@ public final class TransformObjectMapperFactory {
     public static Optional<ObjectMapper> outputForTransformFunction(Class<?> functionClass, ClassLoader classLoader) {
         Objects.requireNonNull(functionClass, "functionClass must not be null");
         return TransformSerializationResolver.output(functionClass)
-                .map(s -> ClasspathTransformMapperFactory.build(s.getFormat(), s.getConfigPath(), classLoader, functionClass));
+                .map(s -> withClassLoader(classLoader).create(s, functionClass));
     }
 
     /**
@@ -120,6 +120,19 @@ public final class TransformObjectMapperFactory {
      */
     @Deprecated
     public static ObjectMapper create(SerializationFormat format, String configPath, ClassLoader classLoader) {
-        return ClasspathTransformMapperFactory.build(format, configPath, classLoader, null);
+        return withClassLoader(classLoader).create(new TransformSerialization(format, configPath), null);
+    }
+
+    /**
+     * A classpath factory resolving against an explicit classloader instead of the function class's own.
+     * A {@code null} loader preserves the legacy Guava classpath-resource lookup.
+     */
+    private static ClasspathTransformMapperFactory withClassLoader(ClassLoader classLoader) {
+        return new ClasspathTransformMapperFactory() {
+            @Override
+            protected ClassLoader classLoader(Class<?> functionClass) {
+                return classLoader;
+            }
+        };
     }
 }

@@ -25,10 +25,15 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory;
+import com.regnosys.rosetta.common.serialisation.TransformMapperFactory;
+import com.regnosys.rosetta.common.serialisation.TransformSerializationResolver;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
+import com.regnosys.rosetta.common.util.DeprecationLogger;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.transform.SerializationFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -42,6 +47,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TestPackUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestPackUtils.class);
 
     public static final Path PROJECTION_PATH = Paths.get(TransformType.PROJECTION.getResourcePath());
     public static final Path PROJECTION_CONFIG_PATH = PROJECTION_PATH.resolve("config");
@@ -143,12 +150,34 @@ public class TestPackUtils {
 
     /**
      * @deprecated this resolves the mapper from a pipeline JSON's {@code inputSerialisation}/
-     *         {@code outputSerialisation}. Prefer {@link TransformObjectMapperFactory}, which reads the
-     *         format and config file from the {@code @Ingest}/{@code @Projection} annotation on the generated
-     *         function class — making the model the single source of truth. Kept for backward compatibility.
+     *         {@code outputSerialisation}. The {@code @Ingest}/{@code @Projection} annotation on the
+     *         generated function class is the source of truth — resolve it with
+     *         {@link TransformSerializationResolver} and construct through a {@link TransformMapperFactory}.
+     *         Kept for backward compatibility with models generated before transform annotations existed.
      */
     @Deprecated
     public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation) {
+        DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getObjectMapper(Serialisation)",
+                "TestPackUtils.getObjectMapper(PipelineModel.Serialisation) is deprecated; resolve the "
+                        + "serialization with TransformSerializationResolver and construct through a "
+                        + "TransformMapperFactory.");
+        return legacyObjectMapper(serialisation);
+    }
+
+    /**
+     * @deprecated see {@link #getObjectMapper(PipelineModel.Serialisation)}.
+     */
+    @Deprecated
+    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
+        DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getObjectWriter(Serialisation)",
+                "TestPackUtils.getObjectWriter(PipelineModel.Serialisation) is deprecated; resolve the "
+                        + "serialization with TransformSerializationResolver and construct through a "
+                        + "TransformMapperFactory.");
+        return legacyObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static Optional<ObjectMapper> legacyObjectMapper(PipelineModel.Serialisation serialisation) {
         if (serialisation == null || serialisation.getFormat() == null) {
             return Optional.empty();
         }
@@ -159,30 +188,19 @@ public class TestPackUtils {
                     "CSV_LABELLED format requires a LabelProvider resolved from the transform function. " +
                     "Use getObjectMapper(PipelineModel.Serialisation, LabelProvider) instead.");
         }
-        // Delegate to the shared per-format construction in TransformObjectMapperFactory. A null classloader
-        // preserves the legacy Guava Resources classpath lookup historically used by this method.
+        // Delegate to the shared per-format construction. A null classloader preserves the legacy Guava
+        // Resources classpath lookup historically used by this method.
         SerializationFormat format = SerializationFormat.valueOf(serialisation.getFormat().name());
         return Optional.of(TransformObjectMapperFactory.create(format, serialisation.getConfigPath(), null));
-    }
-
-    /**
-     * @deprecated see {@link #getObjectMapper(PipelineModel.Serialisation)}.
-     */
-    @Deprecated
-    @SuppressWarnings("deprecation")
-    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation) {
-        return getObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
     /**
      * Resolves an {@link ObjectMapper} for the given serialisation, using the supplied
      * {@link LabelProvider} for the {@code CSV_LABELLED} format.
      *
-     * <p>The provider is only consulted for {@code CSV_LABELLED}; all other formats delegate
-     * to {@link #getObjectMapper(PipelineModel.Serialisation)} and ignore it. Callers resolve
-     * the provider from the (already-loaded) transform function class via
-     * {@link LabelProviderResolver}, so this method
-     * does not need a {@link ClassLoader}.
+     * <p>The provider is only consulted for {@code CSV_LABELLED}; all other formats ignore it. Callers
+     * resolve the provider from the (already-loaded) transform function class via
+     * {@link LabelProviderResolver}, so this method does not need a {@link ClassLoader}.
      *
      * @param serialisation the output serialisation (may be {@code null})
      * @param labelProvider the provider to use for {@code CSV_LABELLED}; must be non-null for
@@ -190,9 +208,33 @@ public class TestPackUtils {
      * @return the resolved mapper, or empty when {@code serialisation} (or its format) is null
      * @throws IllegalArgumentException if the format is {@code CSV_LABELLED} but
      *                                  {@code labelProvider} is null
+     * @deprecated the pipeline serialisation config is deprecated; resolve the serialization from the
+     *         function's annotations with {@link TransformSerializationResolver} and construct through a
+     *         {@link TransformMapperFactory} (which resolves the {@code CSV_LABELLED} labels itself).
      */
-    @SuppressWarnings("deprecation")
+    @Deprecated
     public static Optional<ObjectMapper> getObjectMapper(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
+        DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getObjectMapper(Serialisation,LabelProvider)",
+                "TestPackUtils.getObjectMapper(PipelineModel.Serialisation, LabelProvider) is deprecated; "
+                        + "resolve the serialization with TransformSerializationResolver and construct through "
+                        + "a TransformMapperFactory.");
+        return legacyObjectMapper(serialisation, labelProvider);
+    }
+
+    /**
+     * @deprecated see {@link #getObjectMapper(PipelineModel.Serialisation, LabelProvider)}.
+     */
+    @Deprecated
+    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
+        DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getObjectWriter(Serialisation,LabelProvider)",
+                "TestPackUtils.getObjectWriter(PipelineModel.Serialisation, LabelProvider) is deprecated; "
+                        + "resolve the serialization with TransformSerializationResolver and construct through "
+                        + "a TransformMapperFactory.");
+        return legacyObjectMapper(serialisation, labelProvider).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static Optional<ObjectMapper> legacyObjectMapper(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
         if (serialisation == null || serialisation.getFormat() == null) {
             return Optional.empty();
         }
@@ -203,66 +245,66 @@ public class TestPackUtils {
             }
             return Optional.of(RosettaObjectMapperCreator.forCSV(labelProvider).create());
         }
-        return getObjectMapper(serialisation);
-    }
-
-    @SuppressWarnings("deprecation")
-    public static Optional<ObjectWriter> getObjectWriter(PipelineModel.Serialisation serialisation, LabelProvider labelProvider) {
-        return getObjectMapper(serialisation, labelProvider).map(ObjectMapper::writerWithDefaultPrettyPrinter);
+        return legacyObjectMapper(serialisation);
     }
 
     /**
-     * Resolves the input de-serialising {@link ObjectMapper} for a transform function, preferring the
-     * pipeline's {@code inputSerialisation} when present, then the function's {@code @Ingest} annotation
-     * (which a serialisation-agnostic pipeline omits, since the annotation already expresses it), and
-     * finally the supplied default mapper.
+     * Resolves the input de-serialising {@link ObjectMapper} for a transform function: the function's
+     * {@code @Ingest} annotation when present, then the pipeline's (deprecated) {@code inputSerialisation},
+     * and finally the supplied default mapper.
      *
      * @param inputSerialisation  the pipeline input serialisation (may be {@code null})
      * @param functionClass       the generated transform function class (may be {@code null})
-     * @param defaultObjectMapper the fallback when neither a pipeline serialisation nor an annotation applies
+     * @param defaultObjectMapper the fallback when neither an annotation nor a pipeline serialisation applies
+     * @deprecated resolve the serialization with {@link TransformSerializationResolver} and construct
+     *         through a {@link TransformMapperFactory}. Note this method now resolves the annotation
+     *         <em>first</em> (previously the pipeline serialisation won): the annotation is generated
+     *         from the model and carries the config path, so the two only disagree when a pipeline JSON
+     *         was hand-edited to contradict its model.
      */
+    @Deprecated
     public static ObjectMapper getInputObjectMapper(PipelineModel.Serialisation inputSerialisation,
                                                     Class<?> functionClass,
                                                     ObjectMapper defaultObjectMapper) {
-        return getObjectMapper(inputSerialisation)
-                .orElseGet(() -> ingestObjectMapper(functionClass).orElse(defaultObjectMapper));
+        DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getInputObjectMapper",
+                "TestPackUtils.getInputObjectMapper is deprecated; resolve the serialization with "
+                        + "TransformSerializationResolver and construct through a TransformMapperFactory.");
+        Optional<ObjectMapper> fromAnnotation = functionClass == null
+                ? Optional.empty()
+                : TransformObjectMapperFactory.inputForTransformFunction(functionClass, functionClass.getClassLoader());
+        return fromAnnotation
+                .orElseGet(() -> legacyObjectMapper(inputSerialisation).orElse(defaultObjectMapper));
     }
 
     /**
-     * Resolves the output serialising {@link ObjectWriter} for a transform function, preferring the
-     * pipeline's {@code outputSerialisation} when present, then the function's {@code @Projection}
-     * annotation (which a serialisation-agnostic pipeline omits, since the annotation already expresses
-     * it), and finally the supplied default writer.
+     * Resolves the output serialising {@link ObjectWriter} for a transform function: the function's
+     * {@code @Projection} annotation when present, then the pipeline's (deprecated)
+     * {@code outputSerialisation}, and finally the supplied default writer.
      *
      * @param outputSerialisation the pipeline output serialisation (may be {@code null})
      * @param functionClass       the generated transform function class (may be {@code null})
      * @param labelProvider       the provider for a {@code CSV_LABELLED} pipeline serialisation (the
      *                            annotation path resolves its own from {@code @RuneLabelProvider})
-     * @param defaultObjectWriter the fallback when neither a pipeline serialisation nor an annotation applies
+     * @param defaultObjectWriter the fallback when neither an annotation nor a pipeline serialisation applies
+     * @deprecated see {@link #getInputObjectMapper(PipelineModel.Serialisation, Class, ObjectMapper)} —
+     *         same replacement and the same annotation-first note.
      */
+    @Deprecated
     public static ObjectWriter getOutputObjectWriter(PipelineModel.Serialisation outputSerialisation,
                                                      Class<?> functionClass,
                                                      LabelProvider labelProvider,
                                                      ObjectWriter defaultObjectWriter) {
-        return getObjectWriter(outputSerialisation, labelProvider)
-                .orElseGet(() -> projectionObjectWriter(functionClass).orElse(defaultObjectWriter));
-    }
-
-    private static Optional<ObjectMapper> ingestObjectMapper(Class<?> functionClass) {
-        if (functionClass == null) {
-            return Optional.empty();
-        }
-        // The input mapper is driven by the @Ingest annotation only; a class without one yields empty.
-        return TransformObjectMapperFactory.inputForTransformFunction(functionClass, functionClass.getClassLoader());
-    }
-
-    private static Optional<ObjectWriter> projectionObjectWriter(Class<?> functionClass) {
-        if (functionClass == null) {
-            return Optional.empty();
-        }
-        // The output mapper is driven by the @Projection annotation only; a class without one yields empty.
-        return TransformObjectMapperFactory.outputForTransformFunction(functionClass, functionClass.getClassLoader())
-                .map(ObjectMapper::writerWithDefaultPrettyPrinter);
+        DeprecationLogger.warnOnce(LOGGER, "TestPackUtils.getOutputObjectWriter",
+                "TestPackUtils.getOutputObjectWriter is deprecated; resolve the serialization with "
+                        + "TransformSerializationResolver and construct through a TransformMapperFactory.");
+        Optional<ObjectWriter> fromAnnotation = functionClass == null
+                ? Optional.empty()
+                : TransformObjectMapperFactory.outputForTransformFunction(functionClass, functionClass.getClassLoader())
+                        .map(ObjectMapper::writerWithDefaultPrettyPrinter);
+        return fromAnnotation
+                .orElseGet(() -> legacyObjectMapper(outputSerialisation, labelProvider)
+                        .map(ObjectMapper::writerWithDefaultPrettyPrinter)
+                        .orElse(defaultObjectWriter));
     }
 
     public static String getReportTestPackName(String reportId) {

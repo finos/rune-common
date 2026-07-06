@@ -82,6 +82,35 @@ class TransformSerializationResolverTest {
         assertEquals(SerializationFormat.XML, resolved.get().getFormat(), "the annotation must win over the legacy config");
     }
 
+    @Ingest(format = SerializationFormat.XML)
+    private static class XmlIngestWithoutConfigPath implements RosettaFunction {
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void legacyConfigPathIsMergedWhenAnnotationHasFormatButNoConfig() {
+        // A model generated before annotations carried a config path: @Ingest(XML) with no configPath,
+        // while the pipeline serialisation ships the XML config. The format comes from the annotation,
+        // the config file from the legacy serialisation.
+        PipelineModel.Serialisation legacyXml = new PipelineModel.Serialisation(
+                PipelineModel.Serialisation.Format.XML, "xml-config/fpml-config.json");
+        Optional<TransformSerialization> resolved =
+                TransformSerializationResolver.input(XmlIngestWithoutConfigPath.class, legacyXml);
+        assertTrue(resolved.isPresent());
+        assertEquals(SerializationFormat.XML, resolved.get().getFormat());
+        assertEquals("xml-config/fpml-config.json", resolved.get().getConfigPath(),
+                "the legacy config file must not be lost when the annotation carries none");
+
+        // but a legacy config for a DIFFERENT format is not merged — the annotation wins wholesale
+        PipelineModel.Serialisation legacyJson = new PipelineModel.Serialisation(
+                PipelineModel.Serialisation.Format.JSON, "some/config.json");
+        Optional<TransformSerialization> xmlWins =
+                TransformSerializationResolver.input(XmlIngestWithoutConfigPath.class, legacyJson);
+        assertTrue(xmlWins.isPresent());
+        assertEquals(SerializationFormat.XML, xmlWins.get().getFormat());
+        assertNull(xmlWins.get().getConfigPath());
+    }
+
     @Test
     @SuppressWarnings("deprecation")
     void legacyPipelineSerialisationAppliesOnlyWhenAnnotationAbsent() {

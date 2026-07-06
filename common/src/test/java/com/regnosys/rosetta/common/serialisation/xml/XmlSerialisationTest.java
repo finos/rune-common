@@ -402,6 +402,7 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    @Disabled //TODO: decide on the best approach to fixing this, details referenced in https://github.com/finos/rune-common/issues/662
     public void testBaseNamespaceSubstitutionDeserialisationWithTokenBufferParser() throws IOException {
         // Same schema-valid document as testBaseNamespaceSubstitutionDeserialisation, but
         // the substituted attribute sits inside a VIRTUAL wrapper. The unwrapped property

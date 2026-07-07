@@ -32,7 +32,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Reproduces a bug in {@link XMLContentModelMatcher#repeat}: a {@code SEQUENCE} node with
+ * Reproduces a bug in {@code XMLContentModelMatcher#repeat}: a {@code SEQUENCE} node with
  * {@code minOccurs=1} whose only child is an already-optional {@code CHOICE} node
  * ({@code minOccurs=0}) is incorrectly rejected as {@code NO_MATCH} when none of the choice's
  * branches are present in the input, even though this is a structurally valid, fully-optional
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * none of the choice's own elements present, {@link XMLContentModelMatcher#route} returns
  * {@code NO_MATCH} instead of {@code SUCCESS}.</p>
  */
-class XMLContentModelMatcherOptionalChoiceInSequenceTest {
+class XMLContentModelMatcherZeroWidthOptionalContentTest {
 
     @Test
     void sequenceWithSoleOptionalChoiceIsSatisfiedByZeroMatchingInputs() {

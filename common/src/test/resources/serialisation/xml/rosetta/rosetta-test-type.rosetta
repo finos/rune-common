@@ -25,6 +25,14 @@ type Snake extends Animal:
 
 type Camel extends Animal:
 
+type Llama extends Animal:
+
+    fluffiness int (1..1)
+
+type LlamaDetailsModel:
+
+    fluffiness int (1..1)
+
 type Document:
 
     attr Foo (1..1)

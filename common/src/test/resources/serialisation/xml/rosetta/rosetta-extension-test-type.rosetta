@@ -8,3 +8,7 @@ type Snake extends com.rosetta.test.Animal:
 type Camel extends com.rosetta.test.Animal:
 
     humps int (1..1)
+
+type Llama extends com.rosetta.test.Animal:
+
+    llamaDetailsModel com.rosetta.test.LlamaDetailsModel (1..1)

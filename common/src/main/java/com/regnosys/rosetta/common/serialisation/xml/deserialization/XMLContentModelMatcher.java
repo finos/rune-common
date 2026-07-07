@@ -148,9 +148,12 @@ final class XMLContentModelMatcher {
         }
         List<MatchResult> singles = matchOnce(node, inputs, inputIndex, pushed);
         for (MatchResult one : singles) {
-            // Must consume at least one input or it would loop forever; allow zero-consumption only
-            // if min<=count already (handled by the early return on count==min above), and skip here.
-            if (one.nextIndex == inputIndex && one.assignments.isEmpty()) {
+            // A zero-width iteration (matches without consuming input, e.g. a compound node whose
+            // children are all optional and absent) is only redundant once min is already satisfied
+            // by prior iterations - repeating it further would recurse forever without ever advancing
+            // nextIndex. Below min, it must be allowed through so the required occurrence count can
+            // still be reached via a legitimately empty match.
+            if (one.nextIndex == inputIndex && one.assignments.isEmpty() && count >= min) {
                 continue;
             }
             List<Assignment> merged = concat(accumulated, one.assignments);

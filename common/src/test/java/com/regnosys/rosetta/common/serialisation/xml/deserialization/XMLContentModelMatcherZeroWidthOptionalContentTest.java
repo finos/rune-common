@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Reproduces a bug in {@code XMLContentModelMatcher#repeat}: a {@code SEQUENCE} node with
- * {@code minOccurs=1} whose only child is an already-optional {@code CHOICE} node
+ * {@code minOccurs=1} whose only child is an already optional {@code CHOICE} node
  * ({@code minOccurs=0}) is incorrectly rejected as {@code NO_MATCH} when none of the choice's
  * branches are present in the input, even though this is a structurally valid, fully optional
  * content model (the XML Schema equivalent of

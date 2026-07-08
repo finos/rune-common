@@ -2,7 +2,7 @@
   "@model" : "serialization",
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
-  "choiceDataNested" : {
+  "choiceDataWithLocationNested" : {
     "@type" : "serialization.test.passing.choicetype.ChoiceData",
     "@key:scoped" : "someNestedLocation",
     "@data" : {
@@ -10,7 +10,7 @@
       "fieldA" : "foo"
     }
   },
-  "typeWithAddressToChoiceDataNested" : {
+  "typeWithAddressToChoiceDataWithLocationNested" : {
     "choiceDataRef" : {
       "@ref:scoped" : "someNestedLocation"
     }

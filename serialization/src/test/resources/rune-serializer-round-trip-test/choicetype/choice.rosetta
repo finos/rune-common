@@ -75,6 +75,15 @@ choice ChoiceDeepNested:
      MiddleChoiceA
      MiddleChoiceB
 
+choice ChoiceDataNested:
+  ChoiceData
+    [metadata location]
+  string
+
+type TypeWithAddressToChoiceDataNested:
+    choiceDataRef ChoiceData (1..1)
+    [metadata address "pointsTo"=ChoiceDataNested->ChoiceData]
+
 type Root:
   [rootType]
   choiceBasic ChoiceBasic (0..1)
@@ -87,3 +96,5 @@ type Root:
   typeWithLocation TypeWithLocation (0..1)
   typeWithAddress TypeWithAddress (0..1)
   typeG G (0..1)
+  choiceDataNested ChoiceDataNested (0..1)
+  typeWithAddressToChoiceDataNested TypeWithAddressToChoiceDataNested (0..1)

@@ -2,7 +2,7 @@
   "@model" : "serialization",
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
-  "choiceWithFieldAndOptionLocation" : {
+  "choiceAttributeWithLocation" : {
     "@key:scoped" : "someOuterLocation",
     "@data" : {
       "@type" : "serialization.test.passing.choicetype.ChoiceData",

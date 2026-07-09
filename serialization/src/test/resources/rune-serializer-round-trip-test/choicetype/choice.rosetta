@@ -98,5 +98,5 @@ type Root:
   typeG G (0..1)
   choiceWithLocationNested ChoiceWithLocationNested (0..1)
   typeWithAddressToChoiceWithLocationNested TypeWithAddressToChoiceWithLocationNested (0..1)
-  choiceWithFieldAndOptionLocation ChoiceWithLocationNested (0..1)
+  choiceAttributeWithLocation ChoiceWithLocationNested (0..1)
     [metadata location]

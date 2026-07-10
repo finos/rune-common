@@ -262,16 +262,17 @@ public class RosettaCsvMapperLabelledTest {
     }
 
     // ---------------------------------------------------------------------------
-    // Test #9 — Duplicate labels on read → throws
+    // Test #9 — Duplicate labels on read → positional fallback
     // ---------------------------------------------------------------------------
 
     /**
-     * Unlike serialisation (test #5, which happily emits duplicate header text),
-     * deserialisation cannot disambiguate two attributes sharing the same label, so
-     * it must throw rather than silently mis-mapping a column.
+     * When two attributes share the same label the header text is ambiguous, so the reader
+     * cannot bind by name. Rather than fail, it falls back to positional binding against the
+     * type's canonical (alphabetical) schema order — the order the writer always emits — so a
+     * duplicate-labelled file the writer produced still round-trips correctly.
      */
     @Test
-    void shouldThrowWhenTwoColumnsShareTheSameLabelOnRead() {
+    void shouldFallBackToPositionalBindingWhenTwoColumnsShareTheSameLabelOnRead() throws JsonProcessingException {
         Map<String, String> labels = new HashMap<>();
         labels.put("firstName",  "Name");
         labels.put("identifier", "ID");
@@ -280,8 +281,36 @@ public class RosettaCsvMapperLabelledTest {
         LabelProvider provider = mapProvider(labels);
 
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
-        String csv = "Name,ID,Name,\"User Name\"\n"
-                + "Alice,id-001,Smith,asmith\n";
+        User original = buildUser();
+        String csv = mapper.writeValueAsString(original);
+
+        User roundTripped = mapper.readValue(csv, User.class);
+        assertEquals(original, roundTripped);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test #11 — Duplicate labels + wrong column count → throws
+    // ---------------------------------------------------------------------------
+
+    /**
+     * The positional fallback only fires when the file is structurally consistent with the
+     * type. If duplicate labels force positional binding but the header column count does not
+     * match the schema, the file cannot be safely mapped by position and must throw rather
+     * than silently mis-align columns.
+     */
+    @Test
+    void shouldThrowWhenDuplicateLabelsForcePositionalBindingButColumnCountDiffers() {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("firstName",  "Name");
+        labels.put("identifier", "ID");
+        labels.put("lastName",   "Name");   // duplicate label forces positional binding
+        labels.put("username",   "User Name");
+        LabelProvider provider = mapProvider(labels);
+
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
+        // User has four columns; this header has only three.
+        String csv = "Name,ID,Name\n"
+                + "Alice,id-001,Smith\n";
 
         assertThrows(IllegalStateException.class, () -> mapper.readValue(csv, User.class));
     }

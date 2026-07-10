@@ -100,17 +100,21 @@ public class RosettaCsvMapper extends CsvMapper  {
     private CsvSchema buildLabelReadSchema(Class<?> valueType, List<String> headerLabels) {
         CsvSchema schema = schemaFor(valueType);
         Map<String, String> labelToAttribute = new HashMap<>();
+        boolean ambiguousLabels = false;
         for (CsvSchema.Column column : schema) {
             String attribute = column.getName();
             String label = labelProvider.getLabel(RosettaPath.valueOf(attribute));
             String key = label != null ? label : attribute;
             String previous = labelToAttribute.putIfAbsent(key, attribute);
             if (previous != null) {
-                throw new IllegalStateException(
-                        String.format("Duplicate label '%s' shared by attributes '%s' and '%s': "
-                                        + "cannot unambiguously deserialise labelled CSV",
-                                key, previous, attribute));
+                // Two attributes share a label, so the header text cannot be resolved to a
+                // single attribute. Fall back to positional binding against the canonical
+                // schema order, which is the order the writer always emits columns in.
+                ambiguousLabels = true;
             }
+        }
+        if (ambiguousLabels) {
+            return buildPositionalReadSchema(valueType, schema, headerLabels);
         }
         CsvSchema.Builder builder = CsvSchema.builder();
         Set<String> consumed = new HashSet<>();
@@ -128,6 +132,26 @@ public class RosettaCsvMapper extends CsvMapper  {
                                 headerLabel, attribute));
             }
             builder.addColumn(attribute);
+        }
+        return builder.build().withSkipFirstDataRow(true);
+    }
+
+    /**
+     * Binds columns by position against the type's canonical schema order rather than by
+     * label name. Used only when duplicate labels make name-based binding impossible.
+     * Requires the header column count to match the schema so that a structurally unexpected
+     * file (e.g. reordered or truncated) fails fast rather than silently mis-mapping columns.
+     */
+    private CsvSchema buildPositionalReadSchema(Class<?> valueType, CsvSchema schema, List<String> headerLabels) {
+        if (headerLabels.size() != schema.size()) {
+            throw new IllegalStateException(
+                    String.format("Ambiguous labels force positional binding for %s, but the header has "
+                                    + "%d column(s) while the type has %d: cannot safely map columns by position",
+                            valueType.getName(), headerLabels.size(), schema.size()));
+        }
+        CsvSchema.Builder builder = CsvSchema.builder();
+        for (CsvSchema.Column column : schema) {
+            builder.addColumn(column.getName());
         }
         return builder.build().withSkipFirstDataRow(true);
     }

@@ -21,6 +21,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
  */
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
 import com.rosetta.model.lib.functions.LabelProvider;
 import csv.test.user.User;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests for {@link RosettaCsvMapper} label-header behaviour (tests #1–5 from the plan).
@@ -180,5 +182,125 @@ public class RosettaCsvMapperLabelledTest {
         String expected = "Name,ID,Name,\"User Name\"\n"
                 + "Alice,id-001,Smith,asmith\n";
         assertEquals(expected, csv);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test #6 — Round-trip, all columns labelled
+    // ---------------------------------------------------------------------------
+
+    /**
+     * A CSV written with a fully-labelled provider must read back into an equal
+     * {@link User} using that same provider.
+     */
+    @Test
+    void shouldRoundTripWhenAllColumnsAreLabelled() throws JsonProcessingException {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("firstName",  "First Name");
+        labels.put("identifier", "ID");
+        labels.put("lastName",   "Last Name");
+        labels.put("username",   "User Name");
+        LabelProvider provider = mapProvider(labels);
+
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
+        User original = buildUser();
+        String csv = mapper.writeValueAsString(original);
+
+        User roundTripped = mapper.readValue(csv, User.class);
+        assertEquals(original, roundTripped);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test #7 — Round-trip, only some columns labelled (mixed fallback)
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Columns without a label fall back to the attribute name for both the header
+     * written and the header expected on read, so mixed labelling still round-trips.
+     */
+    @Test
+    void shouldRoundTripWhenOnlySomeColumnsAreLabelled() throws JsonProcessingException {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("firstName", "First Name");
+        labels.put("lastName",  "Last Name");
+        LabelProvider provider = mapProvider(labels);
+
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
+        User original = buildUser();
+        String csv = mapper.writeValueAsString(original);
+
+        User roundTripped = mapper.readValue(csv, User.class);
+        assertEquals(original, roundTripped);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test #8 — Header columns reordered
+    // ---------------------------------------------------------------------------
+
+    /**
+     * The reader must bind by column name (translated from label to attribute),
+     * not by position, so a hand-written CSV whose columns are in a different order
+     * to the type's schema order must still map values to the correct attributes.
+     */
+    @Test
+    void shouldMapValuesCorrectlyWhenHeaderColumnsAreReordered() throws JsonProcessingException {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("firstName",  "First Name");
+        labels.put("identifier", "ID");
+        labels.put("lastName",   "Last Name");
+        labels.put("username",   "User Name");
+        LabelProvider provider = mapProvider(labels);
+
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
+
+        // Schema order is firstName, identifier, lastName, username; here we deliberately
+        // reorder to: username, lastName, firstName, identifier.
+        String csv = "\"User Name\",\"Last Name\",\"First Name\",ID\n"
+                + "asmith,Smith,Alice,id-001\n";
+
+        User result = mapper.readValue(csv, User.class);
+        assertEquals(buildUser(), result);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test #9 — Duplicate labels on read → throws
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Unlike serialisation (test #5, which happily emits duplicate header text),
+     * deserialisation cannot disambiguate two attributes sharing the same label, so
+     * it must throw rather than silently mis-mapping a column.
+     */
+    @Test
+    void shouldThrowWhenTwoColumnsShareTheSameLabelOnRead() {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("firstName",  "Name");
+        labels.put("identifier", "ID");
+        labels.put("lastName",   "Name");   // duplicate label
+        labels.put("username",   "User Name");
+        LabelProvider provider = mapProvider(labels);
+
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
+        String csv = "Name,ID,Name,\"User Name\"\n"
+                + "Alice,id-001,Smith,asmith\n";
+
+        assertThrows(IllegalStateException.class, () -> mapper.readValue(csv, User.class));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test #10 — Regression: plain (no provider) read still works
+    // ---------------------------------------------------------------------------
+
+    /**
+     * With no {@link LabelProvider}, deserialisation must continue to work exactly as
+     * before: header row holds attribute names, columns bound by name.
+     */
+    @Test
+    void shouldDeserialisePlainCsvWhenNoProviderIsSupplied() throws JsonMappingException {
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+        String csv = "firstName,identifier,lastName,username\n"
+                + "Alice,id-001,Smith,asmith\n";
+
+        User result = mapper.readValue(csv, User.class);
+        assertEquals(buildUser(), result);
     }
 }

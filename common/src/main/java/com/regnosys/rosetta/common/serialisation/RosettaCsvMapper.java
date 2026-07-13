@@ -32,6 +32,8 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.path.RosettaPath;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -45,6 +47,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class RosettaCsvMapper extends CsvMapper  {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RosettaCsvMapper.class);
+
     private final CsvSchema defaultSchema;
     private final LabelProvider labelProvider;
 
@@ -101,6 +105,8 @@ public class RosettaCsvMapper extends CsvMapper  {
         CsvSchema schema = schemaFor(valueType);
         Map<String, String> labelToAttribute = new HashMap<>();
         boolean ambiguousLabels = false;
+        String duplicateLabel = null;
+        String duplicateAttribute = null;
         for (CsvSchema.Column column : schema) {
             String attribute = column.getName();
             String label = labelProvider.getLabel(RosettaPath.valueOf(attribute));
@@ -111,9 +117,14 @@ public class RosettaCsvMapper extends CsvMapper  {
                 // single attribute. Fall back to positional binding against the canonical
                 // schema order, which is the order the writer always emits columns in.
                 ambiguousLabels = true;
+                duplicateLabel = key;
+                duplicateAttribute = attribute;
             }
         }
         if (ambiguousLabels) {
+            LOGGER.warn("Ambiguous CSV label '{}' is shared by attribute '{}' and at least one other attribute of {}; "
+                            + "falling back to positional binding instead of label-based binding.",
+                    duplicateLabel, duplicateAttribute, valueType.getName());
             return buildPositionalReadSchema(valueType, schema, headerLabels);
         }
         CsvSchema.Builder builder = CsvSchema.builder();

@@ -1,0 +1,487 @@
+# StAX Migration — Progress Report
+
+Unified progress log for all steps of the StAX binder migration
+(`xml-mapper-stax-migration-plan.md`). Living document — updated as sub-steps complete.
+
+> **For agents updating this report:** Add each step's section in ascending order
+> (Step 0 first, Step 6 last). When a step completes, update its status row and
+> add implementation notes immediately below it — do not move completed sections
+> to the top. Keep the `## Step N` headings so the document stays scannable top-to-bottom.
+
+Legend: ✅ done · 🔄 in progress · ⬜ not started
+
+---
+
+## Step 0 — Spike & boundary proof — ✅ COMPLETE (2026-06-20)
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 0.1 | Pin Woodstox as direct dep | Sonnet sub-agent | ✅ |
+| 0.2 | Throwaway StAX read/write spike (one simple type) | Sonnet sub-agent | ✅ |
+| 0.3 | Boundary proof: collision + namespace + document order | Opus (main) | ✅ |
+| 0.4 | Eyeball generated config for completeness vs criteria 1–12 | Opus (main) | ✅ |
+| 0.5 | Harvest named production types as acceptance fixtures | Opus (main) | ✅ |
+
+**Step 0 exit status: COMPLETE.** Spike proves read+write+collision for one type; the two
+hardest issues (namespace, order) proven at parser level; production fixtures captured;
+config-completeness note written below. No findings block Step 1.
+
+### Step 0.1 — Pin Woodstox ✅
+
+- Parent `pom.xml`: added `woodstox.version=6.6.2`, `stax2-api.version=4.2.2` to
+  `<properties>`; added `dependencyManagement` entries for
+  `com.fasterxml.woodstox:woodstox-core` and `org.codehaus.woodstox:stax2-api`.
+- `common/pom.xml`: added direct version-less `woodstox-core` dependency. `stax2-api`
+  arrives transitively.
+- Verified: `mvn -pl common dependency:tree | grep -i woodstox` →
+  `woodstox-core:6.6.2`, `stax2-api:4.2.2` as direct/managed deps.
+
+### Step 0.2 — StAX spike ✅
+
+- New: `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/spike/StaxBinderSpikeTest.java`
+- 3 JUnit5 tests, raw `javax.xml.stream` (no Jackson), all pass:
+  `timeContainerRoundTrip`, `measureRoundTrip`, `attributeDistinction`.
+- Verified: `mvn test -pl common -Dtest=StaxBinderSpikeTest` → `Tests run: 3, Failures: 0`;
+  checkstyle clean.
+
+#### Carry-forward notes from the spike
+- **Enum form:** `.rosetta` uses `displayName` (`"Meter"`, `"Kilogram"`). Confirm whether the
+  XML config serializes display names vs enum `name()` (criterion 8).
+- **`getElementText()` footgun:** advances cursor past `END_ELEMENT`; reader loop must not call
+  `next()` again or it skips the next sibling.
+- **Attr/element decision** is clean at the StAX API level; the real work is the config layer
+  (`AttributeXMLConfiguration`/`TypeXMLConfiguration`), reused as-is.
+- **Meta-headers** (`@type`/`@model`/`@version`) need attribute-style handling for polymorphic roots.
+
+### Step 0.3 — Boundary proof ✅
+
+Added 3 boundary-proof tests to the spike (`StaxBinderSpikeTest`), all pass —
+`mvn test -pl common -Dtest=StaxBinderSpikeTest` → **Tests run: 6, Failures: 0**:
+
+1. `collisionSameLocalNameAttributeAndElement` — feeds raw
+   `<RepoTransactionLeg id="ATTR_ID"><id>ELEM_ID</id></RepoTransactionLeg>`; reads attribute
+   `id` via `getAttributeValue(null,"id")` and element `id` via `getElementText()`, asserting
+   both survive **distinctly** (`assertNotEquals`). **This is the bug being fixed (issue 1 /
+   criterion 13) and the whole justification for the migration — proven clean at parser level.**
+2. `namespaceUriIsSurfacedPerElement` — two `commodityOption` elements in different namespaces;
+   `getNamespaceURI()` returns each element's real namespace in order (issue 6). Confirms StAX
+   feeds the already-namespace-aware `SubstitutionMap` natively — no `RoutingInput.UNKNOWN`
+   fallback. (Spike uses synthetic namespace URIs purely to exercise the mechanism.)
+3. `documentOrderPreservedForInterleavedRepeats` — `<a/><b/><a/><b/>` reads back in exact
+   document order, not collapsed into a map (issues 2/5; required by the matcher's SEQUENCE
+   handling).
+
+**Friction:** project compiles to **Java 8 bytecode**, so `List.of(...)` is unavailable — used
+`Arrays.asList(...)`. (Same constraint applies to all Step 1 code.) Checkstyle clean.
+
+**Verdict: the two hardest issues and the collision are de-risked. No reason to stop —
+Step 1 is viable.**
+
+### Step 0.4 — Config completeness review ✅
+
+Reviewed the **real production configs** (no regeneration needed — they already exist), in
+`rosetta-models/bnpp/rosetta-source/src/main/resources/xml-config/`:
+- `fpml-5-13-confirmation-xml-config.json` — **7,756 lines** (largest available; FpML 5.13)
+- `fiml-5-4-xml-config.json` — **7,092 lines** (the BNPP FiML config the plan names)
+
+#### Field coverage (occurrences — FpML / FiML)
+
+| Config field | FpML | FiML | Covers criterion | Verdict |
+|---|---|---|---|---|
+| `xmlRepresentation` (ATTRIBUTE/ELEMENT/VALUE/VIRTUAL) | 857 | 835 | 5, 7 | ✅ present, pervasive |
+| `xmlElementName` + `xmlElementFullyQualifiedName` (name **+ namespace**) | 292 | 220 | 1, 6, 10 | ✅ namespaces carried per element |
+| `abstract` | 292 | — | type inference | ✅ |
+| `substitutionGroup` | 174 | 146 | 3 | ✅ |
+| `xmlAttributes` (constant attrs incl. schemaLocation/prefixes) | 122 | 78 | 6 | ✅ |
+| `xmlName` (per-attribute name override) | 96 | 98 | 7 | ✅ |
+| `namespace` | 24 | 24 | 6 | ✅ type/prefix-level only |
+| `enumValues` | 4 | 8 | 8 | ⚠️ present but sparse |
+| **`contentModel`** | **2** | **2** | 4 | ⚠️ **only conflicting types** |
+
+#### Key findings
+- **The Step 1/2 split assumption is empirically confirmed.** `contentModel` is emitted for
+  exactly **2 types per config**: FiML → `tradeIdentifier`, `fxTargetKnockoutForward`; FpML →
+  `fxTargetKnockoutForward` (+ 1). Everything else carries no content model, so the Step 1
+  binder must take structure from bean declaration order (as the plan's design constraint
+  states). Notably `tradeIdentifier` is itself the issue-3 fixture.
+- **Namespaces for *elements* are fully present** (`xmlElementFullyQualifiedName`), so criterion
+  6 (the namespace-aware substitution path) needs **no config change** — confirms the plan.
+- Criteria **1, 3, 5–11** are expressible from the existing config. Criterion 4 disambiguation
+  is only as complete as the 2 content models (fine for Step 1's scope).
+
+#### Genuine gaps → Step 2 inputs (NOT Step 1 blockers)
+- **Content models only for conflicting types** → full config-driven structure = **Section 2-A**
+  (and the latent issue 2 / issue-3 cardinality clash).
+- **No attribute-level namespace field** (the 24 `namespace` entries are type/prefix-level, not
+  per-attribute) → **Section 2-B**.
+- **No `default` / `fixed` / `nillable`** fields anywhere → **Section 2-C**.
+- `enumValues` is sparse — verify XML enum mapping uses `displayName` vs enum `name()` during
+  Step 2 (carry-forward from sub-step 2).
+
+### Step 0.5 — Harvest production fixtures ✅
+
+All located in **`rosetta-models/bnpp/`** (the BNPP repo under the working dirs). Type
+definitions live under `rosetta-source/src/main/rosetta/`:
+
+| Fixture | Criterion / issue | Location | Notes |
+|---|---|---|---|
+| `RepoTransactionLeg` | 13 / issue 1 | `fiml-repo-type.rosetta:573` | element `id RepoLegId (0..*)`; the colliding attribute `id` is the meta/key id attribute |
+| `Transfer` / `SecurityTransfer` | 13 / issue 1 | `fiml-repo-type.rosetta:622` (`SecurityTransfer`); `regulation-sec-rewrite-trade-type.rosetta` | same attr+element `id` pattern |
+| `TradeIdentifier` | 14 / issue 3 (routing) | `consolidated-fimlextension-type.rosetta:219` (extends `fpml.consolidated.doc.TradeIdentifier`) | has `tradeId`; **carries a `contentModel` in the FiML config** |
+| `CommodityEuropeanExercise` | issue 3 cardinality (Section 2-A) | `consolidated-com-type.rosetta:2928` | `expirationDate AdjustableOrRelativeDate (0..*)` — the unbounded-across-layers case |
+| `TradeUnderlyer2` | 15 / issue 5 | `consolidated-generic-type.rosetta` (used at `consolidated-reg-fpmlreporting-product-type.rosetta:298`) | `referenceEntity` collision with `underlyingAsset` substitute |
+| `environmentalPhysicalLeg` / `commoditySwapLeg` | 16 / issue 6 | `mapping-fpml-contribution-synonym.rosetta`; `consolidated-com-type.rosetta` | namespace-aware substitution |
+| `commodityOption` | 16 / issue 6 | `consolidated-com-type.rosetta` | FiML variant shadows FpML's |
+
+#### Sample document (criterion 16 round-trip)
+`rosetta-source/src/main/resources/ingest/input/bnpp-transactions-commodities-emissions-citadel/`
+`fiml-emissions-forward-ukallowance-new-schema.xml` (216 lines).
+- Root `<FiML>`; default ns `http://www.bnpparibas.com/2012/FiML-5`, also pulls in FpML
+  `http://www.fpml.org/FpML-5/recordkeeping` in nested scope — exactly the mixed-namespace case.
+- Contains `<fiml:environmentalPhysicalLeg>` (×1) **and** `<fiml:schedule>` (×1) — the property
+  the issue-6 workaround loses today. This is the primary criterion-16 fixture.
+- `commodityOption`/`commoditySwapLeg` are **not** in this particular sample; the sibling
+  `fiml-emissions-forward-euallowance-new-schema.xml` and `fiml-trade-*-Environmental-Emissions-EUAE.xml`
+  in the same dir are candidates for those.
+- Sibling configs `fpml-5-13-confirmation` / `fpml-5-13-recordkeeping` xml-config.json sit
+  alongside the FiML config for the FpML-typed fixtures.
+
+**Note:** these are production types in a separate repo, not yet test fixtures in `rune-common`.
+Step 6 (regression tests for criteria 13–17) will need to copy minimal cut-downs of
+these `.xml` samples + the relevant generated types into `common/src/test/resources/`.
+
+---
+
+## Step 1 — Introspection layer — ✅ COMPLETE (2026-06-21)
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 1.1 | `AttributeBinding` value class | Sonnet (main) | ✅ |
+| 1.2 | `TypeBinding` value class | Sonnet (main) | ✅ |
+| 1.3 | `RuneTypeIntrospector.introspect()` | Sonnet (main) | ✅ |
+| 1.4 | `RuneTypeIntrospectorTest` (10 cases) | Sonnet (main) | ✅ |
+
+**Step 1 exit status: COMPLETE.** All 10 tests pass; checkstyle clean; full build clean.
+
+### Step 1.1–1.3 — Production files
+
+All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/introspect/`:
+
+| File | Role |
+|---|---|
+| `AttributeBinding.java` | Immutable value: one attribute's XML binding plan (logical name, getter, setter/adder, cardinality, value type, XML name, representation, element ref) |
+| `TypeBinding.java` | Immutable value: one type's complete XML binding plan (type + builder refs, attribute list, XML element name, namespace, constant attrs, content model, abstract flag) |
+| `RuneTypeIntrospector.java` | Main class: `introspect(Class<?>, RosettaXMLConfiguration) → TypeBinding` |
+
+### Step 1.4 — Test file
+
+`common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/introspect/RuneTypeIntrospectorTest.java`
+— 10 test cases covering:
+
+| Test | What it covers |
+|---|---|
+| `basicAttributeOrder` | `Document`: attr order, XML name override from config |
+| `measureAttributeOrderAndRepresentation` | `Measure`: VALUE + ATTRIBUTE representations |
+| `multiCardinalityAttribute` | `MulticardinalityContainer`: `@Multi` → adder wired, no setter |
+| `virtualRepresentation` | `Party`: both attrs are VIRTUAL |
+| `inheritanceAttributeOrder` | `DocumentExtension extends Document`: parent attrs first, then child |
+| `getTypeExclusion` | `TypeWithTypeElement`: `getType()` excluded; `_getType()` getter included |
+| `typeLevelXmlMetadata` | `Camel`: `xmlElementName`, FQN-derived namespace |
+| `abstractType` | `Fish`: `isAbstract()` is true |
+| `noConfigDefaults` | `Animal`: no config entry → ELEMENT representation, logical name = XML name |
+| `animalAttributeRepresentation` | `Animal.name`: ATTRIBUTE representation from config |
+
+### Key design decisions
+
+**Builder hierarchy traversal**: Uses `@RuneDataType.builder()` (falling back to `@RosettaDataType`) to get the concrete builder impl class; walks `getSuperclass()` collecting levels whose declaring class is a Rune type (`@RuneDataType` or `@RosettaDataType`). Reverses to root-to-leaf order. This avoids needing to navigate the type interface hierarchy (which `getSuperclass()` cannot traverse for interfaces).
+
+**Attribute declaration order**: `getDeclaredMethods()` does not guarantee source order on Java 9+. `getDeclaredFields()` DOES (JVM spec preserves field order from the class file). We build a field-name → position map per builder level and sort the filtered getters by field position.
+
+**Bridge method exclusion**: Java compiler generates synthetic bridge methods for covariant return-type overrides; these bridge methods carry the same annotations (`@RosettaAttribute`, `@Accessor`) as the real method. Added `m.isBridge()` check as the first guard in `isAttributeGetter`.
+
+**Value-type unwrapping**: Builder getters return `Foo.FooBuilder` (a `RosettaModelObjectBuilder`). When `RosettaModelObjectBuilder.isAssignableFrom(returnType)`, the value type is `returnType.getDeclaringClass()` (i.e., `Foo.class`).
+
+**Multi-cardinality**: `@Multi` on the getter → adder lookup (`add<Name>(ValueType)` via `getMethods()`), no setter; single → setter lookup (`set<Name>(ValueType)`). Setter is found using `isAssignableFrom` so the builder-typed parameter matches the unwrapped value type.
+
+---
+
+## Step 2 — Scalar & value conversion — ✅ COMPLETE (2026-06-24)
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 2.1 | `StaxScalarConverter` production class | Sonnet (main) | ✅ |
+| 2.2 | `StaxScalarConverterTest` (23 cases) | Sonnet (main) | ✅ |
+
+**Step 2 exit status: COMPLETE.** All 23 tests pass; checkstyle clean.
+
+### Step 2.1 — Production file
+
+`common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/convert/StaxScalarConverter.java`
+
+| Scalar type | `toXmlString` | `fromXmlString` |
+|---|---|---|
+| `String` | identity | identity |
+| `BigDecimal` | `toPlainString()` (no sci notation) | `new BigDecimal(text)` |
+| `Integer` / `int` | `toString()` | `Integer.parseInt` |
+| `Boolean` / `boolean` | `toString()` | `Boolean.parseBoolean` |
+| `LocalTime` | `ISO_TIME` + UTC offset (`HH:mm:ssZ`) | strip offset from `OffsetTime`, fallback `LocalTime.parse` |
+| `ZonedDateTime` | `ISO_LOCAL_DATE_TIME` if Unknown zone; else `ISO_ZONED_DATE_TIME` | 5-format cascade (see below) |
+| `Date` (Rune) | `date.toString()` → ISO date | `Date.parse(text)` |
+| `Enum` | config override → `toDisplayString()` → `toString()` | config reverse → `fromDisplayName()` → `toString()` → `name()` |
+
+**ZonedDateTime 5-format cascade (ported verbatim from `RosettaXMLModule`):**
+1. `ISO_ZONED_DATE_TIME` (full, with zone ID)
+2. `ISO_OFFSET_DATE_TIME` → `toZonedDateTime()`
+3. `ISO_LOCAL_DATE_TIME` → `atZone(UNKNOWN_ZONE)`
+4. Date + offset (3 offset patterns: `+01:00`, `+0100`, `+01`)
+5. `ISO_LOCAL_DATE` → midnight `atStartOfDay(UNKNOWN_ZONE)`
+
+**Enum serialization priority:**
+1. Config `enumValues` map keyed by `RosettaEnumValue.value()` (logical enum name, e.g. `"METER"`)
+2. `toDisplayString()` via reflection (generated enums always have this)
+3. `toString()` fallback
+
+**`UnknownZoneProvider` registration:** `static` block registers it once if not already present, exactly as in `RosettaXMLModule`.
+
+### Step 2.2 — Test file
+
+`common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/convert/StaxScalarConverterTest.java`
+— 23 test cases covering all types. Time/ZonedDateTime cases mirror `XmlSerialisationTest.testTime*` / `testZonedDateTime*` exactly:
+
+| Test group | Cases |
+|---|---|
+| String, BigDecimal, Integer, Boolean | round-trip + edge cases |
+| Rune `Date` | `2026-05-09` round-trip |
+| `LocalTime` | serialize, deserialize (no TZ, UTC Z, +02:00 offset) |
+| `ZonedDateTime` | serialize Unknown-zone, + all 5 deserialize formats |
+| `Enum` with config (`UnitEnum`) | serialize + deserialize with config override |
+| `Enum` without config (`SnakeDeadlinessEnum`) | serialize + deserialize via `toDisplayString`/`fromDisplayName` |
+
+---
+
+## Step 3 — Serializer (writer) — ✅ COMPLETE (2026-06-24)
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 3a | `StaxWriter` core + root handling | Sonnet sub-agent | ✅ |
+| 3b | Substitution groups on write | Sonnet sub-agent | ✅ |
+| 3c | VIRTUAL/unwrapped types + full suite green | Sonnet sub-agent | ✅ |
+
+**Step 3 exit status: COMPLETE.** Full `common` module: **262 tests pass, 0 failures, 3 skipped** (pre-existing `@Disabled`). Checkstyle clean across all three sub-steps.
+
+**Deliverables:**
+- `StaxWriter.java` — pure StAX serializer with ELEMENT/ATTRIBUTE/VALUE/VIRTUAL/substitution support
+- `StaxWriterTest.java` (4 tests), `StaxWriterSubstitutionTest.java` (5 tests), `StaxWriterVirtualTest.java` (2 tests)
+
+**Key implementation notes for Step 4:**
+- The writer uses `((RosettaModelObject) obj).getType()` to get the interface class for introspection (immutable impls don't carry `@RuneDataType`).
+- Substitution group resolution: `attr.getElementRef().isPresent()` → look up concrete type's `TypeBinding.getXmlElementName()` via the introspector.
+- VIRTUAL handling uses a `writeChildAttributes` helper that writes children at the parent's depth with no wrapper element — Step 4 will need the mirror-image read logic.
+
+### Step 3a — Basic emission + root handling ✅
+
+**Files created:**
+- `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriter.java` — production StAX serializer
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterTest.java` — 4 tests
+
+**Tests (all pass):** `testDocumentSerialisation`, `testTopLevelExtensionSerialisation`, `testElementNamedTypeSerialisation`, `testTimeSerialisation`.
+
+**Key implementation decisions:**
+
+- **Type resolution:** Immutable impl classes (e.g. `TopLevel.TopLevelImpl`) don't carry `@RuneDataType` — only interfaces do. Fixed by calling `((RosettaModelObject) obj).getType()` to obtain the interface class before calling `introspector.introspect(...)`.
+- **Getter invocation:** `AttributeBinding` getters come from the builder impl class. Serializing immutable impls (which share the same interface) required a try/catch fallback that re-looks up the method by name on the actual object's class.
+- **Pretty-print algorithm:** `boolean[] hasChildElement` array indexed by depth. Before writing a child element at depth `d`, sets `hasChildElement[d] = true`. Before writing `</tag>`, checks `hasChildElement[depth]` to decide whether to emit `\n` + indent. A trailing `\n` is appended after the root element to match fixture files.
+- **Namespace handling:** Constant `xmlAttributes` entries with key `"xmlns"` → `writeDefaultNamespace()`; `"xmlns:prefix"` → `writeNamespace(prefix, uri)` + record in local `prefixToNs` map. Extra root attrs with colon (e.g. `"xsi:schemaLocation"`) → look up namespace from `prefixToNs`, call `writeAttribute(namespaceUri, localName, value)`. Woodstox emits the registered prefix automatically.
+- **VIRTUAL attributes:** Skipped (placeholder) — handled in 3c.
+- All 4 test fixtures matched byte-for-byte on first run.
+
+### Step 3b — Substitution groups on write ✅
+
+**Files modified/created:**
+- `StaxWriter.java` — added `resolveElementName(AttributeBinding, Object)` helper; applied in both single and multi-cardinality ELEMENT branches for `isRosettaModelObject()` values
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterSubstitutionTest.java` — 5 tests
+
+**Tests (all pass):** `testSubstitutionGroupSerialisation`, `testMultiCardinalitySubstitutionGroupSerialisation`, `testSubstitutionGroupLegacyV2Serialisation`, `testMultiCardinalitySubstitutionGroupLegacyV2Serialisation`, `testSubstitutionGroupLegacyV1Serialisation`.
+
+**Key implementation decisions:**
+
+- `resolveElementName(attr, value)` checks `attr.getElementRef().isPresent()` and `value instanceof RosettaModelObject`. If both true, calls `introspector.introspect(((RosettaModelObject) value).getType(), config).getXmlElementName()` to get the substituted element name. Otherwise returns `attr.getXmlName()`.
+- `AttributeBinding.getElementRef()` already handles legacy V1/V2 config formats via the fallback to `getSubstitutionGroup()` in `RuneTypeIntrospector` — no extra logic needed in the writer for legacy.
+- Legacy configs are built in the test class using the same transformation logic as `XmlSerialisationTest.getLegacyV1/V2RosettaXMLConfiguration()`.
+- All 5 fixtures matched byte-for-byte on first run; 0 regressions in `StaxWriterTest`.
+
+### Step 3c — VIRTUAL/unwrapped types + full suite green ✅
+
+**Files modified/created:**
+- `StaxWriter.java` — added step 6 in `writeObject` for VIRTUAL representation; added `writeChildAttributes(virtualValue, virtualTypeBinding, writer, depth, prettyPrint, hasChildElement)` helper (~85 lines)
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/write/StaxWriterVirtualTest.java` — 2 tests
+
+**Tests (all pass):** `testVirtualAttributes`, `testMultiCardinalitySerialisation`.
+
+**Key implementation decisions:**
+
+- `writeChildAttributes` accepts the parent's `depth` and `hasChildElement[]` array. No depth change occurs (no element is started for VIRTUAL), so all children are written at `depth+1` from the parent's perspective, and `hasChildElement[depth]` is set to `true` when any child element is written — ensuring the parent's closing tag gets its `\n` + indent.
+- VIRTUAL recursion: `writeChildAttributes` handles `VIRTUAL` attributes by calling itself recursively at the same `depth`, supporting arbitrarily nested VIRTUAL wrappers.
+- Loop separation: main `writeObject` processes ATTRIBUTE/VALUE/ELEMENT first; VIRTUAL last (step 6). `writeChildAttributes` uses a single switch over all four representations.
+- Multi-cardinality inside VIRTUAL (e.g. `partyId` list inside `PartyModel` VIRTUAL): handled by the `ELEMENT + isMulti()` branch of `writeChildAttributes`.
+- Both fixtures matched byte-for-byte on first run.
+
+---
+
+## Step 4 — Deserializer (reader) — 🔄 IN PROGRESS
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 4a | `StaxReader` core + root inference + VIRTUAL + pruning | Sonnet (main) | ✅ |
+| 4b | Substitution groups + polymorphism on read | Sonnet (main) | ✅ |
+| 4c | Content-model disambiguation | — | ⬜ |
+| 4d | Multi-cardinality accumulation + full suite green | — | ⬜ |
+
+### Step 4a — Basic stream → builder + attribute/element collision fix ✅ (2026-06-28)
+
+**Files created:**
+- `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/StaxReader.java` — production StAX deserialiser
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/StaxReaderTest.java` — 18 tests
+
+**Tests (all pass):**
+`testDocumentDeserialisation`, `testTopLevelExtensionDeserialisation`, `testPrunesEmptyNestedObject`,
+`testDateAttribute`, `testMeasureValueAndAttribute`, `testTimeDeserialisation`,
+`testTimeDeserialisationWithoutTimezone`, `testTimeDeserialisationWithTimeOffset`,
+`testZonedDateTimeWithUnknownTimezone`, `testZonedDateTimeWithUnknownTimeAndUnknownTimezone`,
+`testZonedDateTimeWithUnknownTimeAndZuluTimezone`,
+`testZonedDateTimeWithUnknownTimeAndStandardOffsetTimezone`,
+`testZonedDateTimeWithUnknownTimeAndCompactOffsetTimezone`,
+`testZonedDateTimeWithUnknownTimeAndShortOffsetTimezone`,
+`testElementNamedTypeDeserialisation`, `testMultiCardinalityDeserialisation`,
+`testVirtualAttributeDeserialisation`, `testAttributeAndElementSameLocalNameAreDistinct`
+
+**Full module: 280 tests pass, 0 failures, 3 skipped.**
+
+**Key implementation decisions:**
+
+- **Attribute/element distinction (criterion 13 fix):** XML attributes are read from
+  the START_ELEMENT token via `reader.getAttributeCount()` / `getAttributeValue()`.
+  Child elements are routed in the child-event loop (START_ELEMENT events). The two paths
+  never collide — different StAX APIs.
+- **Root-element type inference:** `inferTypeFromRootElement` scans `config.getTypeConfigMap()`
+  for types whose `xmlElementName` matches the root local name, then checks
+  `hintType.isAssignableFrom(candidate)` — ports `RosettaXmlMapper.getTypeFromRootElementName`.
+- **Scalar types at root level:** detected via `isScalarType` (no `@RuneDataType`/
+  `@RosettaDataType`); read via `getElementText()` + converter (handles `ZonedDateTime`).
+- **VIRTUAL (one level deep):** child elements not matched by direct ELEMENT bindings are
+  searched in VIRTUAL types' bindings. Virtual builders are created lazily via
+  `getOrCreateVirtualBuilder`; applied after the child-event loop via
+  `((RosettaModelObjectBuilder) vBuilder).build()` + parent setter.
+- **Post-deserialisation pruning:** `pruneObject` calls `toBuilder().prune().build()`,
+  porting `RosettaXmlMapper.pruneObject`.
+- **`getElementText()` footgun:** after the call the reader is on END_ELEMENT of the
+  element; the outer loop's `reader.next()` advances past it correctly. `readObject`
+  has the same contract — returns on END_ELEMENT.
+- **Builder instantiation:** `binding.getBuilderType().getDeclaredConstructor().newInstance()`
+  (inner classes of interfaces are implicitly static; no enclosing-instance needed).
+- **Builder invocation:** `((RosettaModelObjectBuilder) builder).build()` — avoids
+  reflection method lookup; all generated builders implement `RosettaModelObjectBuilder`.
+- Java 8 compatible: no `List.of`, no `var`.
+
+**Not yet covered (Step 4b):** substitution groups, `@type`-driven polymorphism.
+**Not yet covered (Step 4c):** content-model disambiguation.
+**Not yet covered (Step 4d):** repeated unwrapped groups (issue 7).
+
+### Step 4b — Substitution groups + polymorphism on read ✅ (2026-07-01)
+
+**Files created:**
+- `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/SubstitutionResolver.java`
+- `common/src/test/java/com/regnosys/rosetta/common/serialisation/xml/stax/read/StaxReaderSubstitutionTest.java` — 7 tests
+
+**Files modified:**
+- `StaxReader.java` — `handleChildElement` now delegates to a new `resolveElementMatch` helper
+  that returns an `ElementMatch(AttributeBinding, Class<?> concreteType)` pair; `applyChildElement`
+  takes the resolved `concreteType` instead of always using `attr.getValueType()`.
+
+**Tests (all pass):** `testSubstitutionGroupDeserialisation`,
+`testMultiCardinalitySubstitutionGroupDeserialisation`,
+`testMultiCardinalitySubstitutionGroupLegacyV2Deserialisation`, `testPolymorphicDeserialisation`,
+`testPolymorphicReplacementDeserialisation`,
+`testPolymorphicReplacementDeserialisationThroughVirtualWrapper`,
+`testNamespaceAwareSubstitutionResolvesLocalNameCollision`.
+
+**Full module: 287 tests pass, 0 failures, 3 skipped.** Checkstyle clean.
+
+**Key design: `SubstitutionResolver` is the read-side mirror of the Jackson-era mechanism.**
+`RosettaXMLAnnotationIntrospector#findSubstitutionMap` built a Jackson `SubstitutionMap` keyed
+by `JavaType`, consulted at deserialize time via `SubstitutedMethodProperty.getActualType()`
+reaching into `FromXmlParser.getStaxReader().getName()` — a documented Jackson-era back door
+into the StAX namespace the JSON-shaped property model had already discarded. `SubstitutionResolver`
+builds the equivalent index directly from `RosettaXMLConfiguration` (no Jackson dependency) and
+resolves plain `Class<?>` candidates, since the StAX reader already has the real namespace state
+natively — no back door needed.
+
+**Resolution order (mirrors `SubstitutedMethodProperty` exactly):**
+1. Exact match on `(namespace URI, local name)` — the namespace-aware path (issue 6 / criterion 16).
+2. Local-name-only fallback (single unambiguous candidate, or legacy configs with no namespace).
+
+**Group-membership algorithm (mirrors `RosettaXMLAnnotationIntrospector.buildSubstitutionLogicIndexes`
++ `populateSubstitutionMapFor*`):**
+- `elementIndex`: `Map<String fqn, ModelSymbolId>` — catches the case where the group head element
+  itself is concrete.
+- `substitutionGroupIndex`: `Map<String group, List<ModelSymbolId>>` — direct members.
+- Transitive walk: each member's own `xmlElementFullyQualifiedName` becomes the next group key,
+  so multi-level chains resolve (`fish` substitutes `animal`; `shark`/`salmon` substitute `fish`).
+  Abstract types (e.g. `fish`) are excluded from the final candidate list but still relay the walk.
+- Legacy V1 `substitutionFor` (deprecated direct `ModelSymbolId` back-reference) is also consulted,
+  keyed off the attribute's statically declared head type (e.g. `Animal.class`), mirroring
+  `lookupLegacySubstitutionsForType`.
+
+**`StaxReader` integration:**
+- `resolveElementMatch(childLocalName, childNamespaceURI, binding)` is the single chokepoint for
+  child-element routing. It checks direct (non-`elementRef`) ELEMENT bindings first (by local
+  name only — the config has no per-attribute namespace for direct elements, a Section 2-B gap),
+  then `elementRef` bindings second, resolving the polymorphic concrete type via
+  `SubstitutionResolver`.
+- Used both for the root type's own bindings and (already-existing) one-level-deep VIRTUAL
+  bindings, so substitution inside a VIRTUAL wrapper (e.g. `WrappedAnimalContainerModel.animal`)
+  works with no extra code.
+- `applyChildElement` now takes the resolved `concreteType` and recurses via
+  `readObject(reader, concreteType)` for `RosettaModelObject` values — this is what makes
+  `@type`-driven polymorphism work (e.g. `<snake>` resolves to `com.rosetta.test.Snake`,
+  `<ext:snake>` resolves to `com.rosetta.extension.test.Snake`, purely from element name +
+  namespace, no `@type` XML attribute needed — verified no such attribute mechanism exists
+  in the codebase; the plan's "`@type`-driven polymorphism" bullet refers to this
+  element-name-driven resolution, matching the `testPolymorphic*` test names it was written for).
+
+**Test fixtures — all synthetic, no BNPP repo dependency:**
+- Substitution round-trip: `AnimalContainer`/`Zoo` reading `expected/substitution-group.xml`,
+  `expected/substitution-group-multi.xml` (goat/cow/shark/salmon — exercises the full transitive
+  `fish` chain) and `expected/substitution-group-multi-legacy.xml` against a legacy V2 config
+  (goat/cow only — the V2 chain-break is a faithful port of the Jackson-era limitation, not
+  a regression: confirmed by comparing against the pre-existing write-side V2 test fixture).
+- Polymorphism + criterion 16: reuses the *existing* Jackson-test input fixtures
+  `input/polymorphic.xml`, `input/polymorphic-replacement.xml`,
+  `input/polymorphic-replacement-token-buffer-parser.xml`,
+  `input/polymorphic-replacement-ambiguous-choice.xml`. The last one is the key criterion-16
+  proof: `com.rosetta.test.Camel` (`urn:my.schema/camel`) and `com.rosetta.extension.test.Camel`
+  (`urn:my.extension/camel`) both substitute the same group with the same local name `camel` —
+  exactly the issue-6 shape (FiML vs FpML `commodityOption`) — and the exact-namespace-match
+  correctly resolves `<ext:camel>` to the extension type, not "first wins".
+
+**Criterion 15 boundary (documented, not a bug):** the acceptance criterion's specific shape —
+a *direct* element and a *substitution* candidate sharing the *same* local name in one type
+(`TradeUnderlyer2.referenceEntity`) — needs content-model position to disambiguate when the
+config carries no per-attribute namespace for the direct side. That is Step 4c's job; this step
+delivers the substitution-resolution half of issue 5 (correct routing when names don't collide,
+and correct namespace-based routing when they do and namespace is known on the substitution
+side). Full closure + a real `TradeUnderlyer2` regression test lands in Step 6.
+
+**Carry-forward for Step 4c:** `resolveElementMatch` in `StaxReader` is the intended integration
+point — content-model routing should slot in as an additional resolution phase without changing
+`handleChildElement`/`applyChildElement`'s call shape (`ElementMatch(AttributeBinding, Class<?>)`).
+
+### Step 4c — Content-model disambiguation ⬜
+
+### Step 4d — Multi-cardinality accumulation + full suite green ⬜
+
+---
+
+## Step 5 — Wire into the public entry point — ⬜ NOT STARTED
+
+## Step 6 — Full test pass, performance, cleanup — ⬜ NOT STARTED

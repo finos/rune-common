@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -277,8 +278,8 @@ class RosettaSerialisationTest {
     void overriddenAttributesOrderIsPreserved() throws IOException {
         ObjectMapper mapper = RosettaObjectMapper.getNewRosettaObjectMapper();
         Path path = Paths.get("src/test/java/com/regnosys/rosetta/common/serialisation/json/ordering/ordering.rosetta");
-        String rosetta = new String(Files.readAllBytes(path));
-        String foo2 =  new String(Files.readAllBytes(Paths.get("src/test/java/com/regnosys/rosetta/common/serialisation/json/ordering/ordering-foo2.json")));
+        String rosetta = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        String foo2 = new String(Files.readAllBytes(Paths.get("src/test/java/com/regnosys/rosetta/common/serialisation/json/ordering/ordering-foo2.json")), StandardCharsets.UTF_8);
 
         assertSerialisationRoundTrip(rosetta, mapper, foo2, "serialization.test.passing.ordering.Root");
     }

@@ -27,13 +27,14 @@ import com.rosetta.model.lib.RosettaModelObject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 public class ResourceUtils {
 
     public static String readAsString(Path jsonPath) {
         try {
-            return new String(Files.readAllBytes(jsonPath));
+            return new String(Files.readAllBytes(jsonPath), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

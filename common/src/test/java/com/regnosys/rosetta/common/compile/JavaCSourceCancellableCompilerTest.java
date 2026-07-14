@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import javax.tools.JavaCompiler;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -162,7 +163,12 @@ class JavaCSourceCancellableCompilerTest {
         ArrayList<Path> javaSourcePaths = new ArrayList<>();
         ClassLoader classLoader = getClass().getClassLoader();
         for (String javaFile : javaFiles) {
-            File file = new File(Objects.requireNonNull(classLoader.getResource(String.format("%s/%s", TEST_RESOURCES, javaFile))).getFile());
+            File file;
+            try {
+                file = new File(Objects.requireNonNull(classLoader.getResource(String.format("%s/%s", TEST_RESOURCES, javaFile))).toURI());
+            } catch (URISyntaxException e) {
+                throw new IOException(e);
+            }
             Path target = input.resolve(javaFile);
             Files.copy(file.toPath(), target);
             javaSourcePaths.add(target);

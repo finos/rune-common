@@ -44,6 +44,7 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -102,7 +103,7 @@ public class RuneSerializerTestHelper {
 
     public static String readAsString(Path jsonPath) {
         try {
-            return new String(Files.readAllBytes(jsonPath));
+            return new String(Files.readAllBytes(jsonPath), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

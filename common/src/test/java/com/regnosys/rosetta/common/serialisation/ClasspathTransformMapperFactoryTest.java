@@ -173,4 +173,20 @@ class ClasspathTransformMapperFactoryTest {
                         ClasspathTransformMapperFactoryTest.class));
         assertTrue(e.getMessage().contains("does/not/exist.json"));
     }
+
+    @Test
+    void functionLessRequestsResolveAgainstTheOverriddenDefaultClassLoader() {
+        // A runtime owning the model classloader overrides defaultClassLoader() so that requests
+        // without a resolvable function class (e.g. a legacy pipeline definition) still resolve
+        // the XML config against the model rather than the application classpath.
+        ClassLoader modelClassLoader = ClasspathTransformMapperFactoryTest.class.getClassLoader();
+        ClasspathTransformMapperFactory modelOwned = new ClasspathTransformMapperFactory() {
+            @Override
+            protected ClassLoader defaultClassLoader() {
+                return modelClassLoader;
+            }
+        };
+        ObjectMapper mapper = modelOwned.create(new TransformSerialization(SerializationFormat.XML, XML_CONFIG), null);
+        assertInstanceOf(XmlMapper.class, mapper);
+    }
 }

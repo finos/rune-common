@@ -44,11 +44,10 @@ import java.util.Objects;
  * Suitable as-is wherever the model lives on the application classpath — tests, model builds, the
  * pipeline test-pack runner. Runtimes that load models in isolated, disposable classloaders should
  * <b>extend</b> this class rather than reimplement the per-format construction: the classloader-specific
- * concerns are isolated in two protected hooks — {@link #classLoader(Class)} (which loader resolves the
- * model types) and {@link #openXmlConfig(String, Class)} (where the XML config is looked up) — and
- * caching can be added by overriding {@link #create(TransformSerialization, Class)} to memoize around
- * {@code super.create(...)}. Everything else (which mapper implements which format, the
- * {@code CSV_LABELLED} label resolution) is inherited.
+ * concerns are isolated in protected hooks — {@link #defaultClassLoader()} (the model loader to use when
+ * no function class is resolvable) and {@link #openXmlConfig(String, Class)} (where the XML config is
+ * looked up) — and caching comes from wrapping in a {@link CachingTransformMapperFactory}. Everything
+ * else (which mapper implements which format, the {@code CSV_LABELLED} label resolution) is inherited.
  * <p>
  * For the {@code CSV_LABELLED} format the required {@link LabelProvider} is derived from the
  * {@code @RuneLabelProvider} annotation the Rune code generator places on the function class; when it
@@ -134,13 +133,23 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * The classloader against which serialization configs and model types resolve. The classpath
-     * implementation uses the function class's own loader; override for runtimes where the model
-     * classloader is owned elsewhere. May return {@code null}, which preserves the legacy Guava
-     * classpath-resource lookup and resolves model types against this library's loader.
+     * The classloader against which serialization configs and model types resolve: the function
+     * class's own loader, or {@link #defaultClassLoader()} when there is no function class. May return
+     * {@code null}, which preserves the legacy Guava classpath-resource lookup and resolves model
+     * types against this library's loader.
      */
     protected ClassLoader classLoader(Class<?> functionClass) {
-        return functionClass != null ? functionClass.getClassLoader() : null;
+        return functionClass != null ? functionClass.getClassLoader() : defaultClassLoader();
+    }
+
+    /**
+     * The classloader to fall back to when a mapper is requested without a resolvable function class.
+     * {@code null} here (the classpath default) preserves the legacy classpath lookup; runtimes that
+     * own the model classloader (an isolated, disposable loader per model) should override this — and
+     * usually only this — so function-less requests still resolve against their model.
+     */
+    protected ClassLoader defaultClassLoader() {
+        return null;
     }
 
     private ClassLoader resolveModelClassLoader(Class<?> functionClass) {

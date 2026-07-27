@@ -92,13 +92,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rune.dsl.version>10.0.1</rune.dsl.version>
+        <rune.dsl.version>10.3.0</rune.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
         <gpg.passphrase>configured-by-release-profile</gpg.passphrase>
 
-        <jackson.version>2.17.1</jackson.version>
+        <jackson.version>2.18.8</jackson.version>
         <woodstox.version>6.6.2</woodstox.version>
         <stax2-api.version>4.2.2</stax2-api.version>
         <guice.version>6.0.0</guice.version>
@@ -106,6 +106,7 @@
         <slf4j-api.version>2.0.13</slf4j-api.version>
         <commons.io.version>2.14.0</commons.io.version>
         <xtext.version>2.38.0</xtext.version>
+        <plexus-utils.version>3.6.1</plexus-utils.version>
 
         <!-- test -->
         <junit.version>5.10.2</junit.version>
@@ -174,6 +175,11 @@
                 <groupId>org.finos.rune</groupId>
                 <artifactId>rune-runtime</artifactId>
                 <version>${rune.dsl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>${plexus-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>

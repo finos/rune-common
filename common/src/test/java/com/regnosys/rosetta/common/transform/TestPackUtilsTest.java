@@ -272,12 +272,24 @@ class TestPackUtilsTest {
     }
 
     @Test
-    void getInputObjectMapperPrefersPipelineSerialisation() {
+    void getInputObjectMapperUsesPipelineSerialisationWhenAnnotationAbsent() {
         ObjectMapper defaultMapper = new ObjectMapper();
         PipelineModel.Serialisation jsonInput = new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.JSON, null);
         ObjectMapper resolved = TestPackUtils.getInputObjectMapper(jsonInput, UnannotatedFunction.class, defaultMapper);
         assertNotNull(resolved);
         assertNotSame(defaultMapper, resolved, "the pipeline serialisation should build its own mapper");
+    }
+
+    @Test
+    void getInputObjectMapperPrefersAnnotationOverPipelineSerialisation() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        // A pipeline serialisation that would throw if consulted (CSV_LABELLED without a provider):
+        // the @Ingest annotation must win, so no exception and no default fallback.
+        PipelineModel.Serialisation labelledCsv =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+        ObjectMapper resolved = TestPackUtils.getInputObjectMapper(labelledCsv, JsonIngestFunction.class, defaultMapper);
+        assertNotNull(resolved);
+        assertNotSame(defaultMapper, resolved, "the @Ingest annotation should build the mapper");
     }
 
     @Test

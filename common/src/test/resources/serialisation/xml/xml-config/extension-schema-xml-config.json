@@ -5,6 +5,17 @@
     "xmlElementFullyQualifiedName" : "urn:my.extension/camel",
     "abstract" : false
   },
+  "com.rosetta.extension.test.Llama" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "llama",
+    "xmlElementFullyQualifiedName" : "urn:my.extension/llama",
+    "abstract" : false,
+    "attributes" : {
+      "llamaDetailsModel" : {
+        "xmlRepresentation" : "VIRTUAL"
+      }
+    }
+  },
   "com.rosetta.extension.test.Snake" : {
     "substitutionGroup" : "urn:my.schema/animal",
     "xmlElementName" : "snake",
@@ -93,6 +104,12 @@
     "substitutionGroup" : "urn:my.schema/animal",
     "xmlElementName" : "goat",
     "xmlElementFullyQualifiedName" : "urn:my.schema/goat",
+    "abstract" : false
+  },
+  "com.rosetta.test.Llama" : {
+    "substitutionGroup" : "urn:my.schema/animal",
+    "xmlElementName" : "llama",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/llama",
     "abstract" : false
   },
   "com.rosetta.test.Measure" : {

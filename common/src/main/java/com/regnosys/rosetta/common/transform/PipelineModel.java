@@ -71,7 +71,7 @@ public class PipelineModel {
     /**
      * @deprecated the serialisation format and config are now sourced from the {@code @Ingest}/
      *         {@code @Projection} annotation on the generated transform function class rather than from the
-     *         pipeline JSON. See {@link com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory}.
+     *         pipeline JSON. See {@link com.regnosys.rosetta.common.serialisation.TransformSerializationResolver}.
      *         Kept for backward compatibility.
      */
     @Deprecated
@@ -179,7 +179,7 @@ public class PipelineModel {
     /**
      * @deprecated the serialisation format and config are now sourced from the {@code @Ingest}/
      *         {@code @Projection} annotation on the generated transform function class rather than from the
-     *         pipeline JSON. See {@link com.regnosys.rosetta.common.serialisation.TransformObjectMapperFactory}.
+     *         pipeline JSON. See {@link com.regnosys.rosetta.common.serialisation.TransformSerializationResolver}.
      *         Kept for backward compatibility.
      */
     @Deprecated

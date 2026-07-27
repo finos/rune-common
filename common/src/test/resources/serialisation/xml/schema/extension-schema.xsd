@@ -26,4 +26,17 @@
     </xs:complexType>
 
     <xs:element name="camel" type="Camel" substitutionGroup="parent:animal"/>
+
+    <!-- Extension-namespace llama: accepts the same instance content as the
+         base-namespace llama, but via a model group (rendered as a VIRTUAL
+         wrapper type in the Rosetta model) -->
+    <xs:complexType name="Llama">
+        <xs:complexContent>
+            <xs:extension base="parent:Animal">
+                <xs:group ref="parent:LlamaDetails.model"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:element name="llama" type="Llama" substitutionGroup="parent:animal"/>
 </xs:schema>

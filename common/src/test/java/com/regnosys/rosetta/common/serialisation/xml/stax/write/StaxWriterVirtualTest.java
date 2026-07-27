@@ -24,6 +24,9 @@ import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.rosetta.test.Foo;
 import com.rosetta.test.MulticardinalityContainer;
+import com.rosetta.test.NestedContainer;
+import com.rosetta.test.NestedContainerSequence0;
+import com.rosetta.test.NestedContainerSequence1;
 import com.rosetta.test.Party;
 import com.rosetta.test.PartyModel;
 import com.rosetta.test.PartyNameModel;
@@ -92,6 +95,29 @@ public class StaxWriterVirtualTest {
                 Collections.<String, String>emptyMap());
         String expected = Resources.toString(
                 Resources.getResource("serialisation/xml/expected/multicardinality-container.xml"),
+                StandardCharsets.UTF_8);
+        assertEquals(expected, actual);
+    }
+
+    /**
+     * Step 4d / issue 7 / criterion 17: a repeated unwrapped group
+     * ({@code nestedContainerSequence1}, cardinality {@code 1..*}) has no wrapper element, so its
+     * two occurrences must be written inline back-to-back — {@code <c/><d/><c/><d/>} — rather than
+     * collapsing to one. Mirrors the Jackson-era {@code testNestedContainerSerialisation}
+     * ({@code @Disabled // TODO} in {@code XmlSerialisationTest}, the very bug this migration fixes).
+     */
+    @Test
+    public void testRepeatedUnwrappedGroupSerialisation() throws Exception {
+        NestedContainer nestedContainer = NestedContainer.builder()
+                .setNestedContainerSequence0(NestedContainerSequence0.builder().setA(0).setB(1).build())
+                .addNestedContainerSequence1(NestedContainerSequence1.builder().setC(2).setD(3).build())
+                .addNestedContainerSequence1(NestedContainerSequence1.builder().setC(4).setD(5).build())
+                .build();
+
+        String actual = licenseHeader + writer.write(nestedContainer, true,
+                Collections.<String, String>emptyMap());
+        String expected = Resources.toString(
+                Resources.getResource("serialisation/xml/expected/nested-container.xml"),
                 StandardCharsets.UTF_8);
         assertEquals(expected, actual);
     }

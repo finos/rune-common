@@ -360,8 +360,11 @@ public class StaxReaderContentModelTest {
     /**
      * The same document in the wrong namespace is <em>not</em> routed by local name alone: the
      * content model requires {@code urn:my.schema}, the elements are in another namespace, so
-     * routing correctly finds no match and the elements fall back to plain name binding — landing in
-     * a single virtual object rather than the two the content model would have produced.
+     * routing correctly finds no match and the elements fall back to plain name binding
+     * ({@link StaxReader#handleChildElement}) instead of the router/{@link VirtualPathAssembler}
+     * path. Since Step 4d, that fallback path also accumulates every occurrence of a repeated
+     * unwrapped group (issue 7 / criterion 17) rather than collapsing to the last one, so the two
+     * occurrences still round-trip correctly even without content-model routing.
      *
      * <p>Jackson could not reach this behaviour: {@code TokenBuffer} replay reports the namespace as
      * {@code UNKNOWN}, which the matcher treats permissively, so a foreign-namespace element matched
@@ -379,9 +382,16 @@ public class StaxReaderContentModelTest {
 
         MultiLeafContainer actual = nsReader.read(xml, MultiLeafContainer.class);
 
-        assertEquals(1, actual.getEntry().size());
-        assertEquals("B1", actual.getEntry().get(0).getFirstValue().getValue());
-        assertEquals("B2", actual.getEntry().get(0).getSecondValue().getValue());
+        // The content model rejects routing (wrong namespace), so this falls back to plain
+        // name-based binding (StaxReader#handleChildElement) rather than the router/
+        // VirtualPathAssembler path. That fallback is the repeated-unwrapped-group path fixed by
+        // Step 4d (issue 7 / criterion 17): it must still accumulate both occurrences, not
+        // collapse to the last one.
+        assertEquals(2, actual.getEntry().size());
+        assertEquals("A1", actual.getEntry().get(0).getFirstValue().getValue());
+        assertEquals("A2", actual.getEntry().get(0).getSecondValue().getValue());
+        assertEquals("B1", actual.getEntry().get(1).getFirstValue().getValue());
+        assertEquals("B2", actual.getEntry().get(1).getSecondValue().getValue());
     }
 
     /**

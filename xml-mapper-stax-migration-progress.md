@@ -328,14 +328,14 @@ All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/st
 
 ---
 
-## Step 4 — Deserializer (reader) — 🔄 IN PROGRESS
+## Step 4 — Deserializer (reader) — ✅ COMPLETE (2026-07-27)
 
 | Sub-step | What | Owner | Status |
 |---|---|---|---|
 | 4a | `StaxReader` core + root inference + VIRTUAL + pruning | Sonnet (main) | ✅ |
 | 4b | Substitution groups + polymorphism on read | Sonnet (main) | ✅ |
 | 4c | Content-model disambiguation | Opus (main) | ✅ |
-| 4d | Multi-cardinality accumulation + full suite green | — | ⬜ |
+| 4d | Multi-cardinality accumulation + full suite green | Sonnet (main) | ✅ |
 
 ### Step 4a — Basic stream → builder + attribute/element collision fix ✅ (2026-06-28)
 
@@ -596,7 +596,122 @@ calls the adder, verified by the Fx and multi-leaf tests). Issue 7 concerns a re
 `getOrCreateVirtualBuilder` — that still creates a single virtual builder per attribute and so
 collapses repeats to one. That is the remaining work.
 
-### Step 4d — Multi-cardinality accumulation + full suite green ⬜
+### Step 4d — Multi-cardinality accumulation + full suite green ✅ (2026-07-27)
+
+**Files modified:**
+
+| File | Change |
+|---|---|
+| `.../xml/stax/read/StaxReader.java` | New `VirtualGroupState` accumulator + `beginVirtualChild`; `getOrCreateVirtualBuilder` and `applyVirtualBuilders` reworked to build on it |
+| `.../xml/stax/write/StaxWriter.java` | VIRTUAL branch of `writeObject` now branches on `attr.isMulti()`; new `writeVirtualOccurrence` helper shared by both branches |
+
+**Test files modified/created:**
+
+| File | Change |
+|---|---|
+| `.../xml/stax/read/StaxReaderTest.java` | + `testRepeatedUnwrappedGroupAccumulatesAllInstances` |
+| `.../xml/stax/write/StaxWriterVirtualTest.java` | + `testRepeatedUnwrappedGroupSerialisation` |
+| `.../xml/stax/read/StaxReaderContentModelTest.java` | `testWrongNamespaceIsNotRoutedByLocalNameAlone` expectation corrected from 1 → 2 occurrences (see below) |
+
+**Full module: 327 tests pass, 0 failures, 3 skipped** (pre-existing `@Disabled`, unchanged
+from Step 4c's baseline of 325 — the delta is exactly the 2 new tests added this step).
+Checkstyle clean; `mvn clean install` green across both modules.
+
+#### The bug, confirmed empirically before fixing
+
+A scratch read of the existing `NestedContainer` / `expected/nested-container.xml` fixture
+(present since Step 0/1, previously exercised only by the Jackson-era
+`@Disabled // TODO` test `XmlSerialisationTest.testNestedContainerSerialisation` — itself the
+plan's issue-7 fixture) showed the repeated unwrapped group `nestedContainerSequence1`
+(`1..*`, VIRTUAL, no wrapper element) collapsing two occurrences into **one**, holding the
+**last** occurrence's values (`c=4, d=5`) rather than accumulating both. Root cause: the
+pre-4d `getOrCreateVirtualBuilder` cached exactly one builder per `AttributeBinding`, shared
+across the whole read of the parent element — every subsequent `<c>`/`<d>` just kept calling
+setters on the same builder.
+
+#### Read-side fix
+
+`StaxReader.java`'s single shared virtual builder is replaced by a `VirtualGroupState`
+accumulator per VIRTUAL attribute: a builder for the occurrence currently being filled, the
+**logical names** of single-cardinality child attributes already filled in it, and every
+already-completed occurrence. `beginVirtualChild(virtualAttr, childAttr, virtualBuilders)`
+is the single decision point: for a **multi-cardinality** VIRTUAL attribute, if a
+**single-cardinality** child attribute is about to be filled a second time in the current
+occurrence, that signals a new occurrence has begun — the current builder is finalised
+(`build()`) into the completed list and a fresh builder started. Multi-cardinality child
+attributes never trigger a rollover; they keep accumulating into the same occurrence via the
+adder exactly as before (e.g. `partyId` inside the single-cardinality `PartyModel` VIRTUAL
+wrapper is untouched — `beginVirtualChild`'s rollover only ever fires when
+`virtualAttr.isMulti()`). `applyVirtualBuilders` applies every completed occurrence through
+the ordinary `BuilderAccess.apply` adder/setter, once per occurrence — no new
+builder-invocation machinery.
+
+**Gotcha that cost the first fix attempt:** `RuneTypeIntrospector.introspect()` builds a
+**fresh** `AttributeBinding` on every call — there's no caching — and the streaming path
+re-introspects the virtual type on every child element. So two `AttributeBinding` instances
+for the same logical child attribute across two occurrences are never `==` or `.equals()`
+(no `equals()`/`hashCode()` override on `AttributeBinding` at all — identity semantics). A
+`Set<AttributeBinding>` for occurrence-boundary tracking therefore never detects a repeat.
+Fixed by keying the tracking set on `childAttr.getLogicalName()` (a stable `String`) instead.
+This was caught by the new test failing (still 1 occurrence after the first fix attempt), not
+by code inspection — worth remembering for any future StaxReader logic that compares
+`AttributeBinding` instances across separate `introspect()` calls.
+
+XML-attribute routing into VIRTUAL types (`applyXmlAttribute`'s call to
+`getOrCreateVirtualBuilder`) is untouched: attributes belong to the parent START_ELEMENT and
+are read once, before any child-element-driven occurrence rollover can happen, so there is
+exactly one occurrence to route into by construction.
+
+#### Write-side fix (a parallel, previously untested gap)
+
+`StaxWriter.java`'s VIRTUAL branch (`writeObject` step 6) had the mirror-image bug, undetected
+because no test exercised a multi-cardinality VIRTUAL attribute: it called
+`invoke(attr, object)` and checked `instanceof RosettaModelObject`, but for a **multi**
+VIRTUAL attribute the getter returns a `List`, which silently fails that check — so **nothing
+was written at all** for a repeated group, not even one occurrence. Fixed by branching on
+`attr.isMulti()`: the multi branch calls the new `writeVirtualOccurrence` helper once per list
+item, writing each occurrence's children inline back-to-back with no wrapper element
+(`<c/><d/><c/><d/>` — matches `expected/nested-container.xml` exactly); the single branch
+reuses the same helper for its one value, unchanged in behaviour from Step 3c.
+
+#### Full-suite audit
+
+A full `common` module run (no code changes yet) confirmed the baseline was still exactly
+325 passing / 3 skipped — identical to Step 4c's exit — so issue 7 was the **only**
+outstanding gap; no other latent failures existed across 4a–4c to clean up.
+
+One pre-existing Step 4c test needed its expectation corrected, not weakened:
+`StaxReaderContentModelTest.testWrongNamespaceIsNotRoutedByLocalNameAlone` feeds a
+`MultiLeafContainer` document in the wrong namespace, which the content-model router
+correctly rejects, falling back to plain name-based binding
+(`StaxReader#handleChildElement`) — the same streaming path this step fixes. Before this
+step, that fallback path could only produce one collapsed occurrence, and the test's
+assertion (`assertEquals(1, ...)`) captured that as expected behaviour. Since the streaming
+path now accumulates repeated unwrapped groups correctly, the same fallback document now
+round-trips to the correct 2 occurrences — the test (and its docstring, which explicitly
+described the old "single virtual object" outcome) was updated accordingly.
+
+#### Scope note: issue 3's cardinality-clash half remains Section 2-A
+
+The plan's Step 4d text also mentions honouring per-layer `maxOccurs` when the same element
+name spans layers with different cardinalities (e.g. `CommodityEuropeanExercise.
+expirationDate`, which must stay unbounded across layers). As the traceability table and
+Step 4c's notes already established, disambiguating *which layer* a given occurrence belongs
+to requires a per-type content model, and per Step 0 only ~2 types per production config
+carry one. Nothing in this step's scope changes that; it remains a **Section 2-A**
+dependency, unchanged from prior steps' documented position. Step 4d fully closes the
+multi-cardinality-*accumulation* half of issue 7 (criterion 17), which needed no content
+model at all.
+
+**Criterion 17: green.** `XmlContentModelDisambiguationTest` (14 tests) and
+`XMLContentModelMatcherNamespaceTest` (5 tests) — both exercising the old Jackson engine,
+unaffected by this step — remain green, satisfying the plan's stated exit bar alongside the
+new StAX-side tests.
+
+**Section 1 exit note:** Steps 1–4 (introspection, scalar conversion, writer, reader) are now
+all complete. What remains for Section 1 is Step 5 (wire the binder into
+`RosettaObjectMapperCreator.forXML(...)`) and Step 6 (full test-package pass, benchmark,
+delete the Jackson XML classes, drop the `jackson-dataformat-xml` dependency).
 
 ---
 

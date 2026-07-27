@@ -374,7 +374,7 @@ each session picks up from the passing exit criteria of the previous one.
 
 ### Step 3c — Virtual/unwrapped types, multi-cardinality, pretty-print (fresh session) — ✅ COMPLETE
 
-## Step 4 — Deserializer (reader) (3–4 weeks)
+## Step 4 — Deserializer (reader) (3–4 weeks) — ✅ COMPLETE (2026-07-27)
 
 Write the StAX reader driven by Steps 1–2. Split across four sessions (4a → 4b → 4c →
 4d). Step 4c carries the highest design complexity; use Opus for that session if
@@ -550,7 +550,7 @@ failure cases) and `XMLContentModelMatcherNamespaceTest` both pass fully.
 >
 > **Next: Step 4d — Multi-cardinality accumulation + full suite green.**
 
-### Step 4d — Multi-cardinality accumulation + full suite green (fresh session)
+### Step 4d — Multi-cardinality accumulation + full suite green (fresh session) — ✅ COMPLETE (2026-07-27)
 
 **Issue 7 / multi-cardinality on read:** a repeated unwrapped group
 (`maxOccurs="unbounded"`) must *accumulate* every instance into the builder list, not
@@ -564,6 +564,74 @@ Fix any remaining test failures across the full deserialization suite identified
 Exit: all deserialization assertions pass, including `XmlContentModelDisambiguationTest`,
 `XMLContentModelMatcherNamespaceTest`, and criterion 17 (issue 7, repeated unwrapped
 group accumulates all instances).
+
+> **STATUS: DONE.** The only gap remaining after 4a–4c was issue 7 itself: a full test-suite
+> run showed **zero other failures** (baseline was already 325 passing, 3 skipped — same as
+> Step 4c's exit), isolating the whole step to the one fix. Full `common` module:
+> **327 tests pass, 0 failures, 3 skipped** (pre-existing `@Disabled`). Checkstyle clean;
+> `mvn clean install` green across both modules.
+>
+> **Root cause confirmed empirically** (scratch-tested before fixing): reading
+> `NestedContainer`'s `nestedContainerSequence1` (`1..*`, VIRTUAL, no wrapper element — the
+> local synthetic fixture for issue 7, `expected/nested-container.xml`) produced a single
+> occurrence with the *last* `c`/`d` values, not two — confirming "collapse", not merely
+> "keep first".
+>
+> **Fix, read side (`StaxReader.java`):** the single shared virtual builder per VIRTUAL
+> attribute (`getOrCreateVirtualBuilder`) is replaced by a `VirtualGroupState` accumulator
+> (current builder + logical names filled in it + completed occurrences). A new
+> `beginVirtualChild(virtualAttr, childAttr, virtualBuilders)` is the only call site that can
+> start a new occurrence: for a **multi-cardinality** VIRTUAL attribute, if a
+> **single-cardinality** child attribute is about to be filled a second time in the current
+> occurrence, the current builder is finalised and a fresh one started. Multi-cardinality
+> child attributes never trigger this — they keep accumulating into the same occurrence via
+> the adder, unchanged from 4a/4b. `applyVirtualBuilders` then applies every completed
+> occurrence via the normal adder/setter (`BuilderAccess.apply`), once per occurrence for
+> multi, once for single — no new builder-invocation path needed.
+> - **Gotcha:** `RuneTypeIntrospector.introspect()` builds a **fresh** `AttributeBinding` on
+>   every call (no caching), and the virtual type is re-introspected on every child element in
+>   the streaming path — so two bindings for the same logical attribute across occurrences are
+>   never `==` or `.equals()`. The occurrence-boundary tracking is keyed by
+>   `childAttr.getLogicalName()` (a stable `String`), not the `AttributeBinding` instance. The
+>   first fix attempt used a `Set<AttributeBinding>` and silently never detected a boundary —
+>   caught by the new test, not by inspection.
+> - Single-cardinality VIRTUAL attributes are untouched: `getOrCreateVirtualBuilder` (used only
+>   for the ATTRIBUTE path, where there's exactly one occurrence by construction — XML
+>   attributes belong to the parent START_ELEMENT, read once, before any element-driven
+>   occurrence rollover can happen) keeps the old get-or-create-once behaviour.
+>
+> **Fix, write side (`StaxWriter.java`):** a parallel gap existed here too, undetected because
+> no test exercised it: `writeObject`'s VIRTUAL branch (step 6) called `invoke(attr, object)`
+> and checked `instanceof RosettaModelObject` — for a **multi**-cardinality VIRTUAL attribute
+> the getter returns a `List`, which fails that check silently, so **nothing was written at
+> all** for a repeated group. Fixed by branching on `attr.isMulti()`: multi calls
+> `writeVirtualOccurrence` once per list item (each occurrence's children written inline,
+> back-to-back, no wrapper — `<c/><d/><c/><d/>`); single keeps the original one-call path. Both
+> now share the extracted `writeVirtualOccurrence` helper.
+>
+> **Scope note on the "cardinality clash" half of Issue 3** (same element name across layers
+> with different `maxOccurs`): confirmed, as the traceability table and Step 4c's notes already
+> stated, that this requires per-type content models to disambiguate which layer a given
+> occurrence belongs to (e.g. `CommodityEuropeanExercise.expirationDate`). That is a
+> **Section 2-A** dependency (content models are emitted for only ~2 types per production
+> config, per Step 0); nothing in Section 1's scope changes this. Step 4d closes the
+> multi-cardinality-accumulation half of issue 7 fully; the cross-layer cardinality-clash half
+> of issue 3 remains explicitly out of scope, unchanged from prior steps.
+>
+> **Test fixtures — both synthetic, no BNPP repo dependency:**
+> - `StaxReaderTest.testRepeatedUnwrappedGroupAccumulatesAllInstances` and
+>   `StaxWriterVirtualTest.testRepeatedUnwrappedGroupSerialisation` — new tests using the
+>   existing `NestedContainer` / `expected/nested-container.xml` fixture (already present from
+>   Step 0/1, previously only exercised by the Jackson-era `@Disabled // TODO` test in
+>   `XmlSerialisationTest.testNestedContainerSerialisation` — that Jackson test is left disabled;
+>   fixing the old engine is out of scope for this migration).
+> - `StaxReaderContentModelTest.testWrongNamespaceIsNotRoutedByLocalNameAlone` (a *pre-existing*
+>   Step 4c test) asserted the streaming-path fallback collapsed a repeated group to its last
+>   occurrence — that was issue 7 surfacing through a different route (content-model rejection
+>   due to wrong namespace, falling back to plain name binding). Updated to assert both
+>   occurrences now round-trip; this is a corrected expectation, not a weakened one.
+>
+> **Next: Step 5 — Wire into the public entry point.**
 
 ## Step 5 — Wire into the public entry point (3–4 days)
 

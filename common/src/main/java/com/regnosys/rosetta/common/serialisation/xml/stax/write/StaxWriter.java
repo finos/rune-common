@@ -242,14 +242,19 @@ public class StaxWriter {
             if (attr.getXmlRepresentation() != AttributeXMLRepresentation.VIRTUAL) {
                 continue;
             }
-            Object value = invoke(attr, object);
-            if (value == null) {
-                continue;
-            }
-            if (value instanceof RosettaModelObject) {
-                TypeBinding virtualBinding = introspector.introspect(
-                        ((RosettaModelObject) value).getType(), config);
-                writeChildAttributes(value, virtualBinding, writer, depth, prettyPrint, prefixToNs, hasChildElement);
+            if (attr.isMulti()) {
+                // A repeated unwrapped group has no wrapper element: each occurrence's children
+                // are written inline back-to-back (issue 7 / criterion 17).
+                Object rawList = invoke(attr, object);
+                if (rawList == null) {
+                    continue;
+                }
+                for (Object item : (List<?>) rawList) {
+                    writeVirtualOccurrence(item, writer, depth, prettyPrint, prefixToNs, hasChildElement);
+                }
+            } else {
+                Object value = invoke(attr, object);
+                writeVirtualOccurrence(value, writer, depth, prettyPrint, prefixToNs, hasChildElement);
             }
         }
 
@@ -258,6 +263,24 @@ public class StaxWriter {
             writer.writeCharacters("\n" + indent(depth));
         }
         writer.writeEndElement();
+    }
+
+    /**
+     * Writes one occurrence of a VIRTUAL attribute's value (a single group instance) inline into
+     * the parent element. A no-op when {@code value} is {@code null} or not a Rune model object.
+     */
+    private void writeVirtualOccurrence(
+            Object value,
+            XMLStreamWriter writer,
+            int depth,
+            boolean prettyPrint,
+            Map<String, String> prefixToNs,
+            boolean[] hasChildElement) throws Exception {
+        if (value == null || !(value instanceof RosettaModelObject)) {
+            return;
+        }
+        TypeBinding virtualBinding = introspector.introspect(((RosettaModelObject) value).getType(), config);
+        writeChildAttributes(value, virtualBinding, writer, depth, prettyPrint, prefixToNs, hasChildElement);
     }
 
     /**

@@ -28,6 +28,9 @@ import com.rosetta.test.Document;
 import com.rosetta.test.Foo;
 import com.rosetta.test.Measure;
 import com.rosetta.test.MulticardinalityContainer;
+import com.rosetta.test.NestedContainer;
+import com.rosetta.test.NestedContainerSequence0;
+import com.rosetta.test.NestedContainerSequence1;
 import com.rosetta.test.Party;
 import com.rosetta.test.PartyModel;
 import com.rosetta.test.PartyNameModel;
@@ -334,6 +337,30 @@ public class StaxReaderTest {
                 .setPartyNameModel(PartyNameModel.builder().setPartyName("my name"))
                 .setPartyModel(PartyModel.builder()
                         .addPartyId("myId1").addPartyId("myId2"))
+                .build();
+        assertEquals(expected, actual);
+    }
+
+    /**
+     * Step 4d / issue 7 / criterion 17: {@code nestedContainerSequence1} is a repeated unwrapped
+     * group ({@code 1..*}, VIRTUAL) with no wrapper element, so its two occurrences appear as the
+     * same child-element sequence back-to-back: {@code <c/><d/><c/><d/>}. The reader must
+     * accumulate both occurrences, not collapse to a single (first- or last-wins) instance —
+     * mirrors the Jackson-era {@code testNestedContainerSerialisation}
+     * ({@code @Disabled // TODO} in {@code XmlSerialisationTest}, the very bug this migration fixes).
+     */
+    @Test
+    public void testRepeatedUnwrappedGroupAccumulatesAllInstances() throws Exception {
+        String xml = Resources.toString(
+                Resources.getResource("serialisation/xml/expected/nested-container.xml"),
+                StandardCharsets.UTF_8);
+
+        NestedContainer actual = reader.read(xml, NestedContainer.class);
+
+        NestedContainer expected = NestedContainer.builder()
+                .setNestedContainerSequence0(NestedContainerSequence0.builder().setA(0).setB(1).build())
+                .addNestedContainerSequence1(NestedContainerSequence1.builder().setC(2).setD(3).build())
+                .addNestedContainerSequence1(NestedContainerSequence1.builder().setC(4).setD(5).build())
                 .build();
         assertEquals(expected, actual);
     }

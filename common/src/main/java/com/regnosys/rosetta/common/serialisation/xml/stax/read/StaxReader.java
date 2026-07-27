@@ -41,10 +41,12 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Deserialises XML into Rune model objects using a StAX {@link XMLStreamReader}.
@@ -206,8 +208,8 @@ public class StaxReader {
         readXmlAttributesInto(cursor, binding, builder);
 
         // 2. Lazy virtual builders: created on demand as child elements arrive.
-        Map<AttributeBinding, Object> virtualBuilders =
-                new LinkedHashMap<AttributeBinding, Object>();
+        Map<AttributeBinding, VirtualGroupState> virtualBuilders =
+                new LinkedHashMap<AttributeBinding, VirtualGroupState>();
 
         // 3. VALUE text content accumulator (for types with a VALUE-representation attr)
         StringBuilder textContent = new StringBuilder();
@@ -306,7 +308,8 @@ public class StaxReader {
         }
         ContentModelRouter.Route route = router.route(elements);
 
-        Map<AttributeBinding, Object> virtualBuilders = new LinkedHashMap<AttributeBinding, Object>();
+        Map<AttributeBinding, VirtualGroupState> virtualBuilders =
+                new LinkedHashMap<AttributeBinding, VirtualGroupState>();
         List<VirtualPathAssembler.Assignment> virtualAssignments =
                 new ArrayList<VirtualPathAssembler.Assignment>();
 
@@ -415,7 +418,7 @@ public class StaxReader {
             String attrValue,
             TypeBinding binding,
             Object builder,
-            Map<AttributeBinding, Object> virtualBuilders) throws Exception {
+            Map<AttributeBinding, VirtualGroupState> virtualBuilders) throws Exception {
 
         // Direct ATTRIBUTE bindings
         for (AttributeBinding attr : binding.getAttributes()) {
@@ -469,7 +472,7 @@ public class StaxReader {
             XmlCursor cursor,
             TypeBinding binding,
             Object builder,
-            Map<AttributeBinding, Object> virtualBuilders) throws Exception {
+            Map<AttributeBinding, VirtualGroupState> virtualBuilders) throws Exception {
 
         String childNamespaceURI = cursor.getNamespaceURI();
 
@@ -489,7 +492,7 @@ public class StaxReader {
                     virtualAttr.getValueType(), config);
             ElementMatch virtualMatch = resolveElementMatch(childLocalName, childNamespaceURI, virtualBinding);
             if (virtualMatch != null) {
-                Object vBuilder = getOrCreateVirtualBuilder(virtualAttr, virtualBuilders);
+                Object vBuilder = beginVirtualChild(virtualAttr, virtualMatch.attribute, virtualBuilders);
                 applyChildElement(virtualMatch.attribute, virtualMatch.concreteType, cursor, vBuilder);
                 return;
             }
@@ -601,30 +604,103 @@ public class StaxReader {
     // Builder helpers
     // -------------------------------------------------------------------------
 
-    /** Builds each lazily-created virtual object and sets it on the parent builder. */
+    /**
+     * Builds every occurrence accumulated for each virtual attribute and applies them to the
+     * parent builder (adder for multi-cardinality virtual attributes — once per occurrence —
+     * setter for single-cardinality ones).
+     */
     private void applyVirtualBuilders(
-            Map<AttributeBinding, Object> virtualBuilders, Object builder) throws Exception {
-        for (Map.Entry<AttributeBinding, Object> entry : virtualBuilders.entrySet()) {
-            Object builtVirtual = ((RosettaModelObjectBuilder) entry.getValue()).build();
-            BuilderAccess.apply(builder, entry.getKey(), builtVirtual);
+            Map<AttributeBinding, VirtualGroupState> virtualBuilders, Object builder) throws Exception {
+        for (Map.Entry<AttributeBinding, VirtualGroupState> entry : virtualBuilders.entrySet()) {
+            AttributeBinding virtualAttr = entry.getKey();
+            VirtualGroupState state = entry.getValue();
+            if (state.currentBuilder != null) {
+                state.completedValues.add(((RosettaModelObjectBuilder) state.currentBuilder).build());
+            }
+            for (Object value : state.completedValues) {
+                BuilderAccess.apply(builder, virtualAttr, value);
+            }
         }
     }
 
     /**
-     * Returns the virtual builder for {@code virtualAttr}, creating one if absent.
-     * The builder is cached in {@code virtualBuilders} by the attribute binding instance.
+     * Returns the current (or first) virtual builder for {@code virtualAttr}, creating one if
+     * absent. Used for XML attributes, which are read once from the parent START_ELEMENT before
+     * any child element can start a new occurrence, so no occurrence-boundary check applies here.
      */
     private Object getOrCreateVirtualBuilder(
             AttributeBinding virtualAttr,
-            Map<AttributeBinding, Object> virtualBuilders) throws Exception {
-        Object vBuilder = virtualBuilders.get(virtualAttr);
-        if (vBuilder == null) {
-            TypeBinding virtualBinding = introspector.introspect(
-                    virtualAttr.getValueType(), config);
-            vBuilder = BuilderAccess.newBuilder(virtualBinding);
-            virtualBuilders.put(virtualAttr, vBuilder);
+            Map<AttributeBinding, VirtualGroupState> virtualBuilders) throws Exception {
+        VirtualGroupState state = virtualBuilders.get(virtualAttr);
+        if (state == null) {
+            state = new VirtualGroupState();
+            virtualBuilders.put(virtualAttr, state);
         }
-        return vBuilder;
+        if (state.currentBuilder == null) {
+            state.currentBuilder = BuilderAccess.newBuilder(
+                    introspector.introspect(virtualAttr.getValueType(), config));
+        }
+        return state.currentBuilder;
+    }
+
+    /**
+     * Returns the virtual builder that {@code childAttr}'s value should be written into, handling
+     * occurrence boundaries for a repeated unwrapped group (issue 7 / criterion 17).
+     *
+     * <p>A multi-cardinality VIRTUAL attribute (e.g. {@code <group ref maxOccurs="unbounded">})
+     * has no wrapper element, so its repeated instances appear back-to-back as the same sequence
+     * of child element names, e.g. {@code <c/><d/><c/><d/>} for two occurrences of a group
+     * {@code {c, d}}. With no content model available (Section 1's design constraint — structure
+     * comes from bean declaration order), the only signal available is: a single-cardinality slot
+     * being filled a second time in the current occurrence means a new occurrence has begun.
+     * Multi-cardinality child attributes never trigger this — they accumulate freely within one
+     * occurrence, exactly like {@link BuilderAccess#apply}'s adder semantics.
+     *
+     * <p>Tracked by {@code childAttr}'s logical name rather than the binding instance itself:
+     * {@link RuneTypeIntrospector#introspect} builds a fresh {@code AttributeBinding} on every
+     * call (no caching), and the virtual type is re-introspected for every child element, so two
+     * bindings for the same logical attribute across occurrences are never {@code ==} or
+     * {@code equals} to each other.
+     */
+    private Object beginVirtualChild(
+            AttributeBinding virtualAttr,
+            AttributeBinding childAttr,
+            Map<AttributeBinding, VirtualGroupState> virtualBuilders) throws Exception {
+        VirtualGroupState state = virtualBuilders.get(virtualAttr);
+        if (state == null) {
+            state = new VirtualGroupState();
+            virtualBuilders.put(virtualAttr, state);
+        }
+        boolean startsNewOccurrence = virtualAttr.isMulti()
+                && state.currentBuilder != null
+                && !childAttr.isMulti()
+                && state.filledInCurrentOccurrence.contains(childAttr.getLogicalName());
+        if (startsNewOccurrence) {
+            state.completedValues.add(((RosettaModelObjectBuilder) state.currentBuilder).build());
+            state.currentBuilder = null;
+            state.filledInCurrentOccurrence.clear();
+        }
+        if (state.currentBuilder == null) {
+            state.currentBuilder = BuilderAccess.newBuilder(
+                    introspector.introspect(virtualAttr.getValueType(), config));
+        }
+        if (!childAttr.isMulti()) {
+            state.filledInCurrentOccurrence.add(childAttr.getLogicalName());
+        }
+        return state.currentBuilder;
+    }
+
+    /**
+     * Accumulator for one VIRTUAL attribute's occurrences while reading a parent element: a
+     * builder for the occurrence currently being filled, the logical names of single-cardinality
+     * child attributes already filled in it (used to detect occurrence boundaries — see
+     * {@link #beginVirtualChild}), and every already completed (built) occurrence in document
+     * order.
+     */
+    private static final class VirtualGroupState {
+        private final List<Object> completedValues = new ArrayList<Object>();
+        private final Set<String> filledInCurrentOccurrence = new HashSet<String>();
+        private Object currentBuilder;
     }
 
     // -------------------------------------------------------------------------

@@ -27,6 +27,8 @@ import com.regnosys.rosetta.common.serialisation.xml.stax.introspect.AttributeBi
 import com.regnosys.rosetta.common.serialisation.xml.stax.introspect.RuneTypeIntrospector;
 import com.regnosys.rosetta.common.serialisation.xml.stax.introspect.TypeBinding;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.annotations.RosettaDataType;
+import com.rosetta.model.lib.annotations.RuneDataType;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamWriter;
@@ -73,13 +75,18 @@ public class StaxWriter {
         XMLOutputFactory factory = XMLOutputFactory.newInstance();
         XMLStreamWriter xmlWriter = factory.createXMLStreamWriter(sw);
 
-        TypeBinding binding = introspector.introspect(resolveRuneType(root), config);
-        String elementName = binding.getXmlElementName();
+        Class<?> rootType = resolveRuneType(root);
+        if (isScalarType(rootType)) {
+            writeScalarRoot(root, rootType, xmlWriter);
+        } else {
+            TypeBinding binding = introspector.introspect(rootType, config);
+            String elementName = binding.getXmlElementName();
 
-        boolean[] hasChildElement = new boolean[MAX_DEPTH];
-        Map<String, String> prefixToNs = new HashMap<String, String>();
+            boolean[] hasChildElement = new boolean[MAX_DEPTH];
+            Map<String, String> prefixToNs = new HashMap<String, String>();
 
-        writeObject(root, elementName, xmlWriter, 0, prettyPrint, prefixToNs, true, extraRootAttrs, hasChildElement);
+            writeObject(root, elementName, xmlWriter, 0, prettyPrint, prefixToNs, true, extraRootAttrs, hasChildElement);
+        }
 
         if (prettyPrint) {
             xmlWriter.writeCharacters("\n");
@@ -88,6 +95,23 @@ public class StaxWriter {
         xmlWriter.flush();
         xmlWriter.close();
         return sw.toString();
+    }
+
+    /**
+     * A root value with no {@code @RuneAttribute}-annotated type (e.g. a bare {@code ZonedDateTime})
+     * has no config binding to resolve an element name from; mirrors {@code StaxReader#isScalarType}
+     * so the same class of value round-trips both ways. The element name is the Java simple name,
+     * matching the Jackson-era root-level scalar behaviour this replaces.
+     */
+    private boolean isScalarType(Class<?> type) {
+        return !type.isAnnotationPresent(RuneDataType.class)
+                && !type.isAnnotationPresent(RosettaDataType.class);
+    }
+
+    private void writeScalarRoot(Object root, Class<?> rootType, XMLStreamWriter xmlWriter) throws Exception {
+        xmlWriter.writeStartElement(rootType.getSimpleName());
+        xmlWriter.writeCharacters(converter.toXmlString(root));
+        xmlWriter.writeEndElement();
     }
 
     /**

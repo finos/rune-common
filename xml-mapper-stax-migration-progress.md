@@ -708,13 +708,97 @@ model at all.
 unaffected by this step — remain green, satisfying the plan's stated exit bar alongside the
 new StAX-side tests.
 
-**Section 1 exit note:** Steps 1–4 (introspection, scalar conversion, writer, reader) are now
-all complete. What remains for Section 1 is Step 5 (wire the binder into
-`RosettaObjectMapperCreator.forXML(...)`) and Step 6 (full test-package pass, benchmark,
-delete the Jackson XML classes, drop the `jackson-dataformat-xml` dependency).
+**Section 1 exit note:** Steps 1–5 (introspection, scalar conversion, writer, reader, public
+entry-point wiring) are now all complete. What remains for Section 1 is Step 6 (full test-package
+pass, benchmark, delete the Jackson XML classes, drop the `jackson-dataformat-xml` dependency).
 
 ---
 
-## Step 5 — Wire into the public entry point — ⬜ NOT STARTED
+## Step 5 — Wire into the public entry point — ✅ COMPLETE (2026-07-27)
+
+**Files created:**
+
+| File | Role |
+|---|---|
+| `.../xml/stax/RuneXmlMapper.java` | Jackson-free native entry point: `readValue(String\|Reader\|InputStream, Class)`, `writeValueAsString(...)`, `writer()`/`writerWithDefaultPrettyPrinter()` |
+| `.../xml/stax/RuneXmlWriter.java` | Immutable fluent writer config (`withAttribute(...).writeValueAsString(...)`); translates `"schemaLocation"` → `"xsi:schemaLocation"` for `StaxWriter`'s `extraRootAttrs` |
+| `.../xml/StaxXmlObjectMapper.java` | `ObjectMapper` facade wrapping `RuneXmlMapper`; overrides only the entry points existing callers use |
+| `.../xml/StaxObjectWriter.java` | `ObjectWriter` facade wrapping `RuneXmlWriter`; package-private, constructed only by `StaxXmlObjectMapper` |
+
+**Files modified:**
+
+| File | Change |
+|---|---|
+| `RosettaObjectMapperCreator.java` | `forXML(config, classLoader)` now builds `new StaxXmlObjectMapper(config, classLoader)` directly (no more `RosettaXmlMapper`/`RosettaXMLModule`/`RosettaSerialiserFactory`/`XmlMapper.Builder`). New private constructor + `prebuilt` flag lets `create()` return a fully-built mapper as-is, skipping the generic Guava/Joda/JavaTime/mixin pipeline that's JSON-oriented and irrelevant to the StAX-backed facade |
+| `.../xml/stax/write/StaxWriter.java` | Added root-level scalar support (`isScalarType` + `writeScalarRoot`) — see gap below |
+| `TransformObjectMapperFactoryTest.java` | Two `assertInstanceOf(XmlMapper.class, ...)` → `assertInstanceOf(StaxXmlObjectMapper.class, ...)` (asserted the old concrete Jackson type; updated to the new one) |
+
+**Test file created:** `.../xml/stax/RuneXmlMapperTest.java` (3 tests) — exercises `RuneXmlMapper`
+directly (write→read round-trip, `readValue(Reader, Class)`, and
+`writerWithDefaultPrettyPrinter().withAttribute("schemaLocation", ...)` byte-for-byte against the
+same `expected/document.xml` fixture `XmlSerialisationTest`/`StaxWriterTest` use).
+
+**Full `common` module: 330 tests pass, 0 failures, 3 skipped** (327 pre-existing + 3 new). Checkstyle
+clean; `mvn clean install` green across both modules.
+
+### Both options from the plan were built, not chosen between
+
+The plan's Step 5.1 posed a choice: keep an `ObjectMapper`-compatible facade, or introduce
+`RuneXmlMapper` and adapt `forXML(...)`. Confirmed with the user beforehand that both are possible
+and did both: `RuneXmlMapper` is the clean Jackson-free API for new consumers; `forXML(...)` wraps
+that same instance behind `StaxXmlObjectMapper`/`StaxObjectWriter` for existing callers. One
+implementation serves both audiences — the facade has no logic of its own beyond type/exception
+adaptation.
+
+### Facade scope: audited real call sites, not just the test file
+
+Before writing the facade, audited every production and test call site against
+`RosettaObjectMapperCreator.forXML(...)` (`TransformObjectMapperFactory`, `TestPackUtils`, and the
+XML test suite) to find the actual `ObjectMapper`/`ObjectWriter` surface in use, rather than guessing
+at what to support. It's narrow: `readValue(String|Reader|InputStream, Class)`,
+`writeValueAsString(Object)`, and
+`writerWithDefaultPrettyPrinter().withAttribute("schemaLocation", ...).writeValueAsString(...)`.
+`ObjectMapper`/`ObjectWriter` are concrete but not `final`, and none of those specific methods are
+`final` either (confirmed via `javap`), so the facades override only those entry points and leave
+everything else inherited-but-unused. `StaxObjectWriter`'s constructor calls
+`super(mapper, mapper.getSerializationConfig())` to satisfy `ObjectWriter`'s protected constructor
+with a real (but never subsequently read) `SerializationConfig`.
+
+**Checked-exception mapping:** `RuneXmlMapper`/`RuneXmlWriter` throw plain `IOException`. The two
+facade methods whose Jackson signature only declares `JsonMappingException`/`JsonProcessingException`
+(not plain `IOException`) — `readValue(String, Class)` and `writeValueAsString(Object)` — catch and
+rewrap as `new JsonMappingException(message, cause)`; `readValue(Reader/InputStream, Class)` declare
+plain `IOException` already, so it passes straight through.
+
+### The wiring itself was the acceptance test
+
+Repointing `forXML(...)` at the new engine meant `XmlSerialisationTest`,
+`XmlContentModelDisambiguationTest`, and `XmlContentModelSerializationOrderTest` (43 tests total)
+started running against the StAX binder through the *same, unchanged* public entry point, with no
+test-code changes beyond the two `assertInstanceOf` updates above. Ran a baseline first (full suite
+green, 327/0/3 before touching anything) to isolate any regression precisely.
+
+**One genuine gap surfaced and fixed:** `testZonedDateTimeWithUnknownTimezoneSerialisation` writes a
+bare `ZonedDateTime` as the document root (no wrapping Rune type) and failed with
+`IllegalArgumentException: Type java.time.ZonedDateTime has neither @RuneDataType nor
+@RosettaDataType` — `StaxWriter.write` unconditionally called `introspector.introspect(...)`, which
+assumes a Rune type. `StaxReader.read` already had the mirror-image `isScalarType` check for reading
+a root-level scalar (Step 4a); the writer had never grown the equivalent because no pre-Step-5 writer
+test exercised a root-level scalar value. Fixed by adding the same `isScalarType` check (no
+`@RuneDataType`/`@RosettaDataType`) to `StaxWriter.write`, branching to a new `writeScalarRoot`
+that writes `<ClassSimpleName>` + `converter.toXmlString(value)` + close tag — matches the Jackson-era
+output exactly (`<ZonedDateTime>2006-04-02T15:38:00</ZonedDateTime>`). Everything else in the 43-test
+XML suite passed unchanged on the first run after the swap.
+
+### Old Jackson-XML engine is now dead code, deliberately not deleted
+
+`RosettaXmlMapper`, `RosettaXMLModule`, `RosettaSerialiserFactory`, and the rest of the Jackson-XML
+serializer/deserializer/introspector stack are no longer reachable from any production path — the
+only production reference was `RosettaObjectMapperCreator.forXML(...)`, now repointed. Confirmed no
+test in `common` instantiates them directly (grepped `common/src/test/java`; the only hits were
+through `forXML(...)` and one stale doc-comment mention in
+`XmlContentModelSerializationOrderTest`). Deleting them — and dropping the `jackson-dataformat-xml`
+dependency — is explicitly Step 6's job; left in place here to keep this step's diff scoped to
+wiring, per the plan's step boundaries.
 
 ## Step 6 — Full test pass, performance, cleanup — ⬜ NOT STARTED

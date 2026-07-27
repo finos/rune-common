@@ -633,7 +633,7 @@ group accumulates all instances).
 >
 > **Next: Step 5 — Wire into the public entry point.**
 
-## Step 5 — Wire into the public entry point (3–4 days)
+## Step 5 — Wire into the public entry point (3–4 days) — ✅ COMPLETE (2026-07-27)
 
 1. Provide the binder behind the existing `RosettaObjectMapperCreator.forXML(...)`
    surface so callers don't change. Decide the return type: either keep returning an
@@ -644,6 +644,77 @@ group accumulates all instances).
    equivalents and update tests minimally).
 3. Keep `RosettaXMLConfiguration.load(...)` and the legacy-config construction paths
    working (the legacy v1/v2 tests build configs on the fly).
+
+> **STATUS: DONE.** Both options were built, not one at the expense of the other: a new
+> `RuneXmlMapper` (`.../xml/stax/RuneXmlMapper.java`) is the Jackson-free native entry point for
+> new consumers, and `RosettaObjectMapperCreator.forXML(...)` now wraps it behind a thin
+> `ObjectMapper`-compatible facade (`StaxXmlObjectMapper` + `StaxObjectWriter`) so existing callers
+> are unaffected. `RosettaXmlMapper`/`RosettaXMLModule`/`RosettaSerialiserFactory` (the old
+> Jackson-XML engine) are no longer referenced from `forXML(...)` — they're dead code now, left in
+> place for Step 6 to delete. Full `common` module: **330 tests pass, 0 failures, 3 skipped**
+> (327 pre-existing + 3 new `RuneXmlMapperTest` cases). Checkstyle clean; `mvn clean install` green
+> across both modules.
+>
+> **The swap was itself the acceptance test.** Wiring `forXML(...)` straight onto the new StAX
+> engine meant every existing XML test (`XmlSerialisationTest`, `XmlContentModelDisambiguationTest`,
+> `XmlContentModelSerializationOrderTest` — 43 tests total) started exercising the new binder
+> through the *unchanged* public entry point, with no test-code changes needed beyond two
+> `assertInstanceOf` calls in `TransformObjectMapperFactoryTest` that asserted the old concrete
+> Jackson `XmlMapper` type (updated to assert `StaxXmlObjectMapper`, the new concrete type — an
+> implementation-detail assertion, not a behavioural one). This surfaced one genuine Step 3/4 gap,
+> fixed as part of this step (see below); everything else was green on the first run.
+>
+> **Design: facade only overrides the exact ObjectMapper/ObjectWriter surface actually used.**
+> Audited every production and test call site against `RosettaObjectMapperCreator.forXML(...)`
+> beforehand (`TransformObjectMapperFactory`, `TestPackUtils`, and the XML test suite) rather than
+> assuming — the real surface is narrow: `readValue(String|Reader|InputStream, Class)`,
+> `writeValueAsString(Object)`, and
+> `writerWithDefaultPrettyPrinter().withAttribute("schemaLocation", ...).writeValueAsString(...)`.
+> `ObjectMapper`/`ObjectWriter` are concrete but not `final`, and the specific methods needed aren't
+> `final` either, so `StaxXmlObjectMapper extends ObjectMapper` and `StaxObjectWriter extends
+> ObjectWriter` override only those entry points and delegate to `RuneXmlMapper`/`RuneXmlWriter`;
+> every other inherited method sits on Jackson's own unused default config and is never called.
+> `StaxObjectWriter`'s constructor still needs a real `SerializationConfig` to satisfy
+> `ObjectWriter`'s protected constructor (`super(mapper, mapper.getSerializationConfig())`) — that
+> config is genuinely never read afterwards.
+>
+> **Checked-exception mapping.** `RuneXmlMapper`/`RuneXmlWriter` throw plain `IOException` (the
+> idiomatic native-API choice). The facade's overrides re-wrap that into whatever checked type the
+> specific `ObjectMapper`/`ObjectWriter` method being overridden actually declares — critically,
+> `readValue(String, Class)` and `writeValueAsString(Object)` only declare
+> `JsonMappingException`/`JsonProcessingException` (not plain `IOException`), so those two
+> overrides catch and rethrow as `new JsonMappingException(message, cause)`; `readValue(Reader/
+> InputStream, Class)` declare plain `IOException` and pass it straight through.
+>
+> **`schemaLocation` attribute translation.** `StaxWriter.write(...)` expects `extraRootAttrs` keys
+> already in `xsi:` form (e.g. `"xsi:schemaLocation"` — the `xsi` namespace prefix itself comes from
+> the type's constant `xmlAttributes` in the config, unrelated to this). `RuneXmlWriter` is where
+> the translation from the caller-facing `"schemaLocation"` key (matching the old
+> `RosettaBeanSerializer.SCHEMA_LOCATION_ATTRIBUTE_NAME` convention) to `"xsi:schemaLocation"`
+> happens, so both the native API and the facade share one translation point.
+>
+> **Genuine gap found and fixed: `StaxWriter` had no root-level scalar path.** Wiring `forXML(...)`
+> surfaced that `testZonedDateTimeWithUnknownTimezoneSerialisation` (a bare `ZonedDateTime` as the
+> document root, no wrapping Rune type) threw `IllegalArgumentException: Type
+> java.time.ZonedDateTime has neither @RuneDataType nor @RosettaDataType` — `StaxWriter.write`
+> unconditionally called `introspector.introspect(...)`, which assumes a Rune type.
+> `StaxReader.read` already had the equivalent `isScalarType` check for the read side (Step 4a); the
+> writer had no mirror-image check because no pre-Step-5 writer test exercised a root-level scalar.
+> Fixed by adding the same `isScalarType` check to `StaxWriter.write`, with a `writeScalarRoot`
+> branch that writes `<ClassSimpleName>` + `converter.toXmlString(value)` + close tag — mirrors the
+> reader's root-level scalar handling and matches the Jackson-era output exactly
+> (`<ZonedDateTime>2006-04-02T15:38:00</ZonedDateTime>`).
+>
+> **Old Jackson-XML classes are now dead code, deliberately not deleted here.** `RosettaXmlMapper`,
+> `RosettaXMLModule`, `RosettaSerialiserFactory`, and the rest of the Jackson-XML serializer/
+> deserializer/introspector stack are no longer reachable from any production path once
+> `forXML(...)` was repointed — confirmed no test in `common` references them directly (only through
+> `forXML(...)`, and one stale doc-comment mention). Deleting them is explicitly Step 6's job (which
+> also drops the `jackson-dataformat-xml` dependency); left in place here to keep this step's diff
+> scoped to wiring.
+>
+> **Next: Step 6 — full test pass, benchmark, delete the dead Jackson XML classes, drop
+> `jackson-dataformat-xml`.**
 
 ## Step 6 — Full test pass, performance, cleanup (1–2 weeks)
 

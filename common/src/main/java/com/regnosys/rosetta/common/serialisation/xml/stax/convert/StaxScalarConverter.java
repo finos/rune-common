@@ -55,8 +55,8 @@ import java.util.Optional;
  * Converts between Java scalar values and their XML string representations for the StAX binder.
  *
  * <p>Handles: String, BigDecimal, Integer, Boolean, Date, LocalTime, ZonedDateTime, and enums.
- * Date/time logic is ported from
- * {@link com.regnosys.rosetta.common.serialisation.xml.RosettaXMLModule}.
+ * Date/time logic is ported verbatim from the Jackson-era {@code RosettaXMLModule} (since deleted),
+ * so formats are bit-for-bit identical to what that engine produced.
  */
 public class StaxScalarConverter {
 

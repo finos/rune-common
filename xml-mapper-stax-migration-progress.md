@@ -801,4 +801,372 @@ through `forXML(...)` and one stale doc-comment mention in
 dependency — is explicitly Step 6's job; left in place here to keep this step's diff scoped to
 wiring, per the plan's step boundaries.
 
-## Step 6 — Full test pass, performance, cleanup — ⬜ NOT STARTED
+## Step 6 — Full test pass, performance, cleanup — ✅ COMPLETE (2026-07-27)
+
+| Sub-step | What | Owner | Status |
+|---|---|---|---|
+| 6.0 | Port content-model write ordering into `StaxWriter` (gap found greening the suite) | Opus (main) | ✅ |
+| 6.2 | Criteria 13–17 regression tests (anonymous in-repo fixtures) | Opus (main) | ✅ |
+| 6.3 | Benchmark old vs new engine; fix the regression it exposed | Opus (main) | ✅ |
+| 6.4 | Delete the dead Jackson XML classes (20 files) | Opus (main) | ✅ |
+| 6.5 | Drop `jackson-dataformat-xml` | Opus (main) | ✅ |
+| 6.6 | Restore `RosettaXmlMapper` as a deprecated alias (back-compat) | Opus (main) | ✅ |
+| 6.1 | Full `mvn clean install` + checkstyle green | Opus (main) | ✅ |
+
+**Step 6 exit status: COMPLETE — and with it, Section 1.** `mvn clean install` green across both
+modules: `common` **334 tests pass, 0 failures, 3 skipped** (pre-existing `@Disabled`);
+`serialization` **63 pass, 0 failures, 1 skipped**. Checkstyle clean.
+
+Test-count arithmetic from Step 5's 330: **+7** new `XmlCriteriaRegressionTest` cases, **+1** new
+`XmlContentModelSerializationOrderTest` case, **+2** new `RosettaXmlMapperCompatibilityTest` cases,
+**−6** deleted `StaxBinderSpikeTest` cases (the Step 0 throwaway, retired exactly as Step 0 said it
+would be) = **334**.
+
+### The old Jackson-era test suites were kept, and did the heavy lifting
+
+Worth stating plainly, because it drove the whole step: `XmlSerialisationTest` (incl. its legacy
+v1/v2 config cases), `XmlContentModelDisambiguationTest` and `XmlContentModelSerializationOrderTest`
+all construct their mapper via `RosettaObjectMapperCreator.forXML(...)`, which since Step 5 returns
+the `StaxXmlObjectMapper` facade. They therefore already exercise the StAX binder through the
+unchanged public entry point and were **kept verbatim** — no rewrite, no porting. They are the parity
+harness for this step, and one of them is what exposed the write-ordering gap below. The only
+test-side reference to a deleted class was a stale doc-comment, now corrected.
+
+`XMLContentModelMatcherNamespaceTest` and `XMLContentModelOrdererTest` were also kept: both test
+classes that survive the migration (the matcher, reused byte-for-byte since 4c; the orderer, now
+driven by `StaxWriter` — see below).
+
+### 6.0 — Content-model write ordering was missing from `StaxWriter` (real gap, fixed)
+
+Greening the suite surfaced that `StaxWriter` had **no content-model-driven ordering at all**. It
+wrote ATTRIBUTE/VALUE, then all ELEMENT bindings in declaration order, then all VIRTUAL bindings
+last. The Jackson engine did have it: `RosettaBeanSerializerModifier` attached an
+`XMLContentModelOrderer` to `RosettaBeanSerializer`, which permuted the content-model-participating
+properties into model order. **Deleting the Jackson serializer without porting this would have been
+a silent output-ordering regression.**
+
+`XmlContentModelSerializationOrderTest` passed anyway, by luck: for `FpmlTradeIdentifier` the model
+order (`partyReference, accountReference?, choice`) happens to coincide with "direct elements first,
+VIRTUAL last". A new test proves the gap on `FpmlFxTargetKnockoutForward`, whose `barrier` property
+is **absent from the content model** and declared after the VIRTUAL choice:
+
+```
+before fix:  <linearPayoffRegion/><barrier/><constantPayoffRegion/>   (choice flushed last)
+after fix:   <linearPayoffRegion/><constantPayoffRegion/><barrier/>   (model order)
+```
+
+**Fix.** `XMLContentModelOrderer` is a pure algorithm over the config's content model with zero
+Jackson dependency, so rather than reimplement it, it was **kept and widened to public** (class +
+constructor + two methods; body untouched) and left in the `serialization` package. That mirrors
+what Step 4c did with the matcher, and leaves a clean read/write duality in the two packages the
+Jackson classes vacated:
+
+| Direction | Kept algorithm | Jackson-free facade / driver |
+|---|---|---|
+| read | `deserialization/XMLContentModelMatcher` | `deserialization/ContentModelRouter` → `StaxReader` |
+| write | `serialization/XMLContentModelOrderer` | `StaxWriter.orderChildAttributes` |
+
+`StaxWriter.writeObject`'s two separate passes (ELEMENT, then VIRTUAL) are now **one pass** over
+`orderChildAttributes(binding, object)`. That method reproduces the Jackson serializer's exact
+permute-in-place contract: only properties that the content model mentions *and* that are populated
+on this instance are reordered, among the slots they already occupy; everything else — notably a
+property absent from the content model, like `barrier` — keeps its position. Ordering is at
+Rosetta-property granularity, so a VIRTUAL group's leaves move as one contiguous block; leaf order
+*within* a group still follows the group type's own declaration order, as before.
+
+One deliberate divergence: the Jackson version also bailed out when the type had a text (VALUE)
+property, because reordering interfered with its `_textPropertyIndex` bookkeeping. That is a
+Jackson-mechanics constraint with no analogue here (`StaxWriter` writes VALUE text in a separate
+step), so it was not ported.
+
+### 6.3 — Benchmark: the StAX binder was 9–30× slower; fixed to parity
+
+This is the sub-step that paid for itself. Harness (kept out-of-tree in the session scratchpad,
+since it must instantiate the now-deleted Jackson engine): rebuild the pre-Step-5 `forXML(...)`
+pipeline by hand, build the current one via `forXML(...)`, and time both on the same document with
+interleaved rounds after warm-up.
+
+**First run — a serious regression:**
+
+| Case | Read (deser) | Write (ser) |
+|---|---|---|
+| Zoo, 20k substitution elements (419 KB) | 4.3 → 40.3 ms (**0.11×**) | 2.9 → 85.1 ms (**0.03×**) |
+
+**Two root causes, neither visible from the tests:**
+
+1. **`RuneTypeIntrospector.introspect()` had no cache.** It runs full reflection
+   (`getDeclaredFields()`, plus `getMethods()` per attribute for setter/adder lookup) and the binder
+   calls it **once per XML element** — on both read and write paths. Reflection, not parsing,
+   dominated every document.
+2. **`StaxWriter.invoke` used exception-driven control flow.** The stored getter comes from the
+   *builder* impl class, but serialisation runs against *immutable* impls, so
+   `getter.invoke(object)` threw `IllegalArgumentException` **every single time**, and the catch
+   block then re-ran `Class.getMethod`. That is one exception construction plus one reflective
+   lookup per property of per element written.
+
+**After caching both** (`introspect` memoised per (config, type); getters cached per
+(getter, concrete class), with an `isAssignableFrom` fast path that avoids the lookup entirely when
+the stored getter already applies). Final-state figures are old-engine-mean ÷ new-engine-mean, as a
+range over two consecutive runs — above 1.0× means the StAX binder is faster:
+
+| Case | Read (deser) | Write (ser) |
+|---|---|---|
+| Zoo — 20k substitution-group elements (419 KB) | 0.97–0.99× | **1.56–1.60×** |
+| MulticardinalityContainer — 80k elements (1.6 MB) | 0.91–0.92× | 0.85–0.92× |
+| Party — VIRTUAL unwrapped groups (509 KB) | 1.09–1.14× | 0.99–1.02× |
+
+On the Zoo case the absolute recovery was **read 40.3 → 5.1 ms (8×)** and
+**write 85.1 → 2.0 ms (42×)**. Results were stable across repeated runs. **Serialised output is
+byte-identical between the two engines on all three cases** — a parity signal stronger than any
+assertion in the test suite.
+
+**Honest reading of the result:** parity overall, not a clean sweep. Four of six measurements are at
+or better than Jackson (write on the substitution-heavy case is 1.6–1.8× faster); the deep-nesting
+1.6 MB case remains ~8–15% slower in both directions. Caching the per-type ELEMENT/VIRTUAL attribute
+list (`childAttributesOf`) recovered part of that. The plan's bar — "should match or beat the
+TokenBuffer path" — is met in aggregate, with that one shape called out rather than papered over.
+
+**Production-scale sanity check.** The largest real document available (320 KB, ~4.1k lines, mixed
+two-namespace FpML/vendor-extension) on the new engine: **4.85 ms read, 2.47 ms write** (mean),
+producing 490 KB of output. The old engine **could not read it at all** — it failed with
+`ClassNotFoundException` on a config-referenced type absent from the model jar, on **14 of 14**
+documents tried. That is a local jar/config version skew rather than a genuine Jackson defect, but
+it is a meaningful robustness difference: the old engine eagerly resolves classes across the config
+while the StAX binder resolves lazily, driven by what the document actually contains. It is also why
+the head-to-head table above uses in-repo synthetic documents — they are the only ones both engines
+can load.
+
+### Pre-existing thread-unsafety, found and fixed
+
+Adding caches raised the question of sharing, and the audit found the problem predated this step.
+`forXML(...)` returns an `ObjectMapper` — whose documented contract is thread-safe, and which
+consumers (`TransformObjectMapperFactory`, `TestPackUtils`) do cache and share — and one mapper owns
+exactly one `StaxReader` and one `StaxWriter`. Yet:
+
+| Cache | Introduced | Was |
+|---|---|---|
+| `StaxReader.routerCache` | Step 4c | plain `HashMap`, mutated per read |
+| `SubstitutionResolver.resolvedGroups` + `elementIndex`/`substitutionGroupIndex` | Step 4b | plain `HashMap` + non-volatile lazy init |
+| `RuneTypeIntrospector` bindings, `StaxWriter` orderers/getters/child-lists | Step 6 | plain `HashMap` (new) |
+
+All are now `ConcurrentHashMap` with `putIfAbsent` publication; `SubstitutionResolver`'s lazy index
+build is a proper double-checked lock over `volatile` fields, with `elementIndex` assigned last as
+the guard. Every cached value is immutable, so a lost race merely recomputes an entry.
+
+Two implementation notes:
+- `Optional` is used as the cache value wherever "absent" is a meaningful cached answer
+  (`routerCache`, `orderers`), because `ConcurrentHashMap` cannot store `null` — previously
+  `containsKey` + a `null` value carried that meaning.
+- The introspector cache is keyed on **config identity**, not equality: `RosettaXMLConfiguration`
+  overrides `equals`, so hashing it by value would deep-compare a structure with thousands of
+  entries on every element. A first attempt used a two-level map with a per-call key wrapper and
+  measurably *lost* throughput (read 0.98× → 0.77×); it was flattened to one map plus a `volatile`
+  config reference, so the hot path is one volatile read and one lookup with no allocation. If a
+  caller ever passes a different config instance, the cache is dropped and rebuilt rather than
+  returning a stale binding.
+
+### 6.2 — Criteria 13–17 regression tests (anonymous in-repo fixtures)
+
+**Files created:**
+
+| File | Role |
+|---|---|
+| `serialisation/xml/rosetta/rosetta-regression-type.rosetta` | Anonymous stand-in types reproducing each broken XML shape |
+| `serialisation/xml/xml-config/regression-xml-config.json` | Their XML config, incl. two content models and two namespaces |
+| `.../serialisation/xml/XmlCriteriaRegressionTest.java` | 7 tests, one or two per criterion |
+
+**Fixtures are anonymous by design.** Step 0.5 harvested the named production types, but they live in
+a **private** repo and `rune-common` is public, so nothing from it may land here. The stand-ins
+reproduce each broken *shape* — that is what the binder actually has to get right — and depend on
+nothing outside this repository. Where a criterion needs two schemas, the fixtures follow the
+convention already established in this test model: `urn:my.schema` for the base schema and
+`urn:my.extension` for the vendor extension. The private production model was used only out-of-tree,
+to validate the benchmark.
+
+Every test asserts **the data that used to be lost is present**, not merely that parsing succeeds,
+and (where round-tripping is meaningful) re-serialises and re-reads to prove the write side preserves
+the distinction the read side made.
+
+| Test | Criterion / issue | What it proves |
+|---|---|---|
+| `criterion13_attributeAndElementIdBothSurviveMultiCardinality` | 13 / 1 | attribute `id` **and** two `<id>` elements (each with its own attribute) all survive on one type |
+| `criterion13_attributeAndElementIdBothSurviveSingleCardinality` | 13 / 1 | same collision with a single-cardinality element |
+| `criterion14_tradeIdRoutedToExactlyOneSlot` | 14 / 3 (routing) | `tradeId` lands in the choice group only — the direct property is asserted **null**, i.e. not deserialised twice |
+| `criterion14_tradeIdRoutesToDirectSlotOnTheOtherBranch` | 14 / 3 | the same element name routes to the *direct* slot on the model's other branch |
+| `criterion15_substitutedNameCollidingWithDirectElementPopulatesBothSlots` | 15 / 5 | direct `referenceEntity` **and** the same-named substitution member both populate, in distinct slots, with the member resolved to its concrete type |
+| `criterion16_extensionLegsResolveByNamespaceAndRetainSchedule` | 16 / 6 | extension-namespace substitute parses at all; `<ext:commodityOption>` binds to the extension type (not the base type shadowing it by local name) and **retains `schedule`**; `<base:commodityOption>` still binds to the base type |
+| `criterion17_repeatedUnwrappedGroupAccumulatesAllOccurrences` | 17 / 7 | all **three** occurrences of a repeated unwrapped group accumulate |
+
+#### Criterion 15 is now genuinely closed — with a constraint worth recording
+
+Steps 4b and 4c both documented criterion 15 as awaiting a content model for the production type
+(Section 2-A). Supplying one in the test config closes it, and doing so surfaced a **new empirical
+constraint on what 2-A must emit**:
+
+The obvious content model — `SEQUENCE[referenceEntity(0..1) → [referenceEntity],
+referenceEntity(0..*) → [underlyingAsset]]` — **cannot be routed at all**. The router rejected even a
+single `<referenceEntity>`, logging "Cannot route XML content". The reason is correct behaviour, not
+a bug: with `minOccurs: 0` on the first slot, one element has two valid complete matches (either
+slot), so the matcher reports AMBIGUOUS and lenient recovery declines to guess.
+
+Making the direct element `minOccurs: 1` makes the model unambiguous and everything routes:
+`referenceEntity` → `[referenceEntity]`, the second → `[underlyingAsset]`. **This is exactly the
+constraint XSD's Unique Particle Attribution imposes**, so a generated content model that satisfies
+UPA will route, and one that does not, cannot. Section 2-A should therefore treat UPA-conformance of
+emitted content models as a requirement, not an incidental property. (A third case verified in
+passing: a substitution member whose element name is *not* in the content model — `equityAsset` —
+gets no route and falls through to plain name binding, which resolves it via the substitution
+resolver as before.)
+
+Also confirmed: `StaxReader.applyRoutedDirectElement` already handled `elementRef` substitution on a
+routed single-segment path, so no production code change was needed for this criterion.
+
+### 6.4 — Deleted the dead Jackson XML classes (20 files)
+
+**Deleted (19 main + 1 test):**
+
+| Package | Files |
+|---|---|
+| `serialisation/xml/` | `RosettaXmlMapper`, `RosettaXMLModule`, `RosettaXMLAnnotationIntrospector`, `RosettaXMLTypeConfigLookup`, `SubstitutionMap`, `SubstitutionMapLoader`, `VirtualXMLAttribute` |
+| `serialisation/xml/serialization/` | `RosettaBeanSerializer`, `RosettaBeanSerializerModifier`, `RosettaSerialiserFactory`, `SubstitutingBeanPropertyWriter`, `UnwrappableIndexedListSerializer`, `UnwrappingAsArraySerializerBase`, `UnwrappingIndexedListSerializer` |
+| `serialisation/xml/deserialization/` | `RosettaBeanDeserializerModifier`, `RosettaModelObjectSizeEstimator`, `SubstitutedMethodProperty`, `VirtualPathBuilderHelper`, `XMLContentModelDisambiguatingDeserializer` |
+| tests | `spike/StaxBinderSpikeTest` (the Step 0 throwaway, 6 tests) |
+
+**Kept, deliberately:**
+
+| Kept | Why |
+|---|---|
+| `config/*` (7 classes) | The config model is not Jackson scaffolding — it is the XML contract `model-import` emits. Never in scope. |
+| `deserialization/XMLContentModelMatcher`, `RoutingInput` | The routing algorithm, reused byte-for-byte since 4c |
+| `deserialization/ContentModelRouter` | Jackson-free facade over it (4c) |
+| `serialization/XMLContentModelOrderer` | Pure ordering algorithm, now driven by `StaxWriter` (see 6.0) |
+| `UnknownZoneProvider` | Used by `StaxScalarConverter` |
+| `StaxXmlObjectMapper`, `StaxObjectWriter` | The `ObjectMapper` facade from Step 5 (jackson-**databind**, not dataformat-xml) |
+
+Every reference was checked before deleting, rather than relying on Step 5's note. All cross-package
+references from surviving code into the deleted set turned out to be **javadoc/comment only**
+("ported from X", "mirrors Y"). Four needed editing, three of them `{@link}`s that would have
+dangled:
+
+- `RuneTypeIntrospector` — `{@link SubstitutionMap.XMLFullyQualifiedName}` → describes the config's
+  `xmlElementFullyQualifiedName` convention directly.
+- `StaxScalarConverter` — `{@link RosettaXMLModule}` → `{@code}`, noting the class is now deleted and
+  the port was verbatim.
+- `XMLContentModelMatcher` — `{@link XMLContentModelDisambiguatingDeserializer}` →
+  `{@link ContentModelRouter}`, now its only caller. **This is the one edit to the
+  otherwise-byte-for-byte-unchanged matcher, and it is a javadoc link only.**
+- `XmlContentModelSerializationOrderTest` — a stale sentence describing the Jackson deserializer,
+  rewritten for the StAX engine.
+
+**API-compatibility note:** these were public classes, so their removal is a breaking change for any
+downstream code importing them directly. Verified that the two model repos available in this session
+(`common-domain-model`, `digital-regulatory-reporting`) contain **no references** to any deleted
+class — they only ever went through `RosettaObjectMapperCreator.forXML`, which is unchanged. One
+alias was nonetheless restored; see 6.6.
+
+### 6.6 — `RosettaXmlMapper` restored as a deprecated alias
+
+Of the 19 deleted main classes, exactly one was worth giving back: `RosettaXmlMapper` is the only
+deleted type whose entire **public** surface was a single constructor,
+`(RosettaXMLConfiguration, ClassLoader)` — everything else on it was `protected` or `private` Jackson
+internals. `StaxXmlObjectMapper`'s public constructor has the *identical* signature, so the old
+fully-qualified name can be re-offered as a three-line subclass:
+
+```java
+@Deprecated
+public class RosettaXmlMapper extends StaxXmlObjectMapper {
+    public RosettaXmlMapper(RosettaXMLConfiguration config, ClassLoader classLoader) {
+        super(config, classLoader);
+    }
+}
+```
+
+A deprecated subclass was chosen over renaming `StaxXmlObjectMapper` itself: it restores the old
+import and call shape while keeping a name that describes what the class now *is*, and the
+`@Deprecated` marker points callers at `forXML(...)` / `RuneXmlMapper` instead of silently
+re-establishing a Jackson-era name as the primary type.
+
+**Two limits are documented on the class, because neither can be fixed:**
+1. It **no longer extends `XmlMapper`** — that supertype needs `jackson-dataformat-xml`, removed in
+   6.5. Code that assigned it to an `XmlMapper` variable, or passed it to
+   `new XmlMapper.Builder(...)`, still breaks. It is also binary-incompatible for pre-compiled
+   callers.
+2. `ObjectMapper#_readValue` / `#_readMapAndClose` — the two methods the old class overrode — are
+   bypassed entirely by the StAX path, so a downstream subclass overriding them still *compiles* but
+   has **no effect**. This is the one silent-behaviour hazard of reusing the name, so it is called
+   out explicitly in the javadoc.
+
+**How much compatibility this actually buys is narrower than the name suggests**, and the javadoc says
+so: the old `RosettaXmlMapper` was never usable standalone. It carried no `RosettaXMLModule`, so on
+its own it did no Rosetta-aware XML at all — the working recipe was the four-step pipeline in
+`forXML(...)` (construct → `setSerializerFactory(RosettaSerialiserFactory.INSTANCE)` → wrap in
+`new XmlMapper.Builder(...)` → register `RosettaXMLModule`), and anyone who copied *that* breaks
+regardless since two of those types are gone. The alias therefore helps only callers who used it as a
+bare `ObjectMapper` — a usage that would not have worked correctly before and does now.
+
+**Tested, not assumed.** `RosettaXmlMapperCompatibilityTest` (2 tests) pins the contract: the legacy
+constructor shape compiles and yields a working `ObjectMapper`, and its output is asserted **identical**
+to `forXML(...)`'s for both plain and pretty-printed-with-`schemaLocation` writes. The test deliberately
+does *not* assert `XmlMapper` assignability, with a comment recording that as the known break.
+
+The other 18 deleted classes get no shim: every one of them takes or returns Jackson types
+(`Module`, `BeanSerializerFactory`, `BeanPropertyWriter`, `JavaType`, `SettableBeanProperty`, …), so a
+shim would either have nothing to delegate to or would reintroduce the dependency 6.5 just removed.
+
+### 6.5 — Dropped `jackson-dataformat-xml`
+
+Removed from **both** `common/pom.xml` and `serialization/pom.xml`. Removing it from `common` alone
+would have been cosmetic: `common` depends on the `serialization` module, which declared it too, so
+it would still have arrived transitively. Neither module has a single remaining reference to
+`com.fasterxml.jackson.dataformat.xml` (verified by grep over both `src/main` and `src/test`), and
+`serialization` never used it.
+
+Verified gone from the resolved tree, with Woodstox still pinned directly as Step 0.1 intended:
+
+```
+mvn -pl common dependency:tree | grep -iE "woodstox|stax2|dataformat"
+  +- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar:2.17.1:compile
+  +- com.fasterxml.woodstox:woodstox-core:jar:6.6.2:compile
+  |  \- org.codehaus.woodstox:stax2-api:jar:4.2.2:compile
+  +- com.fasterxml.jackson.dataformat:jackson-dataformat-csv:jar:2.17.1:compile
+```
+
+The parent pom's `dependencyManagement` entry and `${jackson.version}`-style pin for
+`jackson-dataformat-xml` were **left in place** — harmless, and it keeps re-adding the dependency a
+one-line change if some future consumer needs it.
+
+---
+
+## Section 1 — COMPLETE
+
+All six steps done. The XML mapper is a purpose-built StAX binder; the Jackson XML engine and its
+dependency are gone from `rune-common`; the same external `model-import` config drives the new
+engine unchanged.
+
+**Criteria status:**
+
+| Criteria | Status |
+|---|---|
+| 1–12 (feature parity) | ✅ green — the pre-existing suites pass unchanged through `forXML(...)` |
+| 13 (attr/element same local name — *the bug that motivated the migration*) | ✅ green, regression-tested |
+| 14 (issue 3, routing half) | ✅ green, regression-tested |
+| 15 (substituted name collides with direct element) | ✅ green, regression-tested (UPA constraint recorded above) |
+| 16 (same local name across namespaces) | ✅ green, regression-tested |
+| 17 (repeated unwrapped group) | ✅ green, regression-tested |
+| Issue 2 (same name, different order in one type) | ⏭ **Section 2-A** — latent; needs content models for all types |
+| Issue 3, cardinality-clash half | ⏭ **Section 2-A** — needs per-type content models |
+
+**Carry-forward into Section 2-A**, beyond what the plan already records:
+1. **Emitted content models must satisfy UPA** to be routable — see the criterion-15 finding above.
+   An ambiguous model is correctly refused by the matcher, so this is a hard requirement on the
+   generator, not a preference.
+2. **Both engines' duplicated lenient-recovery policy is no longer duplicated** — Step 4c noted it
+   was deliberately copied into `ContentModelRouter` because the Jackson deserializer still existed.
+   That deserializer is now deleted, so `ContentModelRouter` is the single implementation.
+3. **`XMLContentModelOrderer` is now the write-side entry point for ordering.** If 2-A makes content
+   models universal, the orderer runs for *every* type rather than ~2 per config; its
+   `MAX_CANDIDATES = 256` search bound and null-fallback behaviour should be re-measured at that
+   scale.
+4. The out-of-tree benchmark harness is disposable but the method is worth repeating after 2-A:
+   interleaved rounds, byte-compare the output of both implementations, and check a real
+   production-scale document as well as synthetic ones.

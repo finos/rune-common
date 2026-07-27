@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Deserialises XML into Rune model objects using a StAX {@link XMLStreamReader}.
@@ -89,7 +91,14 @@ public class StaxReader {
     private final ClassLoader classLoader;
     private final SubstitutionResolver substitutionResolver;
     private final VirtualPathAssembler virtualPathAssembler;
-    private final Map<Class<?>, ContentModelRouter> routerCache = new HashMap<>();
+    /**
+     * One router per type; an empty {@link Optional} records "this type needs no routing".
+     * Concurrent because a reader is owned by one mapper instance, which may be shared across
+     * threads — the {@code ObjectMapper} facade's contract promises thread safety. Routers are
+     * immutable once built, so a race merely recomputes an entry.
+     */
+    private final ConcurrentMap<Class<?>, Optional<ContentModelRouter>> routerCache =
+            new ConcurrentHashMap<>();
 
     public StaxReader(RosettaXMLConfiguration config, ClassLoader classLoader) {
         this.config = config;
@@ -250,16 +259,17 @@ public class StaxReader {
      * Routers are cached per type: building one indexes the whole content model.
      */
     private ContentModelRouter routerFor(Class<?> type, TypeBinding binding) {
-        if (routerCache.containsKey(type)) {
-            return routerCache.get(type);
+        Optional<ContentModelRouter> cached = routerCache.get(type);
+        if (cached != null) {
+            return cached.orElse(null);
         }
         Optional<XMLContentModel> contentModel = binding.getContentModel();
-        ContentModelRouter router = null;
-        if (contentModel.isPresent() && ContentModelRouter.requiresRouting(contentModel.get())) {
-            router = new ContentModelRouter(contentModel.get(), type.getName());
-        }
-        routerCache.put(type, router);
-        return router;
+        Optional<ContentModelRouter> router =
+                contentModel.isPresent() && ContentModelRouter.requiresRouting(contentModel.get())
+                        ? Optional.of(new ContentModelRouter(contentModel.get(), type.getName()))
+                        : Optional.empty();
+        routerCache.putIfAbsent(type, router);
+        return router.orElse(null);
     }
 
     /**

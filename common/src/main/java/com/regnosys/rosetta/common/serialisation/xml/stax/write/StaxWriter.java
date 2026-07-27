@@ -22,6 +22,8 @@ package com.regnosys.rosetta.common.serialisation.xml.stax.write;
 
 import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLRepresentation;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
+import com.regnosys.rosetta.common.serialisation.xml.serialization.XMLContentModelOrderer;
 import com.regnosys.rosetta.common.serialisation.xml.stax.convert.StaxScalarConverter;
 import com.regnosys.rosetta.common.serialisation.xml.stax.introspect.AttributeBinding;
 import com.regnosys.rosetta.common.serialisation.xml.stax.introspect.RuneTypeIntrospector;
@@ -33,9 +35,18 @@ import com.rosetta.model.lib.annotations.RuneDataType;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Serialises a Rune model object to an XML string using a StAX {@link XMLStreamWriter}.
@@ -52,6 +63,24 @@ public class StaxWriter {
     private final RosettaXMLConfiguration config;
     private final RuneTypeIntrospector introspector;
     private final StaxScalarConverter converter;
+
+    /**
+     * One orderer per type, built on first encounter. An empty {@link Optional} records "this type
+     * has no content model", so ordering is only ever derived once per type per writer.
+     *
+     * <p>Concurrent because a writer is owned by one mapper instance, which may be shared across
+     * threads (the {@code ObjectMapper} facade's contract promises thread safety). Both cached
+     * values are immutable, so a race merely recomputes an entry.
+     */
+    private final ConcurrentMap<Class<?>, Optional<XMLContentModelOrderer>> orderers =
+            new ConcurrentHashMap<Class<?>, Optional<XMLContentModelOrderer>>();
+
+    /** Getters re-resolved against concrete impl classes; see {@link #resolveGetter}. */
+    private final ConcurrentMap<GetterKey, Method> getters = new ConcurrentHashMap<GetterKey, Method>();
+
+    /** Per-type ELEMENT/VIRTUAL attribute lists; see {@link #childAttributesOf}. */
+    private final ConcurrentMap<Class<?>, List<AttributeBinding>> childAttributes =
+            new ConcurrentHashMap<Class<?>, List<AttributeBinding>>();
 
     public StaxWriter(RosettaXMLConfiguration config) {
         this.config = config;
@@ -215,9 +244,24 @@ public class StaxWriter {
             writer.writeCharacters(xmlStr);
         }
 
-        // 5. ELEMENT-representation bindings (child elements)
-        for (AttributeBinding attr : binding.getAttributes()) {
-            if (attr.getXmlRepresentation() != AttributeXMLRepresentation.ELEMENT) {
+        // 5. Child-producing bindings (ELEMENT and VIRTUAL), in content-model order where the
+        // type has a content model, otherwise in bean declaration order.
+        for (AttributeBinding attr : orderChildAttributes(binding, object)) {
+            if (attr.getXmlRepresentation() == AttributeXMLRepresentation.VIRTUAL) {
+                if (attr.isMulti()) {
+                    // A repeated unwrapped group has no wrapper element: each occurrence's children
+                    // are written inline back-to-back (issue 7 / criterion 17).
+                    Object rawList = invoke(attr, object);
+                    if (rawList == null) {
+                        continue;
+                    }
+                    for (Object item : (List<?>) rawList) {
+                        writeVirtualOccurrence(item, writer, depth, prettyPrint, prefixToNs, hasChildElement);
+                    }
+                } else {
+                    Object value = invoke(attr, object);
+                    writeVirtualOccurrence(value, writer, depth, prettyPrint, prefixToNs, hasChildElement);
+                }
                 continue;
             }
 
@@ -261,32 +305,127 @@ public class StaxWriter {
             }
         }
 
-        // 6. VIRTUAL-representation bindings (inline children of the virtual type into the parent)
-        for (AttributeBinding attr : binding.getAttributes()) {
-            if (attr.getXmlRepresentation() != AttributeXMLRepresentation.VIRTUAL) {
-                continue;
-            }
-            if (attr.isMulti()) {
-                // A repeated unwrapped group has no wrapper element: each occurrence's children
-                // are written inline back-to-back (issue 7 / criterion 17).
-                Object rawList = invoke(attr, object);
-                if (rawList == null) {
-                    continue;
-                }
-                for (Object item : (List<?>) rawList) {
-                    writeVirtualOccurrence(item, writer, depth, prettyPrint, prefixToNs, hasChildElement);
-                }
-            } else {
-                Object value = invoke(attr, object);
-                writeVirtualOccurrence(value, writer, depth, prettyPrint, prefixToNs, hasChildElement);
-            }
-        }
-
         // Close element
         if (prettyPrint && hasChildElement[depth]) {
             writer.writeCharacters("\n" + indent(depth));
         }
         writer.writeEndElement();
+    }
+
+    /**
+     * Returns the type's child-producing attributes (ELEMENT and VIRTUAL) in the order they should
+     * be written.
+     *
+     * <p>Without a content model this is plain bean declaration order, which is what the config's
+     * design constraint mandates for the (vast majority of) types that carry none. When the type
+     * does carry one, the properties the model mentions <em>and</em> that are actually populated on
+     * this instance are permuted into model order among the slots they already occupy; every other
+     * property — in particular one absent from the content model, such as
+     * {@code FpmlFxTargetKnockoutForward.barrier} — keeps its position. This is the same
+     * permute-in-place contract the Jackson-era {@code RosettaBeanSerializer} applied, so output
+     * ordering is unchanged from that engine.
+     *
+     * <p>Ordering is at Rosetta-property granularity: a VIRTUAL group's leaves form one contiguous
+     * block, so a group the model places before a direct element is emitted before it rather than
+     * being flushed last. Leaf order <em>within</em> a group follows the group type's own
+     * declaration order, as before.
+     */
+    private List<AttributeBinding> orderChildAttributes(TypeBinding binding, Object object) throws Exception {
+        List<AttributeBinding> children = childAttributesOf(binding);
+
+        XMLContentModelOrderer orderer = ordererFor(binding);
+        if (orderer == null) {
+            // The overwhelmingly common case: hand back the cached list, allocating nothing.
+            return children;
+        }
+
+        Set<String> contentModelProperties = orderer.getContentModelProperties();
+        List<Integer> presentSlots = new ArrayList<Integer>();
+        Map<String, Integer> presentNameToSlot = new LinkedHashMap<String, Integer>();
+        Set<String> present = new LinkedHashSet<String>();
+        for (int i = 0; i < children.size(); i++) {
+            AttributeBinding attr = children.get(i);
+            String name = attr.getLogicalName();
+            if (!contentModelProperties.contains(name) || !isPopulated(attr, object)) {
+                continue;
+            }
+            presentSlots.add(i);
+            presentNameToSlot.put(name, i);
+            present.add(name);
+        }
+        if (presentSlots.size() <= 1) {
+            return children;
+        }
+
+        List<String> ordered = orderer.order(present);
+        if (ordered == null || ordered.size() != presentSlots.size()) {
+            // The present combination cannot be consumed by the model; keep declaration order.
+            return children;
+        }
+
+        List<AttributeBinding> result = new ArrayList<AttributeBinding>(children);
+        for (int k = 0; k < presentSlots.size(); k++) {
+            Integer source = presentNameToSlot.get(ordered.get(k));
+            if (source == null) {
+                return children;
+            }
+            result.set(presentSlots.get(k), children.get(source));
+        }
+        return result;
+    }
+
+    /**
+     * The type's child-producing attributes (ELEMENT and VIRTUAL) in declaration order, cached
+     * per type. Filtering this on every element written showed up as measurable allocation on
+     * deeply nested documents.
+     */
+    private List<AttributeBinding> childAttributesOf(TypeBinding binding) {
+        Class<?> type = binding.getType();
+        List<AttributeBinding> cached = childAttributes.get(type);
+        if (cached != null) {
+            return cached;
+        }
+        List<AttributeBinding> children = new ArrayList<AttributeBinding>();
+        for (AttributeBinding attr : binding.getAttributes()) {
+            AttributeXMLRepresentation representation = attr.getXmlRepresentation();
+            if (representation == AttributeXMLRepresentation.ELEMENT
+                    || representation == AttributeXMLRepresentation.VIRTUAL) {
+                children.add(attr);
+            }
+        }
+        children = Collections.unmodifiableList(children);
+        List<AttributeBinding> raced = childAttributes.putIfAbsent(type, children);
+        return raced != null ? raced : children;
+    }
+
+    /**
+     * Returns the cached orderer for the type, or {@code null} when it has no content model.
+     * An empty {@link Optional} is cached for the latter so a type is only inspected once.
+     */
+    private XMLContentModelOrderer ordererFor(TypeBinding binding) {
+        Class<?> type = binding.getType();
+        Optional<XMLContentModelOrderer> cached = orderers.get(type);
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+        Optional<XMLContentModel> contentModel = binding.getContentModel();
+        Optional<XMLContentModelOrderer> orderer = contentModel.isPresent()
+                ? Optional.of(new XMLContentModelOrderer(contentModel.get()))
+                : Optional.<XMLContentModelOrderer>empty();
+        orderers.putIfAbsent(type, orderer);
+        return orderer.orElse(null);
+    }
+
+    /** True when the attribute has a value worth emitting (a non-null value, or a non-empty list). */
+    private boolean isPopulated(AttributeBinding attr, Object object) throws Exception {
+        Object value = invoke(attr, object);
+        if (value == null) {
+            return false;
+        }
+        if (attr.isMulti()) {
+            return !((List<?>) value).isEmpty();
+        }
+        return true;
     }
 
     /**
@@ -448,20 +587,57 @@ public class StaxWriter {
      * Invokes the getter for an {@link AttributeBinding} on the given object.
      *
      * <p>The getter stored in {@link AttributeBinding} is obtained from the builder impl class.
-     * The actual serialised object may be an immutable impl (not the builder).
-     * Both implement the same Rune interface, so we look up the method by name and signature
-     * on the actual object's class before invoking, which correctly dispatches to the impl.
+     * The actual serialised object is usually an immutable impl instead, so the stored
+     * {@link Method} cannot be invoked on it directly; the equivalent method is looked up by name
+     * and signature on the actual object's class, which dispatches correctly.
+     *
+     * <p>That lookup is cached per (getter, concrete class). Resolving it by catching
+     * {@link IllegalArgumentException} instead would mean building an exception and re-running
+     * {@link Class#getMethod} for every property of every element written — the dominant cost of
+     * serialising a large document.
      */
     private Object invoke(AttributeBinding attr, Object object) throws Exception {
-        java.lang.reflect.Method getter = attr.getGetter();
-        try {
-            // Try the stored getter first (works if object is a builder impl)
-            return getter.invoke(object);
-        } catch (IllegalArgumentException e) {
-            // Object is an immutable impl — look up the same method on its class
-            java.lang.reflect.Method resolved = object.getClass().getMethod(
-                    getter.getName(), getter.getParameterTypes());
-            return resolved.invoke(object);
+        return resolveGetter(attr.getGetter(), object.getClass()).invoke(object);
+    }
+
+    private Method resolveGetter(Method getter, Class<?> concreteClass) throws Exception {
+        if (getter.getDeclaringClass().isAssignableFrom(concreteClass)) {
+            return getter;
+        }
+        GetterKey key = new GetterKey(getter, concreteClass);
+        Method resolved = getters.get(key);
+        if (resolved == null) {
+            resolved = concreteClass.getMethod(getter.getName(), getter.getParameterTypes());
+            getters.putIfAbsent(key, resolved);
+        }
+        return resolved;
+    }
+
+    /** Cache key for a getter re-resolved against a concrete (usually immutable) impl class. */
+    private static final class GetterKey {
+        private final Method getter;
+        private final Class<?> concreteClass;
+
+        GetterKey(Method getter, Class<?> concreteClass) {
+            this.getter = getter;
+            this.concreteClass = concreteClass;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof GetterKey)) {
+                return false;
+            }
+            GetterKey other = (GetterKey) o;
+            return getter.equals(other.getter) && concreteClass.equals(other.concreteClass);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * getter.hashCode() + concreteClass.hashCode();
         }
     }
 

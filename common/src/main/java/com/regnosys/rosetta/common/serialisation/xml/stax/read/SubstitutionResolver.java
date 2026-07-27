@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Resolves the concrete Java type substituted for an {@code elementRef} XML substitution
@@ -76,9 +78,18 @@ public class SubstitutionResolver {
     private final RosettaXMLConfiguration config;
     private final ClassLoader classLoader;
 
-    private Map<String, ModelSymbolId> elementIndex;
-    private Map<String, List<ModelSymbolId>> substitutionGroupIndex;
-    private final Map<String, SubstitutionGroup> resolvedGroups = new HashMap<String, SubstitutionGroup>();
+    /**
+     * Built once, lazily, then only read. {@code volatile} + the double-checked lock in
+     * {@link #ensureIndexesBuilt()} makes that safe for the shared-mapper case (an
+     * {@code ObjectMapper} may be used from several threads); {@link #elementIndex} is assigned
+     * last and acts as the guard.
+     */
+    private volatile Map<String, ModelSymbolId> elementIndex;
+    private volatile Map<String, List<ModelSymbolId>> substitutionGroupIndex;
+
+    /** Concurrent for the same reason; a {@link SubstitutionGroup} is only read once published. */
+    private final ConcurrentMap<String, SubstitutionGroup> resolvedGroups =
+            new ConcurrentHashMap<String, SubstitutionGroup>();
 
     public SubstitutionResolver(RosettaXMLConfiguration config, ClassLoader classLoader) {
         this.config = config;
@@ -144,33 +155,42 @@ public class SubstitutionResolver {
         populateFromSubstitutionGroupIndex(elementRef, group, new HashSet<String>());
         populateFromLegacySubstitutionFor(headType, group);
 
-        resolvedGroups.put(elementRef, group);
-        return group;
+        SubstitutionGroup raced = resolvedGroups.putIfAbsent(elementRef, group);
+        return raced != null ? raced : group;
     }
 
     private void ensureIndexesBuilt() {
         if (elementIndex != null) {
             return;
         }
-        elementIndex = new HashMap<String, ModelSymbolId>();
-        substitutionGroupIndex = new HashMap<String, List<ModelSymbolId>>();
-
-        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : config.getTypeConfigMap().entrySet()) {
-            ModelSymbolId symbolId = entry.getKey();
-            TypeXMLConfiguration cfg = entry.getValue();
-
-            if (cfg.getXmlElementFullyQualifiedName().isPresent()) {
-                elementIndex.put(cfg.getXmlElementFullyQualifiedName().get(), symbolId);
+        synchronized (this) {
+            if (elementIndex != null) {
+                return;
             }
-            if (cfg.getSubstitutionGroup().isPresent()) {
-                String group = cfg.getSubstitutionGroup().get();
-                List<ModelSymbolId> members = substitutionGroupIndex.get(group);
-                if (members == null) {
-                    members = new ArrayList<ModelSymbolId>();
-                    substitutionGroupIndex.put(group, members);
+            Map<String, ModelSymbolId> elements = new HashMap<String, ModelSymbolId>();
+            Map<String, List<ModelSymbolId>> groups = new HashMap<String, List<ModelSymbolId>>();
+
+            for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : config.getTypeConfigMap().entrySet()) {
+                ModelSymbolId symbolId = entry.getKey();
+                TypeXMLConfiguration cfg = entry.getValue();
+
+                if (cfg.getXmlElementFullyQualifiedName().isPresent()) {
+                    elements.put(cfg.getXmlElementFullyQualifiedName().get(), symbolId);
                 }
-                members.add(symbolId);
+                if (cfg.getSubstitutionGroup().isPresent()) {
+                    String group = cfg.getSubstitutionGroup().get();
+                    List<ModelSymbolId> members = groups.get(group);
+                    if (members == null) {
+                        members = new ArrayList<ModelSymbolId>();
+                        groups.put(group, members);
+                    }
+                    members.add(symbolId);
+                }
             }
+
+            // elementIndex is the guard, so it must be published last.
+            substitutionGroupIndex = groups;
+            elementIndex = elements;
         }
     }
 

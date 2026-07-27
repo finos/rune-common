@@ -50,6 +50,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Builds a {@link TypeBinding} for a Rune-generated type.
@@ -64,10 +66,60 @@ import java.util.Optional;
  * precede subtype attributes. Within each type level, declaration order is derived
  * from {@link Class#getDeclaredFields()}, which the JVM spec guarantees follows
  * source order (unlike {@link Class#getDeclaredMethods()}, which does not on Java 9+).
+ *
+ * <h3>Caching</h3>
+ * Introspecting a type is pure reflection ({@link Class#getDeclaredFields()},
+ * {@link Class#getMethods()} per attribute) and its result depends only on the type and the
+ * config, both immutable for the lifetime of a read or write. The binder asks for the same
+ * handful of types once per XML element, so results are memoised per (config, type); without
+ * this, reflection dominates the cost of every document.
+ *
+ * <p>The cache is concurrent because an introspector is owned by a {@code StaxReader} /
+ * {@code StaxWriter}, which in turn is owned by one mapper instance — and a mapper (in particular
+ * the {@code ObjectMapper} facade, whose contract promises it) may be shared across threads.
+ * {@link TypeBinding} itself is immutable, so publishing a completed binding is safe; a race
+ * merely recomputes one.
  */
 public class RuneTypeIntrospector {
 
+    /**
+     * Memoised bindings for {@link #cachedConfig}. The hot path is one volatile read plus one map
+     * lookup — no key allocation, and no {@code equals} on the config itself
+     * ({@link RosettaXMLConfiguration} overrides it, so hashing by value would deep-compare a
+     * structure with thousands of entries on every element).
+     */
+    private final ConcurrentMap<Class<?>, TypeBinding> bindings =
+            new ConcurrentHashMap<Class<?>, TypeBinding>();
+
+    /**
+     * The config {@link #bindings} was populated for, compared by reference. Every caller reuses a
+     * single config instance for its lifetime, so this is set once; if a caller does pass a
+     * different config, the cache is dropped and rebuilt rather than returning a stale binding.
+     */
+    private volatile RosettaXMLConfiguration cachedConfig;
+
     public TypeBinding introspect(Class<?> type, RosettaXMLConfiguration config) {
+        if (config != cachedConfig) {
+            resetCacheFor(config);
+        }
+        TypeBinding cached = bindings.get(type);
+        if (cached != null) {
+            return cached;
+        }
+        TypeBinding binding = doIntrospect(type, config);
+        TypeBinding raced = bindings.putIfAbsent(type, binding);
+        return raced != null ? raced : binding;
+    }
+
+    private synchronized void resetCacheFor(RosettaXMLConfiguration config) {
+        if (config == cachedConfig) {
+            return;
+        }
+        bindings.clear();
+        cachedConfig = config;
+    }
+
+    private TypeBinding doIntrospect(Class<?> type, RosettaXMLConfiguration config) {
         Class<?> builderClass = getBuilderClass(type);
 
         List<Class<?>> builderHierarchy = collectBuilderHierarchy(builderClass);
@@ -377,8 +429,8 @@ public class RuneTypeIntrospector {
 
     /**
      * Extracts the namespace portion from a fully-qualified XML name of the form
-     * {@code namespace/localName} — the same convention as
-     * {@link com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap.XMLFullyQualifiedName}.
+     * {@code namespace/localName} — the convention the config's
+     * {@code xmlElementFullyQualifiedName} field uses.
      * Returns {@code null} if there is no {@code /} in the string.
      */
     private String extractNamespaceFromFqn(String fqn) {

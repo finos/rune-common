@@ -716,7 +716,7 @@ group accumulates all instances).
 > **Next: Step 6 — full test pass, benchmark, delete the dead Jackson XML classes, drop
 > `jackson-dataformat-xml`.**
 
-## Step 6 — Full test pass, performance, cleanup (1–2 weeks)
+## Step 6 — Full test pass, performance, cleanup (1–2 weeks) — ✅ COMPLETE (2026-07-27)
 
 1. Green the entire `serialisation/xml` test package + `mvn clean install` (checkstyle:
    no `com.google.inject.*`, use `jakarta.inject`).
@@ -730,8 +730,63 @@ group accumulates all instances).
 5. Remove the `jackson-dataformat-xml` dependency from `common/pom.xml` if nothing else
    needs it; keep the pinned Woodstox/StAX dep.
 
+> **STATUS: DONE.** `mvn clean install` green across both modules: `common` **334 tests pass,
+> 0 failures, 3 skipped** (pre-existing `@Disabled`), `serialization` **63 pass, 0 failures,
+> 1 skipped**. Checkstyle clean. **20 Jackson-XML classes deleted** and
+> `jackson-dataformat-xml` is gone from the dependency tree entirely. Full detail in
+> `xml-mapper-stax-migration-progress.md`.
+>
+> **Back-compat addendum (6.6):** `RosettaXmlMapper` was restored at its original fully-qualified
+> name as a three-line `@Deprecated` subclass of `StaxXmlObjectMapper`, since its whole public
+> surface was one constructor whose signature the new class already matches exactly. It cannot
+> restore `extends XmlMapper` (that needs the dependency dropped in 6.5), and the `_readValue` /
+> `_readMapAndClose` hooks it used to override are now bypassed — both documented on the class and
+> pinned by `RosettaXmlMapperCompatibilityTest`. No other deleted class is shimmable: they all take
+> or return Jackson types.
+>
+> **Section 1 is complete.** Criteria 1–17 are met except the two the traceability table always
+> assigned to Section 2-A: issue 2 (latent) and the cardinality-clash half of issue 3.
+>
+> **Two real defects were found and fixed in this step — both by activities the plan
+> prescribed, neither visible by inspection:**
+> - **Content-model write ordering was missing from `StaxWriter`** (found by task 1, greening the
+>   old test suite, then proven with a new test). The Jackson engine ordered output via
+>   `XMLContentModelOrderer`; `StaxWriter` emitted all direct elements first and VIRTUAL groups
+>   last, so a group the model places *before* a direct element came out after it. Deleting the
+>   Jackson serializer without porting this would have been a silent regression. The orderer is a
+>   pure algorithm with no Jackson dependency, so it was **kept and made public**, and
+>   `StaxWriter` now drives it — the read/write duality is `ContentModelRouter` (4c) and
+>   `XMLContentModelOrderer` (6), both surviving in the `deserialization`/`serialization` packages
+>   the Jackson classes vacated.
+> - **The StAX binder was 9–30× slower than Jackson** (found by task 3's benchmark).
+>   `RuneTypeIntrospector.introspect()` ran full reflection *per XML element* with no caching, and
+>   `StaxWriter.invoke` resolved every getter by catching `IllegalArgumentException` and re-running
+>   `Class.getMethod`. Both are now cached; read went 40→5 ms and write 85→2 ms on a 419 KB
+>   document, bringing the binder to parity-or-better. **This is the plan's clearest vindication of
+>   step 6.3** — nothing in the test suite could have caught it.
+>
+> **Also fixed: pre-existing thread-unsafety.** Adding caches surfaced that `StaxReader.routerCache`
+> (Step 4c) and `SubstitutionResolver.resolvedGroups`/indexes (Step 4b) were already plain
+> `HashMap`s mutated on the read path — and `forXML(...)` returns an `ObjectMapper`, whose contract
+> promises thread safety and which consumers do cache and share. All caches are now
+> `ConcurrentHashMap`/volatile-guarded.
+>
+> **Criteria 13–17 regression tests use anonymous in-repo fixtures, not production files.**
+> `rune-common` is public and the harvested Step 0.5 fixtures live in a private repo, so
+> `XmlCriteriaRegressionTest` (7 tests) drives cut-down stand-ins defined in
+> `rosetta/rosetta-regression-type.rosetta` + `xml-config/regression-xml-config.json`, reproducing
+> each broken XML *shape* and asserting the previously-lost data is present. The private production
+> model was used only out-of-tree, to validate the benchmark.
+>
+> **One empirical finding worth carrying into Section 2-A:** criterion 15's shape (a direct element
+> and a substitution candidate sharing a local name) is only routable when occurrence bounds make
+> the position unambiguous — with `minOccurs: 0` on the direct element the content model is
+> genuinely ambiguous and the matcher correctly refuses to route it. That is the same constraint
+> XSD's Unique Particle Attribution imposes, so a generated content model that satisfies UPA will
+> route; one that does not, cannot. See the progress report.
+
 Exit: Section 1 complete — parity + collision fix + Jackson XML removed, all in
-`rune-common`.
+`rune-common`. ✅
 
 ---
 

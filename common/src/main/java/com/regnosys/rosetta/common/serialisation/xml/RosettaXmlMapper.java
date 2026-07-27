@@ -4,7 +4,7 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  * Rune Common
  * ==============
- * Copyright (C) 2018 - 2024 REGnosys
+ * Copyright (C) 2018 - 2026 REGnosys
  * ==============
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,135 +20,45 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonStreamContext;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
-import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
-import com.rosetta.model.lib.ModelSymbolId;
-import com.rosetta.model.lib.RosettaModelObject;
-import com.rosetta.model.lib.RosettaModelObjectBuilder;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
+import com.regnosys.rosetta.common.serialisation.xml.stax.RuneXmlMapper;
 
 /**
- * Custom XmlMapper that extends the standard XmlMapper and adds support for top-level
- * XML element substitution.
+ * Backwards-compatibility alias for {@link StaxXmlObjectMapper}, retained at the fully-qualified
+ * name the Jackson-based XML mapper used so that existing imports and constructor calls keep
+ * compiling.
+ *
+ * <p>The XML mapper is now a purpose-built StAX binder rather than a Jackson
+ * {@code jackson-dataformat-xml} mapper. Two consequences matter if you are holding a reference to
+ * this type:</p>
+ * <ul>
+ *   <li>It <strong>no longer extends {@code XmlMapper}</strong>, only {@link ObjectMapper} —
+ *       {@code jackson-dataformat-xml} is no longer a dependency of this module. Code that assigned
+ *       this to an {@code XmlMapper}-typed variable, or fed it to {@code new XmlMapper.Builder(..)},
+ *       must be reworked; see below.</li>
+ *   <li>Reading and writing bypass Jackson's streaming layer entirely, so overriding
+ *       {@code ObjectMapper}'s {@code _readValue} / {@code _readMapAndClose} in a subclass still
+ *       compiles but has <strong>no effect</strong> — those hooks are never reached.</li>
+ * </ul>
+ *
+ * <p>Note also that the former {@code RosettaXmlMapper} was never usable on its own: it had to be
+ * combined with the (now deleted) {@code RosettaSerialiserFactory} and {@code RosettaXMLModule} to
+ * produce Rosetta-aware XML. This class, by contrast, is fully configured on construction.</p>
+ *
+ * <p><strong>Prefer instead:</strong> {@link RosettaObjectMapperCreator#forXML} for an
+ * {@link ObjectMapper}-shaped result, or {@link RuneXmlMapper} for the native, Jackson-free API.</p>
+ *
+ * @deprecated use {@link RosettaObjectMapperCreator#forXML} or {@link RuneXmlMapper} directly.
+ *             Retained only for source compatibility with the deleted Jackson XML engine.
  */
-public class RosettaXmlMapper extends XmlMapper {
+@Deprecated
+public class RosettaXmlMapper extends StaxXmlObjectMapper {
+
     private static final long serialVersionUID = 1L;
-    private final RosettaXMLConfiguration config;
-    private final ClassLoader classLoader;
 
     public RosettaXmlMapper(RosettaXMLConfiguration config, ClassLoader classLoader) {
-        super((JacksonXmlModule) null);
-        this.config = config;
-        this.classLoader = classLoader;
-
-    }
-
-    @Override
-    protected Object _readValue(DeserializationConfig cfg, JsonParser p,
-                                JavaType valueType)
-            throws IOException
-    {
-        JavaType typeFromRootElementName = getTypeFromRootElementName(p);
-        Object value;
-        if (typeFromRootElementName != null) {
-            checkRootTypeIsSubtypeOfProvidedType(typeFromRootElementName, valueType);
-            value = super._readValue(cfg, p, typeFromRootElementName);
-        } else {
-            value = super._readValue(cfg, p, valueType);
-        }
-        return pruneObject(value);
-    }
-
-    @Override
-    protected Object _readMapAndClose(JsonParser p, JavaType valueType)
-            throws IOException
-    {
-        JavaType typeFromRootElementName = getTypeFromRootElementName(p);
-        Object value;
-        if (typeFromRootElementName != null) {
-            checkRootTypeIsSubtypeOfProvidedType(typeFromRootElementName, valueType);
-            value = super._readMapAndClose(p, typeFromRootElementName);
-        } else {
-            value = super._readMapAndClose(p, valueType);
-        }
-        return pruneObject(value);
-    }
-    
-    private void checkRootTypeIsSubtypeOfProvidedType(JavaType rootType, JavaType providedType) {
-        if (rootType.isTypeOrSubTypeOf(providedType.getRawClass())) {
-            return;
-        }
-        throw new IllegalArgumentException("The inferred root type " + rootType + " is not a subtype of the provided type " + providedType + ".");
-    }
-    
-    private JavaType getTypeFromRootElementName(JsonParser p) {
-        if (!isRootValueRead(p)) {
-            return null;
-        }
-        String rootElementName = getRootXMLElementName(p);
-        if (rootElementName == null) {
-            return null;
-        }
-        return getValueTypeForElement(rootElementName)
-                .map(this::convertClassToJavaType)
-                .orElse(null);
-    }
-
-    private boolean isRootValueRead(JsonParser p) {
-        JsonStreamContext context = p.getParsingContext();
-        return context == null || context.inRoot();
-    }
-    
-    private String getRootXMLElementName(JsonParser p) {
-        if (p instanceof FromXmlParser) {
-            FromXmlParser fromXmlParser = (FromXmlParser) p;
-            return fromXmlParser.getStaxReader().getLocalName();
-        }
-        return null;
-    }
-
-    private Optional<Class<?>> getValueTypeForElement(String elementName) {
-        for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : config.getTypeConfigMap().entrySet()) {
-            TypeXMLConfiguration typeXMLConfiguration = entry.getValue();
-            if (typeXMLConfiguration.getXmlElementName().map(x -> x.equals(elementName)).orElse(false)) {
-                ModelSymbolId modelSymbolId = entry.getKey();
-                try {
-                    Class<?> aClass = loadModelSymbolAsClass(modelSymbolId);
-                    return Optional.of(aClass);
-                } catch (ClassNotFoundException e) {
-                    return Optional.empty();
-                }
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private Class<?> loadModelSymbolAsClass(ModelSymbolId modelSymbolId) throws ClassNotFoundException {
-        return classLoader.loadClass(modelSymbolId.getQualifiedName().toString());
-    }
-
-    private JavaType convertClassToJavaType(Class<?> clazz) {
-        return getTypeFactory().constructType(clazz);
-    }
-
-    private Object pruneObject(Object value) {
-        if (value instanceof RosettaModelObjectBuilder) {
-            return ((RosettaModelObjectBuilder) value).prune();
-        }
-        if (value instanceof RosettaModelObject) {
-            return ((RosettaModelObject) value).toBuilder().prune().build();
-        }
-        return value;
+        super(config, classLoader);
     }
 }

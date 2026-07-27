@@ -32,7 +32,6 @@ import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.test.*;
 import com.rosetta.util.DottedPath;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
@@ -299,7 +298,9 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    @Disabled // TODO
+    // Repeated unwrapped group (issue 7 / criterion 17): the Jackson engine collapsed the two
+    // nestedContainerSequence1 occurrences into one, so this was @Disabled. Fixed on the StAX
+    // binder in Step 4d, on both the read and the write side.
     public void testNestedContainerSerialisation() throws IOException {
         // Construct a MultiCardinality object
         NestedContainer nestedContainer = NestedContainer.builder()

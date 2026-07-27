@@ -1170,3 +1170,122 @@ engine unchanged.
 4. The out-of-tree benchmark harness is disposable but the method is worth repeating after 2-A:
    interleaved rounds, byte-compare the output of both implementations, and check a real
    production-scale document as well as synthetic ones.
+
+---
+
+## Post-Section-1 — merge from `main` (2026-07-27)
+
+Branch brought up to `main` at **`5dbdb6f`** (merge commit `2779b89`); 15 commits since the previous
+merge base `0d21df4`. `mvn clean install` green: `common` **365 tests, 0 failures, 2 skipped**,
+`serialization` **65, 0 failures, 1 skipped**. Checkstyle: 0 violations.
+
+(The merge commit itself recorded 3 skipped; a follow-up commit re-enabled one more pre-existing
+`@Disabled` test — see the last section.)
+
+The merge was rehearsed in a throwaway `git worktree` first, resolved there and built end-to-end
+before touching the branch — worth repeating for any future merge of this size, since two of the
+four required edits are invisible to `git`'s conflict detection or to inspection of the conflicts
+alone.
+
+### Four edits, only two of which `git` flagged as conflicts
+
+| File | Why | Resolution |
+|---|---|---|
+| `pom.xml` | main bumped `jackson.version` 2.17.1 → 2.18.8 on the line above the branch's `woodstox.version`/`stax2-api.version` | Keep both — adjacent lines, no semantic clash |
+| `RosettaObjectMapperCreator.java` | main's new `platformIndependentPrettyPrinter` (#675) imports `XmlMapper` + `DefaultXmlPrettyPrinter` — **from the dependency Step 6.5 deleted** | Dropped the `instanceof XmlMapper` branch; kept the CSV/JSON branches |
+| `ClasspathTransformMapperFactoryTest.java` | main renamed and rewrote `TransformObjectMapperFactoryTest` (64% similarity), colliding with Step 5's two `assertInstanceOf` updates | Took main's shape; `XmlMapper` → `StaxXmlObjectMapper` (3 sites) |
+| `TransformSerializationResolverTest.java` | **New file on main — merged with no conflict at all**, but asserts `assertInstanceOf(XmlMapper.class, …)` | Same swap |
+
+**The pretty-printer resolution is the one that needed a judgement call.** Main added the method to
+pin Jackson's pretty printers to `"\n"` so serialised documents compare byte-for-byte across
+operating systems. Its XML branch is not merely uncompilable here — it is *unreachable*:
+`forXML(...)` returns a prebuilt `StaxXmlObjectMapper`, so `create()` returns before reaching the
+method (Step 5's `prebuilt` flag), and `StaxWriter` already emits `"\n"` unconditionally rather than
+`System.lineSeparator()`. So deleting the branch loses nothing — the intent of #675 is satisfied for
+XML by construction. That reasoning is recorded in a javadoc note on the method so a future reader
+doesn't "restore" it.
+
+**Lesson for future merges: a clean `git merge` is not a clean merge.** Half the required edits here
+were in files `git` auto-merged happily. Any commit on `main` that touches
+`com.fasterxml.jackson.dataformat.xml` will compile there and break here, and `git` cannot see that
+— the signal is the *dependency* Step 6.5 removed, not the conflict list. Grep the incoming diff for
+that package before trusting a green merge.
+
+### Main's `XMLContentModelMatcher` fix auto-merged and needed nothing
+
+`b2cf539` (#659) fixes the matcher's zero-width optional-content handling — a `SEQUENCE(min=1)`
+whose sole child is an already-optional `CHOICE(min=0)` wrongly returned `NO_MATCH`, the exact shape
+generated for `fpml.consolidated.doc.TradeIdentifier`. The branch's only edit to that file was a
+javadoc reference (`XMLContentModelDisambiguatingDeserializer` → `ContentModelRouter`), so the two
+changes merged cleanly on different hunks.
+
+This is the reuse boundary from Step 4c paying off: because `ContentModelRouter` is a facade over the
+**unchanged** matcher rather than a fork of it, a fix authored against the Jackson engine landed in
+the StAX engine for free. `StaxReaderContentModelTest` (15), `XmlContentModelDisambiguationTest`
+(14), `XMLContentModelMatcherNamespaceTest` (5) and main's new
+`XMLContentModelMatcherZeroWidthOptionalContentTest` (2) are all green — no routing regressions in
+either direction.
+
+### #662 closes itself — the first external validation of the migration
+
+`24d679b` (#653) added two tests reproducing a **real production misdeserialisation**: a
+substitution-group attribute inside a VIRTUAL wrapper. Jackson buffers the unwrapped property
+through a `TokenBuffer`, which discards the XML namespace, so `SubstitutedMethodProperty` cannot do
+its namespace lookup and instead guesses among every type registered under the local name `llama`,
+keeping whichever populates the most fields — and the identical content fills more fields on the
+*extension* `Llama` (its own VIRTUAL wrapper object is counted too). The control test (substituted
+attribute as a direct property) passed; the VIRTUAL one was committed `@Disabled` against
+[finos/rune-common#662](https://github.com/finos/rune-common/issues/662), open question: how to fix.
+
+**Both pass on the StAX binder; the `@Disabled` is removed as part of this merge.** There is no
+`TokenBuffer` — the reader knows each element's real namespace natively — so the base `Llama`
+(`urn:my.schema/llama`) resolves by exact namespace match regardless of nesting depth. The test's
+comment was rewritten to describe the Jackson failure in the past tense and why the mechanism can no
+longer occur.
+
+This matters beyond the one test. Every criterion-13–17 regression test in `XmlCriteriaRegressionTest`
+was written *by this migration, for this migration* — necessarily so, since the harvested production
+fixtures live in a private repo (Step 6, task 2). #662 is the first test written **independently**,
+by someone else, from a real schema, against the old engine, with no knowledge of this branch — and
+the new engine passes it unmodified. It is the strongest available evidence that the migration fixes
+the real-world class of bug rather than its own reconstruction of it. Criterion 16's status is
+unchanged (already green) but is now backed by an external, production-derived case.
+
+### Confirmed no-ops
+
+- **Windows/LF work (`bd42f30`, `4cab80d`).** `StaxWriter` already hardcodes `"\n"`; every StAX test
+  already reads fixtures with explicit `StandardCharsets.UTF_8`; main's `.gitattributes` is a blanket
+  `* text=auto eol=lf`, covering the branch's new fixtures without listing them. The new
+  `LineEndings.normalise` utility is additive — nothing in the binder needs it.
+- **DSL 10.0.1 → 10.3.0** (four bumps) and **jackson 2.17.1 → 2.18.8**: no binder changes. Worth
+  noting because `RuneTypeIntrospector` reads generated-code shape directly (`@RuneAttribute`,
+  `@Multi`, `@RuneDataType.builder()`, and `getDeclaredFields()` order — see Step 1's design notes),
+  so a DSL bump is the one routine dependency change that *could* break it. It didn't, but it is the
+  thing to check first if a future bump causes unexplained introspection failures. The dependency-tree
+  snippet in §6.5 above now reads `2.18.8` for the yaml/csv lines; Woodstox 6.6.2/stax2 4.2.2 and the
+  absence of `jackson-dataformat-xml` are re-verified unchanged.
+- **Transform-mapper refactor (`4773252`, `b7cad3d`)** — `TransformObjectMapperFactory` split into
+  `ClasspathTransformMapperFactory` / `CachingTransformMapperFactory` / `TransformSerializationResolver`.
+  Touches only *which* mapper gets built and cached, not how the XML one works, so the two test-side
+  assertion swaps above were the whole cost.
+
+### Skipped-test count: 3 → 2, and the XML suite now has none
+
+Two `@Disabled` annotations were removed and none added, so `common` ends at **2 skipped** (both in
+`RosettaSerialisationTest`, unrelated to XML). `XmlSerialisationTest` runs **29 tests, 0 skipped**:
+
+1. **`testBaseNamespaceSubstitutionDeserialisationWithTokenBufferParser`** — arrived `@Disabled` with
+   this merge (#662, above), passes on the StAX binder.
+2. **`testNestedContainerSerialisation`** — a pre-existing branch item, not a merge one, but resolved
+   here because the merge prompted checking it. This is the plan's own issue-7 fixture (repeated
+   unwrapped group `nestedContainerSequence1`, `1..*`, no wrapper element). Step 4d fixed the
+   collapse-to-one bug on **both** read and write, but tested it through the new `StaxReaderTest` /
+   `StaxWriterVirtualTest` cases and left this one `@Disabled // TODO` on the stated grounds that
+   fixing the *Jackson* engine was out of scope. That reasoning went stale at Step 5: once
+   `forXML(...)` was repointed, this test began exercising the StAX binder. Verified passing, so the
+   annotation is removed and the unused `org.junit.jupiter.api.Disabled` import dropped.
+
+Point 2 is worth generalising: **when Step 5 repointed the public entry point, every `@Disabled`
+Jackson-era test in the XML suite silently became a StAX test.** Any such annotation justified by
+"the old engine can't do this" should be re-run rather than trusted — the justification expired at
+Step 5, not at Step 6. Both were the last two in the suite, so this is now closed out.

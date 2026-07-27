@@ -24,10 +24,15 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.util.DefaultXmlPrettyPrinter;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXmlMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -144,6 +149,26 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
                 .setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
 
+        PrettyPrinter prettyPrinter = platformIndependentPrettyPrinter(mapper);
+        if (prettyPrinter != null) {
+            mapper.setDefaultPrettyPrinter(prettyPrinter);
+        }
         return mapper;
+    }
+
+    /**
+     * Jackson's default pretty printers separate lines with the platform line separator.
+     * Serialised documents are stored and compared across operating systems, so pretty
+     * printing always uses "\n". CSV is left alone: its line separator comes from the
+     * {@code CsvSchema}, which already defaults to "\n".
+     */
+    private static PrettyPrinter platformIndependentPrettyPrinter(ObjectMapper mapper) {
+        if (mapper instanceof CsvMapper) {
+            return null;
+        }
+        if (mapper instanceof XmlMapper) {
+            return new DefaultXmlPrettyPrinter().withCustomNewLine("\n");
+        }
+        return new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter("  ", "\n"));
     }
 }

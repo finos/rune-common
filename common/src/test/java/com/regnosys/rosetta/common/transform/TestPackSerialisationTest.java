@@ -21,6 +21,8 @@ package com.regnosys.rosetta.common.transform;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TestPackSerialisationTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_ABSENT);
+  // Pretty printing is pinned to "\n" (as in RosettaObjectMapperCreator) so the
+  // round-trip matches the LF fixture files on every platform
+  private final ObjectMapper objectMapper = new ObjectMapper()
+      .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+      .setDefaultPrettyPrinter(new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter("  ", "\n")));
 
   @Test
   void testPackProjectionEmirTradeCommodity() throws IOException {

@@ -334,7 +334,7 @@ All under `common/src/main/java/com/regnosys/rosetta/common/serialisation/xml/st
 |---|---|---|---|
 | 4a | `StaxReader` core + root inference + VIRTUAL + pruning | Sonnet (main) | ✅ |
 | 4b | Substitution groups + polymorphism on read | Sonnet (main) | ✅ |
-| 4c | Content-model disambiguation | — | ⬜ |
+| 4c | Content-model disambiguation | Opus (main) | ✅ |
 | 4d | Multi-cardinality accumulation + full suite green | — | ⬜ |
 
 ### Step 4a — Basic stream → builder + attribute/element collision fix ✅ (2026-06-28)
@@ -476,7 +476,125 @@ side). Full closure + a real `TradeUnderlyer2` regression test lands in Step 6.
 point — content-model routing should slot in as an additional resolution phase without changing
 `handleChildElement`/`applyChildElement`'s call shape (`ElementMatch(AttributeBinding, Class<?>)`).
 
-### Step 4c — Content-model disambiguation ⬜
+### Step 4c — Content-model disambiguation ✅ (2026-07-27)
+
+**Files created:**
+
+| File | Role |
+|---|---|
+| `.../xml/deserialization/ContentModelRouter.java` | Public, Jackson-free facade over the (unchanged) `XMLContentModelMatcher`, plus the ported lenient-recovery policy |
+| `.../xml/stax/read/XmlCursor.java` | 10-method pull-parser interface the reader consumes |
+| `.../xml/stax/read/StaxCursor.java` | `XmlCursor` over a live `XMLStreamReader` (pass-through) |
+| `.../xml/stax/read/BufferedSubtree.java` | Captures one element subtree as a replayable event list + its replay cursor |
+| `.../xml/stax/read/VirtualPathAssembler.java` | StAX-native port of `VirtualPathBuilderHelper` |
+| `.../xml/stax/read/BuilderAccess.java` | Shared builder reflection (`newBuilder` / `apply` / `findByLogicalName`) |
+
+**Files modified:** `StaxReader.java` (reads via `XmlCursor`; new routed read path).
+
+**Test file:** `.../xml/stax/read/StaxReaderContentModelTest.java` — 15 tests.
+**Test resource:** `serialisation/xml/xml-config/content-model-namespace-xml-config.json`.
+
+**Full module: 325 tests pass, 0 failures, 3 skipped** (baseline before this step was 310;
+the jump from the 287 recorded at Step 4b is the merge from `main`). Checkstyle clean;
+`mvn clean install` green.
+
+#### Reuse boundary: the matcher is untouched
+
+`XMLContentModelMatcher` is reused **byte-for-byte unchanged**, exactly as the plan requires.
+It is package-private, so rather than widening its visibility (or that of `RoutingInput` and
+`RoutingResult`), a new public `ContentModelRouter` sits alongside it in the same package and
+translates between the two worlds:
+
+- **in:** `ContentModelRouter.Element(localName, namespaceUri)` per child, in document order;
+- **out:** `Route.getPath(childIndex)` → Rosetta property path, and
+  `Route.getOccurrenceKey(childIndex)` → opaque occurrence identity.
+
+That keeps the Jackson-era `RoutingInput.Namespace.UNKNOWN` state off the StAX side entirely
+(the StAX reader always knows the namespace) and gives Step 6 a class worth keeping when the
+Jackson deserializers are deleted.
+
+#### Read pipeline
+
+1. `routerFor(type, binding)` — returns a cached `ContentModelRouter` for the type, or `null`
+   when there is no `contentModel` or `requiresRouting` is false. Non-ambiguous types keep the
+   Step 4a/4b streaming path with **zero buffering overhead**.
+2. `readRoutedObject` buffers every child element (name + namespace URI + `BufferedSubtree`) in
+   document order, accumulating VALUE text alongside.
+3. The child sequence goes to `ContentModelRouter.route(...)`, which filters to the names the
+   content model mentions (or all of them when the model contains an `ANY`), matches strictly,
+   and falls back to lenient recovery on failure.
+4. Each child is bound by its routed path: multi-segment → `VirtualPathAssembler`;
+   single-segment → the named attribute directly (by **logical** name, which may differ from the
+   XML name that got routed there); no path → plain name matching via the existing
+   `handleChildElement`, so elements outside the content model (e.g. `barrier` on
+   `FpmlFxTargetKnockoutForward`) still bind normally.
+
+#### Key design decisions
+
+**`XmlCursor` instead of implementing `XMLStreamReader`.** Routing cannot decide where a child
+belongs until it has seen all of them, and a StAX cursor cannot rewind — so children must be
+buffered and replayed. Replaying through a hand-written `XMLStreamReader` would have meant ~30
+stub methods; instead `StaxReader` now reads through a 10-method `XmlCursor` with two
+implementations. One read path serves live XML and buffered subtrees, so nested routing,
+substitution, VIRTUAL handling and scalar conversion work inside a buffered subtree with no
+duplicated logic. Only private signatures changed.
+
+**Buffering keeps XML shape, unlike `TokenBuffer`.** `BufferedSubtree` is a flat event list
+retaining element names, namespace URIs, attributes and document order. Jackson's `TokenBuffer`
+flattens XML onto a JSON-shaped stream and drops the namespace context — the root cause of
+issue 6 and of the `UNKNOWN` fallback.
+
+**Occurrence identity by `equals`, not `toString`.** The Jackson path stringified the matcher's
+`OccurrenceKey` to group leaves into one virtual object; since `OccurrenceFrame` has no
+`toString`, that string was identity-hash-based. `Route` exposes the key as an opaque `Object`
+and `VirtualPathAssembler` compares with `Objects.equals`, which is strictly more accurate.
+The "same leaf twice in one occurrence → start a new occurrence" rule is preserved, using a
+fresh sentinel key that no later assignment can join (equivalent to the old `key + "#" + n`).
+
+**Introspector-driven virtual walk.** `VirtualPathAssembler` resolves each path segment through
+`RuneTypeIntrospector` (logical name → `AttributeBinding` → setter/adder + value type) instead of
+guessing `addX`/`setX` by reflection as `VirtualPathBuilderHelper` did. Leaf values are read back
+via a `LeafValueReader` callback into `StaxReader`, so a routed leaf is deserialised by exactly
+the same code as any other element.
+
+**Lenient policy is duplicated, deliberately.** The reorder → drop-un-routable → give-up cascade
+was ported into `ContentModelRouter` rather than refactored out of
+`XMLContentModelDisambiguatingDeserializer`. Step 4c does not touch the Jackson engine (which
+Step 6 deletes), and the warnings observed in the test run confirm the same three recovery paths
+fire on the same documents.
+
+#### Tests
+
+The 12 deserialisation cases of `XmlContentModelDisambiguationTest` are ported one-for-one, so
+the StAX binder is held to the Jackson engine's exact routing behaviour: `FpmlTradeIdentifier`
+virtual/direct branches, both `FpmlFxTargetKnockoutForward` examples, multi-leaf occurrences,
+ALL, ANY, multi-layer virtual paths, mixed nested choices, and the three lenient cases (missing
+required element, genuinely ambiguous, misordered-but-valid).
+
+Three namespace tests have **no Jackson counterpart** — they only pass because the reader feeds
+the matcher real namespace state:
+
+| Test | Proves |
+|---|---|
+| `testNamespaceQualifiedContentModelRoutes` | a namespace-qualified model matches and groups by occurrence normally |
+| `testWrongNamespaceIsNotRoutedByLocalNameAlone` | a foreign-namespace element is **rejected** by the model (Jackson's `UNKNOWN` matched it permissively), falling back to name binding |
+| `testSameLocalNameInDifferentNamespacesRoutesToDistinctSlots` | two model branches sharing local name `value`, differing only by namespace, route to **distinct** slots — the issue-6 shape that `XMLContentModelMatcherNamespaceTest` shows Jackson reports as AMBIGUOUS |
+
+#### Criterion status
+
+- **Criterion 4** (SEQUENCE/CHOICE/ALL/ANY, occurrence bounds, nested multi-layer virtual
+  paths): green.
+- **Criteria 15/16**: the missing mechanism now exists — same-local-name elements are separated
+  by content-model position **and** by real namespace. Closing criterion 15 against the
+  production `TradeUnderlyer2` still requires a `contentModel` to be emitted for that type; per
+  Step 0, only ~2 types per production config carry one, so that fixture-level regression test
+  stays a **Section 2-A** dependency, exactly as the traceability table states.
+
+**Carry-forward for Step 4d:** routed multi-cardinality already accumulates (each occurrence
+calls the adder, verified by the Fx and multi-leaf tests). Issue 7 concerns a repeated
+**unwrapped group** on a type with *no* content model, which goes through the streaming path's
+`getOrCreateVirtualBuilder` — that still creates a single virtual builder per attribute and so
+collapses repeats to one. That is the remaining work.
 
 ### Step 4d — Multi-cardinality accumulation + full suite green ⬜
 

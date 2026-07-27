@@ -23,6 +23,8 @@ package com.regnosys.rosetta.common.serialisation.xml.stax.read;
 import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLRepresentation;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
+import com.regnosys.rosetta.common.serialisation.xml.deserialization.ContentModelRouter;
 import com.regnosys.rosetta.common.serialisation.xml.stax.convert.StaxScalarConverter;
 import com.regnosys.rosetta.common.serialisation.xml.stax.introspect.AttributeBinding;
 import com.regnosys.rosetta.common.serialisation.xml.stax.introspect.RuneTypeIntrospector;
@@ -37,8 +39,12 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Deserialises XML into Rune model objects using a StAX {@link XMLStreamReader}.
@@ -65,6 +71,13 @@ import java.util.Map;
  * {@code elementRef}) are resolved via {@link SubstitutionResolver}, which picks the
  * concrete type by namespace-aware lookup first, falling back to local-name-only lookup
  * (criteria 15/16) — see {@link #resolveElementMatch}.
+ *
+ * <p>Types whose config carries an ambiguous {@code contentModel} are read through
+ * {@link #readRoutedObject}: their children are buffered in document order and routed by
+ * {@link ContentModelRouter} before being bound, which is what lets one XML element name reach
+ * different Rosetta slots depending on position (criterion 4). Elements are matched against the
+ * content model with their real StAX namespace, so a namespace-qualified model never falls back to
+ * permissive local-name matching the way the Jackson path was forced to.
  */
 public class StaxReader {
 
@@ -73,6 +86,8 @@ public class StaxReader {
     private final StaxScalarConverter converter;
     private final ClassLoader classLoader;
     private final SubstitutionResolver substitutionResolver;
+    private final VirtualPathAssembler virtualPathAssembler;
+    private final Map<Class<?>, ContentModelRouter> routerCache = new HashMap<>();
 
     public StaxReader(RosettaXMLConfiguration config, ClassLoader classLoader) {
         this.config = config;
@@ -80,6 +95,7 @@ public class StaxReader {
         this.converter = new StaxScalarConverter(config);
         this.classLoader = classLoader;
         this.substitutionResolver = new SubstitutionResolver(config, classLoader);
+        this.virtualPathAssembler = new VirtualPathAssembler(introspector, config, this::readLeafValue);
     }
 
     /**
@@ -106,16 +122,17 @@ public class StaxReader {
                 return null;
             }
 
-            String rootLocalName = reader.getLocalName();
+            XmlCursor cursor = new StaxCursor(reader);
+            String rootLocalName = cursor.getLocalName();
             Class<?> concreteType = inferTypeFromRootElement(rootLocalName, hintType);
 
             // Scalar types at root level (e.g. ZonedDateTime) are read as text content
             if (isScalarType(concreteType)) {
-                String text = reader.getElementText();
+                String text = cursor.getElementText();
                 return (T) converter.fromXmlString(text, concreteType);
             }
 
-            Object result = readObject(reader, concreteType);
+            Object result = readObject(cursor, concreteType);
             return (T) pruneObject(result);
         } finally {
             reader.close();
@@ -166,20 +183,27 @@ public class StaxReader {
     /**
      * Reads one Rune model object starting at the current START_ELEMENT.
      *
-     * <p>Contract: the reader is positioned on the START_ELEMENT for this object's element
-     * when the method is called; on return the reader is positioned on the matching
-     * END_ELEMENT. This allows the caller to call {@code reader.next()} immediately to
+     * <p>Contract: the cursor is positioned on the START_ELEMENT for this object's element
+     * when the method is called; on return the cursor is positioned on the matching
+     * END_ELEMENT. This allows the caller to call {@code cursor.next()} immediately to
      * advance past the END_ELEMENT.
      */
-    private Object readObject(XMLStreamReader reader, Class<?> type) throws Exception {
+    private Object readObject(XmlCursor cursor, Class<?> type) throws Exception {
         TypeBinding binding = introspector.introspect(type, config);
-        Object builder = binding.getBuilderType().getDeclaredConstructor().newInstance();
+
+        // Ambiguous types need all children in hand before any can be bound — see readRoutedObject.
+        ContentModelRouter router = routerFor(type, binding);
+        if (router != null) {
+            return readRoutedObject(cursor, binding, router);
+        }
+
+        Object builder = BuilderAccess.newBuilder(binding);
 
         // 1. Read XML attributes from the current START_ELEMENT.
         //    StAX exposes XML attributes and namespace declarations separately when
         //    IS_NAMESPACE_AWARE is true. getAttributeCount() counts only non-namespace
         //    attributes, so xmlns declarations are naturally excluded.
-        readXmlAttributesInto(reader, binding, builder);
+        readXmlAttributesInto(cursor, binding, builder);
 
         // 2. Lazy virtual builders: created on demand as child elements arrive.
         Map<AttributeBinding, Object> virtualBuilders =
@@ -189,37 +213,170 @@ public class StaxReader {
         StringBuilder textContent = new StringBuilder();
 
         // 4. Process child events until the END_ELEMENT for this element.
-        while (reader.hasNext()) {
-            int event = reader.next();
+        while (cursor.hasNext()) {
+            int event = cursor.next();
             if (event == XMLStreamConstants.END_ELEMENT) {
                 break;
             }
             if (event == XMLStreamConstants.START_ELEMENT) {
-                String childLocalName = reader.getLocalName();
-                handleChildElement(childLocalName, reader, binding, builder, virtualBuilders);
-                // After handleChildElement, reader is positioned on the END_ELEMENT of child.
+                String childLocalName = cursor.getLocalName();
+                handleChildElement(childLocalName, cursor, binding, builder, virtualBuilders);
+                // After handleChildElement, cursor is positioned on the END_ELEMENT of child.
             } else if (event == XMLStreamConstants.CHARACTERS
                     || event == XMLStreamConstants.CDATA) {
-                textContent.append(reader.getText());
+                textContent.append(cursor.getText());
             }
         }
 
         // 5. Apply accumulated VALUE text content
-        String text = textContent.toString().trim();
-        if (!text.isEmpty()) {
-            applyValueContent(text, binding, builder);
-        }
+        applyValueContent(textContent, binding, builder);
 
         // 6. Apply virtual builders: build each virtual object and set it on the parent
-        for (Map.Entry<AttributeBinding, Object> entry : virtualBuilders.entrySet()) {
-            AttributeBinding attr = entry.getKey();
-            Object virtualBuilder = entry.getValue();
-            Object builtVirtual = ((RosettaModelObjectBuilder) virtualBuilder).build();
-            setOnBuilder(builder, attr, builtVirtual);
-        }
+        applyVirtualBuilders(virtualBuilders, builder);
 
         // 7. Build the immutable object
         return ((RosettaModelObjectBuilder) builder).build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Content-model disambiguation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the router for {@code type}, or {@code null} when the type needs no content-model
+     * routing (no content model, or one that plain name-based binding already handles correctly).
+     * Routers are cached per type: building one indexes the whole content model.
+     */
+    private ContentModelRouter routerFor(Class<?> type, TypeBinding binding) {
+        if (routerCache.containsKey(type)) {
+            return routerCache.get(type);
+        }
+        Optional<XMLContentModel> contentModel = binding.getContentModel();
+        ContentModelRouter router = null;
+        if (contentModel.isPresent() && ContentModelRouter.requiresRouting(contentModel.get())) {
+            router = new ContentModelRouter(contentModel.get(), type.getName());
+        }
+        routerCache.put(type, router);
+        return router;
+    }
+
+    /**
+     * Reads one object whose type carries an ambiguous content model.
+     *
+     * <p>Every child element is buffered in document order (name + namespace + subtree), then the
+     * whole sequence is handed to {@link ContentModelRouter}. Each child is then bound according to
+     * its routed path:
+     * <ul>
+     *   <li>multi-segment path — routed into a virtual (unwrapped) sub-object by
+     *       {@link VirtualPathAssembler}, grouped by content-model occurrence;</li>
+     *   <li>single-segment path — set directly on the named attribute of this type;</li>
+     *   <li>no path (name absent from the content model, or a lenient recovery gave up) — bound by
+     *       plain name matching, exactly as a non-routed type would.</li>
+     * </ul>
+     *
+     * <p>XML attributes never enter routing: StAX reports them separately from child elements, so
+     * unlike the Jackson path there is no need to filter attribute-named "fields" out of the input.
+     */
+    private Object readRoutedObject(XmlCursor cursor, TypeBinding binding, ContentModelRouter router)
+            throws Exception {
+        Object builder = BuilderAccess.newBuilder(binding);
+        readXmlAttributesInto(cursor, binding, builder);
+
+        List<BufferedChild> children = new ArrayList<BufferedChild>();
+        StringBuilder textContent = new StringBuilder();
+        while (cursor.hasNext()) {
+            int event = cursor.next();
+            if (event == XMLStreamConstants.END_ELEMENT) {
+                break;
+            }
+            if (event == XMLStreamConstants.START_ELEMENT) {
+                children.add(new BufferedChild(cursor.getLocalName(), cursor.getNamespaceURI(),
+                        BufferedSubtree.capture(cursor)));
+                // capture leaves the cursor on the child's END_ELEMENT.
+            } else if (event == XMLStreamConstants.CHARACTERS
+                    || event == XMLStreamConstants.CDATA) {
+                textContent.append(cursor.getText());
+            }
+        }
+
+        List<ContentModelRouter.Element> elements =
+                new ArrayList<ContentModelRouter.Element>(children.size());
+        for (BufferedChild child : children) {
+            elements.add(new ContentModelRouter.Element(child.localName, child.namespaceUri));
+        }
+        ContentModelRouter.Route route = router.route(elements);
+
+        Map<AttributeBinding, Object> virtualBuilders = new LinkedHashMap<AttributeBinding, Object>();
+        List<VirtualPathAssembler.Assignment> virtualAssignments =
+                new ArrayList<VirtualPathAssembler.Assignment>();
+
+        for (int i = 0; i < children.size(); i++) {
+            BufferedChild child = children.get(i);
+            List<String> path = route.getPath(i);
+            if (path == null) {
+                handleChildElement(child.localName, child.subtree.cursor(), binding, builder,
+                        virtualBuilders);
+            } else if (path.size() == 1) {
+                applyRoutedDirectElement(path.get(0), child, binding, builder);
+            } else {
+                virtualAssignments.add(new VirtualPathAssembler.Assignment(
+                        path, route.getOccurrenceKey(i), child.subtree));
+            }
+        }
+
+        applyValueContent(textContent, binding, builder);
+        applyVirtualBuilders(virtualBuilders, builder);
+        virtualPathAssembler.apply(builder, binding.getType(), virtualAssignments);
+
+        return ((RosettaModelObjectBuilder) builder).build();
+    }
+
+    /**
+     * Binds a child routed to a single-segment path: the path names a direct attribute of this type
+     * by its logical Rune name, which may differ from the XML element name that got routed there.
+     */
+    private void applyRoutedDirectElement(String logicalName, BufferedChild child,
+                                          TypeBinding binding, Object builder) throws Exception {
+        AttributeBinding attr = BuilderAccess.findByLogicalName(binding, logicalName);
+        if (attr == null) {
+            return;
+        }
+        Class<?> concreteType = attr.getValueType();
+        if (attr.getElementRef().isPresent()) {
+            Class<?> substituted = substitutionResolver.resolve(attr.getElementRef().get(),
+                    attr.getValueType(), child.localName, child.namespaceUri);
+            if (substituted != null) {
+                concreteType = substituted;
+            }
+        }
+        applyChildElement(attr, concreteType, child.subtree.cursor(), builder);
+    }
+
+    /**
+     * Reads one buffered leaf element as the value of {@code leafAttribute}. Supplied to
+     * {@link VirtualPathAssembler} so routed leaves are deserialised by the same logic as any other
+     * element.
+     */
+    private Object readLeafValue(AttributeBinding leafAttribute, BufferedSubtree value)
+            throws Exception {
+        XmlCursor cursor = value.cursor();
+        if (leafAttribute.isRosettaModelObject()) {
+            return readObject(cursor, leafAttribute.getValueType());
+        }
+        return converter.fromXmlString(cursor.getElementText(), leafAttribute.getValueType());
+    }
+
+    /** One buffered child element of a routed type: its name, namespace, and captured subtree. */
+    private static final class BufferedChild {
+        private final String localName;
+        private final String namespaceUri;
+        private final BufferedSubtree subtree;
+
+        BufferedChild(String localName, String namespaceUri, BufferedSubtree subtree) {
+            this.localName = localName;
+            this.namespaceUri = namespaceUri;
+            this.subtree = subtree;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -232,13 +389,13 @@ public class StaxReader {
      * or (one level deep) on VIRTUAL types.
      */
     private void readXmlAttributesInto(
-            XMLStreamReader reader,
+            XmlCursor cursor,
             TypeBinding binding,
             Object builder) throws Exception {
-        int attrCount = reader.getAttributeCount();
+        int attrCount = cursor.getAttributeCount();
         for (int i = 0; i < attrCount; i++) {
-            String attrLocalName = reader.getAttributeLocalName(i);
-            String attrValue = reader.getAttributeValue(i);
+            String attrLocalName = cursor.getAttributeLocalName(i);
+            String attrValue = cursor.getAttributeValue(i);
             applyXmlAttribute(attrLocalName, attrValue, binding, builder, null);
         }
     }
@@ -267,7 +424,7 @@ public class StaxReader {
             }
             if (attr.getXmlName().equals(attrLocalName)) {
                 Object value = converter.fromXmlString(attrValue, attr.getValueType());
-                setOnBuilder(builder, attr, value);
+                BuilderAccess.apply(builder, attr, value);
                 return;
             }
         }
@@ -287,7 +444,7 @@ public class StaxReader {
                     if (childAttr.getXmlName().equals(attrLocalName)) {
                         Object vBuilder = getOrCreateVirtualBuilder(virtualAttr, virtualBuilders);
                         Object value = converter.fromXmlString(attrValue, childAttr.getValueType());
-                        setOnBuilder(vBuilder, childAttr, value);
+                        BuilderAccess.apply(vBuilder, childAttr, value);
                         return;
                     }
                 }
@@ -305,21 +462,21 @@ public class StaxReader {
      * {@code binding} (direct ELEMENT or substitution-group ELEMENT) or one level into a
      * VIRTUAL type's bindings.
      *
-     * <p>On return the reader is positioned at the END_ELEMENT of the child element.
+     * <p>On return the cursor is positioned at the END_ELEMENT of the child element.
      */
     private void handleChildElement(
             String childLocalName,
-            XMLStreamReader reader,
+            XmlCursor cursor,
             TypeBinding binding,
             Object builder,
             Map<AttributeBinding, Object> virtualBuilders) throws Exception {
 
-        String childNamespaceURI = reader.getNamespaceURI();
+        String childNamespaceURI = cursor.getNamespaceURI();
 
         // 1. Direct or substitution-group ELEMENT bindings
         ElementMatch match = resolveElementMatch(childLocalName, childNamespaceURI, binding);
         if (match != null) {
-            applyChildElement(match.attribute, match.concreteType, reader, builder);
+            applyChildElement(match.attribute, match.concreteType, cursor, builder);
             return;
         }
 
@@ -333,13 +490,13 @@ public class StaxReader {
             ElementMatch virtualMatch = resolveElementMatch(childLocalName, childNamespaceURI, virtualBinding);
             if (virtualMatch != null) {
                 Object vBuilder = getOrCreateVirtualBuilder(virtualAttr, virtualBuilders);
-                applyChildElement(virtualMatch.attribute, virtualMatch.concreteType, reader, vBuilder);
+                applyChildElement(virtualMatch.attribute, virtualMatch.concreteType, cursor, vBuilder);
                 return;
             }
         }
 
         // 3. Unknown child element — skip over it entirely
-        skipElement(reader);
+        skipElement(cursor);
     }
 
     /**
@@ -399,37 +556,42 @@ public class StaxReader {
      *
      * <p>For nested Rune objects, recurses via {@link #readObject} using {@code concreteType}
      * (the polymorphic/substituted type when applicable, otherwise {@code attr.getValueType()}).
-     * For scalars, reads the text content via {@link XMLStreamReader#getElementText()}.
+     * For scalars, reads the text content via {@link XmlCursor#getElementText()}.
      *
-     * <p>On return the reader is positioned at the END_ELEMENT of the child element.
+     * <p>On return the cursor is positioned at the END_ELEMENT of the child element.
      * This is guaranteed both when calling {@code readObject} (its contract) and when
      * calling {@code getElementText()} (per XMLStreamReader Javadoc).
      */
     private void applyChildElement(
             AttributeBinding attr,
             Class<?> concreteType,
-            XMLStreamReader reader,
+            XmlCursor cursor,
             Object targetBuilder) throws Exception {
         if (attr.isRosettaModelObject()) {
-            Object childObj = readObject(reader, concreteType);
-            setOnBuilder(targetBuilder, attr, childObj);
+            Object childObj = readObject(cursor, concreteType);
+            BuilderAccess.apply(targetBuilder, attr, childObj);
         } else {
-            // getElementText() reads text content and leaves reader on END_ELEMENT
-            String text = reader.getElementText();
+            // getElementText() reads text content and leaves the cursor on END_ELEMENT
+            String text = cursor.getElementText();
             Object value = converter.fromXmlString(text, attr.getValueType());
-            setOnBuilder(targetBuilder, attr, value);
+            BuilderAccess.apply(targetBuilder, attr, value);
         }
     }
 
     /**
-     * Sets (or accumulates) the VALUE-representation text content on the builder.
+     * Sets the VALUE-representation text content on the builder, if the accumulated text is
+     * non-blank and the type declares a VALUE attribute.
      */
     private void applyValueContent(
-            String text, TypeBinding binding, Object builder) throws Exception {
+            StringBuilder textContent, TypeBinding binding, Object builder) throws Exception {
+        String text = textContent.toString().trim();
+        if (text.isEmpty()) {
+            return;
+        }
         for (AttributeBinding attr : binding.getAttributes()) {
             if (attr.getXmlRepresentation() == AttributeXMLRepresentation.VALUE) {
                 Object value = converter.fromXmlString(text, attr.getValueType());
-                setOnBuilder(builder, attr, value);
+                BuilderAccess.apply(builder, attr, value);
                 return;
             }
         }
@@ -439,23 +601,12 @@ public class StaxReader {
     // Builder helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Sets or adds a value on the builder via reflection.
-     * Uses the adder for multi-cardinality attributes, the setter for single.
-     */
-    private void setOnBuilder(Object builder, AttributeBinding attr, Object value)
-            throws Exception {
-        if (value == null) {
-            return;
-        }
-        if (attr.isMulti()) {
-            if (attr.getAdder() != null) {
-                attr.getAdder().invoke(builder, value);
-            }
-        } else {
-            if (attr.getSetter() != null) {
-                attr.getSetter().invoke(builder, value);
-            }
+    /** Builds each lazily-created virtual object and sets it on the parent builder. */
+    private void applyVirtualBuilders(
+            Map<AttributeBinding, Object> virtualBuilders, Object builder) throws Exception {
+        for (Map.Entry<AttributeBinding, Object> entry : virtualBuilders.entrySet()) {
+            Object builtVirtual = ((RosettaModelObjectBuilder) entry.getValue()).build();
+            BuilderAccess.apply(builder, entry.getKey(), builtVirtual);
         }
     }
 
@@ -470,7 +621,7 @@ public class StaxReader {
         if (vBuilder == null) {
             TypeBinding virtualBinding = introspector.introspect(
                     virtualAttr.getValueType(), config);
-            vBuilder = virtualBinding.getBuilderType().getDeclaredConstructor().newInstance();
+            vBuilder = BuilderAccess.newBuilder(virtualBinding);
             virtualBuilders.put(virtualAttr, vBuilder);
         }
         return vBuilder;
@@ -481,14 +632,14 @@ public class StaxReader {
     // -------------------------------------------------------------------------
 
     /**
-     * Skips past an element the reader is currently positioned on (START_ELEMENT).
-     * Handles nested elements. On return the reader is positioned at the END_ELEMENT
+     * Skips past an element the cursor is currently positioned on (START_ELEMENT).
+     * Handles nested elements. On return the cursor is positioned at the END_ELEMENT
      * of the skipped element.
      */
-    private void skipElement(XMLStreamReader reader) throws Exception {
+    private void skipElement(XmlCursor cursor) throws Exception {
         int depth = 1;
-        while (reader.hasNext() && depth > 0) {
-            int event = reader.next();
+        while (cursor.hasNext() && depth > 0) {
+            int event = cursor.next();
             if (event == XMLStreamConstants.START_ELEMENT) {
                 depth++;
             } else if (event == XMLStreamConstants.END_ELEMENT) {

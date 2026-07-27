@@ -498,7 +498,7 @@ substitution) are green.
 >   config carries no per-attribute namespace for them. This is unchanged from 4a and is the
 >   root cause of criterion 15's partial closure above.
 
-### Step 4c — Content-model disambiguation (fresh session — Opus recommended)
+### Step 4c — Content-model disambiguation (fresh session — Opus recommended) — ✅ COMPLETE (2026-07-27)
 
 Build the StAX-native replacement for `XMLContentModelDisambiguatingDeserializer` +
 `VirtualPathBuilderHelper`. **Reuse `XMLContentModelMatcher` unchanged** — it is a pure
@@ -519,6 +519,36 @@ The new pipeline:
 
 Exit: `XmlContentModelDisambiguationTest` (all examples + ALL/ANY + multi-layer +
 failure cases) and `XMLContentModelMatcherNamespaceTest` both pass fully.
+
+> **STATUS: DONE.** `XMLContentModelMatcher` is reused **byte-for-byte unchanged**; a new
+> public, Jackson-free facade `ContentModelRouter` (same package, so it can reach the
+> package-private matcher) exposes routing to the StAX side and carries a port of the
+> lenient-recovery policy. New StAX-side classes: `XmlCursor` + `StaxCursor` +
+> `BufferedSubtree` (buffer/replay), `VirtualPathAssembler` (the `VirtualPathBuilderHelper`
+> port), `BuilderAccess`. 15 new tests in `StaxReaderContentModelTest` — the 12 cases of
+> `XmlContentModelDisambiguationTest` ported one-for-one, plus 3 namespace cases with no
+> Jackson equivalent. Full `common` module: **325 tests pass, 0 failures, 3 skipped**
+> (pre-existing `@Disabled`). Checkstyle clean; `mvn clean install` green.
+>
+> **Key implementation notes for Step 4d:**
+> - `StaxReader` now reads through an `XmlCursor` (10-method pull interface) rather than
+>   `XMLStreamReader` directly, so live XML and buffered subtrees share one read path. Only
+>   private signatures changed; the public API is untouched.
+> - Routed reading lives in `StaxReader.readRoutedObject`; `routerFor(type, binding)` caches
+>   one `ContentModelRouter` per type and returns `null` when `requiresRouting` is false, so
+>   non-ambiguous types keep streaming with zero buffering.
+> - Occurrence identity is now the matcher's `OccurrenceKey` compared by `equals`, exposed as
+>   an opaque `Object` — an improvement on the Jackson path, which compared its `toString()`
+>   (identity-hash-based, since `OccurrenceFrame` has no `toString`).
+> - Criterion 4 is green. Criteria 15/16 gain the missing mechanism here: same-local-name
+>   elements are separated by content-model position **and** by real namespace. Closing
+>   criterion 15 against the production `TradeUnderlyer2` still needs a `contentModel` to be
+>   emitted for that type — per Step 0 only ~2 types per config get one — so the fixture-level
+>   regression test remains a **Section 2-A** dependency, as the traceability table says.
+> - Both engines now duplicate the lenient-recovery policy (reorder → drop un-routable → give
+>   up). Deliberate: Step 4c does not touch the Jackson deserializer, which Step 6 deletes.
+>
+> **Next: Step 4d — Multi-cardinality accumulation + full suite green.**
 
 ### Step 4d — Multi-cardinality accumulation + full suite green (fresh session)
 

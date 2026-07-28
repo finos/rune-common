@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentMap;
  * {@code JavaType}, it builds the equivalent index directly from {@link RosettaXMLConfiguration}
  * and resolves plain {@code Class<?>} candidates, so the StAX reader needs no Jackson type.
  *
- * <h3>Resolution order (mirrors the Jackson-era {@code SubstitutedMethodProperty})</h3>
+ * <h2>Resolution order (mirrors the Jackson-era {@code SubstitutedMethodProperty})</h2>
  * <ol>
  *   <li>Exact match on (namespace URI, local name) — the namespace-aware path that fixes
  *       issue 6 (same local name across namespaces, e.g. FiML vs FpML {@code commodityOption}).</li>
@@ -58,7 +58,7 @@ import java.util.concurrent.ConcurrentMap;
  *       (legacy V1/V2 configs), or when only one candidate exists regardless of namespace.</li>
  * </ol>
  *
- * <h3>Group membership</h3>
+ * <h2>Group membership</h2>
  * A concrete type belongs to the group for {@code elementRef} when either:
  * <ul>
  *   <li>its own {@code xmlElementFullyQualifiedName} equals {@code elementRef} (the group head

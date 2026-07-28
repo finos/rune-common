@@ -61,13 +61,13 @@ import java.util.concurrent.ConcurrentMap;
  * Given a Rune type and an {@link RosettaXMLConfiguration}, it returns the type's
  * attributes in bean declaration order with their XML binding metadata resolved.
  *
- * <h3>Declaration order</h3>
+ * <h2>Declaration order</h2>
  * Attributes are returned in bean declaration order: supertype attributes always
  * precede subtype attributes. Within each type level, declaration order is derived
  * from {@link Class#getDeclaredFields()}, which the JVM spec guarantees follows
  * source order (unlike {@link Class#getDeclaredMethods()}, which does not on Java 9+).
  *
- * <h3>Caching</h3>
+ * <h2>Caching</h2>
  * Introspecting a type is pure reflection ({@link Class#getDeclaredFields()},
  * {@link Class#getMethods()} per attribute) and its result depends only on the type and the
  * config, both immutable for the lifetime of a read or write. The binder asks for the same

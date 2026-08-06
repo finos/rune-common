@@ -37,6 +37,7 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * The default {@link TransformMapperFactory}: per-format construction resolving the serialization config
@@ -110,8 +111,31 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     protected ObjectMapper csvLabelledMapper(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
         LabelProvider labelProvider = resolveLabelProvider(serialization, functionClass, rootType);
+        return csvMapperFor(labelProvider, () -> noLabelProviderWarning(serialization, functionClass, rootType));
+    }
+
+    /**
+     * @deprecated superseded by {@link #csvLabelledMapper(TransformSerialization, Class, Class)}, which
+     *         is told the root type and so can resolve type-first. Kept so subclasses that call it still
+     *         compile and still get exactly the pre-type-first behaviour — function-rooted resolution
+     *         with no guard, via the equally deprecated {@link #resolveLabelProvider(Class)}. It is no
+     *         longer on the {@link #create} path, so overriding it has no effect; override the
+     *         3-argument overload instead.
+     */
+    @Deprecated
+    protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
+        LabelProvider labelProvider = resolveLabelProvider(functionClass);
+        return csvMapperFor(labelProvider, () -> noFunctionProviderWarning(functionClass));
+    }
+
+    /**
+     * The mapper for a resolved provider, or — when nothing resolved — the plain CSV mapper, having
+     * logged why. The warning is built lazily because composing it is only worth doing on the path that
+     * actually degrades.
+     */
+    private ObjectMapper csvMapperFor(LabelProvider labelProvider, Supplier<String> noProviderWarning) {
         if (labelProvider == null) {
-            LOGGER.warn(noLabelProviderWarning(serialization, functionClass, rootType));
+            LOGGER.warn(noProviderWarning.get());
             return csvMapper();
         }
         return RosettaObjectMapperCreator.forCSV(labelProvider).create();
@@ -121,16 +145,22 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * Explains, for the WARN in {@link #csvLabelledMapper}, which of the three ways a {@code
      * CSV_LABELLED} request can end up with no provider actually happened: no provider anywhere, a root
      * type whose own hierarchy carries none, or a function provider that exists but was suppressed
-     * because it is not rooted at this serialization (the §2.7 guard). Whichever function provider
+     * because it is not rooted at this serialization (the guard in
+     * {@link #resolveLabelProvider(TransformSerialization, Class, Class)}). Whichever function provider
      * would have been suppressed is named, so a future ingest's missing labels are self-explaining
      * rather than a mystery.
+     * <p>
+     * It describes the <em>default</em> resolution, and shares
+     * {@link #hasFunctionLabelProvider(Class)} and {@link #functionOutputIsSerializedRoot} with it so
+     * the two cannot drift into disagreement. A subclass that overrides
+     * {@link #resolveLabelProvider(TransformSerialization, Class, Class)} and declines for reasons of
+     * its own should override this reporting too.
      */
     private String noLabelProviderWarning(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
-        boolean functionHasProvider = functionClass != null
-                && RosettaFunction.class.isAssignableFrom(functionClass)
-                && functionClass.getAnnotation(RuneLabelProvider.class) != null;
+        boolean functionProviderSuppressed = hasFunctionLabelProvider(functionClass)
+                && !functionOutputIsSerializedRoot(serialization, functionClass);
         if (rootType != null) {
-            return functionHasProvider
+            return functionProviderSuppressed
                     ? String.format("CSV_LABELLED requested but root type %s has no @RuneLabelProvider, and "
                             + "%s's @RuneLabelProvider is rooted at its own output rather than this "
                             + "serialization's root, so it cannot be used here either; falling back to "
@@ -138,11 +168,15 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
                     : String.format("CSV_LABELLED requested but root type %s has no @RuneLabelProvider; "
                             + "falling back to unlabelled CSV.", rootType.getName());
         }
-        if (functionHasProvider) {
+        if (functionProviderSuppressed) {
             return String.format("CSV_LABELLED requested but %s's @RuneLabelProvider is rooted at its own "
                     + "output, and this serialization is not that function's @Projection side (no root type "
                     + "was supplied either); falling back to unlabelled CSV.", functionClass.getName());
         }
+        return noFunctionProviderWarning(functionClass);
+    }
+
+    private static String noFunctionProviderWarning(Class<?> functionClass) {
         return String.format("CSV_LABELLED requested but no @RuneLabelProvider could be resolved%s; "
                 + "falling back to unlabelled CSV.", functionClass != null ? " from " + functionClass.getName() : "");
     }
@@ -224,7 +258,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         if (!functionOutputIsSerializedRoot(serialization, functionClass)) {
             return null;
         }
-        return functionRootedProvider(functionClass);
+        // Deliberately through the deprecated overload rather than functionRootedProvider directly: a
+        // subclass that already overrode it keeps influencing the one branch it was written for,
+        // instead of compiling, running and being silently ignored.
+        return resolveLabelProvider(functionClass);
     }
 
     /**
@@ -242,23 +279,37 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * Resolves the {@link LabelProvider} rooted at the function class's own {@code @RuneLabelProvider}
-     * annotation. Returns {@code null} when none is available — no function class, the class is not a
-     * {@link RosettaFunction}, or it carries no {@code @RuneLabelProvider}.
+     * annotation. Returns {@code null} when none is available — see
+     * {@link #hasFunctionLabelProvider(Class)}.
      */
     @SuppressWarnings("unchecked")
     private LabelProvider functionRootedProvider(Class<?> functionClass) {
-        if (functionClass == null || !RosettaFunction.class.isAssignableFrom(functionClass)) {
+        if (!hasFunctionLabelProvider(functionClass)) {
             return null;
         }
         return LabelProviderResolver.fromTransformFunction((Class<? extends RosettaFunction>) functionClass);
     }
 
     /**
+     * Whether a function-rooted provider exists to be resolved at all: there is a function class, it is
+     * a {@link RosettaFunction}, and it carries {@code @RuneLabelProvider}. The single source of this
+     * fact — both {@link #functionRootedProvider} and the WARN in {@link #noLabelProviderWarning} go
+     * through it, so what the resolver does and what the log says cannot disagree.
+     */
+    private static boolean hasFunctionLabelProvider(Class<?> functionClass) {
+        return functionClass != null
+                && RosettaFunction.class.isAssignableFrom(functionClass)
+                && functionClass.getAnnotation(RuneLabelProvider.class) != null;
+    }
+
+    /**
      * @deprecated superseded by {@link #resolveLabelProvider(TransformSerialization, Class, Class)},
      *         which resolves type-first and only falls back to a function-rooted provider where it is
-     *         provably rooted at the serialised root. Kept so subclasses that already override this
-     *         overload still compile and still behave as they did before Step 3; overriding it no longer
-     *         influences the type-first path — override the 3-argument overload instead.
+     *         provably rooted at the serialised root. Kept, and still called on that fallback branch, so
+     *         a subclass that already overrides this overload keeps deciding what it used to decide.
+     *         What it can no longer do is answer for the whole of resolution: the type-rooted provider
+     *         wins before this is reached, and the guard can reject the function outright. Override the
+     *         3-argument overload to influence either.
      */
     @Deprecated
     protected LabelProvider resolveLabelProvider(Class<?> functionClass) {

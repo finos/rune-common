@@ -20,9 +20,12 @@ package com.regnosys.rosetta.common.transform;
  * ==============
  */
 
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -44,9 +47,17 @@ import java.util.Set;
  * emits a type-rooted provider only for a type carrying labels on its own (or inherited)
  * attributes, so a type whose labels all sit on nested paths has none, permanently.
  *
+ * <p>The two entry points guard their own root, so neither can answer for the other's: the same
+ * annotation type is stamped on both a transform function and a labelled type, so only the
+ * {@link RosettaFunction} / {@link RosettaModelObject} bound distinguishes them. Without that,
+ * a function class reaching {@link #fromType} would hand back its output-rooted provider through
+ * the type-rooted path — the wrongly-rooted provider a caller's guard exists to reject.
+ *
  * <p>This class is unit-testable in isolation — it has no Jackson dependency.
  */
 public class LabelProviderResolver {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LabelProviderResolver.class);
 
     /**
      * Resolves a {@link LabelProvider} from the given transform function class.
@@ -115,16 +126,37 @@ public class LabelProviderResolver {
      * {@code …Impl} class also works: the supertype hierarchy is searched breadth-first,
      * closest declaration wins, for the interface that declares it.
      *
+     * <p>Only a {@link RosettaModelObject} can carry a type-rooted provider. This mirrors
+     * {@link #fromTransformFunction}'s {@link RosettaFunction} bound, and is what stops a transform
+     * function class — which carries the very same annotation, rooted at its output — from resolving
+     * through this path; see the class javadoc.
+     *
      * @param type the model type — a pojo interface, or a builder/{@code …Impl} class
      *             implementing or extending it
-     * @return the instantiated {@link LabelProvider}, or {@code null} if no type in the
-     *         hierarchy carries {@code @RuneLabelProvider}. That is a normal, permanent
-     *         state — not every type has labels on its own attributes.
+     * @return the instantiated {@link LabelProvider}, or {@code null} if {@code type} is not a
+     *         {@link RosettaModelObject} or no type in its hierarchy carries
+     *         {@code @RuneLabelProvider}. That is a normal, permanent state — not every type has
+     *         labels on its own attributes.
      * @throws IllegalStateException if the provider class cannot be instantiated
      */
     public static LabelProvider fromType(Class<?> type) {
+        if (type == null) {
+            return null;
+        }
         RuneLabelProvider annotation = findLabelProviderAnnotation(type);
         if (annotation == null) {
+            return null;
+        }
+        if (!RosettaModelObject.class.isAssignableFrom(type)) {
+            // Warn rather than stay silent: the annotation is present, so something intended this
+            // class to supply labels, and returning null without saying so would leave a caller
+            // wondering why its labels vanished. The likeliest cause is a transform function class
+            // passed where a model type was expected.
+            LOGGER.warn("Ignoring the @RuneLabelProvider on {}: it is not a RosettaModelObject, so it "
+                            + "cannot carry a type-rooted LabelProvider. A transform function's provider is "
+                            + "rooted at the function's output and must be resolved with "
+                            + "fromTransformFunction instead.",
+                    type.getName());
             return null;
         }
         Class<? extends LabelProvider> providerClass = annotation.labelProvider();
@@ -143,8 +175,9 @@ public class LabelProviderResolver {
      *
      * @param typeClassName the fully-qualified name of the model type class
      * @param classLoader   the class loader to use for loading the type class
-     * @return the instantiated {@link LabelProvider}, or {@code null} if no type in the
-     *         hierarchy carries {@code @RuneLabelProvider}
+     * @return the instantiated {@link LabelProvider}, or {@code null} if the class is not a
+     *         {@link RosettaModelObject} or no type in its hierarchy carries
+     *         {@code @RuneLabelProvider}
      * @throws IllegalArgumentException if the type class cannot be found
      * @throws IllegalStateException    if the provider class cannot be instantiated
      */

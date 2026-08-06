@@ -21,6 +21,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
  */
 
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
@@ -59,21 +60,34 @@ public class LabelProviderResolverTest {
     /** Stub RosettaFunction with NO @RuneLabelProvider annotation. */
     public static class StubFunctionWithoutProvider implements RosettaFunction {}
 
-    /** Stub pojo interface carrying @RuneLabelProvider directly — the common case. */
+    /**
+     * Stub pojo interface carrying @RuneLabelProvider directly — the common case. The stubs below are
+     * {@link RosettaModelObject}s because only a model type can carry a type-rooted provider; they are
+     * abstract or interfaces because {@code fromType} only ever reflects on the class, never
+     * instantiates it, so there is nothing to gain from implementing the model methods.
+     */
     @RuneLabelProvider(labelProvider = StubLabelProvider.class)
-    public interface StubTypeWithProvider {}
+    public interface StubTypeWithProvider extends RosettaModelObject {}
 
     /** Stub pojo interface with NO @RuneLabelProvider annotation. */
-    public interface StubTypeWithoutProvider {}
+    public interface StubTypeWithoutProvider extends RosettaModelObject {}
 
     /** Stub "…Impl" class implementing the annotated interface without declaring the annotation itself. */
-    public static class StubTypeImpl implements StubTypeWithProvider {}
+    public abstract static class StubTypeImpl implements StubTypeWithProvider {}
 
     /** Stub builder-shaped interface extending the annotated interface without declaring it itself. */
     public interface StubTypeBuilder extends StubTypeWithProvider {}
 
-    /** Plain type with no @RuneLabelProvider anywhere in its hierarchy. */
-    public static class StubPlainType {}
+    /** Plain model type with no @RuneLabelProvider anywhere in its hierarchy. */
+    public abstract static class StubPlainType implements RosettaModelObject {}
+
+    /**
+     * A non-model class carrying the annotation: the shape {@code fromType} must refuse. The DSL stamps
+     * the same annotation on transform functions, so this is what stands between a function class
+     * passed as a root type and its output-rooted provider being served as if it were type-rooted.
+     */
+    @RuneLabelProvider(labelProvider = StubLabelProvider.class)
+    public static class StubNonModelTypeWithProvider {}
 
     /** LabelProvider distinguishable from {@link StubLabelProvider}, used by the Parent/Child test. */
     public static class ParentLabelProvider implements LabelProvider {
@@ -93,7 +107,7 @@ public class LabelProviderResolverTest {
 
     /** Parent interface carrying its own provider. */
     @RuneLabelProvider(labelProvider = ParentLabelProvider.class)
-    public interface StubParentType {}
+    public interface StubParentType extends RosettaModelObject {}
 
     /**
      * Child interface extending Parent and carrying its own, different provider. A deep-path label
@@ -193,6 +207,26 @@ public class LabelProviderResolverTest {
         LabelProvider provider = LabelProviderResolver.fromType(StubPlainType.class);
 
         assertNull(provider);
+    }
+
+    @Test
+    void fromType_nonModelClassWithAnnotation_returnsNull() {
+        LabelProvider provider = LabelProviderResolver.fromType(StubNonModelTypeWithProvider.class);
+
+        assertNull(provider,
+                "Only a RosettaModelObject can carry a type-rooted provider — the RosettaFunction bound "
+                        + "on fromTransformFunction has no force if fromType will resolve anything at all");
+    }
+
+    @Test
+    void fromType_transformFunctionClass_returnsNull() {
+        // The guard that matters: a function's provider is rooted at its OUTPUT, so serving it through
+        // the type-rooted path would be exactly the wrongly-rooted provider callers guard against.
+        LabelProvider provider = LabelProviderResolver.fromType(StubFunctionWithProvider.class);
+
+        assertNull(provider, "A transform function must not resolve through the type-rooted path");
+        assertNotNull(LabelProviderResolver.fromTransformFunction(StubFunctionWithProvider.class),
+                "…while still resolving through its own entry point");
     }
 
     // ---------------------------------------------------------------------------

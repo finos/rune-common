@@ -20,6 +20,7 @@ package com.regnosys.rosetta.common.serialisation;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
@@ -30,11 +31,13 @@ import com.rosetta.model.lib.transform.Enrich;
 import com.rosetta.model.lib.transform.Ingest;
 import com.rosetta.model.lib.transform.Projection;
 import com.rosetta.model.lib.transform.SerializationFormat;
+import csv.test.user.User;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -100,6 +103,133 @@ class ClasspathTransformMapperFactoryTest {
 
     @Projection(format = SerializationFormat.CSV_LABELLED)
     private static class CsvLabelledProjectionWithoutLabelProvider implements RosettaFunction {
+    }
+
+    // ---------------------------------------------------------------------------
+    // Step 3 — type-first resolution with the output-side guard
+    // ---------------------------------------------------------------------------
+
+    private static User buildUser() {
+        return User.builder()
+                .setFirstName("Alice")
+                .setIdentifier("id-001")
+                .setLastName("Smith")
+                .setUsername("asmith")
+                .build();
+    }
+
+    /** Header of the first line written for {@link #buildUser()} — proves which provider was used. */
+    private static String header(ObjectMapper mapper) throws JsonProcessingException {
+        String csv = mapper.writeValueAsString(buildUser());
+        return csv.substring(0, csv.indexOf('\n'));
+    }
+
+    /** Distinguishable from {@link FunctionLabelProvider} so a test can prove which one was picked. */
+    public static class TypeLabelProvider implements LabelProvider {
+        @Override
+        public String getLabel(RosettaPath path) {
+            return "type:" + path.buildPath();
+        }
+    }
+
+    /** Distinguishable from {@link TypeLabelProvider} so a test can prove which one was picked. */
+    public static class FunctionLabelProvider implements LabelProvider {
+        @Override
+        public String getLabel(RosettaPath path) {
+            return "func:" + path.buildPath();
+        }
+    }
+
+    /** Stub pojo interface carrying its own type-rooted provider — the CSV input/output type. */
+    @RuneLabelProvider(labelProvider = TypeLabelProvider.class)
+    private interface LabelledRootType {
+    }
+
+    /** The generated "…Impl" shape: no annotation of its own, found only via the supertype search. */
+    private static class LabelledRootTypeImpl implements LabelledRootType {
+    }
+
+    /** A root type with no provider anywhere in its hierarchy — the nested-labels-only case. */
+    private static class UnlabelledRootType {
+    }
+
+    /**
+     * A projection whose function-rooted provider is valid (this serialization is its {@code @Projection}
+     * side) — used to prove the guard does not strip a working projection, and that type-first still wins
+     * when both a type and a function provider exist and are reachable.
+     */
+    @Projection(format = SerializationFormat.CSV_LABELLED)
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class CsvLabelledProjectionWithFunctionProvider implements RosettaFunction {
+    }
+
+    /**
+     * An ingest whose function-rooted provider is rooted at its <b>output</b> type, not the serialised
+     * input — the §2.7 case the guard exists to reject.
+     */
+    @Ingest(format = SerializationFormat.CSV_LABELLED)
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class CsvLabelledIngestWithFunctionProvider implements RosettaFunction {
+    }
+
+    @Test
+    void csvLabelledProjectionWithRootTypePrefersTheTypeProviderOverTheFunctionProvider() throws JsonProcessingException {
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, LabelledRootType.class);
+
+        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+    }
+
+    @Test
+    void csvLabelledProjectionWithoutRootTypeStillUsesTheFunctionProvider() throws JsonProcessingException {
+        // Regression guard for today's working path: no root type supplied, so resolution falls back to
+        // the function's own provider exactly as before Step 3.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, null);
+
+        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+    }
+
+    @Test
+    void csvLabelledProjectionWithUnlabelledRootTypeFallsBackToTheFunctionProvider() throws JsonProcessingException {
+        // The nested-labels-only shape: the root type carries no type-rooted provider of its own, so the
+        // guard must not strip the function's provider from an otherwise-working projection.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, UnlabelledRootType.class);
+
+        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+    }
+
+    @Test
+    void csvLabelledIngestWithoutRootTypeGetsNoProviderAndDegradesToPlainCsv() throws JsonProcessingException {
+        // §2.7: a function-rooted provider is rooted at the function's OUTPUT, so an ingest (whose
+        // serialised side is its INPUT) may never use it — even though the annotation is present, the
+        // guard rejects it and there is no root type to try instead.
+        TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
+        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class, null);
+
+        assertEquals("firstName,identifier,lastName,username", header(mapper));
+    }
+
+    @Test
+    void csvLabelledIngestWithLabelledInputTypeUsesTheTypeProvider() throws JsonProcessingException {
+        // The CSV-import case this whole story exists for: an ingest's function-rooted provider is wrongly
+        // rooted at its output, but the caller now supplies the CSV input type as rootType, and type-first
+        // resolution picks that up regardless of the (rejected) function provider.
+        TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
+        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class, LabelledRootType.class);
+
+        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+    }
+
+    @Test
+    void csvLabelledResolvesTheTypeProviderThroughAnImplClass() throws JsonProcessingException {
+        // Ties Step 1's supertype search to this seam: passing the "…Impl" shape as rootType (rather than
+        // the pojo interface itself) must still find the interface's annotation.
+        ObjectMapper mapper = factory.create(
+                new TransformSerialization(SerializationFormat.CSV_LABELLED, null), null, LabelledRootTypeImpl.class);
+
+        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
     }
 
     @Test

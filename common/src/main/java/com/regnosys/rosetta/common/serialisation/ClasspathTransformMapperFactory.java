@@ -60,6 +60,11 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     @Override
     public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass) {
+        return create(serialization, functionClass, null);
+    }
+
+    @Override
+    public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
         Objects.requireNonNull(serialization, "serialization must not be null");
         switch (serialization.getFormat()) {
             case JSON:
@@ -69,7 +74,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
             case CSV:
                 return csvMapper();
             case CSV_LABELLED:
-                return csvLabelledMapper(functionClass);
+                return csvLabelledMapper(functionClass, rootType);
             case XML:
                 return xmlMapper(serialization.getConfigPath(), functionClass);
             default:
@@ -91,7 +96,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return RosettaObjectMapperCreator.forCSV().create();
     }
 
-    protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
+    protected ObjectMapper csvLabelledMapper(Class<?> functionClass, Class<?> rootType) {
+        // rootType is threaded through for Step 3's type-first resolution; this step does not use it yet.
         LabelProvider labelProvider = resolveLabelProvider(functionClass);
         if (labelProvider == null) {
             LOGGER.warn("CSV_LABELLED requested but no @RuneLabelProvider could be resolved{}; "

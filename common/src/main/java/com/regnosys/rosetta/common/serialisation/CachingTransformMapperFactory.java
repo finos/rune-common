@@ -22,6 +22,7 @@ package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -36,11 +37,14 @@ import java.util.concurrent.ConcurrentMap;
  * the format is actually sensitive to, so equal serializations are shared exactly as widely as is
  * correct:
  * <ul>
- *   <li>{@code CSV_LABELLED} — the function class itself: the labels derive from the function's
- *       {@code @RuneLabelProvider}, so each labelled function gets (and reuses) its own mapper.</li>
+ *   <li>{@code CSV_LABELLED} — the function class <em>and</em> the root type: a type-rooted
+ *       {@code LabelProvider} is resolved from the root type (see {@link ClasspathTransformMapperFactory}),
+ *       so two requests for the same function but different root types must not share a mapper, and
+ *       vice versa.</li>
  *   <li>{@code RUNE_JSON} and {@code XML} — the function class's {@link ClassLoader}: these mappers
  *       resolve model types against it, so functions from the same model share one mapper while
- *       models in different classloaders never cross.</li>
+ *       models in different classloaders never cross. The root type does not affect their
+ *       construction, so it is not part of their scope.</li>
  *   <li>{@code JSON} and {@code CSV} — nothing: one mapper per factory.</li>
  * </ul>
  * <p>
@@ -62,8 +66,13 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
 
     @Override
     public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass) {
-        CacheKey key = new CacheKey(serialization, cacheScope(serialization, functionClass));
-        return cache.computeIfAbsent(key, k -> delegate.create(serialization, functionClass));
+        return create(serialization, functionClass, null);
+    }
+
+    @Override
+    public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
+        CacheKey key = new CacheKey(serialization, cacheScope(serialization, functionClass, rootType));
+        return cache.computeIfAbsent(key, k -> delegate.create(serialization, functionClass, rootType));
     }
 
     /**
@@ -75,13 +84,13 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * The part of the function-class context that distinguishes cached mappers for the given
+     * The part of the function-class/root-type context that distinguishes cached mappers for the given
      * serialization — see the class doc for the per-format rationale.
      */
-    private static Object cacheScope(TransformSerialization serialization, Class<?> functionClass) {
+    private static Object cacheScope(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
         switch (serialization.getFormat()) {
             case CSV_LABELLED:
-                return functionClass;
+                return Arrays.asList(functionClass, rootType);
             case RUNE_JSON:
             case XML:
                 return functionClass != null ? functionClass.getClassLoader() : null;

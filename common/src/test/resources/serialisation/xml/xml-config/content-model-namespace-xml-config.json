@@ -1,0 +1,36 @@
+{
+  "com.rosetta.test.FpmlTextValue": {
+    "attributes": {
+      "value": { "xmlRepresentation": "VALUE" },
+      "scheme": { "xmlRepresentation": "ATTRIBUTE" }
+    }
+  },
+  "com.rosetta.test.MultiLeafContainer": {
+    "attributes": {
+      "entry": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "SEQUENCE",
+      "minOccurs": 0,
+      "maxOccurs": "unbounded",
+      "children": [
+        { "nodeType": "ELEMENT", "xmlName": "firstValue", "namespace": "urn:my.schema", "path": ["entry", "firstValue"], "minOccurs": 1, "maxOccurs": 1 },
+        { "nodeType": "ELEMENT", "xmlName": "secondValue", "namespace": "urn:my.schema", "path": ["entry", "secondValue"], "minOccurs": 1, "maxOccurs": 1 }
+      ]
+    }
+  },
+  "com.rosetta.test.AllVirtualContainer": {
+    "attributes": {
+      "entry": { "xmlRepresentation": "VIRTUAL" }
+    },
+    "contentModel": {
+      "nodeType": "CHOICE",
+      "minOccurs": 0,
+      "maxOccurs": "unbounded",
+      "children": [
+        { "nodeType": "ELEMENT", "xmlName": "value", "namespace": "urn:my.schema", "path": ["entry", "firstValue"], "minOccurs": 1, "maxOccurs": 1 },
+        { "nodeType": "ELEMENT", "xmlName": "value", "namespace": "urn:my.extension", "path": ["entry", "secondValue"], "minOccurs": 1, "maxOccurs": 1 }
+      ]
+    }
+  }
+}

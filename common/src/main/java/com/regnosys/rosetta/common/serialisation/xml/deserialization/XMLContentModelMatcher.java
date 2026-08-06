@@ -32,8 +32,8 @@ import java.util.Optional;
 
 /**
  * Pure-data, recursive matcher of an XML content-model tree against an ordered list of
- * {@link RoutingInput input items}. Used by {@link XMLContentModelDisambiguatingDeserializer} to
- * decide where each ambiguous XML child element should be routed.
+ * {@link RoutingInput input items}. Used via {@link ContentModelRouter} to decide where each
+ * ambiguous XML child element should be routed.
  *
  * <p>Supports {@code ELEMENT}, {@code SEQUENCE}, {@code CHOICE}, {@code ALL} and a minimal form
  * of {@code ANY}. Occurrence bounds ({@code minOccurs}/{@code maxOccurs}) are honored.</p>

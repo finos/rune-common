@@ -21,7 +21,7 @@ package com.regnosys.rosetta.common.serialisation;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.regnosys.rosetta.common.serialisation.xml.StaxXmlObjectMapper;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
@@ -104,12 +104,12 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void buildsXmlMapperFromSchemaConfigPath() {
-        assertInstanceOf(XmlMapper.class, inputMapper(XmlSchemaIngest.class).get());
+        assertInstanceOf(StaxXmlObjectMapper.class, inputMapper(XmlSchemaIngest.class).get());
     }
 
     @Test
     void buildsXmlMapperForBareFormatWithoutConfigPath() {
-        assertInstanceOf(XmlMapper.class, inputMapper(BareXmlIngest.class).get());
+        assertInstanceOf(StaxXmlObjectMapper.class, inputMapper(BareXmlIngest.class).get());
     }
 
     @Test
@@ -187,6 +187,6 @@ class ClasspathTransformMapperFactoryTest {
             }
         };
         ObjectMapper mapper = modelOwned.create(new TransformSerialization(SerializationFormat.XML, XML_CONFIG), null);
-        assertInstanceOf(XmlMapper.class, mapper);
+        assertInstanceOf(StaxXmlObjectMapper.class, mapper);
     }
 }

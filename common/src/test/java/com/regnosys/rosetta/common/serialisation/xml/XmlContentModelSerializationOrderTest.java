@@ -15,7 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.rosetta.test.FpmlFxTargetKnockoutForward;
+import com.rosetta.test.FpmlFxTargetKnockoutForwardChoice;
 import com.rosetta.test.FpmlReference;
+import com.rosetta.test.FpmlRegion;
 import com.rosetta.test.FpmlTextValue;
 import com.rosetta.test.FpmlTradeIdentifier;
 import com.rosetta.test.FpmlTradeIdentifierChoice;
@@ -38,11 +41,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * {@code partyReference, accountReference?, (tradeId | versionedTradeId)+}, where the choice is
  * carried by the VIRTUAL property {@code tradeIdentifierChoice}.</p>
  *
- * <p>The deserializer enforces this order via {@code XMLContentModelDisambiguatingDeserializer}.
- * Without content-model-aware serialization the serializer emits child elements in bean-property
- * order: the VIRTUAL {@code tradeIdentifierChoice} is unwrapped to the FRONT, producing
- * {@code versionedTradeId, partyReference} — the wrong (non-XSD) order whose re-deserialisation
- * fails. This test asserts the serializer now follows the content model and the output round-trips.</p>
+ * <p>The reader enforces this order by routing children through {@code ContentModelRouter}.
+ * Without content-model-aware serialization the writer emits child elements in bean-property order,
+ * putting the VIRTUAL {@code tradeIdentifierChoice} in the wrong place relative to the direct
+ * elements and producing a non-XSD order whose re-deserialisation fails. These tests assert the
+ * writer follows the content model and that its output round-trips.</p>
  */
 public class XmlContentModelSerializationOrderTest {
 
@@ -86,6 +89,45 @@ public class XmlContentModelSerializationOrderTest {
         } catch (Exception e) {
             fail("Re-deserialisation of serializer output failed: " + e.getMessage());
         }
+    }
+
+    /**
+     * A VIRTUAL group that the content model places <em>before</em> a direct element must be
+     * emitted before it.
+     *
+     * <p>{@code FpmlFxTargetKnockoutForward}'s content model is
+     * {@code pivot?, constantPayoffRegion*, linearPayoffRegion, (choice)*} — the VIRTUAL
+     * {@code fxTargetKnockoutForwardChoice} is the last thing the model mentions, but
+     * {@code barrier} is not in the model at all and is declared after the choice on the bean,
+     * so the choice must still precede it. A serializer that simply emits all direct elements
+     * first and VIRTUAL groups last gets this backwards.</p>
+     */
+    @Test
+    public void virtualGroupIsEmittedInContentModelPositionNotLast() throws IOException {
+        FpmlFxTargetKnockoutForward object = FpmlFxTargetKnockoutForward.builder()
+                .setLinearPayoffRegion(FpmlRegion.builder().setId("direct-linear").build())
+                .addFxTargetKnockoutForwardChoice(FpmlFxTargetKnockoutForwardChoice.builder()
+                        .setConstantPayoffRegion(FpmlRegion.builder().setId("choice-const").build())
+                        .build())
+                .addBarrier(FpmlRegion.builder().setId("barrier-1").build())
+                .build();
+
+        String xml = xmlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+        System.out.println("=== SERIALISED (virtual position) ===\n" + xml);
+
+        int linear = xml.indexOf("direct-linear");
+        int choice = xml.indexOf("choice-const");
+        int barrier = xml.indexOf("barrier-1");
+        assertTrue(linear >= 0 && choice >= 0 && barrier >= 0, "all three elements should be present");
+
+        assertTrue(linear < choice,
+                "Expected the direct linearPayoffRegion before the choice group, got:\n" + xml);
+        assertTrue(choice < barrier,
+                "Expected the VIRTUAL choice group before barrier (XSD order), got:\n" + xml);
+
+        FpmlFxTargetKnockoutForward roundTripped =
+                xmlMapper.readValue(xml, FpmlFxTargetKnockoutForward.class);
+        assertEquals(object, roundTripped, "round-tripped object should equal the original");
     }
 
     @Test

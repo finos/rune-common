@@ -32,7 +32,6 @@ import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.model.lib.records.Date;
 import com.rosetta.test.*;
 import com.rosetta.util.DottedPath;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
@@ -299,7 +298,9 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    @Disabled // TODO
+    // Repeated unwrapped group (issue 7 / criterion 17): the Jackson engine collapsed the two
+    // nestedContainerSequence1 occurrences into one, so this was @Disabled. Fixed on the StAX
+    // binder in Step 4d, on both the read and the write side.
     public void testNestedContainerSerialisation() throws IOException {
         // Construct a MultiCardinality object
         NestedContainer nestedContainer = NestedContainer.builder()
@@ -402,17 +403,20 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    @Disabled //TODO: decide on the best approach to fixing this, details referenced in https://github.com/finos/rune-common/issues/662
     public void testBaseNamespaceSubstitutionDeserialisationWithTokenBufferParser() throws IOException {
         // Same schema-valid document as testBaseNamespaceSubstitutionDeserialisation, but
-        // the substituted attribute sits inside a VIRTUAL wrapper. The unwrapped property
-        // is buffered through a TokenBuffer, which discards XML namespace information, so
-        // SubstitutedMethodProperty cannot do the namespace lookup and instead guesses
-        // between all types registered under the local name "llama", keeping whichever
-        // populates the most fields. The identical content fills more fields on the
-        // extension Llama (its VIRTUAL llamaDetailsModel wrapper object is counted too),
-        // so this currently resolves to com.rosetta.extension.test.Llama even though the
-        // element's namespace unambiguously identifies the base Llama (urn:my.schema/llama).
+        // the substituted attribute sits inside a VIRTUAL wrapper. Regression test for
+        // https://github.com/finos/rune-common/issues/662.
+        //
+        // Under the Jackson XML engine this resolved to com.rosetta.extension.test.Llama:
+        // Jackson treated the unwrapped property as a TokenBuffer, which discards XML
+        // namespace information, so SubstitutedMethodProperty could not do its namespace
+        // lookup and instead guessed between all types registered under the local name
+        // "llama", keeping whichever populated the most fields — and the identical content
+        // fills more fields on the extension Llama (its VIRTUAL llamaDetailsModel wrapper
+        // object is counted too). The StAX binder has no TokenBuffer: the reader knows the
+        // element's real namespace natively, so the base Llama (urn:my.schema/llama) is
+        // resolved by exact namespace match regardless of nesting.
         String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/base-namespace-substitution-token-buffer-parser.xml"), StandardCharsets.UTF_8);
 
         WrappedAnimalContainer actual = xmlMapper.readValue(input, WrappedAnimalContainer.class);

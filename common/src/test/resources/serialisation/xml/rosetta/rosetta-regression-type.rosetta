@@ -1,0 +1,107 @@
+namespace com.rosetta.regression
+version "${project.version}"
+
+// Anonymous stand-ins reproducing the XML shapes behind acceptance criteria 13-17 of the StAX
+// binder migration. Each type keeps only the attributes needed to recreate a shape the Jackson
+// engine mishandled, so the regression tests can assert "no data loss" using nothing but types
+// defined here.
+//
+// Where a criterion involves two schemas (a base schema plus a vendor extension that adds
+// elements in its own namespace), the existing convention in this test model is followed:
+// `urn:my.schema` is the base schema and `urn:my.extension` the extension.
+
+// --- criterion 13 / issue 1 -------------------------------------------------------------
+// One complex type carrying an XML attribute `id` AND a child element `id`. Jackson indexes a
+// type's properties by local name only, so the two collide and one clobbers the other.
+
+type TransactionLeg:
+    metaId string (0..1)
+    id LegId (0..*)
+    buyerPartyReference string (0..1)
+
+type LegId:
+    value string (1..1)
+    legIdScheme string (0..1)
+
+type AssetTransfer:
+    metaId string (0..1)
+    id TransferId (0..1)
+    transferAmount string (0..1)
+
+type TransferId:
+    value string (1..1)
+
+// --- criterion 14 / issue 3 (routing half) ----------------------------------------------
+// `tradeId` appears both as a direct element and, through an unwrapped choice group, as
+// `tradeIdentifierChoice.tradeId`. Jackson deserialises the element into both layers; exactly
+// one slot must end up populated, chosen by content-model position.
+
+type TradeIdentifier:
+    partyReference PartyReference (0..1)
+    tradeId TradeId (0..1)
+    tradeIdentifierChoice TradeIdentifierChoice (0..*)
+
+type TradeIdentifierChoice:
+    tradeId TradeId (0..1)
+    versionedTradeId TradeId (0..1)
+
+type TradeId:
+    value string (1..1)
+
+type PartyReference:
+    href string (1..1)
+
+// --- criterion 15 / issue 5 -------------------------------------------------------------
+// A direct element `referenceEntity` alongside a member of the `underlyingAsset` substitution
+// group whose substituted element name is also `referenceEntity`. Jackson keeps one of them and
+// leaves the direct property never populated.
+
+type TradeUnderlyer:
+    referenceEntity LegalEntity (0..1)
+    underlyingAsset UnderlyingAsset (0..*)
+
+type UnderlyingAsset:
+    instrumentId string (0..1)
+
+type ReferenceEntityAsset extends UnderlyingAsset:
+    entityName string (0..1)
+
+type EquityAsset extends UnderlyingAsset:
+    equityName string (0..1)
+
+type LegalEntity:
+    entityId string (0..1)
+
+// --- criterion 16 / issue 6 -------------------------------------------------------------
+// The extension schema declares `physicalLeg` as a substitute for the base schema's
+// `commoditySwapLeg`, and its own `commodityOption` shadowing the base schema's element of the
+// same local name. Jackson resolves by local name and always picks the first, so the extension
+// variants either fail to parse or lose the extension-only `schedule` property.
+
+type CommoditySwap:
+    commoditySwapLeg CommoditySwapLeg (0..*)
+
+type CommoditySwapLeg:
+    payerPartyReference string (0..1)
+
+type BaseCommodityOption extends CommoditySwapLeg:
+    strikePrice string (0..1)
+
+type ExtensionCommodityOption extends CommoditySwapLeg:
+    strikePrice string (0..1)
+    schedule LegSchedule (0..1)
+
+type ExtensionPhysicalLeg extends CommoditySwapLeg:
+    physicalProduct string (0..1)
+    schedule LegSchedule (0..1)
+
+// --- criterion 17 / issue 7 -------------------------------------------------------------
+// A repeated unwrapped group (`<group ref maxOccurs="unbounded">`) must accumulate every
+// occurrence rather than collapsing to one.
+
+type LegSchedule:
+    scheduleGroup ScheduleGroup (1..*)
+
+type ScheduleGroup:
+    startDate string (1..1)
+    endDate string (1..1)

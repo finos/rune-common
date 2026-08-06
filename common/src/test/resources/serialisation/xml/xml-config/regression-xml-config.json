@@ -1,0 +1,218 @@
+{
+  "com.rosetta.regression.TransactionLeg": {
+    "xmlElementName": "TransactionLeg",
+    "abstract": false,
+    "attributes": {
+      "metaId": {
+        "xmlName": "id",
+        "xmlRepresentation": "ATTRIBUTE"
+      },
+      "id": {
+        "xmlName": "id"
+      }
+    }
+  },
+  "com.rosetta.regression.LegId": {
+    "attributes": {
+      "value": {
+        "xmlRepresentation": "VALUE"
+      },
+      "legIdScheme": {
+        "xmlName": "legIdScheme",
+        "xmlRepresentation": "ATTRIBUTE"
+      }
+    }
+  },
+  "com.rosetta.regression.AssetTransfer": {
+    "xmlElementName": "AssetTransfer",
+    "abstract": false,
+    "attributes": {
+      "metaId": {
+        "xmlName": "id",
+        "xmlRepresentation": "ATTRIBUTE"
+      },
+      "id": {
+        "xmlName": "id"
+      }
+    }
+  },
+  "com.rosetta.regression.TransferId": {
+    "attributes": {
+      "value": {
+        "xmlRepresentation": "VALUE"
+      }
+    }
+  },
+  "com.rosetta.regression.TradeIdentifier": {
+    "xmlElementName": "TradeIdentifier",
+    "abstract": false,
+    "attributes": {
+      "tradeIdentifierChoice": {
+        "xmlRepresentation": "VIRTUAL"
+      }
+    },
+    "contentModel": {
+      "nodeType": "CHOICE",
+      "children": [
+        {
+          "nodeType": "SEQUENCE",
+          "children": [
+            {
+              "nodeType": "ELEMENT",
+              "xmlName": "tradeId",
+              "path": ["tradeId"],
+              "minOccurs": 1,
+              "maxOccurs": 1
+            }
+          ]
+        },
+        {
+          "nodeType": "SEQUENCE",
+          "children": [
+            {
+              "nodeType": "ELEMENT",
+              "xmlName": "partyReference",
+              "path": ["partyReference"],
+              "minOccurs": 1,
+              "maxOccurs": 1
+            },
+            {
+              "nodeType": "CHOICE",
+              "minOccurs": 0,
+              "maxOccurs": "unbounded",
+              "children": [
+                {
+                  "nodeType": "ELEMENT",
+                  "xmlName": "tradeId",
+                  "path": ["tradeIdentifierChoice", "tradeId"],
+                  "minOccurs": 1,
+                  "maxOccurs": 1
+                },
+                {
+                  "nodeType": "ELEMENT",
+                  "xmlName": "versionedTradeId",
+                  "path": ["tradeIdentifierChoice", "versionedTradeId"],
+                  "minOccurs": 1,
+                  "maxOccurs": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "com.rosetta.regression.TradeId": {
+    "attributes": {
+      "value": {
+        "xmlRepresentation": "VALUE"
+      }
+    }
+  },
+  "com.rosetta.regression.PartyReference": {
+    "attributes": {
+      "href": {
+        "xmlName": "href",
+        "xmlRepresentation": "ATTRIBUTE"
+      }
+    }
+  },
+  "com.rosetta.regression.TradeUnderlyer": {
+    "xmlElementName": "TradeUnderlyer",
+    "abstract": false,
+    "attributes": {
+      "underlyingAsset": {
+        "elementRef": "urn:my.schema/underlyingAsset"
+      }
+    },
+    "contentModel": {
+      "nodeType": "SEQUENCE",
+      "children": [
+        {
+          "nodeType": "ELEMENT",
+          "xmlName": "referenceEntity",
+          "path": ["referenceEntity"],
+          "minOccurs": 1,
+          "maxOccurs": 1
+        },
+        {
+          "nodeType": "ELEMENT",
+          "xmlName": "referenceEntity",
+          "path": ["underlyingAsset"],
+          "minOccurs": 0,
+          "maxOccurs": "unbounded"
+        }
+      ]
+    }
+  },
+  "com.rosetta.regression.UnderlyingAsset": {
+    "xmlElementName": "underlyingAsset",
+    "xmlElementFullyQualifiedName": "urn:my.schema/underlyingAsset",
+    "abstract": true
+  },
+  "com.rosetta.regression.ReferenceEntityAsset": {
+    "substitutionGroup": "urn:my.schema/underlyingAsset",
+    "xmlElementName": "referenceEntity",
+    "xmlElementFullyQualifiedName": "urn:my.schema/referenceEntity",
+    "abstract": false
+  },
+  "com.rosetta.regression.EquityAsset": {
+    "substitutionGroup": "urn:my.schema/underlyingAsset",
+    "xmlElementName": "equityAsset",
+    "xmlElementFullyQualifiedName": "urn:my.schema/equityAsset",
+    "abstract": false
+  },
+  "com.rosetta.regression.LegalEntity": {
+    "attributes": {
+      "entityId": {
+        "xmlName": "entityId",
+        "xmlRepresentation": "ATTRIBUTE"
+      }
+    }
+  },
+  "com.rosetta.regression.CommoditySwap": {
+    "xmlElementName": "CommoditySwap",
+    "abstract": false,
+    "xmlAttributes": {
+      "xmlns:base": "urn:my.schema",
+      "xmlns:ext": "urn:my.extension"
+    },
+    "attributes": {
+      "commoditySwapLeg": {
+        "elementRef": "urn:my.schema/commoditySwapLeg"
+      }
+    }
+  },
+  "com.rosetta.regression.CommoditySwapLeg": {
+    "xmlElementName": "commoditySwapLeg",
+    "xmlElementFullyQualifiedName": "urn:my.schema/commoditySwapLeg",
+    "abstract": true
+  },
+  "com.rosetta.regression.BaseCommodityOption": {
+    "substitutionGroup": "urn:my.schema/commoditySwapLeg",
+    "xmlElementName": "commodityOption",
+    "xmlElementFullyQualifiedName": "urn:my.schema/commodityOption",
+    "abstract": false
+  },
+  "com.rosetta.regression.ExtensionCommodityOption": {
+    "substitutionGroup": "urn:my.schema/commoditySwapLeg",
+    "xmlElementName": "commodityOption",
+    "xmlElementFullyQualifiedName": "urn:my.extension/commodityOption",
+    "abstract": false
+  },
+  "com.rosetta.regression.ExtensionPhysicalLeg": {
+    "substitutionGroup": "urn:my.schema/commoditySwapLeg",
+    "xmlElementName": "physicalLeg",
+    "xmlElementFullyQualifiedName": "urn:my.extension/physicalLeg",
+    "abstract": false
+  },
+  "com.rosetta.regression.LegSchedule": {
+    "xmlElementName": "LegSchedule",
+    "abstract": false,
+    "attributes": {
+      "scheduleGroup": {
+        "xmlRepresentation": "VIRTUAL"
+      }
+    }
+  }
+}

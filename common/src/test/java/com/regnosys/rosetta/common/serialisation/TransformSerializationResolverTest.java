@@ -21,7 +21,7 @@ package com.regnosys.rosetta.common.serialisation;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.regnosys.rosetta.common.serialisation.xml.StaxXmlObjectMapper;
 import com.regnosys.rosetta.common.transform.PipelineModel;
 import com.rosetta.model.lib.functions.RosettaFunction;
 import com.rosetta.model.lib.transform.Ingest;
@@ -130,7 +130,7 @@ class TransformSerializationResolverTest {
         ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
         TransformSerialization xml = TransformSerializationResolver.input(XmlIngestFunction.class).get();
         ObjectMapper mapper = factory.create(xml, XmlIngestFunction.class);
-        assertInstanceOf(XmlMapper.class, mapper);
+        assertInstanceOf(StaxXmlObjectMapper.class, mapper);
 
         assertNotNull(factory.createWriter(TransformSerialization.DEFAULT_JSON, null),
                 "the default JSON serialization needs no function class");

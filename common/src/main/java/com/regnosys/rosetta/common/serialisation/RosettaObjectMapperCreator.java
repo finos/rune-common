@@ -31,10 +31,8 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.util.DefaultXmlPrettyPrinter;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.regnosys.rosetta.common.serialisation.xml.RosettaXmlMapper;
+import com.regnosys.rosetta.common.serialisation.xml.StaxXmlObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -44,9 +42,7 @@ import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyReferenceMixIn;
-import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLModule;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
-import com.regnosys.rosetta.common.serialisation.xml.serialization.RosettaSerialiserFactory;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.Reference;
@@ -64,6 +60,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
     private final Module rosettaModule;
     private final ObjectMapper baseMapper;
+    private final boolean prebuilt;
 
     /**
      * If the supportNativeEnumValue is set to true, then the Logical Model enumerations will be used to
@@ -72,6 +69,17 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     public RosettaObjectMapperCreator(Module rosettaModule, ObjectMapper baseMapper) {
         this.rosettaModule = rosettaModule;
         this.baseMapper = baseMapper;
+        this.prebuilt = false;
+    }
+
+    /**
+     * Wraps an already fully-configured mapper that should be returned as-is by {@link #create()},
+     * bypassing the generic JSON-oriented module/mixin pipeline below (which does not apply to it).
+     */
+    private RosettaObjectMapperCreator(ObjectMapper prebuiltMapper) {
+        this.rosettaModule = null;
+        this.baseMapper = prebuiltMapper;
+        this.prebuilt = true;
     }
 
     public static RosettaObjectMapperCreator forJSON() {
@@ -81,16 +89,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     }
 
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config, ClassLoader classLoader) {
-        boolean supportRosettaEnumValue = true;
-
-        // See issue https://github.com/FasterXML/jackson-dataformat-xml/issues/678
-        RosettaXmlMapper baseXML = new RosettaXmlMapper(config, classLoader);
-        baseXML.setSerializerFactory(RosettaSerialiserFactory.INSTANCE);
-
-        ObjectMapper base = new XmlMapper.Builder(baseXML)
-                .defaultUseWrapper(false) // TODO: enable default wrapping after this issue is resolved: https://github.com/FasterXML/jackson-databind/issues/4595
-                .build();
-        return new RosettaObjectMapperCreator(new RosettaXMLModule(base, config, supportRosettaEnumValue, classLoader), base);
+        return new RosettaObjectMapperCreator(new StaxXmlObjectMapper(config, classLoader));
     }
 
     public static RosettaObjectMapperCreator forXML(RosettaXMLConfiguration config) {
@@ -122,6 +121,9 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
     @Override
     public ObjectMapper create() {
+        if (prebuilt) {
+            return baseMapper;
+        }
         ObjectMapper mapper = baseMapper
                 .registerModule(new GuavaModule())
                 .registerModule(new JodaModule())
@@ -161,13 +163,14 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
      * Serialised documents are stored and compared across operating systems, so pretty
      * printing always uses "\n". CSV is left alone: its line separator comes from the
      * {@code CsvSchema}, which already defaults to "\n".
+     *
+     * <p>XML needs no case here: {@link #forXML(RosettaXMLConfiguration, ClassLoader)} returns a
+     * prebuilt {@link StaxXmlObjectMapper}, so {@link #create()} returns before reaching this
+     * method, and the StAX writer behind that facade already emits "\n" unconditionally.</p>
      */
     private static PrettyPrinter platformIndependentPrettyPrinter(ObjectMapper mapper) {
         if (mapper instanceof CsvMapper) {
             return null;
-        }
-        if (mapper instanceof XmlMapper) {
-            return new DefaultXmlPrettyPrinter().withCustomNewLine("\n");
         }
         return new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter("  ", "\n"));
     }

@@ -46,8 +46,13 @@ import java.util.Set;
  * <p>When the present set cannot be fully consumed by the model (an unexpected combination, or a
  * model shape the orderer does not handle), {@link #order(Set)} returns {@code null} and the caller
  * falls back to the default serialisation order. The change is therefore never worse than today.</p>
+ *
+ * <p>This class is a pure algorithm over the config's content model with no dependency on any
+ * serialisation engine, so it survived the migration off Jackson unchanged — it is now driven by
+ * {@code StaxWriter}. Its counterpart on the read side is
+ * {@code deserialization.ContentModelRouter}.</p>
  */
-final class XMLContentModelOrderer {
+public final class XMLContentModelOrderer {
 
     /** Safety bound on the search to avoid pathological blow-ups; falls back to default order. */
     private static final int MAX_CANDIDATES = 256;
@@ -55,7 +60,7 @@ final class XMLContentModelOrderer {
     private final Node root;
     private final Set<String> contentModelProperties;
 
-    XMLContentModelOrderer(XMLContentModel contentModel) {
+    public XMLContentModelOrderer(XMLContentModel contentModel) {
         this.contentModelProperties = Collections.unmodifiableSet(leafProperties(contentModel, new LinkedHashSet<>()));
         this.root = reduce(contentModel);
     }
@@ -65,7 +70,7 @@ final class XMLContentModelOrderer {
      *         path segment of each element). Only these properties are reordered; all others keep
      *         their position.
      */
-    Set<String> getContentModelProperties() {
+    public Set<String> getContentModelProperties() {
         return contentModelProperties;
     }
 
@@ -76,7 +81,7 @@ final class XMLContentModelOrderer {
      * @return an ordering consuming exactly {@code presentProperties}, or {@code null} if no such
      *         ordering could be derived (caller should keep the default order).
      */
-    List<String> order(Set<String> presentProperties) {
+    public List<String> order(Set<String> presentProperties) {
         if (presentProperties.isEmpty()) {
             return Collections.emptyList();
         }

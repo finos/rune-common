@@ -53,4 +53,28 @@ public interface TransformMapperFactory {
     default ObjectWriter createWriter(TransformSerialization serialization, Class<?> functionClass) {
         return create(serialization, functionClass).writerWithDefaultPrettyPrinter();
     }
+
+    /**
+     * Builds the mapper for the given serialization, told the type at the <b>root</b> of the object graph
+     * it will read or write — the ingest's input type, or the projection's output type.
+     * <p>
+     * Supplying it lets the {@code CSV_LABELLED} format resolve a type-rooted {@code LabelProvider},
+     * which is the only correct provider on an ingest read path. {@code null} means "no type context" and
+     * preserves the function-derived behaviour of {@link #create(TransformSerialization, Class)}.
+     * <p>
+     * The default implementation ignores {@code rootType}. Implementors that extend
+     * {@link ClasspathTransformMapperFactory} inherit a real implementation; a factory written from
+     * scratch must override this to get type-rooted labels.
+     */
+    default ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
+        return create(serialization, functionClass);
+    }
+
+    /**
+     * Builds the pretty-printing writer for the given serialization and root type — the output-side
+     * counterpart of {@link #create(TransformSerialization, Class, Class)}.
+     */
+    default ObjectWriter createWriter(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
+        return create(serialization, functionClass, rootType).writerWithDefaultPrettyPrinter();
+    }
 }

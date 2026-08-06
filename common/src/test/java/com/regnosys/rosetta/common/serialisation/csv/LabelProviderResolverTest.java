@@ -59,6 +59,51 @@ public class LabelProviderResolverTest {
     /** Stub RosettaFunction with NO @RuneLabelProvider annotation. */
     public static class StubFunctionWithoutProvider implements RosettaFunction {}
 
+    /** Stub pojo interface carrying @RuneLabelProvider directly — the common case. */
+    @RuneLabelProvider(labelProvider = StubLabelProvider.class)
+    public interface StubTypeWithProvider {}
+
+    /** Stub pojo interface with NO @RuneLabelProvider annotation. */
+    public interface StubTypeWithoutProvider {}
+
+    /** Stub "…Impl" class implementing the annotated interface without declaring the annotation itself. */
+    public static class StubTypeImpl implements StubTypeWithProvider {}
+
+    /** Stub builder-shaped interface extending the annotated interface without declaring it itself. */
+    public interface StubTypeBuilder extends StubTypeWithProvider {}
+
+    /** Plain type with no @RuneLabelProvider anywhere in its hierarchy. */
+    public static class StubPlainType {}
+
+    /** LabelProvider distinguishable from {@link StubLabelProvider}, used by the Parent/Child test. */
+    public static class ParentLabelProvider implements LabelProvider {
+        @Override
+        public String getLabel(RosettaPath path) {
+            return "Parent Label";
+        }
+    }
+
+    /** LabelProvider distinguishable from {@link ParentLabelProvider}, used by the Parent/Child test. */
+    public static class ChildLabelProvider implements LabelProvider {
+        @Override
+        public String getLabel(RosettaPath path) {
+            return "Child Label";
+        }
+    }
+
+    /** Parent interface carrying its own provider. */
+    @RuneLabelProvider(labelProvider = ParentLabelProvider.class)
+    public interface StubParentType {}
+
+    /**
+     * Child interface extending Parent and carrying its own, different provider. A deep-path label
+     * declared on the outer type deliberately overrides the inner type's own (producer §2.5), so when
+     * both levels of a hierarchy are annotated, the most specific (Child's) declaration is the only
+     * correct answer.
+     */
+    @RuneLabelProvider(labelProvider = ChildLabelProvider.class)
+    public interface StubChildType extends StubParentType {}
+
     // ---------------------------------------------------------------------------
     // Tests — Class<?> overload
     // ---------------------------------------------------------------------------
@@ -93,6 +138,92 @@ public class LabelProviderResolverTest {
         LabelProvider provider = LabelProviderResolver.fromTransformFunction(StubFunctionWithoutProvider.class);
 
         assertNull(provider, "Expected null when @RuneLabelProvider annotation is absent");
+    }
+
+    // ---------------------------------------------------------------------------
+    // Tests — fromType(Class<?>)
+    // ---------------------------------------------------------------------------
+
+    @Test
+    void fromType_interfaceWithAnnotation_returnsProvider() {
+        LabelProvider provider = LabelProviderResolver.fromType(StubTypeWithProvider.class);
+
+        assertNotNull(provider, "Expected a non-null LabelProvider when @RuneLabelProvider is present");
+        assertInstanceOf(StubLabelProvider.class, provider);
+        assertEquals("My Attribute Label", provider.getLabel(RosettaPath.valueOf("attr")));
+    }
+
+    @Test
+    void fromType_interfaceWithoutAnnotation_returnsNull() {
+        LabelProvider provider = LabelProviderResolver.fromType(StubTypeWithoutProvider.class);
+
+        assertNull(provider, "Expected null when @RuneLabelProvider annotation is absent");
+    }
+
+    @Test
+    void fromType_implClassImplementingAnnotatedInterface_returnsProviderViaSearch() {
+        LabelProvider provider = LabelProviderResolver.fromType(StubTypeImpl.class);
+
+        assertNotNull(provider,
+                "The annotation is not @Inherited, so an …Impl class must find it via the supertype search");
+        assertInstanceOf(StubLabelProvider.class, provider);
+    }
+
+    @Test
+    void fromType_builderInterfaceExtendingAnnotatedInterface_returnsProviderViaSearch() {
+        LabelProvider provider = LabelProviderResolver.fromType(StubTypeBuilder.class);
+
+        assertNotNull(provider,
+                "A builder-shaped interface extending the annotated interface must find it via the search");
+        assertInstanceOf(StubLabelProvider.class, provider);
+    }
+
+    @Test
+    void fromType_childAndParentBothAnnotated_childsDeclarationWins() {
+        LabelProvider provider = LabelProviderResolver.fromType(StubChildType.class);
+
+        assertNotNull(provider);
+        assertInstanceOf(ChildLabelProvider.class, provider,
+                "Child's own declaration must win over Parent's — the most specific declaration is the "
+                        + "only correct answer when both levels of a hierarchy are annotated (producer §2.5)");
+    }
+
+    @Test
+    void fromType_noAnnotationAnywhereInHierarchy_returnsNull() {
+        LabelProvider provider = LabelProviderResolver.fromType(StubPlainType.class);
+
+        assertNull(provider);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Tests — fromType(String, ClassLoader)
+    // ---------------------------------------------------------------------------
+
+    @Test
+    void fromType_byName_withAnnotation_returnsProvider() {
+        LabelProvider provider = LabelProviderResolver.fromType(
+                StubTypeWithProvider.class.getName(),
+                Thread.currentThread().getContextClassLoader());
+
+        assertNotNull(provider);
+        assertInstanceOf(StubLabelProvider.class, provider);
+    }
+
+    @Test
+    void fromType_byName_withoutAnnotation_returnsNull() {
+        LabelProvider provider = LabelProviderResolver.fromType(
+                StubTypeWithoutProvider.class.getName(),
+                Thread.currentThread().getContextClassLoader());
+
+        assertNull(provider);
+    }
+
+    @Test
+    void fromType_byName_classNotFound_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class, () ->
+                LabelProviderResolver.fromType(
+                        "com.example.NonExistentType",
+                        Thread.currentThread().getContextClassLoader()));
     }
 
     // ---------------------------------------------------------------------------

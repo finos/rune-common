@@ -395,12 +395,11 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     // ---------------------------------------------------------------------------
-    // The deprecated overloads still do what they did
+    // The superseded single-argument overloads still do what they did
     // ---------------------------------------------------------------------------
 
     @Test
-    @SuppressWarnings("deprecation")
-    void deprecatedCsvLabelledMapperOverloadKeepsItsPreTypeFirstBehaviour() throws JsonProcessingException {
+    void singleArgumentCsvLabelledMapperKeepsItsPreRootContextBehaviour() throws JsonProcessingException {
         // It is kept for subclasses that call it, so it must still resolve from the function alone — no
         // root type, no guard — even for an ingest, whose provider the create path now rejects.
         ObjectMapper mapper = factory.csvLabelledMapper(CsvLabelledIngestWithFunctionProvider.class);
@@ -419,7 +418,6 @@ class ClasspathTransformMapperFactoryTest {
     /** The pre-existing extension shape: a subclass that overrode the single-argument hook. */
     private static class OverridingResolutionFactory extends ClasspathTransformMapperFactory {
         @Override
-        @Deprecated
         protected LabelProvider resolveLabelProvider(Class<?> functionClass) {
             return new SubclassLabelProvider();
         }
@@ -439,7 +437,6 @@ class ClasspathTransformMapperFactoryTest {
     /** The other pre-existing extension shape: a subclass that overrode the single-argument mapper hook. */
     private static class OverridingCsvLabelledMapperFactory extends ClasspathTransformMapperFactory {
         @Override
-        @Deprecated
         protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
             return RosettaObjectMapperCreator.forCSV(new SubclassLabelProvider()).create();
         }

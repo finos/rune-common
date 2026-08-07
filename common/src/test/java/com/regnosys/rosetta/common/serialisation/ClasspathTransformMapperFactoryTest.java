@@ -436,6 +436,38 @@ class ClasspathTransformMapperFactoryTest {
         assertEquals("sub:firstName,sub:identifier,sub:lastName,sub:username", header(mapper));
     }
 
+    /** The other pre-existing extension shape: a subclass that overrode the single-argument mapper hook. */
+    private static class OverridingCsvLabelledMapperFactory extends ClasspathTransformMapperFactory {
+        @Override
+        @Deprecated
+        protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
+            return RosettaObjectMapperCreator.forCSV(new SubclassLabelProvider()).create();
+        }
+    }
+
+    @Test
+    void anExistingSubclassOverrideOfCsvLabelledMapperStillDecidesWhenNoRootIsSupplied() throws JsonProcessingException {
+        // Same rule as for resolveLabelProvider(Class): a hook kept only so it still compiles is worse
+        // than one removed, because it compiles, runs, and silently stops doing anything. A null root is
+        // exactly this overload's pre-root-context case, so it still decides that case.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
+        ObjectMapper mapper = new OverridingCsvLabelledMapperFactory()
+                .create(s, CsvLabelledProjectionWithFunctionProvider.class);
+
+        assertEquals("sub:firstName,sub:identifier,sub:lastName,sub:username", header(mapper));
+    }
+
+    @Test
+    void anExistingSubclassOverrideOfCsvLabelledMapperDoesNotOutrankASuppliedRoot() throws JsonProcessingException {
+        // …and it no longer answers for a caller that supplied a root: that caller knows something the
+        // override predates.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
+        ObjectMapper mapper = new OverridingCsvLabelledMapperFactory()
+                .create(s, CsvLabelledProjectionWithFunctionProvider.class, TransformRoot.output(LabelledRootType.class));
+
+        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+    }
+
     @Test
     void anExistingSubclassOverrideDoesNotOutrankTheTypeProvider() throws JsonProcessingException {
         // …but it no longer answers for the whole of resolution: type-first still wins.

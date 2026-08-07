@@ -170,28 +170,6 @@ public class LabelProviderResolver {
     }
 
     /**
-     * Resolves a {@link LabelProvider} from a model type's class name, loading the class via
-     * the supplied {@link ClassLoader}.
-     *
-     * @param typeClassName the fully-qualified name of the model type class
-     * @param classLoader   the class loader to use for loading the type class
-     * @return the instantiated {@link LabelProvider}, or {@code null} if the class is not a
-     *         {@link RosettaModelObject} or no type in its hierarchy carries
-     *         {@code @RuneLabelProvider}
-     * @throws IllegalArgumentException if the type class cannot be found
-     * @throws IllegalStateException    if the provider class cannot be instantiated
-     */
-    public static LabelProvider fromType(String typeClassName, ClassLoader classLoader) {
-        Class<?> type;
-        try {
-            type = classLoader.loadClass(typeClassName);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Type class not found: " + typeClassName, e);
-        }
-        return fromType(type);
-    }
-
-    /**
      * Breadth-first search of {@code type}'s supertype hierarchy — the type itself, then its
      * interfaces and superclass, then their interfaces and superclasses, and so on — for the
      * first declaration of {@code @RuneLabelProvider}.

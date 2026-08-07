@@ -230,37 +230,6 @@ public class LabelProviderResolverTest {
     }
 
     // ---------------------------------------------------------------------------
-    // Tests — fromType(String, ClassLoader)
-    // ---------------------------------------------------------------------------
-
-    @Test
-    void fromType_byName_withAnnotation_returnsProvider() {
-        LabelProvider provider = LabelProviderResolver.fromType(
-                StubTypeWithProvider.class.getName(),
-                Thread.currentThread().getContextClassLoader());
-
-        assertNotNull(provider);
-        assertInstanceOf(StubLabelProvider.class, provider);
-    }
-
-    @Test
-    void fromType_byName_withoutAnnotation_returnsNull() {
-        LabelProvider provider = LabelProviderResolver.fromType(
-                StubTypeWithoutProvider.class.getName(),
-                Thread.currentThread().getContextClassLoader());
-
-        assertNull(provider);
-    }
-
-    @Test
-    void fromType_byName_classNotFound_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class, () ->
-                LabelProviderResolver.fromType(
-                        "com.example.NonExistentType",
-                        Thread.currentThread().getContextClassLoader()));
-    }
-
-    // ---------------------------------------------------------------------------
     // Tests — String + ClassLoader overload
     // ---------------------------------------------------------------------------
 

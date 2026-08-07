@@ -67,16 +67,12 @@ public interface TransformMapperFactory {
      * The default implementation ignores {@code root}. Implementors that extend
      * {@link ClasspathTransformMapperFactory} inherit a real implementation; a factory written from
      * scratch must override this to get type-rooted labels.
+     * <p>
+     * There is deliberately no {@code createWriter} counterpart. Nothing needs one yet, and its whole
+     * body would be {@code create(serialization, functionClass, root).writerWithDefaultPrettyPrinter()},
+     * which a caller can write. Add the overload in the change that first requires it.
      */
     default ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
         return create(serialization, functionClass);
-    }
-
-    /**
-     * Builds the pretty-printing writer for the given serialization and root — the output-side
-     * counterpart of {@link #create(TransformSerialization, Class, TransformRoot)}.
-     */
-    default ObjectWriter createWriter(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
-        return create(serialization, functionClass, root).writerWithDefaultPrettyPrinter();
     }
 }

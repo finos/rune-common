@@ -115,7 +115,7 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     // ---------------------------------------------------------------------------
-    // Step 3 — type-first resolution with the output-side guard
+    // Type-first resolution, with the guard keyed on the caller-supplied transform side
     // ---------------------------------------------------------------------------
 
     private static User buildUser() {
@@ -178,17 +178,27 @@ class ClasspathTransformMapperFactoryTest {
 
     /**
      * An ingest whose function-rooted provider is rooted at its <b>output</b> type, not the serialised
-     * input — the §2.7 case the guard exists to reject.
+     * input — the case the guard exists to reject.
      */
     @Ingest(format = SerializationFormat.CSV_LABELLED)
     @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
     private static class CsvLabelledIngestWithFunctionProvider implements RosettaFunction {
     }
 
+    /**
+     * A labelled function carrying no transform annotation at all — the shape of a report, an
+     * enrichment, and a model generated before transform annotations existed. Its provider is rooted at
+     * its output exactly as a projection's is; nothing in its annotations says so.
+     */
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class LabelledFunctionWithoutTransformAnnotation implements RosettaFunction {
+    }
+
     @Test
     void csvLabelledProjectionWithRootTypePrefersTheTypeProviderOverTheFunctionProvider() throws JsonProcessingException {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, LabelledRootType.class);
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class,
+                TransformRoot.output(LabelledRootType.class));
 
         assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
     }
@@ -198,7 +208,7 @@ class ClasspathTransformMapperFactoryTest {
         // Regression guard for today's working path: no root type supplied, so resolution falls back to
         // the function's own provider exactly as before Step 3.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, null);
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class);
 
         assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
     }
@@ -208,20 +218,51 @@ class ClasspathTransformMapperFactoryTest {
         // The nested-labels-only shape: the root type carries no type-rooted provider of its own, so the
         // guard must not strip the function's provider from an otherwise-working projection.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, UnlabelledRootType.class);
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class,
+                TransformRoot.output(UnlabelledRootType.class));
 
         assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
     }
 
     @Test
-    void csvLabelledIngestWithoutRootTypeGetsNoProviderAndDegradesToPlainCsv() throws JsonProcessingException {
-        // §2.7: a function-rooted provider is rooted at the function's OUTPUT, so an ingest (whose
-        // serialised side is its INPUT) may never use it — even though the annotation is present, the
-        // guard rejects it and there is no root type to try instead.
+    void csvLabelledIngestOnTheDeclaredInputSideGetsNoProviderAndDegradesToPlainCsv() throws JsonProcessingException {
+        // A function-rooted provider is rooted at the function's OUTPUT, so an ingest reading its INPUT
+        // may never use it. The caller declared the input side, so the guard rejects it, and there is no
+        // root type to try instead.
         TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class, null);
+        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class, TransformRoot.input());
 
         assertEquals("firstName,identifier,lastName,username", header(mapper));
+    }
+
+    @Test
+    void csvLabelledIngestWithNoDeclaredSideKeepsTodaysFunctionProvider() throws JsonProcessingException {
+        // The guard is the caller's declared side and nothing else. A caller that has not been updated
+        // supplies no root, so it keeps exactly the behaviour it had before root context existed.
+        TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
+        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class);
+
+        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+    }
+
+    @Test
+    void labelledFunctionWithoutATransformAnnotationKeepsItsLabelsWhenNoSideIsDeclared() throws JsonProcessingException {
+        // Reports, enrichments and pre-annotation models all carry a label provider and no @Projection.
+        // A guard that read the annotations would strip the labels off every one of them.
+        ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
+                LabelledFunctionWithoutTransformAnnotation.class);
+
+        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+    }
+
+    @Test
+    void labelledFunctionWithoutATransformAnnotationKeepsItsLabelsOnTheDeclaredOutputSide() throws JsonProcessingException {
+        // …and declaring the side it really is must not strip them either: the provider is rooted at the
+        // function's output, which is precisely what the caller is serializing.
+        ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
+                LabelledFunctionWithoutTransformAnnotation.class, TransformRoot.output());
+
+        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
     }
 
     @Test
@@ -230,7 +271,8 @@ class ClasspathTransformMapperFactoryTest {
         // rooted at its output, but the caller now supplies the CSV input type as rootType, and type-first
         // resolution picks that up regardless of the (rejected) function provider.
         TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class, LabelledRootType.class);
+        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class,
+                TransformRoot.input(LabelledRootType.class));
 
         assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
     }
@@ -239,8 +281,8 @@ class ClasspathTransformMapperFactoryTest {
     void csvLabelledResolvesTheTypeProviderThroughAnImplClass() throws JsonProcessingException {
         // Ties Step 1's supertype search to this seam: passing the "…Impl" shape as rootType (rather than
         // the pojo interface itself) must still find the interface's annotation.
-        ObjectMapper mapper = factory.create(
-                new TransformSerialization(SerializationFormat.CSV_LABELLED, null), null, LabelledRootTypeImpl.class);
+        ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
+                null, TransformRoot.input(LabelledRootTypeImpl.class));
 
         assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
     }
@@ -277,9 +319,10 @@ class ClasspathTransformMapperFactoryTest {
     void suppressedFunctionProviderWarnsNamingTheFunctionAndWhy() {
         TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
 
-        String warning = onlyWarning(() -> factory.create(s, CsvLabelledIngestWithFunctionProvider.class, null));
+        String warning = onlyWarning(
+                () -> factory.create(s, CsvLabelledIngestWithFunctionProvider.class, TransformRoot.input()));
 
-        // §2.7's whole mitigation: the first ingest to lose its (wrongly-rooted) labels must be able to
+        // The whole mitigation: the first ingest to lose its (wrongly-rooted) labels must be able to
         // read why out of the log, without reading this class.
         assertTrue(warning.contains(CsvLabelledIngestWithFunctionProvider.class.getName()),
                 "the suppressed function must be named: " + warning);
@@ -291,7 +334,7 @@ class ClasspathTransformMapperFactoryTest {
     void unlabelledRootTypeWarnsNamingTheRootType() {
         TransformSerialization s = new TransformSerialization(SerializationFormat.CSV_LABELLED, null);
 
-        String warning = onlyWarning(() -> factory.create(s, null, UnlabelledRootType.class));
+        String warning = onlyWarning(() -> factory.create(s, null, TransformRoot.output(UnlabelledRootType.class)));
 
         assertTrue(warning.contains(UnlabelledRootType.class.getName()),
                 "the root type that came up empty must be named: " + warning);
@@ -301,7 +344,7 @@ class ClasspathTransformMapperFactoryTest {
     void noProviderAnywhereWarnsWithoutClaimingOneWasSuppressed() {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithoutLabelProvider.class).get();
 
-        String warning = onlyWarning(() -> factory.create(s, CsvLabelledProjectionWithoutLabelProvider.class, null));
+        String warning = onlyWarning(() -> factory.create(s, CsvLabelledProjectionWithoutLabelProvider.class));
 
         assertTrue(warning.contains("no @RuneLabelProvider could be resolved"), warning);
         assertFalse(warning.contains("rooted at its own output"),
@@ -313,7 +356,8 @@ class ClasspathTransformMapperFactoryTest {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
 
         assertEquals(Collections.emptyList(),
-                warningsWhile(() -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, LabelledRootType.class)));
+                warningsWhile(() -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class,
+                        TransformRoot.output(LabelledRootType.class))));
     }
 
     // ---------------------------------------------------------------------------
@@ -353,7 +397,7 @@ class ClasspathTransformMapperFactoryTest {
         // anything. On the branch it was written for, it still decides.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = new OverridingResolutionFactory()
-                .create(s, CsvLabelledProjectionWithFunctionProvider.class, null);
+                .create(s, CsvLabelledProjectionWithFunctionProvider.class);
 
         assertEquals("sub:firstName,sub:identifier,sub:lastName,sub:username", header(mapper));
     }
@@ -363,7 +407,7 @@ class ClasspathTransformMapperFactoryTest {
         // …but it no longer answers for the whole of resolution: type-first still wins.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = new OverridingResolutionFactory()
-                .create(s, CsvLabelledProjectionWithFunctionProvider.class, LabelledRootType.class);
+                .create(s, CsvLabelledProjectionWithFunctionProvider.class, TransformRoot.output(LabelledRootType.class));
 
         assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
     }

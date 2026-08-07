@@ -74,8 +74,9 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
      * The CSV-import case this task exists for: an ingest whose function-rooted provider is (wrongly)
      * rooted at some unrelated output type — modelled here by {@link User}, standing in for "any type
      * that isn't the CSV input" — rather than the CSV input, {@link LabelledTrade}. Before this task that
-     * wrongly rooted provider is all the resolver could ever find; passing {@link LabelledTrade} as
-     * {@code rootType} must now win instead, sourced from the annotation the generator actually stamped.
+     * wrongly rooted provider is all the resolver could ever find; passing {@link LabelledTrade} as the
+     * {@link TransformRoot}'s type must now win instead, sourced from the annotation the generator
+     * actually stamped.
      */
     public static class UnrelatedOutputLabelProvider implements LabelProvider {
         @Override
@@ -95,7 +96,8 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
         // No function at all: proves the generated annotation on LabelledTrade is found and used purely
         // from rootType, the shape a CSV importer with no transform function needs.
         ObjectMapper mapper = factory.create(
-                new TransformSerialization(SerializationFormat.CSV_LABELLED, null), null, LabelledTrade.class);
+                new TransformSerialization(SerializationFormat.CSV_LABELLED, null), null,
+                TransformRoot.input(LabelledTrade.class));
 
         LabelledTrade original = buildTrade();
         String csv = mapper.writeValueAsString(original);
@@ -111,7 +113,8 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
         TransformSerialization s =
                 TransformSerializationResolver.input(IngestLabelledTradeWithUnrelatedFunctionProvider.class).get();
         ObjectMapper mapper =
-                factory.create(s, IngestLabelledTradeWithUnrelatedFunctionProvider.class, LabelledTrade.class);
+                factory.create(s, IngestLabelledTradeWithUnrelatedFunctionProvider.class,
+                        TransformRoot.input(LabelledTrade.class));
 
         // Header columns deliberately reordered from the write order, so a pass here proves the reader
         // binds by label text (via the generated LabelledTradeLabelProvider) rather than by position.

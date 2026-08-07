@@ -52,12 +52,19 @@ import java.util.function.Supplier;
  * else (which mapper implements which format, the {@code CSV_LABELLED} label resolution) is inherited.
  * <p>
  * For the {@code CSV_LABELLED} format the required {@link LabelProvider} is resolved type-first: the
- * {@code rootType} passed to {@link #create(TransformSerialization, Class, Class)}'s own
- * {@code @RuneLabelProvider} wins when it has one, otherwise the function class's — but only where the
- * function's provider is rooted at this serialization's root (see
- * {@link #resolveLabelProvider(TransformSerialization, Class, Class)}). When
- * neither applies (e.g. a hand-written function, or no root type and no matching function side), the
- * mapper degrades to plain (unlabelled) CSV rather than failing.
+ * root type passed via the {@link TransformRoot} given to
+ * {@link #create(TransformSerialization, Class, TransformRoot)} wins when it carries its own
+ * {@code @RuneLabelProvider}, otherwise the function class's — but never on the transform's
+ * {@link TransformRoot.Side#INPUT} side, where a function-rooted provider is rooted at the wrong type
+ * (see {@link #resolveLabelProvider(TransformSerialization, Class, TransformRoot)}). When neither
+ * applies (e.g. a hand-written function, or an input side whose type has no provider), the mapper
+ * degrades to plain (unlabelled) CSV rather than failing.
+ * <p>
+ * A caller that supplies no {@link TransformRoot} gets the behaviour that predates root context: the
+ * function's provider, unguarded. That is deliberate. The side cannot be inferred from the function's
+ * annotations — a report, an enrichment and a pre-annotation model all carry a label provider and no
+ * {@code @Projection} — so a factory that guessed would strip labels from exactly the transforms that
+ * most need them.
  * <p>
  * Neither provider is deprecated, and neither is scheduled for removal — they are not in a supersession
  * relationship. A transform's output type whose labels sit entirely on nested descendants never gets a
@@ -73,11 +80,11 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     @Override
     public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass) {
-        return create(serialization, functionClass, null);
+        return create(serialization, functionClass, (TransformRoot) null);
     }
 
     @Override
-    public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
+    public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
         Objects.requireNonNull(serialization, "serialization must not be null");
         switch (serialization.getFormat()) {
             case JSON:
@@ -87,7 +94,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
             case CSV:
                 return csvMapper();
             case CSV_LABELLED:
-                return csvLabelledMapper(serialization, functionClass, rootType);
+                return csvLabelledMapper(serialization, functionClass, root);
             case XML:
                 return xmlMapper(serialization.getConfigPath(), functionClass);
             default:
@@ -109,15 +116,16 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return RosettaObjectMapperCreator.forCSV().create();
     }
 
-    protected ObjectMapper csvLabelledMapper(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
-        LabelProvider labelProvider = resolveLabelProvider(serialization, functionClass, rootType);
-        return csvMapperFor(labelProvider, () -> noLabelProviderWarning(serialization, functionClass, rootType));
+    protected ObjectMapper csvLabelledMapper(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
+        LabelProvider labelProvider = resolveLabelProvider(serialization, functionClass, root);
+        return csvMapperFor(labelProvider, () -> noLabelProviderWarning(functionClass, root));
     }
 
     /**
-     * @deprecated superseded by {@link #csvLabelledMapper(TransformSerialization, Class, Class)}, which
-     *         is told the root type and so can resolve type-first. Kept so subclasses that call it still
-     *         compile and still get exactly the pre-type-first behaviour — function-rooted resolution
+     * @deprecated superseded by
+     *         {@link #csvLabelledMapper(TransformSerialization, Class, TransformRoot)}, which is told
+     *         what sits at the root and so can resolve type-first. Kept so subclasses that call it still
+     *         compile and still get exactly the pre-root-context behaviour — function-rooted resolution
      *         with no guard, via the equally deprecated {@link #resolveLabelProvider(Class)}. It is no
      *         longer on the {@link #create} path, so overriding it has no effect; override the
      *         3-argument overload instead.
@@ -145,33 +153,33 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * Explains, for the WARN in {@link #csvLabelledMapper}, which of the three ways a {@code
      * CSV_LABELLED} request can end up with no provider actually happened: no provider anywhere, a root
      * type whose own hierarchy carries none, or a function provider that exists but was suppressed
-     * because it is not rooted at this serialization (the guard in
-     * {@link #resolveLabelProvider(TransformSerialization, Class, Class)}). Whichever function provider
-     * would have been suppressed is named, so a future ingest's missing labels are self-explaining
-     * rather than a mystery.
+     * because the caller said this is the transform's {@link TransformRoot.Side#INPUT} side (the guard
+     * in {@link #resolveLabelProvider(TransformSerialization, Class, TransformRoot)}). Whichever
+     * function provider would have been suppressed is named, so an ingest's missing labels are
+     * self-explaining rather than a mystery.
      * <p>
      * It describes the <em>default</em> resolution, and shares
-     * {@link #hasFunctionLabelProvider(Class)} and {@link #functionOutputIsSerializedRoot} with it so
-     * the two cannot drift into disagreement. A subclass that overrides
-     * {@link #resolveLabelProvider(TransformSerialization, Class, Class)} and declines for reasons of
-     * its own should override this reporting too.
+     * {@link #hasFunctionLabelProvider(Class)} with it so the two cannot drift into disagreement. A
+     * subclass that overrides
+     * {@link #resolveLabelProvider(TransformSerialization, Class, TransformRoot)} and declines for
+     * reasons of its own should override this reporting too.
      */
-    private String noLabelProviderWarning(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
-        boolean functionProviderSuppressed = hasFunctionLabelProvider(functionClass)
-                && !functionOutputIsSerializedRoot(serialization, functionClass);
+    private String noLabelProviderWarning(Class<?> functionClass, TransformRoot root) {
+        boolean functionProviderSuppressed = hasFunctionLabelProvider(functionClass) && isInputSide(root);
+        Class<?> rootType = root != null ? root.getType() : null;
         if (rootType != null) {
             return functionProviderSuppressed
                     ? String.format("CSV_LABELLED requested but root type %s has no @RuneLabelProvider, and "
                             + "%s's @RuneLabelProvider is rooted at its own output rather than this "
-                            + "serialization's root, so it cannot be used here either; falling back to "
+                            + "transform's input side, so it cannot be used here either; falling back to "
                             + "unlabelled CSV.", rootType.getName(), functionClass.getName())
                     : String.format("CSV_LABELLED requested but root type %s has no @RuneLabelProvider; "
                             + "falling back to unlabelled CSV.", rootType.getName());
         }
         if (functionProviderSuppressed) {
             return String.format("CSV_LABELLED requested but %s's @RuneLabelProvider is rooted at its own "
-                    + "output, and this serialization is not that function's @Projection side (no root type "
-                    + "was supplied either); falling back to unlabelled CSV.", functionClass.getName());
+                    + "output, and this serialization is the transform's input side (no root type was "
+                    + "supplied either); falling back to unlabelled CSV.", functionClass.getName());
         }
         return noFunctionProviderWarning(functionClass);
     }
@@ -238,24 +246,29 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * The {@link LabelProvider} for a {@code CSV_LABELLED} mapper: the root type's own provider when it
-     * has one, else the function's — but only where the function's provider is rooted at this
-     * serialization's root. Returns {@code null} when neither applies, so the caller degrades to
-     * unlabelled CSV.
+     * has one, else the function's — unless the caller said this is the transform's
+     * {@link TransformRoot.Side#INPUT} side, where a function-rooted provider may never be used.
+     * Returns {@code null} when neither applies, so the caller degrades to unlabelled CSV.
      * <p>
      * Resolution is type-first (see the class javadoc for why): a function-rooted provider is rooted at
      * the function's <b>output</b>, so using it for any other root would resolve paths against the wrong
      * graph and could return a plausible label for a coincidentally matching path — a silent mislabel,
-     * worse than no label at all. Override this method, not the deprecated single-{@code Class} overload
-     * below, to change resolution.
+     * worse than no label at all. The guard is the caller's declared {@link TransformRoot.Side} and
+     * nothing else. It is not inferred from {@code @Ingest}/{@code @Projection}, which cannot answer the
+     * question: a report, an enrichment and a pre-annotation model each carry a label provider and no
+     * {@code @Projection}, and a CSV-to-CSV transform carries both annotations with the same format.
+     * <p>
+     * Override this method, not the deprecated single-{@code Class} overload below, to change
+     * resolution.
      */
-    protected LabelProvider resolveLabelProvider(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
-        if (rootType != null) {
-            LabelProvider fromType = LabelProviderResolver.fromType(rootType);
+    protected LabelProvider resolveLabelProvider(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
+        if (root != null && root.getType() != null) {
+            LabelProvider fromType = LabelProviderResolver.fromType(root.getType());
             if (fromType != null) {
                 return fromType;
             }
         }
-        if (!functionOutputIsSerializedRoot(serialization, functionClass)) {
+        if (isInputSide(root)) {
             return null;
         }
         // Deliberately through the deprecated overload rather than functionRootedProvider directly: a
@@ -265,16 +278,13 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * A function-rooted provider is valid exactly when the serialised root is the function's output —
-     * i.e. this serialization is the function's {@code @Projection} side. Compares format only, not full
-     * {@link TransformSerialization} equality: callers may construct a {@code TransformSerialization} by
-     * hand without the annotation's {@code configPath}, and a config-path mismatch must not silently
-     * strip labels from an otherwise-working projection.
+     * Whether the caller declared that the serialized graph is the transform's <b>input</b> — the one
+     * state in which a function-rooted provider is provably wrong. A caller that supplied no
+     * {@link TransformRoot} declared nothing, so this is {@code false} and the function's provider
+     * stands, exactly as it did before root context existed.
      */
-    private static boolean functionOutputIsSerializedRoot(TransformSerialization serialization, Class<?> functionClass) {
-        return TransformSerializationResolver.output(functionClass)
-                .map(out -> out.getFormat() == serialization.getFormat())
-                .orElse(false);
+    private static boolean isInputSide(TransformRoot root) {
+        return root != null && !root.isOutput();
     }
 
     /**
@@ -303,9 +313,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * @deprecated superseded by {@link #resolveLabelProvider(TransformSerialization, Class, Class)},
-     *         which resolves type-first and only falls back to a function-rooted provider where it is
-     *         provably rooted at the serialised root. Kept, and still called on that fallback branch, so
+     * @deprecated superseded by
+     *         {@link #resolveLabelProvider(TransformSerialization, Class, TransformRoot)}, which
+     *         resolves type-first and refuses a function-rooted provider on the transform's input side.
+     *         Kept, and still called on the fallback branch, so
      *         a subclass that already overrides this overload keeps deciding what it used to decide.
      *         What it can no longer do is answer for the whole of resolution: the type-rooted provider
      *         wins before this is reached, and the guard can reject the function outright. Override the

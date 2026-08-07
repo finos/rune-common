@@ -55,26 +55,28 @@ public interface TransformMapperFactory {
     }
 
     /**
-     * Builds the mapper for the given serialization, told the type at the <b>root</b> of the object graph
-     * it will read or write — the ingest's input type, or the projection's output type.
+     * Builds the mapper for the given serialization, told what sits at the <b>root</b> of the object
+     * graph it will read or write — which side of the transform this is, and the root type when the
+     * caller knows it. See {@link TransformRoot}, which explains why only the caller can supply this.
      * <p>
-     * Supplying it lets the {@code CSV_LABELLED} format resolve a type-rooted {@code LabelProvider},
-     * which is the only correct provider on an ingest read path. {@code null} means "no type context" and
+     * It lets the {@code CSV_LABELLED} format resolve a type-rooted {@code LabelProvider} — the only
+     * correct provider on an ingest read path — and stops a function-rooted provider being used on the
+     * input side, where it is rooted at the wrong type. {@code null} means "the caller said nothing" and
      * preserves the function-derived behaviour of {@link #create(TransformSerialization, Class)}.
      * <p>
-     * The default implementation ignores {@code rootType}. Implementors that extend
+     * The default implementation ignores {@code root}. Implementors that extend
      * {@link ClasspathTransformMapperFactory} inherit a real implementation; a factory written from
      * scratch must override this to get type-rooted labels.
      */
-    default ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
+    default ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
         return create(serialization, functionClass);
     }
 
     /**
-     * Builds the pretty-printing writer for the given serialization and root type — the output-side
-     * counterpart of {@link #create(TransformSerialization, Class, Class)}.
+     * Builds the pretty-printing writer for the given serialization and root — the output-side
+     * counterpart of {@link #create(TransformSerialization, Class, TransformRoot)}.
      */
-    default ObjectWriter createWriter(TransformSerialization serialization, Class<?> functionClass, Class<?> rootType) {
-        return create(serialization, functionClass, rootType).writerWithDefaultPrettyPrinter();
+    default ObjectWriter createWriter(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
+        return create(serialization, functionClass, root).writerWithDefaultPrettyPrinter();
     }
 }

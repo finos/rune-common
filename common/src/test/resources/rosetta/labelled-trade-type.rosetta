@@ -1,0 +1,14 @@
+namespace csv.test.labelled
+version "${project.version}"
+
+type LabelledTrade:
+    tradeId string (1..1)
+        [label "Trade ID"]
+    notionalAmount number (1..1)
+        [label "Notional Amount"]
+    quantity int (1..1)
+        [label "Quantity"]
+    tradeDate date (1..1)
+        [label "Trade Date"]
+    isCleared boolean (1..1)
+        [label "Is Cleared"]

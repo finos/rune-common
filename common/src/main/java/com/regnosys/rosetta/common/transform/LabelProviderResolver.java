@@ -53,6 +53,19 @@ import java.util.Set;
  * a function class reaching {@link #fromType} would hand back its output-rooted provider through
  * the type-rooted path — the wrongly-rooted provider a caller's guard exists to reject.
  *
+ * <p><b>The two lookups differ deliberately, and not by oversight.</b> {@code @RuneLabelProvider} is
+ * neither {@code @Target}ed nor {@code @Inherited}, so {@link Class#getAnnotation} never consults a
+ * supertype for it — that much is true of both roots. What differs is the shape a caller holds.
+ * {@link #fromType} must search, because a caller legitimately has a builder or {@code …Impl} while
+ * the annotation sits on the pojo interface. {@link #fromTransformFunction} reads the class directly,
+ * because every caller names the generated function class itself, which is where the annotation sits.
+ *
+ * <p>The consequence worth knowing: the Rune code generator emits a nested {@code …Default} subclass
+ * of each function class, and the annotation stays on the outer class. So passing {@code …Default} —
+ * or an injected function instance's {@code getClass()} — to {@link #fromTransformFunction} resolves
+ * nothing, silently. Pass the outer class. Widening that lookup to search supertypes would change a
+ * released contract, and no caller needs it.
+ *
  * <p>This class is unit-testable in isolation — it has no Jackson dependency.
  */
 public class LabelProviderResolver {
@@ -63,9 +76,12 @@ public class LabelProviderResolver {
      * Resolves a {@link LabelProvider} from the given transform function class.
      *
      * <p>Reads the {@code @RuneLabelProvider} annotation on {@code fn} and instantiates
-     * the referenced provider class via its public no-arg constructor.
+     * the referenced provider class via its public no-arg constructor. The annotation is read from
+     * {@code fn} itself, with no supertype search — unlike {@link #fromType}; see the class javadoc
+     * for why, and for the {@code …Default} subclass this rules out.
      *
-     * @param fn the transform function class (must carry {@code @RuneLabelProvider})
+     * @param fn the transform function class — the generated outer class that carries
+     *           {@code @RuneLabelProvider}, not its nested {@code …Default} subclass
      * @return the instantiated {@link LabelProvider}, or {@code null} if the annotation
      *         is absent
      * @throws IllegalStateException if the provider class cannot be instantiated

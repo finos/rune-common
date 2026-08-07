@@ -72,12 +72,10 @@ import java.util.function.Supplier;
  * and {@link #xmlMapper(String, Class)}. Below those: {@link #resolveLabelProvider(Class, TransformRoot)}
  * for label resolution, {@link #openXmlConfig(String, Class)} for the XML config lookup, and
  * {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader. The two
- * superseded single-{@code Class} overloads, {@link #csvLabelledMapper(Class)} and
+ * deprecated single-{@code Class} overloads, {@link #csvLabelledMapper(Class)} and
  * {@link #resolveLabelProvider(Class)}, are still consulted, but only where the caller supplied no
- * {@link TransformRoot} — a supplied root outranks both. They carry no {@code @Deprecated}: nothing
- * schedules their removal, because the call shape they serve — {@link #create(TransformSerialization,
- * Class)}, with no root context — is permanent. Prefer the two-argument forms in new code and new
- * overrides all the same, since a single-{@code Class} override cannot see a supplied root.
+ * {@link TransformRoot} — a supplied root outranks both. Both are deprecated since 12.10.0 and will
+ * be removed in the next major version; prefer the two-argument forms in new code and new overrides.
  * <p>
  * Neither provider is deprecated, and neither is scheduled for removal — they are not in a supersession
  * relationship. A transform's output type whose labels sit entirely on nested descendants never gets a
@@ -134,8 +132,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * following {@link #xmlMapper(String, Class)}, which likewise takes the config path rather than the
      * whole {@link TransformSerialization}.
      * <p>
-     * A {@code null} root means the caller declared nothing, and that state is exactly what
-     * {@link #csvLabelledMapper(Class)} has always meant. So it is delegated to rather than
+     * A {@code null} root means the caller declared nothing, and that state is exactly what the
+     * deprecated {@link #csvLabelledMapper(Class)} has always meant. So it is delegated to rather than
      * reimplemented here: a subclass that already overrode that overload keeps deciding the case it was
      * written for, instead of compiling, running and being silently ignored.
      */
@@ -148,17 +146,16 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * The {@code CSV_LABELLED} mapper for a caller that supplied no {@link TransformRoot}:
-     * function-rooted resolution with no guard, via {@link #resolveLabelProvider(Class)}. Superseded by
-     * {@link #csvLabelledMapper(Class, TransformRoot)}, which is told what sits at the root and so can
-     * resolve type-first — override that one in new code, because this overload cannot see a supplied
-     * root and a supplied root outranks it.
-     * <p>
-     * It carries no {@code @Deprecated}, because nothing schedules its removal. The call shape it
-     * serves — {@link #create(TransformSerialization, Class)} with no root context — is permanent, and
-     * this overload is where a subclass that predates root context still gets to decide it. The only
-     * event that would retire it is the retirement of the {@code CSV_LABELLED} format itself.
+     * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
+     *         {@link #csvLabelledMapper(Class, TransformRoot)}, which is told what
+     *         sits at the root and so can resolve type-first. Kept, and still called whenever the caller
+     *         supplies no {@link TransformRoot}, so a subclass that already overrides this overload
+     *         keeps deciding that case — function-rooted resolution with no guard, via the equally
+     *         deprecated {@link #resolveLabelProvider(Class)}. What it can no longer do is answer for a
+     *         caller that did supply a root; override {@link #csvLabelledMapper(Class, TransformRoot)}
+     *         to influence that.
      */
+    @Deprecated
     protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
         LabelProvider labelProvider = resolveLabelProvider(functionClass);
         return csvMapperFor(labelProvider, () -> noFunctionProviderWarning(functionClass));
@@ -285,7 +282,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * question: a report, an enrichment and a pre-annotation model each carry a label provider and no
      * {@code @Projection}, and a CSV-to-CSV transform carries both annotations with the same format.
      * <p>
-     * Override this method, not the single-{@code Class} overload below, to change resolution.
+     * Override this method, not the deprecated single-{@code Class} overload below, to change
+     * resolution.
      */
     protected LabelProvider resolveLabelProvider(Class<?> functionClass, TransformRoot root) {
         if (root != null && root.getType() != null) {
@@ -297,9 +295,9 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         if (isInputSide(root)) {
             return null;
         }
-        // Deliberately through the single-argument overload rather than functionRootedProvider
-        // directly: a subclass that already overrode it keeps influencing the one branch it was written
-        // for, instead of compiling, running and being silently ignored.
+        // Deliberately through the deprecated overload rather than functionRootedProvider directly: a
+        // subclass that already overrode it keeps influencing the one branch it was written for,
+        // instead of compiling, running and being silently ignored.
         return resolveLabelProvider(functionClass);
     }
 
@@ -339,19 +337,16 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * The function-rooted {@link LabelProvider}, resolved from the function class's own
-     * {@code @RuneLabelProvider} with no guard. Superseded by
-     * {@link #resolveLabelProvider(Class, TransformRoot)}, which resolves type-first and refuses a
-     * function-rooted provider on the transform's input side — override that one in new code.
-     * <p>
-     * This overload is still called on the fallback branch, so a subclass that already overrides it
-     * keeps deciding what it used to decide. What it can no longer do is answer for the whole of
-     * resolution: the type-rooted provider wins before this is reached, and the guard can reject the
-     * function outright.
-     * <p>
-     * It carries no {@code @Deprecated}, because nothing schedules its removal — the fallback branch it
-     * serves is permanent.
+     * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
+     *         {@link #resolveLabelProvider(Class, TransformRoot)}, which resolves
+     *         type-first and refuses a function-rooted provider on the transform's input side.
+     *         Kept, and still called on the fallback branch, so
+     *         a subclass that already overrides this overload keeps deciding what it used to decide.
+     *         What it can no longer do is answer for the whole of resolution: the type-rooted provider
+     *         wins before this is reached, and the guard can reject the function outright. Override
+     *         {@link #resolveLabelProvider(Class, TransformRoot)} to influence either.
      */
+    @Deprecated
     protected LabelProvider resolveLabelProvider(Class<?> functionClass) {
         return functionRootedProvider(functionClass);
     }

@@ -31,7 +31,6 @@ import com.rosetta.model.lib.transform.Ingest;
 import com.rosetta.model.lib.transform.SerializationFormat;
 import csv.test.labelled.LabelledTrade;
 import csv.test.user.User;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -45,18 +44,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * than the mechanism merely being correct if it did), and that an ingest's function-rooted provider is
  * really overridden by a generated type-rooted one when both exist.
  *
- * <p><b>Disabled pending a released {@code rune-dsl} carrying finos/rune-dsl#1358.</b> These tests were
- * written and run locally against {@code rune.dsl.version=0.0.0.main-SNAPSHOT} to confirm the mechanism
- * works end to end, then disabled before that snapshot version was reverted out of {@code pom.xml} —
- * {@code common/src/test/resources/rosetta/labelled-trade-type.rosetta} does not yet generate a
- * {@code @RuneLabelProvider} on {@link LabelledTrade} under the released DSL. Re-enable once
- * {@code rune.dsl.version} is bumped to a release containing that PR.
+ * <p>Needs {@code rune.dsl.version} 10.7.0 or later, which carries finos/rune-dsl#1358.
  */
 class ClasspathTransformMapperFactoryGeneratedModelTest {
-
-    private static final String DISABLED_REASON =
-            "Needs a released rune-dsl carrying finos/rune-dsl#1358 "
-                    + "(type-rooted @RuneLabelProvider generation)";
 
     private final ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
 
@@ -91,7 +81,6 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
     }
 
     @Test
-    @Disabled(DISABLED_REASON)
     void generatedTypeRootedLabelProviderIsFoundAndRoundTrips() throws JsonProcessingException {
         // No function at all: proves the generated annotation on LabelledTrade is found and used purely
         // from rootType, the shape a CSV importer with no transform function needs.
@@ -108,7 +97,6 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
     }
 
     @Test
-    @Disabled(DISABLED_REASON)
     void ingestBindsGeneratedLabelledInputTypeByLabelDespiteAnUnrelatedFunctionProvider() throws JsonProcessingException {
         TransformSerialization s =
                 TransformSerializationResolver.input(IngestLabelledTradeWithUnrelatedFunctionProvider.class).get();

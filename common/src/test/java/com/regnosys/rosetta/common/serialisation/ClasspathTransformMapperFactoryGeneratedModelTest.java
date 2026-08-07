@@ -39,24 +39,24 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * TASK-9547 Step 4 — end to end against a DSL-<b>generated</b> model, as opposed to the hand-written stub
- * interfaces {@link ClasspathTransformMapperFactoryTest} uses for Steps 1-3. Proves the two things a stub
- * cannot: that the Rune code generator actually stamps {@code @RuneLabelProvider} on a labelled type's
- * pojo interface (rather than the mechanism merely being correct if it did), and that an ingest's
- * function-rooted provider is really overridden by a generated type-rooted one when both exist.
+ * End to end against a DSL-<b>generated</b> model, as opposed to the hand-written stub interfaces
+ * {@link ClasspathTransformMapperFactoryTest} uses. Proves the two things a stub cannot: that the Rune
+ * code generator actually stamps {@code @RuneLabelProvider} on a labelled type's pojo interface (rather
+ * than the mechanism merely being correct if it did), and that an ingest's function-rooted provider is
+ * really overridden by a generated type-rooted one when both exist.
  *
  * <p><b>Disabled pending a released {@code rune-dsl} carrying finos/rune-dsl#1358.</b> These tests were
- * written and run locally against {@code rune.dsl.version=0.0.0.main-SNAPSHOT} (see plan §5 Step 4) to
- * confirm the mechanism works end to end, then disabled before that snapshot version was reverted out of
- * {@code pom.xml} — {@code common/src/test/resources/rosetta/labelled-trade-type.rosetta} does not yet
- * generate a {@code @RuneLabelProvider} on {@link LabelledTrade} under the released DSL. Re-enable once
- * Step 5 bumps {@code rune.dsl.version} to a release containing that PR.
+ * written and run locally against {@code rune.dsl.version=0.0.0.main-SNAPSHOT} to confirm the mechanism
+ * works end to end, then disabled before that snapshot version was reverted out of {@code pom.xml} —
+ * {@code common/src/test/resources/rosetta/labelled-trade-type.rosetta} does not yet generate a
+ * {@code @RuneLabelProvider} on {@link LabelledTrade} under the released DSL. Re-enable once
+ * {@code rune.dsl.version} is bumped to a release containing that PR.
  */
 class ClasspathTransformMapperFactoryGeneratedModelTest {
 
     private static final String DISABLED_REASON =
-            "TASK-9547 Step 4: needs a released rune-dsl carrying finos/rune-dsl#1358 "
-                    + "(type-rooted @RuneLabelProvider generation) — see plan §5 Step 5";
+            "Needs a released rune-dsl carrying finos/rune-dsl#1358 "
+                    + "(type-rooted @RuneLabelProvider generation)";
 
     private final ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
 
@@ -71,10 +71,10 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
     }
 
     /**
-     * The CSV-import case A2.2 exists for: an ingest whose function-rooted provider is (wrongly) rooted
-     * at some unrelated output type — modelled here by {@link User}, standing in for "any type that isn't
-     * the CSV input" — rather than the CSV input, {@link LabelledTrade}. Before this task that wrongly
-     * rooted provider is all the resolver could ever find; passing {@link LabelledTrade} as
+     * The CSV-import case this task exists for: an ingest whose function-rooted provider is (wrongly)
+     * rooted at some unrelated output type — modelled here by {@link User}, standing in for "any type
+     * that isn't the CSV input" — rather than the CSV input, {@link LabelledTrade}. Before this task that
+     * wrongly rooted provider is all the resolver could ever find; passing {@link LabelledTrade} as
      * {@code rootType} must now win instead, sourced from the annotation the generator actually stamped.
      */
     public static class UnrelatedOutputLabelProvider implements LabelProvider {

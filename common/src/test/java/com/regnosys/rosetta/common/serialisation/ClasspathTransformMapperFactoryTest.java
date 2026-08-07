@@ -194,6 +194,17 @@ class ClasspathTransformMapperFactoryTest {
     private static class LabelledFunctionWithoutTransformAnnotation implements RosettaFunction {
     }
 
+    /**
+     * A CSV-to-CSV transform: both sides declare {@code CSV_LABELLED}, so
+     * {@link TransformSerializationResolver#input} and {@link TransformSerializationResolver#output}
+     * return <em>equal</em> values. Its provider is rooted at its output like any other function's.
+     */
+    @Ingest(format = SerializationFormat.CSV_LABELLED)
+    @Projection(format = SerializationFormat.CSV_LABELLED)
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class CsvToCsvFunctionWithFunctionProvider implements RosettaFunction {
+    }
+
     @Test
     void csvLabelledProjectionWithRootTypePrefersTheTypeProviderOverTheFunctionProvider() throws JsonProcessingException {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
@@ -263,6 +274,29 @@ class ClasspathTransformMapperFactoryTest {
                 LabelledFunctionWithoutTransformAnnotation.class, TransformRoot.output());
 
         assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+    }
+
+    @Test
+    void csvToCsvTransformKeepsItsFunctionProviderOnTheDeclaredOutputSide() throws JsonProcessingException {
+        TransformSerialization s = TransformSerializationResolver.output(CsvToCsvFunctionWithFunctionProvider.class).get();
+        ObjectMapper mapper = factory.create(s, CsvToCsvFunctionWithFunctionProvider.class, TransformRoot.output());
+
+        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+    }
+
+    @Test
+    void csvToCsvTransformRefusesItsFunctionProviderOnTheDeclaredInputSide() throws JsonProcessingException {
+        // Read this test together with the one above. Both sides of this function declare CSV_LABELLED,
+        // so the two TransformSerialization values are equal and no comparison of them can tell the sides
+        // apart. Only the caller's declared side does, and the input side must never receive a provider
+        // rooted at the output.
+        TransformSerialization input = TransformSerializationResolver.input(CsvToCsvFunctionWithFunctionProvider.class).get();
+        TransformSerialization output = TransformSerializationResolver.output(CsvToCsvFunctionWithFunctionProvider.class).get();
+        assertEquals(output, input, "this test is only meaningful while the two sides are indistinguishable");
+
+        ObjectMapper mapper = factory.create(input, CsvToCsvFunctionWithFunctionProvider.class, TransformRoot.input());
+
+        assertEquals("firstName,identifier,lastName,username", header(mapper));
     }
 
     @Test

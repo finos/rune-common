@@ -40,6 +40,7 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.functions.LabelProvider;
+import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
@@ -110,11 +111,37 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
         return forXML(new RosettaXMLConfiguration(Collections.emptyMap()), RosettaObjectMapperCreator.class.getClassLoader());
     }
 
+    public static RosettaObjectMapperCreator forCSV(RosettaCSVConfiguration config, LabelProvider labelProvider) {
+        RosettaCsvMapper csvMapper = new RosettaCsvMapper(config, labelProvider);
+        return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
+    }
+
+    public static RosettaObjectMapperCreator forCSV(RosettaCSVConfiguration config) {
+        return forCSV(config, null);
+    }
+
+    public static RosettaObjectMapperCreator forCSV(InputStream configInputStream, LabelProvider labelProvider) throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.load(configInputStream);
+        return forCSV(config, labelProvider);
+    }
+
+    public static RosettaObjectMapperCreator forCSV(InputStream configInputStream) throws IOException {
+        return forCSV(configInputStream, null);
+    }
+
+    /**
+     * Compatibility shim for the pre-configuration signature: equivalent to
+     * {@code forCSV(RosettaCSVConfiguration.EMPTY)}.
+     */
     public static RosettaObjectMapperCreator forCSV() {
         RosettaCsvMapper csvMapper = new RosettaCsvMapper();
         return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
     }
 
+    /**
+     * Compatibility shim for the pre-configuration signature: {@code headerStyle} is derived from
+     * whether {@code labelProvider} is {@code null}, via {@link RosettaCsvMapper#RosettaCsvMapper(LabelProvider)}.
+     */
     public static RosettaObjectMapperCreator forCSV(LabelProvider labelProvider) {
         RosettaCsvMapper csvMapper = new RosettaCsvMapper(labelProvider);
         return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);

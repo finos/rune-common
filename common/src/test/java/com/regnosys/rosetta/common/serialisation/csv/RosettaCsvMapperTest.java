@@ -22,10 +22,16 @@ package com.regnosys.rosetta.common.serialisation.csv;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
+import com.regnosys.rosetta.common.serialisation.csv.config.CsvDialect;
+import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import csv.test.user.User;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -43,8 +49,8 @@ public class RosettaCsvMapperTest {
 
         String serializedKey = csvObjectMapper.writeValueAsString(user);
 
-        String expected = "firstName,identifier,lastName,username\n" +
-                "FirstName,identifier,LastName,username\n";
+        String expected = "username,identifier,firstName,lastName\n" +
+                "username,identifier,FirstName,LastName\n";
         assertEquals(expected, serializedKey);
     }
 
@@ -99,5 +105,87 @@ public class RosettaCsvMapperTest {
         User newUser = csvObjectMapper.readValue(serializedKey, User.class);
 
         assertEquals(user.build(), newUser);
+    }
+
+    @Test
+    void testSemicolonDialectRoundTrip() throws IOException {
+        RosettaCSVConfiguration config = new RosettaCSVConfiguration(
+                Optional.of(new CsvDialect(Optional.of(';'), Optional.empty(), Optional.empty())),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        RosettaCsvMapper csvObjectMapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        User user = User.builder()
+                .setFirstName("FirstName")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        String serialized = csvObjectMapper.writeValueAsString(user);
+        String expected = "username;identifier;firstName;lastName\n"
+                + "username;identifier;FirstName;LastName\n";
+        assertEquals(expected, serialized);
+
+        User roundTripped = csvObjectMapper.readValue(serialized, User.class);
+        assertEquals(user.build(), roundTripped);
+    }
+
+    @Test
+    void testSemicolonDialectLoadedFromInputStreamRoundTrips() throws IOException {
+        String json = "{\"dialect\":{\"columnDelimiter\":\";\"}}";
+        RosettaCsvMapper csvObjectMapper = (RosettaCsvMapper) RosettaObjectMapperCreator
+                .forCSV(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)))
+                .create();
+        User user = User.builder()
+                .setFirstName("FirstName")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        String serialized = csvObjectMapper.writeValueAsString(user);
+        String expected = "username;identifier;firstName;lastName\n"
+                + "username;identifier;FirstName;LastName\n";
+        assertEquals(expected, serialized);
+
+        User roundTripped = csvObjectMapper.readValue(serialized, User.class);
+        assertEquals(user.build(), roundTripped);
+    }
+
+    @Test
+    void testValueContainingTheColumnDelimiterIsQuoted() throws IOException {
+        RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
+        User user = User.builder()
+                .setFirstName("First,Name")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        String serialized = csvObjectMapper.writeValueAsString(user);
+        String expected = "username,identifier,firstName,lastName\n"
+                + "username,identifier,\"First,Name\",LastName\n";
+        assertEquals(expected, serialized);
+
+        User roundTripped = csvObjectMapper.readValue(serialized, User.class);
+        assertEquals(user.build(), roundTripped);
+    }
+
+    @Test
+    void testValueContainingTheQuoteCharacterIsEscaped() throws IOException {
+        RosettaCsvMapper csvObjectMapper = RosettaCsvMapper.createCsvObjectMapper();
+        User user = User.builder()
+                .setFirstName("First\"Name")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        String serialized = csvObjectMapper.writeValueAsString(user);
+        String expected = "username,identifier,firstName,lastName\n"
+                + "username,identifier,\"First\"\"Name\",LastName\n";
+        assertEquals(expected, serialized);
+
+        User roundTripped = csvObjectMapper.readValue(serialized, User.class);
+        assertEquals(user.build(), roundTripped);
     }
 }

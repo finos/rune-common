@@ -211,7 +211,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class,
                 TransformRoot.output(LabelledRootType.class));
 
-        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+        assertEquals("type:username,type:identifier,type:firstName,type:lastName", header(mapper));
     }
 
     @Test
@@ -221,7 +221,7 @@ class ClasspathTransformMapperFactoryTest {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class);
 
-        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     @Test
@@ -232,7 +232,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class,
                 TransformRoot.output(UnlabelledRootType.class));
 
-        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     @Test
@@ -243,7 +243,7 @@ class ClasspathTransformMapperFactoryTest {
         TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
         ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class, TransformRoot.input());
 
-        assertEquals("firstName,identifier,lastName,username", header(mapper));
+        assertEquals("username,identifier,firstName,lastName", header(mapper));
     }
 
     @Test
@@ -253,7 +253,7 @@ class ClasspathTransformMapperFactoryTest {
         TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
         ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class);
 
-        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     @Test
@@ -263,7 +263,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
                 LabelledFunctionWithoutTransformAnnotation.class);
 
-        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     @Test
@@ -273,7 +273,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
                 LabelledFunctionWithoutTransformAnnotation.class, TransformRoot.output());
 
-        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     @Test
@@ -281,7 +281,7 @@ class ClasspathTransformMapperFactoryTest {
         TransformSerialization s = TransformSerializationResolver.output(CsvToCsvFunctionWithFunctionProvider.class).get();
         ObjectMapper mapper = factory.create(s, CsvToCsvFunctionWithFunctionProvider.class, TransformRoot.output());
 
-        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     @Test
@@ -296,7 +296,7 @@ class ClasspathTransformMapperFactoryTest {
 
         ObjectMapper mapper = factory.create(input, CsvToCsvFunctionWithFunctionProvider.class, TransformRoot.input());
 
-        assertEquals("firstName,identifier,lastName,username", header(mapper));
+        assertEquals("username,identifier,firstName,lastName", header(mapper));
     }
 
     @Test
@@ -308,7 +308,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class,
                 TransformRoot.input(LabelledRootType.class));
 
-        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+        assertEquals("type:username,type:identifier,type:firstName,type:lastName", header(mapper));
     }
 
     @Test
@@ -318,7 +318,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
                 null, TransformRoot.input(LabelledRootTypeImpl.class));
 
-        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+        assertEquals("type:username,type:identifier,type:firstName,type:lastName", header(mapper));
     }
 
     // ---------------------------------------------------------------------------
@@ -405,7 +405,7 @@ class ClasspathTransformMapperFactoryTest {
         // root type, no guard — even for an ingest, whose provider the create path now rejects.
         ObjectMapper mapper = factory.csvLabelledMapper(CsvLabelledIngestWithFunctionProvider.class);
 
-        assertEquals("func:firstName,func:identifier,func:lastName,func:username", header(mapper));
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     /** Distinguishable again, so a test can prove a subclass's override was the one consulted. */
@@ -433,7 +433,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = new OverridingResolutionFactory()
                 .create(s, CsvLabelledProjectionWithFunctionProvider.class);
 
-        assertEquals("sub:firstName,sub:identifier,sub:lastName,sub:username", header(mapper));
+        assertEquals("sub:username,sub:identifier,sub:firstName,sub:lastName", header(mapper));
     }
 
     /** The other pre-existing extension shape: a subclass that overrode the single-argument mapper hook. */
@@ -454,7 +454,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = new OverridingCsvLabelledMapperFactory()
                 .create(s, CsvLabelledProjectionWithFunctionProvider.class);
 
-        assertEquals("sub:firstName,sub:identifier,sub:lastName,sub:username", header(mapper));
+        assertEquals("sub:username,sub:identifier,sub:firstName,sub:lastName", header(mapper));
     }
 
     @Test
@@ -465,7 +465,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = new OverridingCsvLabelledMapperFactory()
                 .create(s, CsvLabelledProjectionWithFunctionProvider.class, TransformRoot.output(LabelledRootType.class));
 
-        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+        assertEquals("type:username,type:identifier,type:firstName,type:lastName", header(mapper));
     }
 
     @Test
@@ -475,7 +475,7 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = new OverridingResolutionFactory()
                 .create(s, CsvLabelledProjectionWithFunctionProvider.class, TransformRoot.output(LabelledRootType.class));
 
-        assertEquals("type:firstName,type:identifier,type:lastName,type:username", header(mapper));
+        assertEquals("type:username,type:identifier,type:firstName,type:lastName", header(mapper));
     }
 
     @Test

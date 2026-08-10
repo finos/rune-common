@@ -92,7 +92,7 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
         String csv = mapper.writeValueAsString(original);
         String header = csv.substring(0, csv.indexOf('\n'));
 
-        assertEquals("\"Is Cleared\",\"Notional Amount\",Quantity,\"Trade Date\",\"Trade ID\"", header);
+        assertEquals("\"Trade ID\",\"Notional Amount\",Quantity,\"Trade Date\",\"Is Cleared\"", header);
         assertEquals(original, mapper.readValue(csv, LabelledTrade.class));
     }
 

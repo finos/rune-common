@@ -9,9 +9,9 @@ package com.regnosys.rosetta.common.serialisation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,8 +29,14 @@ import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvParser;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.regnosys.rosetta.common.serialisation.csv.config.CsvDialect;
+import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
+import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.path.RosettaPath;
+import com.rosetta.model.lib.process.AttributeMeta;
+import com.rosetta.model.lib.process.Processor;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,31 +46,57 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class RosettaCsvMapper extends CsvMapper  {
     private static final Logger LOGGER = LoggerFactory.getLogger(RosettaCsvMapper.class);
 
+    private final RosettaCSVConfiguration configuration;
     private final CsvSchema defaultSchema;
     private final LabelProvider labelProvider;
 
     public RosettaCsvMapper() {
-        this(null);
+        this(RosettaCSVConfiguration.EMPTY, null);
     }
 
+    /**
+     * Compatibility shim for the pre-configuration constructor: {@code headerStyle} is derived from
+     * whether a {@link LabelProvider} is supplied (present -&gt; {@code LABEL}, absent -&gt;
+     * {@code ATTRIBUTE_NAME}), preserving the original behaviour exactly.
+     */
     public RosettaCsvMapper(LabelProvider labelProvider) {
-        this.defaultSchema = CsvSchema.emptySchema().withHeader();
+        this(configurationFor(labelProvider), labelProvider);
+    }
+
+    public RosettaCsvMapper(RosettaCSVConfiguration configuration, LabelProvider labelProvider) {
+        if (configuration.getHeaderStyle() == HeaderStyle.LABEL && labelProvider == null) {
+            throw new IllegalArgumentException(
+                    "RosettaCSVConfiguration specifies headerStyle=LABEL but no LabelProvider was supplied; "
+                            + "a LABEL header style has no attribute-to-label mapping to use.");
+        }
+        this.configuration = configuration;
         this.labelProvider = labelProvider;
+        this.defaultSchema = dialectSchema(CsvSchema.emptySchema().withHeader());
+    }
+
+    private static RosettaCSVConfiguration configurationFor(LabelProvider labelProvider) {
+        if (labelProvider == null) {
+            return RosettaCSVConfiguration.EMPTY;
+        }
+        return new RosettaCSVConfiguration(Optional.empty(), Optional.of(HeaderStyle.LABEL),
+                Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     @Override
     public <T> T readValue(String content, Class<T> valueType) throws JsonMappingException {
         try {
-            if (labelProvider == null) {
+            if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
                 return super.readerFor(valueType).with(defaultSchema).readValue(content, valueType);
             }
             List<String> headerLabels = readHeaderLabels(content);
@@ -80,7 +112,7 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     @Override
     public <T> T readValue(URL src, Class<T> valueType) throws IOException {
-        if (labelProvider == null) {
+        if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
             return super.readerFor(valueType).with(defaultSchema).readValue(src, valueType);
         }
         String content = IOUtils.toString(src, StandardCharsets.UTF_8);
@@ -91,7 +123,7 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     private List<String> readHeaderLabels(String content) throws IOException {
         try (MappingIterator<String[]> rows = super.readerFor(String[].class)
-                .with(CsvSchema.emptySchema())
+                .with(dialectSchema(CsvSchema.emptySchema()))
                 .with(CsvParser.Feature.WRAP_AS_ARRAY)
                 .readValues(content)) {
             if (!rows.hasNext()) {
@@ -102,7 +134,7 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     private CsvSchema buildLabelReadSchema(Class<?> valueType, List<String> headerLabels) {
-        CsvSchema schema = schemaFor(valueType);
+        CsvSchema schema = schemaInDeclarationOrder(valueType);
         Map<String, String> labelToAttribute = new HashMap<>();
         boolean ambiguousLabels = false;
         String duplicateLabel = null;
@@ -144,7 +176,7 @@ public class RosettaCsvMapper extends CsvMapper  {
             }
             builder.addColumn(attribute);
         }
-        return builder.build().withSkipFirstDataRow(true);
+        return dialectSchema(builder.build().withSkipFirstDataRow(true));
     }
 
     /**
@@ -164,7 +196,130 @@ public class RosettaCsvMapper extends CsvMapper  {
         for (CsvSchema.Column column : schema) {
             builder.addColumn(column.getName());
         }
-        return builder.build().withSkipFirstDataRow(true);
+        return dialectSchema(builder.build().withSkipFirstDataRow(true));
+    }
+
+    /**
+     * Stamps the configured {@link CsvDialect} (column separator, quote character, escape character)
+     * onto a schema this class produces. Every schema built anywhere in this class must be passed
+     * through here — a call site that forgets produces a mapper that reads and writes differently.
+     */
+    private CsvSchema dialectSchema(CsvSchema schema) {
+        CsvDialect dialect = configuration.getDialect();
+        CsvSchema.Builder builder = schema.rebuild()
+                .setColumnSeparator(dialect.getColumnDelimiter())
+                .setQuoteChar(dialect.getQuoteChar());
+        if (dialect.getEscapeChar() == dialect.getQuoteChar()) {
+            // RFC 4180 has no distinct escape character, only the doubled quote: see CsvDialect's
+            // javadoc. Translating that into CsvSchema means no explicit escape character at all.
+            builder.disableEscapeChar();
+        } else {
+            builder.setEscapeChar(dialect.getEscapeChar());
+        }
+        return builder.build();
+    }
+
+    /**
+     * The schema for {@code valueType}, with columns in model attribute declaration order rather
+     * than {@code schemaFor}'s alphabetical default. Column types (string/number/boolean/...) still
+     * come from {@code schemaFor}; only the order is overridden.
+     *
+     * <p>{@link RosettaCsvMapper} is a general-purpose {@code CsvMapper} — nothing stops a caller
+     * writing or reading a plain POJO that is not a {@link RosettaModelObject} and so has no
+     * declaration order to recover. Such a type gets {@code schemaFor}'s natural order, unchanged.
+     */
+    private CsvSchema schemaInDeclarationOrder(Class<?> valueType) {
+        CsvSchema schema = schemaFor(valueType);
+        if (!RosettaModelObject.class.isAssignableFrom(valueType)) {
+            return schema;
+        }
+        return reorderColumns(schema, declarationOrder(valueType));
+    }
+
+    private CsvSchema schemaInDeclarationOrder(Object value) {
+        CsvSchema schema = schemaFor(value.getClass());
+        if (!(value instanceof RosettaModelObject)) {
+            return schema;
+        }
+        return reorderColumns(schema, declarationOrder((RosettaModelObject) value));
+    }
+
+    private static CsvSchema reorderColumns(CsvSchema schema, List<String> order) {
+        CsvSchema.Builder builder = CsvSchema.builder();
+        for (String attribute : order) {
+            builder.addColumn(schema.column(attribute));
+        }
+        return builder.build();
+    }
+
+    /**
+     * Recovers attribute declaration order from the generated {@code process(RosettaPath, Processor)}
+     * visitor, which walks attributes in the order they appear in the {@code .rosetta} source.
+     * {@code @RosettaAttribute}/{@code @RuneAttribute} carry only a name, no index, so the visitor is
+     * the only source of this order. See STORY-1932 §3.4(B).
+     */
+    private List<String> declarationOrder(RosettaModelObject instance) {
+        DeclarationOrderCollector collector = new DeclarationOrderCollector();
+        instance.process(RosettaPath.valueOf(instance.getType().getSimpleName()), collector);
+        return collector.attributeNames;
+    }
+
+    private List<String> declarationOrder(Class<?> valueType) {
+        return declarationOrder(emptyInstance(valueType));
+    }
+
+    /**
+     * An empty instance of a Rosetta-generated model interface, used only to recover attribute
+     * declaration order via {@link RosettaModelObject#process}. Requires the static {@code builder()}
+     * method every such interface declares — not an implementation or builder class.
+     */
+    private static RosettaModelObject emptyInstance(Class<?> valueType) {
+        try {
+            return (RosettaModelObject) valueType.getMethod("builder").invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(
+                    "Cannot determine CSV column declaration order for " + valueType.getName()
+                            + ": no static builder() method found. RosettaCsvMapper requires a Rosetta-generated "
+                            + "model interface, not an implementation or builder class.", e);
+        }
+    }
+
+    /**
+     * Collects the attribute names {@code process} visits, in visitation (declaration) order. Tabular
+     * CSV types have only simple attributes, so {@code processRosetta} is never expected to fire; it
+     * declines to recurse rather than silently omitting a complex attribute from the order.
+     */
+    private static final class DeclarationOrderCollector implements Processor {
+        private final List<String> attributeNames = new ArrayList<>();
+
+        @Override
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+                R instance, RosettaModelObject parent, AttributeMeta... metas) {
+            return false;
+        }
+
+        @Override
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+                List<? extends R> instance, RosettaModelObject parent, AttributeMeta... metas) {
+            return false;
+        }
+
+        @Override
+        public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance,
+                RosettaModelObject parent, AttributeMeta... metas) {
+            attributeNames.add(path.getElement().getPath());
+        }
+
+        @Override
+        public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, Collection<? extends T> instance,
+                RosettaModelObject parent, AttributeMeta... metas) {
+            attributeNames.add(path.getElement().getPath());
+        }
+
+        @Override
+        public Report report() {
+            return null;
+        }
     }
 
     //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
@@ -182,10 +337,10 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     private static class RosettaCsvObjectWriter extends ObjectWriter {
-        private final CsvMapper mapper;
+        private final RosettaCsvMapper mapper;
         private final LabelProvider labelProvider;
 
-        protected RosettaCsvObjectWriter(CsvMapper mapper, SerializationConfig config, LabelProvider labelProvider) {
+        protected RosettaCsvObjectWriter(RosettaCsvMapper mapper, SerializationConfig config, LabelProvider labelProvider) {
             super(mapper, config);
             this.mapper = mapper;
             this.labelProvider = labelProvider;
@@ -194,11 +349,12 @@ public class RosettaCsvMapper extends CsvMapper  {
         //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
         @Override
         public String writeValueAsString(Object value) throws JsonProcessingException {
-            if (labelProvider == null) {
-                CsvSchema schema = mapper.schemaFor(value.getClass()).withHeader();
+            CsvSchema schemaInOrder = mapper.schemaInDeclarationOrder(value);
+            if (mapper.configuration.getHeaderStyle() != HeaderStyle.LABEL) {
+                CsvSchema schema = mapper.dialectSchema(schemaInOrder.withHeader());
                 return mapper.writer(schema).writeValueAsString(value);
             }
-            CsvSchema schema = mapper.schemaFor(value.getClass()).withoutHeader();
+            CsvSchema schema = mapper.dialectSchema(schemaInOrder.withoutHeader());
             String body = mapper.writer(schema).writeValueAsString(value);
             List<String> headers = new ArrayList<>();
             for (CsvSchema.Column column : schema) {
@@ -206,7 +362,7 @@ public class RosettaCsvMapper extends CsvMapper  {
                 String label = labelProvider.getLabel(RosettaPath.valueOf(name));
                 headers.add(label != null ? label : name);
             }
-            CsvSchema headerSchema = CsvSchema.emptySchema().withoutHeader();
+            CsvSchema headerSchema = mapper.dialectSchema(CsvSchema.emptySchema().withoutHeader());
             String headerLine = mapper.writer(headerSchema).writeValueAsString(headers.toArray(new String[0]));
             return headerLine + body;
         }

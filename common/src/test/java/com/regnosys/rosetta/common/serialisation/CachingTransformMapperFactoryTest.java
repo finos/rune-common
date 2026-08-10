@@ -21,6 +21,10 @@ package com.regnosys.rosetta.common.serialisation;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rosetta.model.lib.annotations.RuneLabelProvider;
+import com.rosetta.model.lib.functions.LabelProvider;
+import com.rosetta.model.lib.functions.RosettaFunction;
+import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.transform.SerializationFormat;
 import org.junit.jupiter.api.Test;
 
@@ -43,9 +47,87 @@ class CachingTransformMapperFactoryTest {
     }
 
     @Test
-    void csvLabelledIsNotCached() {
+    void classInsensitiveFormatsShareOneMapperAcrossFunctions() {
+        TransformSerialization json = TransformSerialization.DEFAULT_JSON;
+        assertSame(factory.create(json, LabelledFunctionA.class), factory.create(json, LabelledFunctionB.class),
+                "a JSON mapper does not depend on the function class, so all functions share it");
+    }
+
+    @Test
+    void csvLabelledIsCachedPerFunctionClass() {
         TransformSerialization labelled = new TransformSerialization(SerializationFormat.CSV_LABELLED, null);
-        // labels derive from the function class, so each call constructs (here: unlabelled fallback)
-        assertNotSame(factory.create(labelled, null), factory.create(labelled, null));
+        ObjectMapper forA = factory.create(labelled, LabelledFunctionA.class);
+        assertSame(forA, factory.create(labelled, LabelledFunctionA.class),
+                "the same labelled function must reuse its cached mapper");
+        assertNotSame(forA, factory.create(labelled, LabelledFunctionB.class),
+                "labels derive from the function class, so another function must not share the mapper");
+    }
+
+    @Test
+    void csvLabelledIsCachedPerFunctionClassAndRoot() {
+        TransformSerialization labelled = new TransformSerialization(SerializationFormat.CSV_LABELLED, null);
+        ObjectMapper forRootA = factory.create(labelled, LabelledFunctionA.class, TransformRoot.output(RootTypeA.class));
+        assertSame(forRootA, factory.create(labelled, LabelledFunctionA.class, TransformRoot.output(RootTypeA.class)),
+                "the same function and root must reuse the cached mapper");
+        assertNotSame(forRootA, factory.create(labelled, LabelledFunctionA.class, TransformRoot.output(RootTypeB.class)),
+                "a type-rooted label provider is resolved from the root type, so a different root type "
+                        + "must not share the mapper");
+        assertNotSame(forRootA, factory.create(labelled, LabelledFunctionA.class),
+                "no root at all is its own scope, distinct from a supplied one");
+    }
+
+    @Test
+    void csvLabelledIsCachedPerTransformSide() {
+        // The side decides whether the function-rooted provider survives the guard, so two requests that
+        // differ only in side resolve different providers and must not share a mapper.
+        TransformSerialization labelled = new TransformSerialization(SerializationFormat.CSV_LABELLED, null);
+        assertNotSame(factory.create(labelled, LabelledFunctionA.class, TransformRoot.output(RootTypeA.class)),
+                factory.create(labelled, LabelledFunctionA.class, TransformRoot.input(RootTypeA.class)),
+                "the transform side changes which provider resolves, so it must be part of the cache scope");
+    }
+
+    @Test
+    void nonCsvLabelledFormatSharesOneMapperAcrossRoots() {
+        TransformSerialization json = TransformSerialization.DEFAULT_JSON;
+        assertSame(factory.create(json, LabelledFunctionA.class, TransformRoot.output(RootTypeA.class)),
+                factory.create(json, LabelledFunctionA.class, TransformRoot.input(RootTypeB.class)),
+                "the root does not affect JSON mapper construction, so it must not affect its cache scope");
+    }
+
+    @Test
+    void classLoaderSensitiveFormatsShareOneMapperPerClassLoader() {
+        TransformSerialization runeJson = new TransformSerialization(SerializationFormat.RUNE_JSON, null);
+        assertSame(factory.create(runeJson, LabelledFunctionA.class), factory.create(runeJson, LabelledFunctionB.class),
+                "functions loaded by the same classloader must share one RUNE_JSON mapper");
+    }
+
+    @Test
+    void clearDropsEveryCachedMapper() {
+        TransformSerialization json = TransformSerialization.DEFAULT_JSON;
+        ObjectMapper before = factory.create(json, null);
+        factory.clear();
+        assertNotSame(before, factory.create(json, null),
+                "after clear() the mapper must be rebuilt, not served from the stale cache");
+    }
+
+    public static class TestLabelProvider implements LabelProvider {
+        @Override
+        public String getLabel(RosettaPath path) {
+            return path.toString();
+        }
+    }
+
+    @RuneLabelProvider(labelProvider = TestLabelProvider.class)
+    private abstract static class LabelledFunctionA implements RosettaFunction {
+    }
+
+    @RuneLabelProvider(labelProvider = TestLabelProvider.class)
+    private abstract static class LabelledFunctionB implements RosettaFunction {
+    }
+
+    private static class RootTypeA {
+    }
+
+    private static class RootTypeB {
     }
 }

@@ -196,6 +196,12 @@ class ClasspathTransformMapperFactoryTest {
     private static class CsvLabelledProjectionWithConfig implements RosettaFunction {
     }
 
+    /** {@code CSV_LABELLED}, but pointed at a config that leaves {@code headerStyle} unset. */
+    @Projection(format = SerializationFormat.CSV_LABELLED, configPath = CSV_CONFIG)
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class CsvLabelledProjectionWithNonLabelConfig implements RosettaFunction {
+    }
+
     /**
      * An ingest whose function-rooted provider is rooted at its <b>output</b> type, not the serialised
      * input — the case the guard exists to reject.
@@ -555,6 +561,25 @@ class ClasspathTransformMapperFactoryTest {
         ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class, TransformRoot.output());
 
         assertEquals("func:username;func:identifier;func:firstName;func:lastName", unquoted(header(mapper)));
+    }
+
+    /**
+     * A {@code CSV_LABELLED} transform whose config does not ask for label headers is a
+     * contradiction: the provider resolves, and then nothing would ever call it, so the file would
+     * come out with attribute-name headers and no indication that the labels were dropped. It fails
+     * at construction instead, and the message names the config path — the config file is the side
+     * that has to change.
+     */
+    @Test
+    void csvLabelledWithAConfigThatDoesNotAskForLabelsIsRejected() {
+        TransformSerialization s = TransformSerializationResolver
+                .output(CsvLabelledProjectionWithNonLabelConfig.class).get();
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> factory.create(s, CsvLabelledProjectionWithNonLabelConfig.class, TransformRoot.output()));
+
+        assertTrue(e.getMessage().contains(CSV_CONFIG));
+        assertTrue(e.getMessage().contains("ATTRIBUTE_NAME"));
     }
 
     @Test

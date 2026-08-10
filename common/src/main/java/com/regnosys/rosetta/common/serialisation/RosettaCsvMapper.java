@@ -75,11 +75,29 @@ public class RosettaCsvMapper extends CsvMapper  {
         this(configurationFor(labelProvider), labelProvider);
     }
 
+    /**
+     * The header style and the {@link LabelProvider} have to agree: {@link HeaderStyle#LABEL} is the
+     * one style that consults a provider, and it is the only style that can. Either half without the
+     * other is rejected here rather than resolved silently — a provider that no header style will
+     * ever call would be dropped without a word, which is the failure this constructor exists to
+     * make impossible.
+     *
+     * @throws IllegalArgumentException if {@code headerStyle} is {@code LABEL} and no provider is
+     *                                  supplied, or a provider is supplied and {@code headerStyle}
+     *                                  is anything else
+     */
     public RosettaCsvMapper(RosettaCSVConfiguration configuration, LabelProvider labelProvider) {
-        if (configuration.getHeaderStyle() == HeaderStyle.LABEL && labelProvider == null) {
+        boolean labelHeaders = configuration.getHeaderStyle() == HeaderStyle.LABEL;
+        if (labelHeaders && labelProvider == null) {
             throw new IllegalArgumentException(
                     "RosettaCSVConfiguration specifies headerStyle=LABEL but no LabelProvider was supplied; "
                             + "a LABEL header style has no attribute-to-label mapping to use.");
+        }
+        if (!labelHeaders && labelProvider != null) {
+            throw new IllegalArgumentException(
+                    "A LabelProvider was supplied but RosettaCSVConfiguration specifies headerStyle="
+                            + configuration.getHeaderStyle() + ", which never consults one, so the labels would "
+                            + "be silently dropped. Set headerStyle=LABEL, or supply no LabelProvider.");
         }
         this.configuration = configuration;
         this.labelProvider = labelProvider;
@@ -107,8 +125,21 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     @Override
     public <T> T readValue(URL src, Class<T> valueType) throws IOException {
+        if (canStream()) {
+            return super.readerFor(valueType).with(defaultSchema).readValue(src, valueType);
+        }
         String content = IOUtils.toString(src, StandardCharsets.UTF_8);
         return readValueFromContent(content, valueType);
+    }
+
+    /**
+     * Whether a {@link URL} can be handed straight to jackson rather than being buffered into a
+     * {@code String} first. Two things need the whole document up front: reading the header row to
+     * resolve labels, and the extra-null-token pre-pass. Neither applies to the default
+     * configuration, so the common path keeps streaming.
+     */
+    private boolean canStream() {
+        return configuration.getHeaderStyle() != HeaderStyle.LABEL && configuration.getNullTokens().size() <= 1;
     }
 
     private <T> T readValueFromContent(String content, Class<T> valueType) throws IOException {
@@ -132,6 +163,10 @@ public class RosettaCsvMapper extends CsvMapper  {
      * <p>Reuses the mapper's own raw row reader/writer rather than hand-rolling CSV escaping, so a
      * quoted field containing the delimiter or quote character round-trips exactly as the dialect
      * defines, before and after substitution.</p>
+     *
+     * <p>The header row is left alone: a column whose name happens to match a null token is still a
+     * column name, not an absent value, and rewriting it would break the label lookup that reads
+     * this same row afterwards.</p>
      */
     private String normalizeExtraNullTokens(String content) throws IOException {
         List<String> nullTokens = configuration.getNullTokens();
@@ -145,11 +180,15 @@ public class RosettaCsvMapper extends CsvMapper  {
                 .with(rawSchema)
                 .with(CsvParser.Feature.WRAP_AS_ARRAY)
                 .readValues(content)) {
+            boolean firstRowIsHeader = configuration.isHasHeader();
             while (it.hasNext()) {
                 String[] row = it.nextValue();
-                for (int i = 0; i < row.length; i++) {
-                    if (row[i] != null && extraNullTokens.contains(row[i])) {
-                        row[i] = null;
+                boolean isHeaderRow = firstRowIsHeader && rows.isEmpty();
+                if (!isHeaderRow) {
+                    for (int i = 0; i < row.length; i++) {
+                        if (row[i] != null && extraNullTokens.contains(row[i])) {
+                            row[i] = null;
+                        }
                     }
                 }
                 rows.add(row);

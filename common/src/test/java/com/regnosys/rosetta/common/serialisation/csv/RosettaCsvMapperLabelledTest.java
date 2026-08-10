@@ -29,6 +29,7 @@ import com.rosetta.model.lib.functions.LabelProvider;
 import csv.test.user.User;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -394,5 +395,26 @@ public class RosettaCsvMapperLabelledTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> new RosettaCsvMapper(labelConfig, null));
         assertTrue(exception.getMessage().contains("LABEL"));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test #14 — a LabelProvider no header style will use throws at construction
+    // ---------------------------------------------------------------------------
+
+    /**
+     * The mirror of {@link #shouldThrowWhenHeaderStyleIsLabelWithNoLabelProviderSupplied}, and the
+     * more dangerous half: {@code ATTRIBUTE_NAME} never consults a {@link LabelProvider}, so a
+     * supplied one would be dropped and attribute names written in its place — plausible output
+     * rather than an obvious failure. Both halves of the pairing are therefore checked, so the
+     * header style and the provider cannot disagree.
+     */
+    @Test
+    void shouldThrowWhenALabelProviderIsSuppliedButHeaderStyleIsAttributeName() {
+        LabelProvider provider = mapProvider(Collections.singletonMap("username", "User Name"));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RosettaCsvMapper(RosettaCSVConfiguration.EMPTY, provider));
+        assertTrue(exception.getMessage().contains("ATTRIBUTE_NAME"));
+        assertTrue(exception.getMessage().contains("LabelProvider"));
     }
 }

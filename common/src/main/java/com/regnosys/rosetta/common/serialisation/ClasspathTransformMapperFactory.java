@@ -189,6 +189,13 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * {@code CSV_LABELLED} mapper with a resolved provider: no config path means an empty
      * {@link RosettaCSVConfiguration}, mirroring {@link #xmlMapper(String, Class)}'s "no config path"
      * branch; otherwise the config is read via {@link #openCsvConfig(String, Class)}.
+     * <p>
+     * With no config path a resolved {@link LabelProvider} implies {@code headerStyle=LABEL}, which is
+     * what {@code CSV_LABELLED} has always meant. With one, the config decides, and it has to say so:
+     * a {@code CSV_LABELLED} transform whose config leaves {@code headerStyle} at {@code ATTRIBUTE_NAME}
+     * is a contradiction, and {@code RosettaCsvMapper} rejects it rather than dropping the labels. The
+     * config path is added to that message here, since the mapper does not know where its config came
+     * from and the file is what has to change.
      */
     private RosettaObjectMapperCreator forCsv(String configPath, Class<?> functionClass, LabelProvider labelProvider) {
         if (configPath == null || configPath.isEmpty()) {
@@ -202,6 +209,9 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
                     : RosettaObjectMapperCreator.forCSV(inputStream);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read CSV configuration '" + configPath + "'", e);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "CSV configuration '" + configPath + "' is incompatible with this transform: " + e.getMessage(), e);
         }
     }
 

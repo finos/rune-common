@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -388,8 +387,9 @@ public class RosettaCsvMapperLabelledTest {
      */
     @Test
     void shouldThrowWhenHeaderStyleIsLabelWithNoLabelProviderSupplied() {
-        RosettaCSVConfiguration labelConfig = new RosettaCSVConfiguration(
-                Optional.empty(), Optional.of(HeaderStyle.LABEL), Optional.empty(), Optional.empty(), Optional.empty());
+        RosettaCSVConfiguration labelConfig = RosettaCSVConfiguration.builder()
+                .setHeaderStyle(HeaderStyle.LABEL)
+                .build();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> new RosettaCsvMapper(labelConfig, null));

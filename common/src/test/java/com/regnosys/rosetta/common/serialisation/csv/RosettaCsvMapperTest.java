@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -109,9 +108,9 @@ public class RosettaCsvMapperTest {
 
     @Test
     void testSemicolonDialectRoundTrip() throws IOException {
-        RosettaCSVConfiguration config = new RosettaCSVConfiguration(
-                Optional.of(new CsvDialect(Optional.of(';'), Optional.empty(), Optional.empty())),
-                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setDialect(CsvDialect.builder().setColumnDelimiter(';').build())
+                .build();
         RosettaCsvMapper csvObjectMapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
         User user = User.builder()
                 .setFirstName("FirstName")

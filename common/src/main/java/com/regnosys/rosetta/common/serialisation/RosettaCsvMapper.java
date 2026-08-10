@@ -51,7 +51,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public class RosettaCsvMapper extends CsvMapper  {
@@ -89,8 +88,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         if (labelProvider == null) {
             return RosettaCSVConfiguration.EMPTY;
         }
-        return new RosettaCSVConfiguration(Optional.empty(), Optional.of(HeaderStyle.LABEL),
-                Optional.empty(), Optional.empty(), Optional.empty());
+        return RosettaCSVConfiguration.builder().setHeaderStyle(HeaderStyle.LABEL).build();
     }
 
     @Override

@@ -20,6 +20,7 @@ package com.regnosys.rosetta.common.serialisation.csv.config;
  * ==============
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.junit.jupiter.api.Test;
 
@@ -27,8 +28,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,8 +86,10 @@ public class RosettaCSVConfigurationTest {
     @Test
     void headerlessLabelHeaderStyleThrowsAtConstruction() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> new RosettaCSVConfiguration(Optional.empty(), Optional.of(HeaderStyle.LABEL),
-                        Optional.empty(), Optional.empty(), Optional.of(false)));
+                () -> RosettaCSVConfiguration.builder()
+                        .setHeaderStyle(HeaderStyle.LABEL)
+                        .setHasHeader(false)
+                        .build());
 
         assertTrue(exception.getMessage().contains("hasHeader"));
         assertTrue(exception.getMessage().contains("LABEL"));
@@ -102,7 +106,70 @@ public class RosettaCSVConfigurationTest {
     }
 
     @Test
-    void noArgConstructorYieldsTheSameDefaultsAsAnEmptyDocument() throws IOException {
-        assertEquals(RosettaCSVConfiguration.load(json("{}")), new RosettaCSVConfiguration());
+    void anUncustomisedBuilderYieldsTheSameDefaultsAsAnEmptyDocument() throws IOException {
+        assertEquals(RosettaCSVConfiguration.load(json("{}")), RosettaCSVConfiguration.builder().build());
+        assertEquals(RosettaCSVConfiguration.EMPTY, RosettaCSVConfiguration.builder().build());
+    }
+
+    @Test
+    void aSettingLeftUnsetOnTheBuilderTakesItsDefault() {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setListDelimiter("|")
+                .build();
+
+        assertEquals("|", config.getListDelimiter());
+        assertEquals(CsvDialect.RFC_4180, config.getDialect());
+        assertEquals(HeaderStyle.ATTRIBUTE_NAME, config.getHeaderStyle());
+        assertEquals(Arrays.asList(""), config.getNullTokens());
+        assertTrue(config.isHasHeader());
+    }
+
+    @Test
+    void anUncustomisedDialectBuilderYieldsRfc4180() {
+        assertEquals(CsvDialect.RFC_4180, CsvDialect.builder().build());
+        assertEquals(';', CsvDialect.builder().setColumnDelimiter(';').build().getColumnDelimiter());
+        // The other two settings are untouched by setting the delimiter.
+        assertEquals('"', CsvDialect.builder().setColumnDelimiter(';').build().getQuoteChar());
+        assertEquals('"', CsvDialect.builder().setColumnDelimiter(';').build().getEscapeChar());
+    }
+
+    @Test
+    void toBuilderVariesOneSettingAndKeepsTheRest() throws IOException {
+        RosettaCSVConfiguration loaded = RosettaCSVConfiguration.load(
+                json("{\"listDelimiter\": \"|\", \"nullTokens\": [\"\", \"NULL\"]}"));
+
+        RosettaCSVConfiguration varied = loaded.toBuilder().setHasHeader(false).build();
+
+        assertEquals(loaded, varied.toBuilder().setHasHeader(true).build());
+        assertEquals("|", varied.getListDelimiter());
+        assertEquals(Arrays.asList("", "NULL"), varied.getNullTokens());
+        assertEquals(false, varied.isHasHeader());
+    }
+
+    /**
+     * The constructor takes plain nullable types rather than {@code Optional}s, so — unlike
+     * {@code RosettaXMLConfiguration} — this class deserialises through a caller's own mapper with no
+     * {@code Jdk8Module} registered. Before that change an absent property bound to a null
+     * {@code Optional} and the constructor threw {@code NullPointerException}.
+     */
+    @Test
+    void deserialisesThroughAnUnconfiguredObjectMapper() throws IOException {
+        RosettaCSVConfiguration config = new ObjectMapper()
+                .readValue("{\"listDelimiter\": \"|\"}", RosettaCSVConfiguration.class);
+
+        assertEquals("|", config.getListDelimiter());
+        assertEquals(CsvDialect.RFC_4180, config.getDialect());
+        assertTrue(config.isHasHeader());
+    }
+
+    @Test
+    void nullTokensAreCopiedDefensivelyAndReturnedUnmodifiable() {
+        List<String> supplied = new ArrayList<>(Arrays.asList("", "NULL"));
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder().setNullTokens(supplied).build();
+
+        supplied.add("N/A");
+
+        assertEquals(Arrays.asList("", "NULL"), config.getNullTokens());
+        assertThrows(UnsupportedOperationException.class, () -> config.getNullTokens().add("N/A"));
     }
 }

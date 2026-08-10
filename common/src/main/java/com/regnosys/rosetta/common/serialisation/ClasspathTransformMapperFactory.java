@@ -22,6 +22,7 @@ package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
+import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
@@ -68,10 +69,11 @@ import java.util.function.Supplier;
  * <p>
  * <b>Extension points.</b> Only these methods are on the {@link #create} path, so overriding anything
  * else changes no constructed mapper. Per format: {@link #jsonMapper()},
- * {@link #runeJsonMapper(Class)}, {@link #csvMapper()}, {@link #csvLabelledMapper(Class, TransformRoot)}
- * and {@link #xmlMapper(String, Class)}. Below those: {@link #resolveLabelProvider(Class, TransformRoot)}
- * for label resolution, {@link #openXmlConfig(String, Class)} for the XML config lookup, and
- * {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader. The two
+ * {@link #runeJsonMapper(Class)}, {@link #csvMapper(String, Class)},
+ * {@link #csvLabelledMapper(String, Class, TransformRoot)} and {@link #xmlMapper(String, Class)}. Below
+ * those: {@link #resolveLabelProvider(Class, TransformRoot)} for label resolution,
+ * {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} for the config lookups,
+ * and {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader. The two
  * deprecated single-{@code Class} overloads, {@link #csvLabelledMapper(Class)} and
  * {@link #resolveLabelProvider(Class)}, are still consulted, but only where the caller supplied no
  * {@link TransformRoot} — a supplied root outranks both. Both are deprecated since 12.10.0 and will
@@ -103,9 +105,9 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
             case RUNE_JSON:
                 return runeJsonMapper(functionClass);
             case CSV:
-                return csvMapper();
+                return csvMapper(serialization.getConfigPath(), functionClass);
             case CSV_LABELLED:
-                return csvLabelledMapper(functionClass, root);
+                return csvLabelledMapper(serialization.getConfigPath(), functionClass, root);
             case XML:
                 return xmlMapper(serialization.getConfigPath(), functionClass);
             default:
@@ -123,42 +125,49 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return classLoader != null ? new RuneJsonObjectMapper(classLoader) : new RuneJsonObjectMapper();
     }
 
-    protected ObjectMapper csvMapper() {
-        return RosettaObjectMapperCreator.forCSV().create();
+    /**
+     * Mirrors {@link #xmlMapper(String, Class)}: no config path means a bare {@code [ingest CSV]} with
+     * no schema/config, so an empty CSV configuration is used; otherwise the config is read via
+     * {@link #openCsvConfig(String, Class)}.
+     */
+    protected ObjectMapper csvMapper(String configPath, Class<?> functionClass) {
+        return forCsv(configPath, functionClass, null).create();
     }
 
     /**
-     * The {@code CSV_LABELLED} mapper. Takes only what it needs — the function class and the root —
-     * following {@link #xmlMapper(String, Class)}, which likewise takes the config path rather than the
-     * whole {@link TransformSerialization}.
+     * The {@code CSV_LABELLED} mapper. Takes only what it needs — the config path, the function class
+     * and the root — following {@link #xmlMapper(String, Class)}, which likewise takes the config path
+     * rather than the whole {@link TransformSerialization}.
      * <p>
      * A {@code null} root means the caller declared nothing, and that state is exactly what the
      * deprecated {@link #csvLabelledMapper(Class)} has always meant. So it is delegated to rather than
      * reimplemented here: a subclass that already overrode that overload keeps deciding the case it was
-     * written for, instead of compiling, running and being silently ignored.
+     * written for, instead of compiling, running and being silently ignored. That deprecated overload
+     * predates the config path too, so it continues to ignore it, exactly as it ignored the
+     * {@link TransformRoot} before this parameter existed.
      */
-    protected ObjectMapper csvLabelledMapper(Class<?> functionClass, TransformRoot root) {
+    protected ObjectMapper csvLabelledMapper(String configPath, Class<?> functionClass, TransformRoot root) {
         if (root == null) {
             return csvLabelledMapper(functionClass);
         }
         LabelProvider labelProvider = resolveLabelProvider(functionClass, root);
-        return csvMapperFor(labelProvider, () -> noLabelProviderWarning(functionClass, root));
+        return csvMapperFor(configPath, functionClass, labelProvider, () -> noLabelProviderWarning(functionClass, root));
     }
 
     /**
      * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
-     *         {@link #csvLabelledMapper(Class, TransformRoot)}, which is told what
+     *         {@link #csvLabelledMapper(String, Class, TransformRoot)}, which is told what
      *         sits at the root and so can resolve type-first. Kept, and still called whenever the caller
      *         supplies no {@link TransformRoot}, so a subclass that already overrides this overload
      *         keeps deciding that case — function-rooted resolution with no guard, via the equally
      *         deprecated {@link #resolveLabelProvider(Class)}. What it can no longer do is answer for a
-     *         caller that did supply a root; override {@link #csvLabelledMapper(Class, TransformRoot)}
+     *         caller that did supply a root; override {@link #csvLabelledMapper(String, Class, TransformRoot)}
      *         to influence that.
      */
     @Deprecated
     protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
         LabelProvider labelProvider = resolveLabelProvider(functionClass);
-        return csvMapperFor(labelProvider, () -> noFunctionProviderWarning(functionClass));
+        return csvMapperFor(null, functionClass, labelProvider, () -> noFunctionProviderWarning(functionClass));
     }
 
     /**
@@ -166,12 +175,34 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * logged why. The warning is built lazily because composing it is only worth doing on the path that
      * actually degrades.
      */
-    private ObjectMapper csvMapperFor(LabelProvider labelProvider, Supplier<String> noProviderWarning) {
+    private ObjectMapper csvMapperFor(String configPath, Class<?> functionClass, LabelProvider labelProvider,
+            Supplier<String> noProviderWarning) {
         if (labelProvider == null) {
             LOGGER.warn(noProviderWarning.get());
-            return csvMapper();
+            return csvMapper(configPath, functionClass);
         }
-        return RosettaObjectMapperCreator.forCSV(labelProvider).create();
+        return forCsv(configPath, functionClass, labelProvider).create();
+    }
+
+    /**
+     * The shared CSV config-resolution path for both {@link #csvMapper(String, Class)} and a
+     * {@code CSV_LABELLED} mapper with a resolved provider: no config path means an empty
+     * {@link RosettaCSVConfiguration}, mirroring {@link #xmlMapper(String, Class)}'s "no config path"
+     * branch; otherwise the config is read via {@link #openCsvConfig(String, Class)}.
+     */
+    private RosettaObjectMapperCreator forCsv(String configPath, Class<?> functionClass, LabelProvider labelProvider) {
+        if (configPath == null || configPath.isEmpty()) {
+            return labelProvider != null
+                    ? RosettaObjectMapperCreator.forCSV(labelProvider)
+                    : RosettaObjectMapperCreator.forCSV();
+        }
+        try (InputStream inputStream = openCsvConfig(configPath, functionClass)) {
+            return labelProvider != null
+                    ? RosettaObjectMapperCreator.forCSV(inputStream, labelProvider)
+                    : RosettaObjectMapperCreator.forCSV(inputStream);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read CSV configuration '" + configPath + "'", e);
+        }
     }
 
     /**
@@ -239,6 +270,22 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
         if (configUrl == null) {
             throw new IllegalStateException("Could not find XML configuration '" + configPath + "' on the classpath");
+        }
+        return configUrl.openStream();
+    }
+
+    /**
+     * Opens the CSV serialization config, for both {@code CSV} and {@code CSV_LABELLED}. The classpath
+     * implementation resolves it against {@link #classLoader(Class)} (falling back to the legacy Guava
+     * classpath lookup when that is {@code null}), exactly like {@link #openXmlConfig(String, Class)}.
+     * This is the hook a runtime that keeps its CSV configuration somewhere other than the classpath
+     * overrides.
+     */
+    protected InputStream openCsvConfig(String configPath, Class<?> functionClass) throws IOException {
+        ClassLoader classLoader = classLoader(functionClass);
+        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
+        if (configUrl == null) {
+            throw new IllegalStateException("Could not find CSV configuration '" + configPath + "' on the classpath");
         }
         return configUrl.openStream();
     }

@@ -41,6 +41,10 @@ import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +64,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ClasspathTransformMapperFactoryTest {
 
     private static final String XML_CONFIG = "serialisation/xml/xml-config/extension-schema-xml-config.json";
+    private static final String CSV_CONFIG = "serialisation/csv/csv-config/semicolon-csv-config.json";
+    private static final String CSV_LABELLED_CONFIG = "serialisation/csv/csv-config/labelled-semicolon-csv-config.json";
 
     private final ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
 
@@ -89,6 +95,10 @@ class ClasspathTransformMapperFactoryTest {
 
     @Projection(format = SerializationFormat.CSV)
     private static class CsvProjection {
+    }
+
+    @Projection(format = SerializationFormat.CSV, configPath = CSV_CONFIG)
+    private static class CsvProjectionWithConfig {
     }
 
     @Enrich
@@ -133,6 +143,11 @@ class ClasspathTransformMapperFactoryTest {
         return csv.substring(0, csv.indexOf('\n'));
     }
 
+    /** Strips jackson-csv's own quote characters, for asserting field content independent of its quoting heuristic. */
+    private static String unquoted(String csvLine) {
+        return csvLine.replace("\"", "");
+    }
+
     /** Distinguishable from {@link FunctionLabelProvider} so a test can prove which one was picked. */
     public static class TypeLabelProvider implements LabelProvider {
         @Override
@@ -174,6 +189,11 @@ class ClasspathTransformMapperFactoryTest {
     @Projection(format = SerializationFormat.CSV_LABELLED)
     @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
     private static class CsvLabelledProjectionWithFunctionProvider implements RosettaFunction {
+    }
+
+    @Projection(format = SerializationFormat.CSV_LABELLED, configPath = CSV_LABELLED_CONFIG)
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class CsvLabelledProjectionWithConfig implements RosettaFunction {
     }
 
     /**
@@ -506,6 +526,71 @@ class ClasspathTransformMapperFactoryTest {
     @Test
     void buildsCsvMapperForCsvLabelledProjectionUsingAnnotatedLabelProvider() {
         assertTrue(outputMapper(CsvLabelledProjection.class).isPresent());
+    }
+
+    // ---------------------------------------------------------------------------
+    // Session 4: resolving the CSV configuration from the classpath, mirroring the XML branch
+    // ---------------------------------------------------------------------------
+
+    @Test
+    void csvMapperWithNoConfigPathBehavesExactlyAsToday() throws JsonProcessingException {
+        ObjectMapper mapper = outputMapper(CsvProjection.class).get();
+        assertEquals("username,identifier,firstName,lastName", header(mapper));
+    }
+
+    @Test
+    void csvMapperWithConfigPathUsesTheConfiguredDialect() throws JsonProcessingException {
+        ObjectMapper mapper = outputMapper(CsvProjectionWithConfig.class).get();
+        assertEquals("username;identifier;firstName;lastName", header(mapper));
+    }
+
+    @Test
+    void csvLabelledMapperWithConfigPathUsesTheConfiguredDialectAndHeaderStyle() throws JsonProcessingException {
+        // headerStyle is LABEL only because the config says so — the function's provider being
+        // present is not, by itself, enough (that auto-derivation is the no-configPath shim's job).
+        // jackson-csv's own quoting heuristic quotes any character below max(separator, quoteChar) + 1,
+        // so ':' (58) gets quoted once the separator is ';' (59) even though ':' is not the separator —
+        // stripped here since the dialect taking effect, not jackson's quoting choice, is what's under test.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class, TransformRoot.output());
+
+        assertEquals("func:username;func:identifier;func:firstName;func:lastName", unquoted(header(mapper)));
+    }
+
+    @Test
+    void missingCsvConfigResourceIsReported() {
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+                () -> factory.create(new TransformSerialization(SerializationFormat.CSV, "does/not/exist.json"),
+                        ClasspathTransformMapperFactoryTest.class));
+        assertTrue(e.getMessage().contains("does/not/exist.json"));
+    }
+
+    @Test
+    void missingCsvLabelledConfigResourceIsReported() {
+        TransformSerialization s = new TransformSerialization(SerializationFormat.CSV_LABELLED, "does/not/exist.json");
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+                () -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, TransformRoot.output()));
+        assertTrue(e.getMessage().contains("does/not/exist.json"));
+    }
+
+    @Test
+    void subclassOverridingOpenCsvConfigIsConsulted() throws JsonProcessingException {
+        // The extension point TASK-9603 builds on: a runtime keeping its CSV configuration somewhere
+        // other than the classpath overrides only this hook, exactly as openXmlConfig already allows.
+        ClasspathTransformMapperFactory overriding = new ClasspathTransformMapperFactory() {
+            @Override
+            protected InputStream openCsvConfig(String configPath, Class<?> functionClass) throws IOException {
+                return new ByteArrayInputStream(
+                        "{\"dialect\":{\"columnDelimiter\":\"|\"}}".getBytes(StandardCharsets.UTF_8));
+            }
+        };
+        ObjectMapper mapper = overriding.create(
+                new TransformSerialization(SerializationFormat.CSV, "irrelevant-on-this-override.json"),
+                CsvProjection.class);
+
+        // '|' is ascii 124, so jackson-csv's quoting heuristic (see the comment on the test above)
+        // quotes every lowercase letter too; stripped for the same reason.
+        assertEquals("username|identifier|firstName|lastName", unquoted(header(mapper)));
     }
 
     @Test

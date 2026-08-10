@@ -1,0 +1,6 @@
+{
+  "headerStyle": "LABEL",
+  "dialect": {
+    "columnDelimiter": ";"
+  }
+}

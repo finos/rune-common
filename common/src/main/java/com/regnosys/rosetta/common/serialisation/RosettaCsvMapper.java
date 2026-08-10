@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SequenceWriter;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.util.ClassUtil;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
@@ -42,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -94,12 +96,7 @@ public class RosettaCsvMapper extends CsvMapper  {
     @Override
     public <T> T readValue(String content, Class<T> valueType) throws JsonMappingException {
         try {
-            if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
-                return super.readerFor(valueType).with(defaultSchema).readValue(content, valueType);
-            }
-            List<String> headerLabels = readHeaderLabels(content);
-            CsvSchema labelReadSchema = buildLabelReadSchema(valueType, headerLabels);
-            return super.readerFor(valueType).with(labelReadSchema).readValue(content, valueType);
+            return readValueFromContent(content, valueType);
         } catch (IOException e) {
             throw  new JsonMappingException(null,
                     String.format("IOException (of type %s): %s",
@@ -110,13 +107,61 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     @Override
     public <T> T readValue(URL src, Class<T> valueType) throws IOException {
-        if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
-            return super.readerFor(valueType).with(defaultSchema).readValue(src, valueType);
-        }
         String content = IOUtils.toString(src, StandardCharsets.UTF_8);
-        List<String> headerLabels = readHeaderLabels(content);
+        return readValueFromContent(content, valueType);
+    }
+
+    private <T> T readValueFromContent(String content, Class<T> valueType) throws IOException {
+        String normalized = normalizeExtraNullTokens(content);
+        if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
+            return super.readerFor(valueType).with(defaultSchema).readValue(normalized, valueType);
+        }
+        List<String> headerLabels = readHeaderLabels(normalized);
         CsvSchema labelReadSchema = buildLabelReadSchema(valueType, headerLabels);
-        return super.readerFor(valueType).with(labelReadSchema).readValue(content, valueType);
+        return super.readerFor(valueType).with(labelReadSchema).readValue(normalized, valueType);
+    }
+
+    /**
+     * Rewrites every cell matching one of {@code nullTokens.subList(1, size)} to a Java {@code null}
+     * array element, so the writer used to re-render the row emits it as the schema's own canonical
+     * null token (index 0 of {@code nullTokens}, stamped by {@link #dialectSchema}) — the one token
+     * the read path natively recognises. {@code CsvSchema} carries exactly one null-value token, so a
+     * configuration naming more than one needs this pre-pass for the rest; a no-op when zero or one
+     * token is configured, since there is nothing beyond what the schema already recognises.
+     *
+     * <p>Reuses the mapper's own raw row reader/writer rather than hand-rolling CSV escaping, so a
+     * quoted field containing the delimiter or quote character round-trips exactly as the dialect
+     * defines, before and after substitution.</p>
+     */
+    private String normalizeExtraNullTokens(String content) throws IOException {
+        List<String> nullTokens = configuration.getNullTokens();
+        if (nullTokens.size() <= 1) {
+            return content;
+        }
+        Set<String> extraNullTokens = new HashSet<>(nullTokens.subList(1, nullTokens.size()));
+        CsvSchema rawSchema = dialectSchema(CsvSchema.emptySchema());
+        List<String[]> rows = new ArrayList<>();
+        try (MappingIterator<String[]> it = super.readerFor(String[].class)
+                .with(rawSchema)
+                .with(CsvParser.Feature.WRAP_AS_ARRAY)
+                .readValues(content)) {
+            while (it.hasNext()) {
+                String[] row = it.nextValue();
+                for (int i = 0; i < row.length; i++) {
+                    if (row[i] != null && extraNullTokens.contains(row[i])) {
+                        row[i] = null;
+                    }
+                }
+                rows.add(row);
+            }
+        }
+        StringWriter out = new StringWriter();
+        try (SequenceWriter seq = super.writer(rawSchema).writeValues(out)) {
+            for (String[] row : rows) {
+                seq.write(row);
+            }
+        }
+        return out.toString();
     }
 
     private List<String> readHeaderLabels(String content) throws IOException {
@@ -199,8 +244,9 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     /**
      * Stamps the configured {@link CsvDialect} (column separator, quote character, escape character)
-     * onto a schema this class produces. Every schema built anywhere in this class must be passed
-     * through here — a call site that forgets produces a mapper that reads and writes differently.
+     * and the canonical null token onto a schema this class produces. Every schema built anywhere in
+     * this class must be passed through here — a call site that forgets produces a mapper that reads
+     * and writes differently.
      */
     private CsvSchema dialectSchema(CsvSchema schema) {
         CsvDialect dialect = configuration.getDialect();
@@ -213,6 +259,17 @@ public class RosettaCsvMapper extends CsvMapper  {
             builder.disableEscapeChar();
         } else {
             builder.setEscapeChar(dialect.getEscapeChar());
+        }
+        List<String> nullTokens = configuration.getNullTokens();
+        if (!nullTokens.isEmpty()) {
+            // CsvSchema carries exactly one null-value token. The first (canonical) entry of
+            // nullTokens goes here: on read, a cell exactly matching it is reported as VALUE_NULL by
+            // the parser itself, before any type-specific (number/date/boolean) text parsing is
+            // attempted; on write, it is the token an absent value is written back as — "the first
+            // entry of the list is the natural choice" (STORY-1932 TASK-9539 session 3). A
+            // configuration naming further tokens is handled by normalizeExtraNullTokens instead,
+            // because the schema has no second slot.
+            builder.setNullValue(nullTokens.get(0));
         }
         return builder.build();
     }

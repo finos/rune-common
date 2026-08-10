@@ -185,7 +185,12 @@ public class RosettaCSVConfiguration {
     }
 
     /**
-     * @return the cell values that deserialise to an absent value; unmodifiable
+     * @return the cell values that deserialise to an absent value; unmodifiable. On write, the
+     *         first entry is the token an absent value is written back as, and an empty list means
+     *         the empty string. A token that collides with a legitimate data value (e.g. a real
+     *         attribute value of literally {@code "N/A"}) is indistinguishable from absence — that
+     *         collision is the caller's problem to avoid by choosing tokens that cannot occur in
+     *         real data, not something this class can detect.
      */
     public List<String> getNullTokens() {
         return nullTokens;

@@ -529,7 +529,7 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     // ---------------------------------------------------------------------------
-    // Session 4: resolving the CSV configuration from the classpath, mirroring the XML branch
+    // Resolving the CSV configuration from the classpath, mirroring the XML branch
     // ---------------------------------------------------------------------------
 
     @Test
@@ -575,8 +575,8 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void subclassOverridingOpenCsvConfigIsConsulted() throws JsonProcessingException {
-        // The extension point TASK-9603 builds on: a runtime keeping its CSV configuration somewhere
-        // other than the classpath overrides only this hook, exactly as openXmlConfig already allows.
+        // A runtime keeping its CSV configuration somewhere other than the classpath overrides only
+        // this hook, exactly as openXmlConfig already allows.
         ClasspathTransformMapperFactory overriding = new ClasspathTransformMapperFactory() {
             @Override
             protected InputStream openCsvConfig(String configPath, Class<?> functionClass) throws IOException {

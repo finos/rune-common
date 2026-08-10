@@ -265,8 +265,7 @@ public class RosettaCsvMapper extends CsvMapper  {
             // CsvSchema carries exactly one null-value token. The first (canonical) entry of
             // nullTokens goes here: on read, a cell exactly matching it is reported as VALUE_NULL by
             // the parser itself, before any type-specific (number/date/boolean) text parsing is
-            // attempted; on write, it is the token an absent value is written back as — "the first
-            // entry of the list is the natural choice" (STORY-1932 TASK-9539 session 3). A
+            // attempted; on write, it is the token an absent value is written back as. A
             // configuration naming further tokens is handled by normalizeExtraNullTokens instead,
             // because the schema has no second slot.
             builder.setNullValue(nullTokens.get(0));
@@ -311,7 +310,7 @@ public class RosettaCsvMapper extends CsvMapper  {
      * Recovers attribute declaration order from the generated {@code process(RosettaPath, Processor)}
      * visitor, which walks attributes in the order they appear in the {@code .rosetta} source.
      * {@code @RosettaAttribute}/{@code @RuneAttribute} carry only a name, no index, so the visitor is
-     * the only source of this order. See STORY-1932 §3.4(B).
+     * the only source of this order.
      */
     private List<String> declarationOrder(RosettaModelObject instance) {
         DeclarationOrderCollector collector = new DeclarationOrderCollector();

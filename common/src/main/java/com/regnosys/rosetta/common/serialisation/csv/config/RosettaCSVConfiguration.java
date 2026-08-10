@@ -43,7 +43,7 @@ import java.util.Objects;
  * scalar type and conversion come from the attribute type. Adding a keyed layer would reintroduce
  * the drift failure mode a per-type map has elsewhere — an entry naming a type or attribute that no
  * longer exists, silently ignored at lookup rather than reported — for no benefit here, since
- * everything this class configures is already global. See STORY-1932 §4.</p>
+ * everything this class configures is already global.</p>
  *
  * <p>An empty configuration ({@code {}}) is behaviourally indistinguishable from RFC 4180 with no
  * configuration at all supplied — every default below is today's hard-coded behaviour, not a new
@@ -104,8 +104,6 @@ public class RosettaCSVConfiguration {
      *                      header row; {@code null} for {@code true}. This describes the file, not a
      *                      preference: a CSV file cannot be sniffed for a header — a header row of
      *                      codes looks like a data row — so it has to be declared, and this is where.
-     *                      See STORY-1932 §3.4(A) for why this setting exists at all, reversing an
-     *                      earlier design decision that it should not.
      * @throws IllegalArgumentException if {@code hasHeader} is false and {@code headerStyle} is
      *                                  {@link HeaderStyle#LABEL}
      */

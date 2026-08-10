@@ -34,8 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Tests for {@code nullTokens} (STORY-1932 TASK-9539 session 3): which cell values deserialise to
- * an absent attribute, and which token an absent attribute writes back as.
+ * Tests for {@code nullTokens}: which cell values deserialise to an absent attribute, and which
+ * token an absent attribute writes back as.
  *
  * <p>Uses the generated {@code NullableAttributes} type ({@code id (1..1)}, {@code note (0..1)}) —
  * neither existing test type ({@code User}, {@code LabelledTrade}) declares an optional attribute,

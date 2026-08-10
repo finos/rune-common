@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests for {@link RosettaCsvMapper} label-header behaviour (tests #1–5 from the plan).
+ * Tests for {@link RosettaCsvMapper} label-header behaviour.
  *
  * <p>Uses the existing generated {@code User} type (fields declared in the order username,
  * identifier, firstName, lastName — the CSV column order) together with hand-written stub
@@ -338,7 +338,7 @@ public class RosettaCsvMapperLabelledTest {
 
     // ---------------------------------------------------------------------------
     // Test #12 — Direct read of a duplicate-labelled file proves declaration order,
-    // not merely writer/reader agreement (STORY-1932 §3.4, S2 acceptance).
+    // not merely writer/reader agreement.
     // ---------------------------------------------------------------------------
 
     /**

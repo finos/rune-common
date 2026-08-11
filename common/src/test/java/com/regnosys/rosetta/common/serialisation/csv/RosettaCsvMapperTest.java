@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RosettaCsvMapperTest {
 
@@ -184,6 +185,64 @@ public class RosettaCsvMapperTest {
         String expected = "username,identifier,firstName,lastName\n"
                 + "username,identifier,\"First\"\"Name\",LastName\n";
         assertEquals(expected, serialized);
+
+        User roundTripped = csvObjectMapper.readValue(serialized, User.class);
+        assertEquals(user.build(), roundTripped);
+    }
+
+    /**
+     * Customising the quote character must not introduce an escape character. It used to: the
+     * dialect's {@code escapeChar} defaulted to the <i>default</i> quote character, so once
+     * {@code quoteChar} was changed the two were no longer equal, and the mapper — which decided
+     * "no escape character" by comparing them — configured {@code "} as a real escape character.
+     * Every {@code "} in the data was then doubled. It round-tripped through this mapper, since the
+     * same escape was applied on read, but a conforming single-quote/no-escape reader saw
+     * {@code a""b} where the value was {@code a"b}.
+     */
+    @Test
+    void testCustomQuoteCharDoesNotEscapeTheDefaultQuoteCharacter() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setDialect(CsvDialect.builder().setQuoteChar('\'').build())
+                .build();
+        RosettaCsvMapper csvObjectMapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        User user = User.builder()
+                .setFirstName("First\"Name")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        // Only the value needing them gets quotes. The point is what is *not* there: before this
+        // fix the cell read 'First""Name', with the double quote escaped by an escape character
+        // nobody configured.
+        String serialized = csvObjectMapper.writeValueAsString(user);
+        String expected = "username,identifier,firstName,lastName\n"
+                + "username,identifier,'First\"Name',LastName\n";
+        assertEquals(expected, serialized);
+
+        User roundTripped = csvObjectMapper.readValue(serialized, User.class);
+        assertEquals(user.build(), roundTripped);
+    }
+
+    /**
+     * An explicitly configured escape character still applies — the change above removes a default,
+     * not the capability.
+     */
+    @Test
+    void testExplicitEscapeCharIsHonoured() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setDialect(CsvDialect.builder().setQuoteChar('\'').setEscapeChar('\\').build())
+                .build();
+        RosettaCsvMapper csvObjectMapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        User user = User.builder()
+                .setFirstName("First\\Name")
+                .setLastName("LastName")
+                .setIdentifier("identifier")
+                .setUsername("username")
+                .build();
+
+        String serialized = csvObjectMapper.writeValueAsString(user);
+        assertTrue(serialized.contains("First\\\\Name"));
 
         User roundTripped = csvObjectMapper.readValue(serialized, User.class);
         assertEquals(user.build(), roundTripped);

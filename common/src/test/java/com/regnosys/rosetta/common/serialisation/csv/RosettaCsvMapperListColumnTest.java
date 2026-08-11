@@ -21,6 +21,7 @@ package com.regnosys.rosetta.common.serialisation.csv;
  */
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -136,6 +138,76 @@ public class RosettaCsvMapperListColumnTest {
                 () -> mapper.writeValueAsString(value));
         assertTrue(exception.getMessage().contains("tags"));
         assertTrue(exception.getMessage().contains("EUR|X"));
+    }
+
+    /**
+     * The writer must not be able to produce a file this mapper's own reader refuses. An element
+     * that is the empty string joins into a cell with a trailing or doubled list delimiter, which
+     * the read side rejects (see {@code aTrailingListDelimiterIsRejectedAtReadTime…} below) because
+     * jackson reads such an element back as a Java {@code null} that a list attribute cannot hold.
+     * Rejecting it on write too puts the failure at the point the bad value is known — the same
+     * choice already made for an element containing the list delimiter.
+     */
+    @Test
+    void listElementEqualToTheDefaultNullTokenIsRejectedAtWriteTime() {
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+        MultiCardinalityAttributes value = withTags("EUR", "");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> mapper.writeValueAsString(value));
+        assertTrue(exception.getMessage().contains("tags"));
+        assertTrue(exception.getMessage().contains("null token"));
+    }
+
+    @Test
+    void listElementEqualToAConfiguredNullTokenIsRejectedAtWriteTime() {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Collections.singletonList("N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        MultiCardinalityAttributes value = withTags("EUR", "N/A");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> mapper.writeValueAsString(value));
+        assertTrue(exception.getMessage().contains("tags"));
+        assertTrue(exception.getMessage().contains("N/A"));
+    }
+
+    /**
+     * With no null tokens configured there is nothing for an empty element to be confused with, so
+     * the write side must not reject it either — and the pair round-trips. This is the write-side
+     * half of {@code aTrailingListDelimiterProducesAnEmptyElementWhenNoNullTokensAreConfigured}.
+     */
+    @Test
+    void anEmptyListElementRoundTripsWhenNoNullTokensAreConfigured() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Collections.emptyList())
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        MultiCardinalityAttributes original = withTags("EUR", "");
+
+        String csv = mapper.writeValueAsString(original);
+
+        assertEquals("id,tags\nid1,EUR;\n", csv);
+        assertEquals(original, mapper.readValue(csv, MultiCardinalityAttributes.class));
+    }
+
+    /**
+     * A scalar attribute equal to a null token is <i>not</i> rejected: it round-trips as an absent
+     * value, which is exactly what a null token is for. Only a <i>list element</i> is unrepresentable,
+     * because a list cannot hold a null.
+     */
+    @Test
+    void aScalarAttributeEqualToTheNullTokenIsUnaffected() throws IOException {
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+        MultiCardinalityAttributes value = MultiCardinalityAttributes.builder()
+                .setId("")
+                .addTags(Collections.singletonList("EUR"))
+                .build();
+
+        String csv = mapper.writeValueAsString(value);
+
+        assertEquals("id,tags\n,EUR\n", csv);
     }
 
     /**
@@ -300,6 +372,40 @@ public class RosettaCsvMapperListColumnTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> mapper.readValue("id,tags\nid1,EUR;;USD\n", MultiCardinalityAttributes.class));
         assertTrue(exception.getMessage().contains("tags"));
+    }
+
+    /**
+     * The null-token collision check needs the header row to know which column binds to which
+     * attribute, but it must not read it before deciding whether it has anything to check — and it
+     * must not turn an empty document into a labelled-CSV error on a read that is not labelled.
+     * Empty content on the plain path therefore surfaces jackson's own failure ({@code
+     * CsvReadException: Empty header line}), for a type with a list attribute (the check runs and
+     * finds no rows) as much as for one without (the check returns before reading anything).
+     */
+    @Test
+    void emptyContentOnThePlainPathReportsAJacksonErrorRatherThanAMissingLabelHeader() {
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+
+        JsonMappingException exception = assertThrows(JsonMappingException.class,
+                () -> mapper.readValue("", MultiCardinalityAttributes.class));
+
+        assertTrue(exception.getMessage().contains("Empty header line"), exception.getMessage());
+        assertFalse(exception.getMessage().contains("labelled"), exception.getMessage());
+    }
+
+    /**
+     * The labelled path keeps the opposite behaviour: it genuinely cannot proceed without a header,
+     * so it still fails with its own named error rather than deferring to jackson.
+     */
+    @Test
+    void emptyContentOnTheLabelledPathStillReportsAMissingHeaderRow() {
+        LabelProvider provider = path -> null;
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> mapper.readValue("", MultiCardinalityAttributes.class));
+
+        assertTrue(exception.getMessage().contains("missing header row"));
     }
 
     /**

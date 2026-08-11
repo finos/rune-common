@@ -147,10 +147,15 @@ public class RosettaCsvMapper extends CsvMapper  {
     private <T> T readValueFromContent(String content, Class<T> valueType) throws IOException {
         String normalized = normalizeExtraNullTokens(content);
         if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
-            rejectListElementsCollidingWithANullToken(normalized, valueType, readHeaderLabels(normalized));
+            // No column names to hand over: the header row of a non-LABEL file holds attribute names
+            // already, so the check reads them itself — and only if it has anything to check.
+            rejectListElementsCollidingWithANullToken(normalized, valueType, null);
             return super.readerFor(valueType).with(defaultSchema).readValue(normalized, valueType);
         }
         List<String> headerLabels = readHeaderLabels(normalized);
+        if (headerLabels.isEmpty()) {
+            throw new IllegalStateException("Cannot deserialise labelled CSV: missing header row");
+        }
         CsvSchema labelReadSchema = buildLabelReadSchema(valueType, headerLabels);
         rejectListElementsCollidingWithANullToken(normalized, valueType, columnNames(labelReadSchema));
         return super.readerFor(valueType).with(labelReadSchema).readValue(normalized, valueType);
@@ -165,26 +170,37 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Rewrites every cell matching one of {@code nullTokens.subList(1, size)} to a Java {@code null}
-     * array element, so the writer used to re-render the row emits it as the schema's own canonical
-     * null token (index 0 of {@code nullTokens}, stamped by {@link #dialectSchema}) — the one token
-     * the read path natively recognises. {@code CsvSchema} carries exactly one null-value token, so a
-     * configuration naming more than one needs this pre-pass for the rest; a no-op when zero or one
-     * token is configured, since there is nothing beyond what the schema already recognises.
+     * Rewrites every cell matching one of {@code nullTokens.subList(1, size)} to the canonical null
+     * token (index 0 of {@code nullTokens}, the one {@link #dialectSchema} stamps onto every schema
+     * and therefore the only one the read path natively recognises). {@code CsvSchema} carries
+     * exactly one null-value token, so a configuration naming more than one needs this pre-pass for
+     * the rest; a no-op when zero or one token is configured, since there is nothing beyond what the
+     * schema already recognises.
      *
      * <p>Reuses the mapper's own raw row reader/writer rather than hand-rolling CSV escaping, so a
      * quoted field containing the delimiter or quote character round-trips exactly as the dialect
      * defines, before and after substitution.</p>
      *
-     * <p>The header row is left alone: a column whose name happens to match a null token is still a
-     * column name, not an absent value, and rewriting it would break the label lookup that reads
-     * this same row afterwards.</p>
+     * <p><b>Every cell is re-rendered as a non-null {@code String}, never as a Java {@code null}.</b>
+     * The raw reader is driven by a column-less {@code emptySchema()}, and jackson's CSV generator
+     * <em>omits</em> a null element from such a schema rather than writing an empty field — measured:
+     * a row {@code {a, null, b}} renders as {@code a,b}, one column short. Since the raw reader
+     * itself maps any cell equal to the canonical token to Java {@code null} (the schema's null
+     * value), leaving those nulls in place would drop that column and shift every column after it
+     * one place left, silently binding each attribute to its neighbour's value. Substituting the
+     * canonical token's own text keeps the row's arity intact and re-reads identically.</p>
+     *
+     * <p>The header row is exempt from <em>token</em> substitution: a column whose name happens to
+     * match a null token is still a column name, not an absent value, and rewriting it would break
+     * the label lookup that reads this same row afterwards. It is not exempt from the null-to-text
+     * restoration above, which preserves the header's own arity for exactly the same reason.</p>
      */
     private String normalizeExtraNullTokens(String content) throws IOException {
         List<String> nullTokens = configuration.getNullTokens();
         if (nullTokens.size() <= 1) {
             return content;
         }
+        String canonicalNullToken = nullTokens.get(0);
         Set<String> extraNullTokens = new HashSet<>(nullTokens.subList(1, nullTokens.size()));
         CsvSchema rawSchema = dialectSchema(CsvSchema.emptySchema());
         List<String[]> rows = new ArrayList<>();
@@ -196,11 +212,9 @@ public class RosettaCsvMapper extends CsvMapper  {
             while (it.hasNext()) {
                 String[] row = it.nextValue();
                 boolean isHeaderRow = firstRowIsHeader && rows.isEmpty();
-                if (!isHeaderRow) {
-                    for (int i = 0; i < row.length; i++) {
-                        if (row[i] != null && extraNullTokens.contains(row[i])) {
-                            row[i] = null;
-                        }
+                for (int i = 0; i < row.length; i++) {
+                    if (row[i] == null || (!isHeaderRow && extraNullTokens.contains(row[i]))) {
+                        row[i] = canonicalNullToken;
                     }
                 }
                 rows.add(row);
@@ -215,13 +229,24 @@ public class RosettaCsvMapper extends CsvMapper  {
         return out.toString();
     }
 
+    /**
+     * The first row of {@code content}, read raw, or an <b>empty list</b> if the document holds no
+     * row at all.
+     *
+     * <p>Empty rather than an exception because the callers disagree about what a missing header
+     * means. On the labelled path it is fatal and the caller says so. On the plain path it is not
+     * this method's business: an empty document is simply an empty document, and jackson's own
+     * {@code CsvReadException} ("Empty header line: can not bind data") — raised by the read that
+     * follows — describes it better than anything thrown from here, which would otherwise report a
+     * labelled-CSV failure on a read that is not labelled.</p>
+     */
     private List<String> readHeaderLabels(String content) throws IOException {
         try (MappingIterator<String[]> rows = super.readerFor(String[].class)
                 .with(dialectSchema(CsvSchema.emptySchema()))
                 .with(CsvParser.Feature.WRAP_AS_ARRAY)
                 .readValues(content)) {
             if (!rows.hasNext()) {
-                throw new IllegalStateException("Cannot deserialise labelled CSV: missing header row");
+                return Collections.emptyList();
             }
             return Arrays.asList(rows.nextValue());
         }
@@ -309,9 +334,9 @@ public class RosettaCsvMapper extends CsvMapper  {
                 // serialiser makes, regardless of the column's declared ColumnType, and always
                 // consults this one schema-level separator to join the elements into the cell.
                 .setArrayElementSeparator(configuration.getListDelimiter());
-        if (dialect.getEscapeChar() == dialect.getQuoteChar()) {
-            // RFC 4180 has no distinct escape character, only the doubled quote: see CsvDialect's
-            // javadoc. Translating that into CsvSchema means no explicit escape character at all.
+        if (dialect.getEscapeChar() == null) {
+            // No escape character — RFC 4180's doubled quote, and the default. See CsvDialect's
+            // javadoc for why this is null rather than the quote character.
             builder.disableEscapeChar();
         } else {
             builder.setEscapeChar(dialect.getEscapeChar());
@@ -395,24 +420,39 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * A list element containing the configured list delimiter cannot round-trip: jackson's array
-     * handling has no escape for it (RFC 4180 quoting is a cell-level concern, already consumed by
-     * the time the cell is split on this delimiter), so a two-element list containing it would be
-     * silently written and read back as three. Rejecting it here, at the point the bad value is
-     * known, turns that corruption into a loud failure instead. Only {@link RosettaModelObject}
-     * values are checked — a plain POJO (as {@link #schemaInDeclarationOrder(Object)} already
-     * accommodates) has no {@code process} visitor to walk.
+     * Rejects a list element this mapper could write but could not read back. Two kinds cannot
+     * round-trip, and both are rejected here, at the point the bad value is known, rather than
+     * leaving the writer to emit a file its own reader refuses:
+     *
+     * <ul>
+     *   <li>an element <b>containing the configured list delimiter</b>. Jackson's array handling has
+     *       no escape for it (RFC 4180 quoting is a cell-level concern, already consumed by the time
+     *       the cell is split on this delimiter), so a two-element list containing it would be
+     *       silently written and read back as three; and</li>
+     *   <li>an element <b>equal to a configured null token</b> — most commonly the empty string under
+     *       the default {@code nullTokens=[""]}. Jackson applies its null-token comparison per split
+     *       element, so such an element reads back as a Java {@code null} inside the list, which the
+     *       generated immutable list then rejects.</li>
+     * </ul>
+     *
+     * <p>The second check is deliberately the exact mirror of
+     * {@link #rejectListElementsCollidingWithANullToken}: whatever set of tokens the read side
+     * refuses, the write side refuses too, so the writer cannot produce a file this mapper will not
+     * read. <b>The two must be changed together.</b></p>
+     *
+     * <p>Only {@link RosettaModelObject} values are checked — a plain POJO (as
+     * {@link #schemaInDeclarationOrder(Object)} already accommodates) has no {@code process} visitor
+     * to walk.</p>
      *
      * @throws IllegalArgumentException naming the attribute and the offending value
      */
-    private void rejectListElementsContainingTheListDelimiter(Object value) {
+    private void rejectListElementsThatCannotRoundTrip(Object value) {
         if (!(value instanceof RosettaModelObject)) {
             return;
         }
-        String listDelimiter = configuration.getListDelimiter();
         RosettaModelObject instance = (RosettaModelObject) value;
         instance.process(RosettaPath.valueOf(instance.getType().getSimpleName()),
-                new ListDelimiterCollisionDetector(listDelimiter));
+                new ListElementCollisionDetector(configuration.getListDelimiter(), configuration.getNullTokens()));
     }
 
     /**
@@ -454,16 +494,18 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Walks a value's simple attributes looking for a multi-valued one whose element text contains
-     * the configured list delimiter, throwing as soon as it finds one. Declines to recurse into a
-     * complex attribute for the same reason {@link DeclarationOrderCollector} does: tabular CSV
-     * types have none.
+     * Walks a value's simple attributes looking for a multi-valued one holding an element that
+     * cannot round-trip, throwing as soon as it finds one. Declines to recurse into a complex
+     * attribute for the same reason {@link DeclarationOrderCollector} does: tabular CSV types have
+     * none.
      */
-    private static final class ListDelimiterCollisionDetector implements Processor {
+    private static final class ListElementCollisionDetector implements Processor {
         private final String listDelimiter;
+        private final List<String> nullTokens;
 
-        private ListDelimiterCollisionDetector(String listDelimiter) {
+        private ListElementCollisionDetector(String listDelimiter, List<String> nullTokens) {
             this.listDelimiter = listDelimiter;
+            this.nullTokens = nullTokens;
         }
 
         @Override
@@ -492,13 +534,25 @@ public class RosettaCsvMapper extends CsvMapper  {
                 return;
             }
             for (T element : instance) {
-                if (element != null && String.valueOf(element).contains(listDelimiter)) {
+                if (element == null) {
+                    continue;
+                }
+                String text = String.valueOf(element);
+                if (text.contains(listDelimiter)) {
                     throw new IllegalArgumentException(String.format(
                             "Cannot serialise attribute '%s' to CSV: element '%s' contains the configured list "
                                     + "delimiter '%s'. A list element containing the list delimiter cannot "
                                     + "round-trip — there is no escape for a delimiter inside a list element — so "
                                     + "either change the value or configure a listDelimiter that cannot occur in it.",
                             path.getElement().getPath(), element, listDelimiter));
+                }
+                if (nullTokens.contains(text)) {
+                    throw new IllegalArgumentException(String.format(
+                            "Cannot serialise attribute '%s' to CSV: element '%s' is a configured null token, so it "
+                                    + "would be written as a list element indistinguishable from an absent value and "
+                                    + "read back as null, which a list attribute cannot hold. Either change the value "
+                                    + "or reconfigure nullTokens so it does not collide.",
+                            path.getElement().getPath(), text));
                 }
             }
         }
@@ -523,7 +577,15 @@ public class RosettaCsvMapper extends CsvMapper  {
      *
      * <p>Skips entirely when there is nothing to collide with — no configured null tokens, or no
      * multi-cardinality attribute on {@code valueType} — so a type with only scalar attributes pays
-     * no extra parsing pass.</p>
+     * no extra parsing pass. Both guards run <b>before</b> the header row is read, which is why the
+     * header is read here rather than passed in by the plain-path caller: an argument would be
+     * evaluated first and the guards would no longer be able to prevent the work.</p>
+     *
+     * @param columnAttributeNames the attribute each column binds to, in column order, or
+     *                             {@code null} to read them from the header row. The labelled path
+     *                             supplies them because its header holds labels rather than
+     *                             attribute names and it has already resolved the mapping; the plain
+     *                             path passes {@code null}, its header being attribute names already
      */
     private void rejectListElementsCollidingWithANullToken(String content, Class<?> valueType,
             List<String> columnAttributeNames) throws IOException {
@@ -535,6 +597,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         if (multiValuedAttributes.isEmpty()) {
             return;
         }
+        List<String> columns = columnAttributeNames != null ? columnAttributeNames : readHeaderLabels(content);
         CsvSchema rawSchema = dialectSchema(CsvSchema.emptySchema());
         try (MappingIterator<String[]> it = super.readerFor(String[].class)
                 .with(rawSchema)
@@ -547,8 +610,8 @@ public class RosettaCsvMapper extends CsvMapper  {
                     skipHeaderRow = false;
                     continue;
                 }
-                for (int i = 0; i < row.length && i < columnAttributeNames.size(); i++) {
-                    String attribute = columnAttributeNames.get(i);
+                for (int i = 0; i < row.length && i < columns.size(); i++) {
+                    String attribute = columns.get(i);
                     if (row[i] == null || row[i].isEmpty() || !multiValuedAttributes.contains(attribute)) {
                         continue;
                     }
@@ -643,7 +706,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
         @Override
         public String writeValueAsString(Object value) throws JsonProcessingException {
-            mapper.rejectListElementsContainingTheListDelimiter(value);
+            mapper.rejectListElementsThatCannotRoundTrip(value);
             CsvSchema schemaInOrder = mapper.schemaInDeclarationOrder(value);
             if (mapper.configuration.getHeaderStyle() != HeaderStyle.LABEL) {
                 CsvSchema schema = mapper.dialectSchema(schemaInOrder.withHeader());

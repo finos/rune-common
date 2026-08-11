@@ -24,6 +24,7 @@ import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import csv.test.nullable.NullableAttributes;
+import csv.test.user.User;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -97,6 +98,76 @@ public class RosettaCsvMapperNullTokensTest {
         NullableAttributes result = mapper.readValue("id,note\nabc,a real value\n", NullableAttributes.class);
 
         assertEquals("a real value", result.getNote());
+    }
+
+    /**
+     * A configuration naming more than one null token routes the document through a
+     * read-substitute-rewrite pre-pass, and the pre-pass must not change the row's arity. It used
+     * to: it substituted a Java {@code null}, and jackson's CSV generator omits a null element from
+     * the column-less schema the pre-pass writes with, rather than emitting an empty field — so the
+     * column disappeared and every column after it shifted one place left, binding each attribute
+     * to its neighbour's value. Silent, and plausible rather than obviously wrong.
+     *
+     * <p>{@code User} is used rather than {@code NullableAttributes} because the shift is invisible
+     * on a two-column type when it is the second column that is nulled: there is nothing after it to
+     * shift. Four columns with the token in the middle is the smallest case that shows it.</p>
+     */
+    @Test
+    void aNullTokenInAMiddleColumnDoesNotShiftTheColumnsAfterIt() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Arrays.asList("", "N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+
+        User result = mapper.readValue(
+                "username,identifier,firstName,lastName\nu1,N/A,f1,l1\n", User.class);
+
+        assertEquals("u1", result.getUsername());
+        assertNull(result.getIdentifier());
+        assertEquals("f1", result.getFirstName());
+        assertEquals("l1", result.getLastName());
+    }
+
+    /**
+     * The same shift, from the other direction: this cell matches no <i>extra</i> token at all — it
+     * is simply empty — but the pre-pass's raw reader maps a cell equal to the canonical token to
+     * Java {@code null} via the schema's null value, so it was dropped on rewrite just the same.
+     * Any absent cell outside the last column was affected, not only one spelt with an extra token.
+     */
+    @Test
+    void anEmptyCellInAMiddleColumnDoesNotShiftTheColumnsAfterIt() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Arrays.asList("", "N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+
+        User result = mapper.readValue(
+                "username,identifier,firstName,lastName\nu1,,f1,l1\n", User.class);
+
+        assertEquals("u1", result.getUsername());
+        assertNull(result.getIdentifier());
+        assertEquals("f1", result.getFirstName());
+        assertEquals("l1", result.getLastName());
+    }
+
+    /**
+     * The pre-pass re-renders the whole document, so a quoted cell elsewhere in the row has to
+     * survive it byte-for-byte — including one holding the column delimiter, which is the case that
+     * would break if the rewrite ever stopped going through the mapper's own dialect-aware writer.
+     */
+    @Test
+    void aQuotedCellSurvivesTheNullTokenPrePass() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Arrays.asList("", "N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+
+        User result = mapper.readValue(
+                "username,identifier,firstName,lastName\nu1,N/A,\"First,Name\",l1\n", User.class);
+
+        assertNull(result.getIdentifier());
+        assertEquals("First,Name", result.getFirstName());
+        assertEquals("l1", result.getLastName());
     }
 
     @Test

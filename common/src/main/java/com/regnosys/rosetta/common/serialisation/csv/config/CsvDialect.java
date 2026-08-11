@@ -35,11 +35,17 @@ import java.util.Objects;
  * a {@code String}, because {@code CsvSchema}'s array-element separator is.)</p>
  *
  * <p>Defaults are RFC 4180: comma-separated, double-quoted, with a quote inside a quoted value
- * escaped by doubling it. That last rule is why {@link #getEscapeChar()} defaults to the same
- * character as {@link #getQuoteChar()} rather than to a distinct escape character such as
- * {@code \} — RFC 4180 has no separate escape character, only the doubled quote. Translating that
- * into a {@code CsvSchema} (an explicit escape character vs. {@code withoutEscapeChar()}) is the
- * mapper's job, not this class's.</p>
+ * escaped by doubling it. RFC 4180 has no separate escape character, only that doubled quote, so
+ * {@link #getEscapeChar()} defaults to {@code null} — "there is no escape character" — rather than
+ * to any particular one. Translating that into a {@code CsvSchema} ({@code disableEscapeChar()} vs.
+ * an explicit escape character) is the mapper's job, not this class's.</p>
+ *
+ * <p>The default is {@code null} rather than the quote character because the two settings have to
+ * be independent. Defaulting {@code escapeChar} to the quote character couples them: a caller who
+ * customises only {@code quoteChar} would leave {@code escapeChar} holding the *default* quote
+ * character, which is then no longer equal to the quote character in force, so a mapper reading
+ * these two fields would configure a real, distinct escape character the caller never asked for —
+ * silently escaping {@code "} inside every value.</p>
  *
  * <p><b>Construction.</b> Use {@link #builder()}, or {@link #RFC_4180} for the defaults. Every
  * setting left unset on the builder takes its default, so
@@ -50,7 +56,10 @@ import java.util.Objects;
 public class CsvDialect {
     public static final char DEFAULT_COLUMN_DELIMITER = ',';
     public static final char DEFAULT_QUOTE_CHAR = '"';
-    public static final char DEFAULT_ESCAPE_CHAR = '"';
+    /**
+     * {@code null}: RFC 4180 has no escape character, only the doubled quote.
+     */
+    public static final Character DEFAULT_ESCAPE_CHAR = null;
 
     /**
      * The RFC 4180 dialect: comma-separated, double-quoted, doubled-quote escaping.
@@ -59,7 +68,7 @@ public class CsvDialect {
 
     private final char columnDelimiter;
     private final char quoteChar;
-    private final char escapeChar;
+    private final Character escapeChar;
 
     /**
      * Not public: construct through {@link #builder()}. Jackson binds to this constructor, so an
@@ -71,7 +80,9 @@ public class CsvDialect {
      * @param quoteChar       the character quoting a value that contains the column delimiter, a
      *                        newline or a quote, or {@code null} for a double quote
      * @param escapeChar      the character escaping a quote inside a quoted value, or {@code null}
-     *                        for a double quote — RFC 4180's doubled quote, not a distinct escape
+     *                        for no escape character at all — RFC 4180's doubled quote. Unlike the
+     *                        other two, {@code null} here is not a stand-in for some default
+     *                        character: it is itself the setting, and it is retained as {@code null}
      */
     @JsonCreator
     private CsvDialect(
@@ -80,7 +91,7 @@ public class CsvDialect {
             @JsonProperty("escapeChar") Character escapeChar) {
         this.columnDelimiter = columnDelimiter != null ? columnDelimiter : DEFAULT_COLUMN_DELIMITER;
         this.quoteChar = quoteChar != null ? quoteChar : DEFAULT_QUOTE_CHAR;
-        this.escapeChar = escapeChar != null ? escapeChar : DEFAULT_ESCAPE_CHAR;
+        this.escapeChar = escapeChar;
     }
 
     /**
@@ -110,7 +121,11 @@ public class CsvDialect {
         return quoteChar;
     }
 
-    public char getEscapeChar() {
+    /**
+     * @return the character escaping a quote inside a quoted value, or {@code null} if this dialect
+     *         has none — the RFC 4180 default, where a quote is escaped by doubling it
+     */
+    public Character getEscapeChar() {
         return escapeChar;
     }
 
@@ -128,12 +143,13 @@ public class CsvDialect {
         CsvDialect other = (CsvDialect) obj;
         return columnDelimiter == other.columnDelimiter
                 && quoteChar == other.quoteChar
-                && escapeChar == other.escapeChar;
+                && Objects.equals(escapeChar, other.escapeChar);
     }
 
     @Override
     public String toString() {
-        return "CsvDialect{columnDelimiter=" + columnDelimiter + ", quoteChar=" + quoteChar + ", escapeChar=" + escapeChar + "}";
+        return "CsvDialect{columnDelimiter=" + columnDelimiter + ", quoteChar=" + quoteChar
+                + ", escapeChar=" + (escapeChar != null ? escapeChar : "<none>") + "}";
     }
 
     /**
@@ -168,12 +184,14 @@ public class CsvDialect {
         }
 
         /**
-         * @param escapeChar the character escaping a quote inside a quoted value. Defaults to a
-         *                   double quote, RFC 4180's doubled-quote rule rather than a distinct
-         *                   escape character such as {@code \}.
+         * @param escapeChar the character escaping a quote inside a quoted value, or {@code null}
+         *                   for none. Defaults to {@code null}: RFC 4180 escapes a quote by
+         *                   doubling it and has no distinct escape character such as {@code \}.
+         *                   Setting one is independent of {@link #setQuoteChar(char)} — customising
+         *                   the quote character does not introduce an escape character.
          * @return this builder
          */
-        public Builder setEscapeChar(char escapeChar) {
+        public Builder setEscapeChar(Character escapeChar) {
             this.escapeChar = escapeChar;
             return this;
         }

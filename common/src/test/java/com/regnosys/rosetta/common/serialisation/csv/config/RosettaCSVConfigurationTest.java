@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,7 +53,8 @@ public class RosettaCSVConfigurationTest {
         assertEquals(Arrays.asList(""), config.getNullTokens());
         assertEquals(',', config.getDialect().getColumnDelimiter());
         assertEquals('"', config.getDialect().getQuoteChar());
-        assertEquals('"', config.getDialect().getEscapeChar());
+        // null, not the quote character: RFC 4180 has no escape character, only the doubled quote.
+        assertNull(config.getDialect().getEscapeChar());
     }
 
     @Test
@@ -69,7 +71,7 @@ public class RosettaCSVConfigurationTest {
 
         assertEquals(';', config.getDialect().getColumnDelimiter());
         assertEquals('\'', config.getDialect().getQuoteChar());
-        assertEquals('\\', config.getDialect().getEscapeChar());
+        assertEquals(Character.valueOf('\\'), config.getDialect().getEscapeChar());
         assertEquals(HeaderStyle.LABEL, config.getHeaderStyle());
         assertEquals("|", config.getListDelimiter());
         assertEquals(Arrays.asList("", "NULL", "N/A"), config.getNullTokens());
@@ -83,16 +85,19 @@ public class RosettaCSVConfigurationTest {
         assertEquals(RosettaCSVConfiguration.EMPTY, config);
     }
 
+    /**
+     * Header-less CSV is not implemented: nothing on the read or write path honours
+     * {@code hasHeader=false}. It is refused at construction rather than accepted and silently
+     * ignored, so a deployment that needs it finds out at configuration time instead of getting
+     * all-null objects out of a file whose first data row was eaten as a header.
+     */
     @Test
-    void headerlessLabelHeaderStyleThrowsAtConstruction() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> RosettaCSVConfiguration.builder()
-                        .setHeaderStyle(HeaderStyle.LABEL)
-                        .setHasHeader(false)
-                        .build());
+    void hasHeaderFalseIsRefusedAsNotYetImplemented() {
+        UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class,
+                () -> RosettaCSVConfiguration.builder().setHasHeader(false).build());
 
         assertTrue(exception.getMessage().contains("hasHeader"));
-        assertTrue(exception.getMessage().contains("LABEL"));
+        assertTrue(exception.getMessage().contains("not implemented"));
     }
 
     /**
@@ -124,13 +129,13 @@ public class RosettaCSVConfigurationTest {
     }
 
     @Test
-    void loadingSuchAConfigurationFailsWithTheSameCause() {
+    void loadingAHeaderlessConfigurationFailsWithTheSameCause() {
         // Jackson wraps the constructor's exception; the rejection still happens at construction,
         // load() just cannot surface it unwrapped.
         ValueInstantiationException exception = assertThrows(ValueInstantiationException.class,
-                () -> RosettaCSVConfiguration.load(json("{\"hasHeader\": false, \"headerStyle\": \"LABEL\"}")));
+                () -> RosettaCSVConfiguration.load(json("{\"hasHeader\": false}")));
 
-        assertTrue(exception.getCause() instanceof IllegalArgumentException);
+        assertTrue(exception.getCause() instanceof UnsupportedOperationException);
     }
 
     @Test
@@ -158,7 +163,28 @@ public class RosettaCSVConfigurationTest {
         assertEquals(';', CsvDialect.builder().setColumnDelimiter(';').build().getColumnDelimiter());
         // The other two settings are untouched by setting the delimiter.
         assertEquals('"', CsvDialect.builder().setColumnDelimiter(';').build().getQuoteChar());
-        assertEquals('"', CsvDialect.builder().setColumnDelimiter(';').build().getEscapeChar());
+        assertNull(CsvDialect.builder().setColumnDelimiter(';').build().getEscapeChar());
+    }
+
+    /**
+     * The escape character is independent of the quote character. Were it defaulted to the quote
+     * character instead of to {@code null}, customising only {@code quoteChar} would leave it
+     * holding the <i>default</i> quote character — no longer equal to the quote character in force,
+     * so the mapper would configure a real escape character the caller never asked for.
+     */
+    @Test
+    void customisingTheQuoteCharDoesNotIntroduceAnEscapeChar() {
+        CsvDialect dialect = CsvDialect.builder().setQuoteChar('\'').build();
+
+        assertEquals('\'', dialect.getQuoteChar());
+        assertNull(dialect.getEscapeChar());
+    }
+
+    @Test
+    void anEscapeCharCanStillBeSetExplicitly() {
+        assertEquals(Character.valueOf('\\'), CsvDialect.builder().setEscapeChar('\\').build().getEscapeChar());
+        CsvDialect escaped = CsvDialect.builder().setEscapeChar('\\').build();
+        assertNull(escaped.toBuilder().setEscapeChar(null).build().getEscapeChar());
     }
 
     @Test
@@ -166,12 +192,12 @@ public class RosettaCSVConfigurationTest {
         RosettaCSVConfiguration loaded = RosettaCSVConfiguration.load(
                 json("{\"listDelimiter\": \"|\", \"nullTokens\": [\"\", \"NULL\"]}"));
 
-        RosettaCSVConfiguration varied = loaded.toBuilder().setHasHeader(false).build();
+        RosettaCSVConfiguration varied = loaded.toBuilder().setHeaderStyle(HeaderStyle.LABEL).build();
 
-        assertEquals(loaded, varied.toBuilder().setHasHeader(true).build());
+        assertEquals(loaded, varied.toBuilder().setHeaderStyle(HeaderStyle.ATTRIBUTE_NAME).build());
         assertEquals("|", varied.getListDelimiter());
         assertEquals(Arrays.asList("", "NULL"), varied.getNullTokens());
-        assertEquals(false, varied.isHasHeader());
+        assertEquals(HeaderStyle.LABEL, varied.getHeaderStyle());
     }
 
     /**

@@ -49,11 +49,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class RosettaCsvMapper extends CsvMapper  {
     private static final Logger LOGGER = LoggerFactory.getLogger(RosettaCsvMapper.class);
@@ -145,11 +147,21 @@ public class RosettaCsvMapper extends CsvMapper  {
     private <T> T readValueFromContent(String content, Class<T> valueType) throws IOException {
         String normalized = normalizeExtraNullTokens(content);
         if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
+            rejectListElementsCollidingWithANullToken(normalized, valueType, readHeaderLabels(normalized));
             return super.readerFor(valueType).with(defaultSchema).readValue(normalized, valueType);
         }
         List<String> headerLabels = readHeaderLabels(normalized);
         CsvSchema labelReadSchema = buildLabelReadSchema(valueType, headerLabels);
+        rejectListElementsCollidingWithANullToken(normalized, valueType, columnNames(labelReadSchema));
         return super.readerFor(valueType).with(labelReadSchema).readValue(normalized, valueType);
+    }
+
+    private static List<String> columnNames(CsvSchema schema) {
+        List<String> names = new ArrayList<>();
+        for (CsvSchema.Column column : schema) {
+            names.add(column.getName());
+        }
+        return names;
     }
 
     /**
@@ -489,6 +501,113 @@ public class RosettaCsvMapper extends CsvMapper  {
                             path.getElement().getPath(), element, listDelimiter));
                 }
             }
+        }
+
+        @Override
+        public Report report() {
+            return null;
+        }
+    }
+
+    /**
+     * A cell that legitimately contains multiple list elements can produce one that is empty — a
+     * trailing or doubled {@code listDelimiter} (e.g. {@code "a;"} splits to {@code ["a", ""]}) — and
+     * an empty element is, by default configuration, indistinguishable from the configured null
+     * token. Jackson applies the null-token comparison to each split element, not just to the whole
+     * cell (that is how a wholly blank cell already collapses to an absent list rather than a
+     * one-element list holding {@code ""}), so such an element deserialises as a Java {@code null}
+     * inside the list. The generated immutable list rejects a {@code null} element, so left
+     * unchecked this fails several calls deep in a {@code NullPointerException} wrapped by Guava and
+     * then by jackson. Detecting it here up front, scoped to columns actually bound to a
+     * multi-cardinality attribute, turns that into one clear, named exception.
+     *
+     * <p>Skips entirely when there is nothing to collide with — no configured null tokens, or no
+     * multi-cardinality attribute on {@code valueType} — so a type with only scalar attributes pays
+     * no extra parsing pass.</p>
+     */
+    private void rejectListElementsCollidingWithANullToken(String content, Class<?> valueType,
+            List<String> columnAttributeNames) throws IOException {
+        List<String> nullTokens = configuration.getNullTokens();
+        if (nullTokens.isEmpty()) {
+            return;
+        }
+        Set<String> multiValuedAttributes = multiValuedAttributeNames(valueType);
+        if (multiValuedAttributes.isEmpty()) {
+            return;
+        }
+        CsvSchema rawSchema = dialectSchema(CsvSchema.emptySchema());
+        try (MappingIterator<String[]> it = super.readerFor(String[].class)
+                .with(rawSchema)
+                .with(CsvParser.Feature.WRAP_AS_ARRAY)
+                .readValues(content)) {
+            boolean skipHeaderRow = configuration.isHasHeader();
+            while (it.hasNext()) {
+                String[] row = it.nextValue();
+                if (skipHeaderRow) {
+                    skipHeaderRow = false;
+                    continue;
+                }
+                for (int i = 0; i < row.length && i < columnAttributeNames.size(); i++) {
+                    String attribute = columnAttributeNames.get(i);
+                    if (row[i] == null || row[i].isEmpty() || !multiValuedAttributes.contains(attribute)) {
+                        continue;
+                    }
+                    for (String element : row[i].split(Pattern.quote(configuration.getListDelimiter()), -1)) {
+                        if (nullTokens.contains(element)) {
+                            throw new IllegalArgumentException(String.format(
+                                    "Cannot deserialise CSV: attribute '%s' cell '%s' of %s contains a list "
+                                            + "element ('%s') that is indistinguishable from a configured null "
+                                            + "token. Remove the empty element (e.g. a trailing or doubled '%s') "
+                                            + "or reconfigure nullTokens so it does not collide.",
+                                    attribute, row[i], valueType.getName(), element,
+                                    configuration.getListDelimiter()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private Set<String> multiValuedAttributeNames(Class<?> valueType) {
+        if (!RosettaModelObject.class.isAssignableFrom(valueType)) {
+            return Collections.emptySet();
+        }
+        MultiValuedAttributeCollector collector = new MultiValuedAttributeCollector();
+        RosettaModelObject instance = emptyInstance(valueType);
+        instance.process(RosettaPath.valueOf(instance.getType().getSimpleName()), collector);
+        return collector.attributeNames;
+    }
+
+    /**
+     * Collects the attribute names {@code process} visits via its multi-valued overload — the
+     * declaration-order counterpart of {@link DeclarationOrderCollector}, scoped to only the
+     * attributes a CSV list column applies to.
+     */
+    private static final class MultiValuedAttributeCollector implements Processor {
+        private final Set<String> attributeNames = new HashSet<>();
+
+        @Override
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+                R instance, RosettaModelObject parent, AttributeMeta... metas) {
+            return false;
+        }
+
+        @Override
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+                List<? extends R> instance, RosettaModelObject parent, AttributeMeta... metas) {
+            return false;
+        }
+
+        @Override
+        public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance,
+                RosettaModelObject parent, AttributeMeta... metas) {
+            // Single-valued: not a list column, nothing to collect.
+        }
+
+        @Override
+        public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, Collection<? extends T> instance,
+                RosettaModelObject parent, AttributeMeta... metas) {
+            attributeNames.add(path.getElement().getPath());
         }
 
         @Override

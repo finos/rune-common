@@ -110,6 +110,7 @@ public class RosettaCsvMapperTest {
     void testSemicolonDialectRoundTrip() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setDialect(CsvDialect.builder().setColumnDelimiter(';').build())
+                .setListDelimiter("|")
                 .build();
         RosettaCsvMapper csvObjectMapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
         User user = User.builder()
@@ -130,7 +131,7 @@ public class RosettaCsvMapperTest {
 
     @Test
     void testSemicolonDialectLoadedFromInputStreamRoundTrips() throws IOException {
-        String json = "{\"dialect\":{\"columnDelimiter\":\";\"}}";
+        String json = "{\"dialect\":{\"columnDelimiter\":\";\"},\"listDelimiter\":\"|\"}";
         RosettaCsvMapper csvObjectMapper = (RosettaCsvMapper) RosettaObjectMapperCreator
                 .forCSV(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)))
                 .create();

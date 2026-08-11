@@ -95,6 +95,34 @@ public class RosettaCSVConfigurationTest {
         assertTrue(exception.getMessage().contains("LABEL"));
     }
 
+    /**
+     * If the list delimiter and the column delimiter were the same character, a list element and a
+     * column boundary inside the same cell could not be told apart. Design §3.7 lists this as a
+     * configure-time validation on the import side; rejecting it here too closes the runtime case at
+     * the same place every other invalid combination in this class is rejected — construction.
+     */
+    @Test
+    void listDelimiterEqualToColumnDelimiterThrowsAtConstruction() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> RosettaCSVConfiguration.builder()
+                        .setDialect(CsvDialect.builder().setColumnDelimiter(';').build())
+                        .setListDelimiter(";")
+                        .build());
+
+        assertTrue(exception.getMessage().contains("listDelimiter"));
+        assertTrue(exception.getMessage().contains("columnDelimiter"));
+    }
+
+    @Test
+    void defaultListDelimiterDoesNotCollideWithADistinctColumnDelimiter() {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setDialect(CsvDialect.builder().setColumnDelimiter('|').build())
+                .build();
+
+        assertEquals(";", config.getListDelimiter());
+        assertEquals('|', config.getDialect().getColumnDelimiter());
+    }
+
     @Test
     void loadingSuchAConfigurationFailsWithTheSameCause() {
         // Jackson wraps the constructor's exception; the rejection still happens at construction,

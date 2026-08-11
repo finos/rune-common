@@ -105,7 +105,8 @@ public class RosettaCSVConfiguration {
      *                      preference: a CSV file cannot be sniffed for a header — a header row of
      *                      codes looks like a data row — so it has to be declared, and this is where.
      * @throws IllegalArgumentException if {@code hasHeader} is false and {@code headerStyle} is
-     *                                  {@link HeaderStyle#LABEL}
+     *                                  {@link HeaderStyle#LABEL}, or if {@code listDelimiter} is the
+     *                                  same as {@code dialect.columnDelimiter}
      */
     @JsonCreator
     private RosettaCSVConfiguration(
@@ -125,6 +126,13 @@ public class RosettaCSVConfiguration {
             throw new IllegalArgumentException(
                     "Invalid RosettaCSVConfiguration: hasHeader=false is incompatible with headerStyle=LABEL. "
                             + "A label is header text; a file declared to have no header row has nowhere to put one.");
+        }
+        if (this.listDelimiter.equals(String.valueOf(this.dialect.getColumnDelimiter()))) {
+            throw new IllegalArgumentException(
+                    "Invalid RosettaCSVConfiguration: listDelimiter '" + this.listDelimiter + "' is the same as "
+                            + "dialect.columnDelimiter '" + this.dialect.getColumnDelimiter() + "'. A list element "
+                            + "and a column boundary could not be told apart; choose a listDelimiter distinct from "
+                            + "the column delimiter.");
         }
     }
 

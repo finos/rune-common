@@ -28,9 +28,14 @@ import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.rosetta.model.lib.functions.LabelProvider;
 import csv.test.multi.MultiCardinalityAttributes;
+import csv.test.user.User;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -141,12 +146,12 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * The writer must not be able to produce a file this mapper's own reader refuses. An element
-     * that is the empty string joins into a cell with a trailing or doubled list delimiter, which
-     * the read side rejects (see {@code aTrailingListDelimiterIsRejectedAtReadTime…} below) because
-     * jackson reads such an element back as a Java {@code null} that a list attribute cannot hold.
-     * Rejecting it on write too puts the failure at the point the bad value is known — the same
-     * choice already made for an element containing the list delimiter.
+     * The reader drops a list element equal to the canonical null token (see
+     * {@code aTrailingListDelimiterHasItsEmptyElementDropped} below), so the writer must refuse to
+     * emit one: otherwise the value would come back one element shorter, silently, and for a
+     * {@code (1..*)} attribute that is a cardinality violation rather than merely a different string.
+     * Loud on write, forgiving on read — the asymmetry is the point, and the failure lands where the
+     * bad value is known.
      */
     @Test
     void listElementEqualToTheDefaultNullTokenIsRejectedAtWriteTime() {
@@ -160,7 +165,7 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     @Test
-    void listElementEqualToAConfiguredNullTokenIsRejectedAtWriteTime() {
+    void listElementEqualToAConfiguredCanonicalNullTokenIsRejectedAtWriteTime() {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setNullTokens(Collections.singletonList("N/A"))
                 .build();
@@ -171,6 +176,27 @@ public class RosettaCsvMapperListColumnTest {
                 () -> mapper.writeValueAsString(value));
         assertTrue(exception.getMessage().contains("tags"));
         assertTrue(exception.getMessage().contains("N/A"));
+    }
+
+    /**
+     * The write-side check keys off the canonical token alone, exactly as the read side does. An
+     * element equal to a <i>later</i> null token round-trips losslessly — those tokens apply to whole
+     * cells only — so refusing it would reject a value this mapper reads back perfectly. This is the
+     * write half of {@code anElementEqualToANonCanonicalNullTokenIsKept}; the two checks have to stay
+     * narrowed together or one side starts refusing what the other accepts.
+     */
+    @Test
+    void listElementEqualToANonCanonicalNullTokenIsWrittenAndRoundTrips() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Arrays.asList("", "N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        MultiCardinalityAttributes original = withTags("EUR", "N/A");
+
+        String csv = mapper.writeValueAsString(original);
+
+        assertEquals("id,tags\nid1,EUR;N/A\n", csv);
+        assertEquals(original, mapper.readValue(csv, MultiCardinalityAttributes.class));
     }
 
     /**
@@ -342,45 +368,155 @@ public class RosettaCsvMapperListColumnTest {
 
     /**
      * A trailing (or doubled) list delimiter splits into an element that is the empty string —
-     * indistinguishable, under the default {@code nullTokens}, from the token that means "absent".
-     * Jackson applies that null-token comparison per split element as well as to the whole cell (the
-     * mechanism behind the previous test), so left alone this fails five stack frames deep in a
-     * {@code NullPointerException} thrown by Guava's null-rejecting {@code ImmutableList}, wrapped
-     * twice by jackson. There is no producer that means to send an empty tag, so the decision here is
-     * to reject on read, the same choice session 1 made for a list element containing the list
-     * delimiter on write — loud and named, rather than a low-level exception with no attribute or
-     * cell attached, or (the alternative) silently keeping the empty string as a real element.
+     * indistinguishable, under the default {@code nullTokens}, from the token that means "absent". Rune
+     * cannot represent that: {@code empty} is the absence of a value, and for a multi-valued attribute
+     * it means the empty <i>list</i>, never a hole inside one (the generated immutable rejects a
+     * {@code null} element, and {@code MapperC} filters one out as an error item). So an element that
+     * means "absent" is <b>dropped</b> — the direct analogue of the scalar rule that a cell meaning
+     * "absent" makes its attribute absent, and what the Rune serialisation spec §5.2.1 says ingestion
+     * does with a null value.
+     *
+     * <p>This replaces an earlier decision to reject such a cell outright. Rejecting refused files
+     * that carry no ambiguity — a stray trailing delimiter means one value, not two — and was
+     * inconsistent with the scalar path, which loses an empty string silently and without complaint.
      */
     @Test
-    void aTrailingListDelimiterIsRejectedAtReadTimeRatherThanProducingAnUnexplainedFailure() {
+    void aTrailingListDelimiterHasItsEmptyElementDropped() throws IOException {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> mapper.readValue("id,tags\nid1,EUR;\n", MultiCardinalityAttributes.class));
-        assertTrue(exception.getMessage().contains("tags"));
-        assertTrue(exception.getMessage().contains("EUR;"));
+        MultiCardinalityAttributes result = mapper.readValue("id,tags\nid1,EUR;\n", MultiCardinalityAttributes.class);
+
+        assertEquals(withTags("EUR"), result);
     }
 
     /**
-     * The same collision, forced without a trailing delimiter: a doubled delimiter produces an empty
-     * element in the middle of the cell, not just at the end.
+     * The same case forced without a trailing delimiter: a doubled delimiter produces an empty element
+     * in the middle of the cell, not just at the end, and the elements around it keep their order.
      */
     @Test
-    void aDoubledListDelimiterIsRejectedAtReadTime() {
+    void aDoubledListDelimiterHasItsEmptyElementDropped() throws IOException {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> mapper.readValue("id,tags\nid1,EUR;;USD\n", MultiCardinalityAttributes.class));
-        assertTrue(exception.getMessage().contains("tags"));
+        MultiCardinalityAttributes result = mapper.readValue(
+                "id,tags\nid1,EUR;;USD\n", MultiCardinalityAttributes.class);
+
+        assertEquals(withTags("EUR", "USD"), result);
     }
 
     /**
-     * The null-token collision check needs the header row to know which column binds to which
-     * attribute, but it must not read it before deciding whether it has anything to check — and it
+     * A cell of nothing but delimiters loses every element, leaving the attribute absent — the same
+     * value an empty cell gives.
+     */
+    @Test
+    void aCellOfOnlyDelimitersDeserialisesToAnAbsentList() throws IOException {
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+
+        MultiCardinalityAttributes result = mapper.readValue("id,tags\nid1,\";;\"\n", MultiCardinalityAttributes.class);
+
+        assertEquals(MultiCardinalityAttributes.builder().setId("id1").build(), result);
+    }
+
+    /**
+     * Only the <b>canonical</b> null token ({@code nullTokens[0]}) is dropped from a list cell. Tokens
+     * beyond the first are whole-cell only — {@code normalizeExtraNullTokens} substitutes cell by cell
+     * and never looks inside one — so an element equal to a later token is an ordinary string and
+     * reads back intact. Dropping it as well would destroy data that deserialises perfectly, and would
+     * make the same cell's meaning depend on the <i>order</i> of the configured tokens.
+     */
+    @Test
+    void anElementEqualToANonCanonicalNullTokenIsKept() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Arrays.asList("", "N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+
+        MultiCardinalityAttributes result = mapper.readValue(
+                "id,tags\nid1,EUR;N/A\n", MultiCardinalityAttributes.class);
+
+        assertEquals(withTags("EUR", "N/A"), result);
+    }
+
+    /**
+     * The mirror of the previous test: reverse the two tokens so {@code N/A} becomes canonical, and the
+     * very same cell now loses that element. Which token is at index 0 is the whole difference, which
+     * is why both the reader and the writer key off exactly that one.
+     */
+    @Test
+    void anElementEqualToTheCanonicalNullTokenIsDroppedEvenWhenItIsNotEmpty() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Arrays.asList("N/A", ""))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+
+        MultiCardinalityAttributes result = mapper.readValue(
+                "id,tags\nid1,EUR;N/A\n", MultiCardinalityAttributes.class);
+
+        assertEquals(withTags("EUR"), result);
+    }
+
+    /**
+     * A cell holding a single element is the whole-cell case and belongs to the schema's own
+     * null-value handling, so the element-stripping pre-pass must leave it alone: a cell that is
+     * exactly the canonical token still means "absent attribute", not "a list with nothing dropped
+     * from it". Uses a non-empty canonical token, the configuration where the two paths would produce
+     * visibly different bytes.
+     */
+    @Test
+    void aWholeCellEqualToTheCanonicalNullTokenStillMeansAnAbsentList() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Collections.singletonList("N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+
+        MultiCardinalityAttributes result = mapper.readValue(
+                "id,tags\nid1,N/A\n", MultiCardinalityAttributes.class);
+
+        assertEquals(MultiCardinalityAttributes.builder().setId("id1").build(), result);
+    }
+
+    /**
+     * {@code readValue(URL, …)} hands the document straight to jackson when nothing needs the whole
+     * file up front. The element-stripping pre-pass does need it, for a type with a list attribute and
+     * at least one null token configured — so that path has to stop streaming, or the cell reaches
+     * jackson unstripped and fails inside Guava's null-rejecting {@code ImmutableList} instead. A
+     * behaviour that differs between the {@code String} and {@code URL} overloads of the same read is
+     * the kind of gap only a test at the boundary catches.
+     */
+    @Test
+    void aTrailingListDelimiterIsAlsoStrippedWhenReadFromAUrl(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("tags.csv");
+        Files.write(file, "id,tags\nid1,EUR;\n".getBytes(StandardCharsets.UTF_8));
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+
+        MultiCardinalityAttributes result = mapper.readValue(file.toUri().toURL(), MultiCardinalityAttributes.class);
+
+        assertEquals(withTags("EUR"), result);
+    }
+
+    /**
+     * A type of scalars only keeps streaming — the pre-pass has nothing to strip without a list
+     * attribute, so the {@code URL} overload must not start buffering for it.
+     */
+    @Test
+    void aTypeWithNoListAttributeStillReadsFromAUrl(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("user.csv");
+        Files.write(file, "username,identifier,firstName,lastName\nuser1,id1,First1,Last1\n"
+                .getBytes(StandardCharsets.UTF_8));
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+
+        User result = mapper.readValue(file.toUri().toURL(), User.class);
+
+        assertEquals("user1", result.getUsername());
+        assertEquals("Last1", result.getLastName());
+    }
+
+    /**
+     * The element-stripping pre-pass needs the header row to know which column binds to which
+     * attribute, but it must not read it before deciding whether it has anything to strip — and it
      * must not turn an empty document into a labelled-CSV error on a read that is not labelled.
      * Empty content on the plain path therefore surfaces jackson's own failure ({@code
-     * CsvReadException: Empty header line}), for a type with a list attribute (the check runs and
-     * finds no rows) as much as for one without (the check returns before reading anything).
+     * CsvReadException: Empty header line}), for a type with a list attribute (the pre-pass runs and
+     * finds no rows) as much as for one without (the pre-pass returns before reading anything).
      */
     @Test
     void emptyContentOnThePlainPathReportsAJacksonErrorRatherThanAMissingLabelHeader() {

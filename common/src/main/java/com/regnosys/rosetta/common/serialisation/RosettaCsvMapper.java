@@ -144,7 +144,7 @@ public class RosettaCsvMapper extends CsvMapper  {
      * <p>Takes {@code valueType} rather than reading the configuration alone because the third
      * condition is a property of the type, not of the configuration. Getting this wrong is not a
      * performance question: the streaming path skips
-     * {@link #stripListElementsMatchingTheCanonicalNullToken}, so a list cell that needs stripping
+     * {@link #stripListElementsMeaningAbsent}, so a list cell that needs stripping
      * would instead reach jackson intact and fail deep inside Guava's null-rejecting
      * {@code ImmutableList}.</p>
      */
@@ -160,7 +160,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
             // No column names to hand over: the header row of a non-LABEL file holds attribute names
             // already, so the pre-pass reads them itself — and only if it has anything to strip.
-            normalized = stripListElementsMatchingTheCanonicalNullToken(normalized, valueType, null);
+            normalized = stripListElementsMeaningAbsent(normalized, valueType, null);
             return super.readerFor(valueType).with(defaultSchema).readValue(normalized, valueType);
         }
         List<String> headerLabels = readHeaderLabels(normalized);
@@ -168,7 +168,7 @@ public class RosettaCsvMapper extends CsvMapper  {
             throw new IllegalStateException("Cannot deserialise labelled CSV: missing header row");
         }
         CsvSchema labelReadSchema = buildLabelReadSchema(valueType, headerLabels);
-        normalized = stripListElementsMatchingTheCanonicalNullToken(
+        normalized = stripListElementsMeaningAbsent(
                 normalized, valueType, columnNames(labelReadSchema));
         return super.readerFor(valueType).with(labelReadSchema).readValue(normalized, valueType);
     }
@@ -441,26 +441,19 @@ public class RosettaCsvMapper extends CsvMapper  {
      *       no escape for it (RFC 4180 quoting is a cell-level concern, already consumed by the time
      *       the cell is split on this delimiter), so a two-element list containing it would be
      *       silently written and read back as three; and</li>
-     *   <li>an element <b>equal to the canonical null token</b> ({@code nullTokens.get(0)}) — most
-     *       commonly the empty string under the default {@code nullTokens=[""]}. Written out, such an
-     *       element is indistinguishable from one meaning "absent", and
-     *       {@link #stripListElementsMatchingTheCanonicalNullToken} drops those on read. Refusing it
-     *       here is what stops the writer silently shortening a list: the value would come back with
-     *       one element fewer, which for a {@code (1..*)} attribute is a cardinality violation rather
-     *       than a merely different string.</li>
+     *   <li>an element <b>equal to any configured null token</b> — most commonly the empty string under
+     *       the default {@code nullTokens=[""]}. Written out, such an element is indistinguishable from
+     *       one meaning "absent", and {@link #stripListElementsMeaningAbsent} drops those on read.
+     *       Refusing it here is what stops the writer silently shortening a list: the value would come
+     *       back with one element fewer, which for a {@code (1..*)} attribute is a cardinality violation
+     *       rather than a merely different string.</li>
      * </ul>
      *
-     * <p>Only the canonical token is checked, because only it is stripped on read. An element equal to
-     * a <em>later</em> null token round-trips losslessly — those tokens apply to whole cells only —
-     * so refusing it would reject a value this mapper reads back perfectly.</p>
-     *
-     * <p>The second check is deliberately the exact counterpart of
-     * {@link #stripListElementsMatchingTheCanonicalNullToken}: the writer refuses to emit precisely
-     * the elements the reader would drop, so the reader never silently loses data this writer
-     * produced. <b>The two must be changed together.</b> Note the asymmetry is intended — loud on
-     * write, forgiving on read — which is the robustness principle the Rune serialisation spec §5.3
-     * states, and no worse than the scalar case, where an empty-string value written under the default
-     * configuration already comes back absent with no error at all.</p>
+     * <p>The second check is the exact counterpart of {@link #stripListElementsMeaningAbsent} —
+     * <b>the same set of tokens</b>, so the writer refuses to emit precisely the elements the reader
+     * would drop and the reader never silently loses data this writer produced. <b>The two must be
+     * changed together</b>; narrowing either alone breaks the pairing in one direction or the other.
+     * The asymmetry between them is intended: loud on write, forgiving on read.</p>
      *
      * <p>Only {@link RosettaModelObject} values are checked — a plain POJO (as
      * {@link #schemaInDeclarationOrder(Object)} already accommodates) has no {@code process} visitor
@@ -473,10 +466,9 @@ public class RosettaCsvMapper extends CsvMapper  {
             return;
         }
         RosettaModelObject instance = (RosettaModelObject) value;
-        List<String> nullTokens = configuration.getNullTokens();
         instance.process(RosettaPath.valueOf(instance.getType().getSimpleName()),
                 new ListElementCollisionDetector(configuration.getListDelimiter(),
-                        nullTokens.isEmpty() ? null : nullTokens.get(0)));
+                        new HashSet<>(configuration.getNullTokens())));
     }
 
     /**
@@ -525,15 +517,16 @@ public class RosettaCsvMapper extends CsvMapper  {
      */
     private static final class ListElementCollisionDetector implements Processor {
         private final String listDelimiter;
-        private final String canonicalNullToken;
+        private final Set<String> absentTokens;
 
         /**
-         * @param canonicalNullToken {@code nullTokens.get(0)}, or {@code null} when no null token is
-         *                           configured and so no element text can mean "absent"
+         * @param absentTokens every configured null token — the exact set
+         *                     {@link #stripListElementsMeaningAbsent} drops on read. Empty when none
+         *                     is configured, in which case no element text can mean "absent"
          */
-        private ListElementCollisionDetector(String listDelimiter, String canonicalNullToken) {
+        private ListElementCollisionDetector(String listDelimiter, Set<String> absentTokens) {
             this.listDelimiter = listDelimiter;
-            this.canonicalNullToken = canonicalNullToken;
+            this.absentTokens = absentTokens;
         }
 
         @Override
@@ -574,13 +567,12 @@ public class RosettaCsvMapper extends CsvMapper  {
                                     + "either change the value or configure a listDelimiter that cannot occur in it.",
                             path.getElement().getPath(), element, listDelimiter));
                 }
-                if (text.equals(canonicalNullToken)) {
+                if (absentTokens.contains(text)) {
                     throw new IllegalArgumentException(String.format(
-                            "Cannot serialise attribute '%s' to CSV: element '%s' is the canonical null token "
-                                    + "(nullTokens[0]), so it would be written as a list element indistinguishable "
-                                    + "from an absent value and dropped when read back, silently shortening the "
-                                    + "list. Either change the value or reconfigure nullTokens so it does not "
-                                    + "collide.",
+                            "Cannot serialise attribute '%s' to CSV: element '%s' is a configured null token, so it "
+                                    + "would be written as a list element indistinguishable from an absent value and "
+                                    + "dropped when read back, silently shortening the list. Either change the value "
+                                    + "or reconfigure nullTokens so it does not collide.",
                             path.getElement().getPath(), text));
                 }
             }
@@ -593,42 +585,29 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Removes, from every cell bound to a multi-cardinality attribute, each list element equal to the
-     * canonical null token — so {@code "EUR;"} reads as {@code [EUR]} and {@code "EUR;;USD"} as
+     * Removes, from every cell bound to a multi-cardinality attribute, each list element equal to a
+     * configured null token — so {@code "EUR;"} reads as {@code [EUR]} and {@code "EUR;;USD"} as
      * {@code [EUR, USD]}.
      *
-     * <p><b>Why an element that means "absent" is dropped rather than kept or rejected.</b> A cell
-     * legitimately holding several elements can produce an empty one from a trailing or doubled
-     * {@code listDelimiter}, and under the default {@code nullTokens=[""]} an empty element is
-     * indistinguishable from the token meaning "absent". Rune has no way to represent that: {@code
-     * empty} is the absence of a value, and for a multi-valued attribute it means the empty
-     * <em>list</em>, never a hole within one. The generated immutable rejects a {@code null} element
-     * outright ({@code ImmutableList.copyOf}), and the language layer never surfaces one either —
-     * {@code MapperC.of(List)} marks it an error item and {@code getMulti()} filters those out.
-     * Dropping it here is therefore the same rule the rest of the stack already applies, and the
-     * direct analogue of the scalar case: a cell that means "absent" makes its attribute absent, so
-     * an element that means "absent" makes its element absent. It matches the Rune serialisation
-     * spec §5.2.1 ("when a null value is encountered it will be ignored") and the generated
-     * {@code addTags(String)} adder, which silently drops a {@code null}.</p>
+     * <p>An element meaning "absent" is nothing. Rune has no representation for a hole inside a list —
+     * the generated immutable rejects a {@code null} element outright — so dropping it applies the
+     * whole-cell rule one level down: a cell meaning "absent" makes its attribute absent, so an element
+     * meaning "absent" makes its element absent.</p>
      *
-     * <p><b>Only the canonical null token</b> — {@code nullTokens.get(0)}, the one
-     * {@link #dialectSchema} stamps onto the schema — is stripped. Tokens beyond the first apply to
-     * <b>whole cells only</b>: {@link #normalizeExtraNullTokens} substitutes them cell by cell and
-     * never looks inside one, so an element equal to a later token is an ordinary string and reading
-     * it back is lossless. Widening this to every token would destroy data that reads correctly: with
-     * {@code nullTokens=["", "N/A"]} the cell {@code "EUR;N/A"} deserialises to {@code [EUR, N/A]}.</p>
+     * <p>Every configured token is stripped, not only the one {@link #dialectSchema} stamps onto the
+     * schema. {@code nullTokens} declares a set of synonyms for "absent", so which one a producer wrote
+     * cannot change what a cell means; keying off a single entry would make the same file deserialise
+     * differently depending on the order the tokens happened to be configured in.</p>
      *
-     * <p>A cell that splits into a <b>single</b> element is left untouched, whatever its text. That is
-     * the whole-cell case, which belongs to the schema's own null-value handling — stripping it here
-     * would turn a cell meaning "absent list" into an empty cell meaning the same thing by a longer
-     * route, and for a non-empty canonical token it would change the bytes jackson sees.</p>
+     * <p>A cell that splits into a <b>single</b> element is left untouched: that is the whole-cell case,
+     * which belongs to the schema's own null-value handling. A cell whose <em>every</em> element is
+     * stripped becomes empty, which reads back as an absent list under any configuration.</p>
      *
-     * <p>Skips entirely when there is nothing to strip — no configured null tokens, or no
-     * multi-cardinality attribute on {@code valueType} — so a type with only scalar attributes pays
-     * no extra parsing pass, and returns {@code content} unchanged (not a re-rendered copy of it)
-     * when no cell actually needed stripping. Both guards run <b>before</b> the header row is read,
-     * which is why the header is read here rather than passed in by the plain-path caller: an
-     * argument would be evaluated first and the guards would no longer be able to prevent the work.</p>
+     * <p>Skips entirely — returning {@code content} itself rather than a re-rendered copy — when no
+     * null token is configured, when {@code valueType} has no multi-cardinality attribute, or when no
+     * cell needed stripping. The first two guards run <b>before</b> the header row is read, which is
+     * why the header is read here rather than passed in by the plain-path caller: an argument would be
+     * evaluated first and the guards could no longer prevent the work.</p>
      *
      * @param columnAttributeNames the attribute each column binds to, in column order, or
      *                             {@code null} to read them from the header row. The labelled path
@@ -637,7 +616,7 @@ public class RosettaCsvMapper extends CsvMapper  {
      *                             path passes {@code null}, its header being attribute names already
      * @return {@code content} with those elements removed, or {@code content} itself if none were
      */
-    private String stripListElementsMatchingTheCanonicalNullToken(String content, Class<?> valueType,
+    private String stripListElementsMeaningAbsent(String content, Class<?> valueType,
             List<String> columnAttributeNames) throws IOException {
         List<String> nullTokens = configuration.getNullTokens();
         if (nullTokens.isEmpty()) {
@@ -648,6 +627,7 @@ public class RosettaCsvMapper extends CsvMapper  {
             return content;
         }
         String canonicalNullToken = nullTokens.get(0);
+        Set<String> absentTokens = new HashSet<>(nullTokens);
         List<String> columns = columnAttributeNames != null ? columnAttributeNames : readHeaderLabels(content);
         CsvSchema rawSchema = dialectSchema(CsvSchema.emptySchema());
         List<String[]> rows = new ArrayList<>();
@@ -671,7 +651,7 @@ public class RosettaCsvMapper extends CsvMapper  {
                     if (isHeaderRow || i >= columns.size() || !multiValuedAttributes.contains(columns.get(i))) {
                         continue;
                     }
-                    String cell = withoutElementsMatching(row[i], canonicalNullToken);
+                    String cell = withoutElementsMatching(row[i], absentTokens);
                     if (!cell.equals(row[i])) {
                         row[i] = cell;
                         stripped = true;
@@ -694,11 +674,11 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * {@code cell} with every list element equal to {@code canonicalNullToken} removed, or {@code cell}
+     * {@code cell} with every list element belonging to {@code absentTokens} removed, or {@code cell}
      * itself if it holds a single element or none matched. A cell whose every element matched becomes
      * the empty string, which reads back as an absent list — the same value an empty cell gives.
      */
-    private String withoutElementsMatching(String cell, String canonicalNullToken) {
+    private String withoutElementsMatching(String cell, Set<String> absentTokens) {
         String listDelimiter = configuration.getListDelimiter();
         String[] elements = cell.split(Pattern.quote(listDelimiter), -1);
         if (elements.length < 2) {
@@ -706,7 +686,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         }
         List<String> kept = new ArrayList<>(elements.length);
         for (String element : elements) {
-            if (!element.equals(canonicalNullToken)) {
+            if (!absentTokens.contains(element)) {
                 kept.add(element);
             }
         }

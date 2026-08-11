@@ -47,21 +47,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Write-side tests (TASK-9540 session 1; see {@code csv-single-delimited-column-lists.md} §4.1) and
- * read-side / round-trip tests (session 2; §4.2) for a multi-cardinality simple attribute serialising
- * into a single delimited CSV column.
+ * Write-side, read-side and round-trip tests for a multi-cardinality simple attribute serialising into
+ * a single delimited CSV column.
  *
  * <p>{@code MultiCardinalityAttributes} ({@code csv.test.multi}) declares {@code id (1..1)} then
  * {@code tags (0..*)}, so column order alone would catch a delimiter wired to the wrong schema.
  *
- * <p>The read mechanism needs no extra wiring beyond what session 1 already put in place: every
- * schema this class builds — read or write, plain, labelled or positional-fallback — passes through
- * the same {@code dialectSchema} helper, which stamps {@code listDelimiter} on as the schema-wide
- * array-element separator. On read, jackson-dataformat-csv's {@code CsvParser.isExpectedStartArrayToken()}
- * then coerces an untyped (STRING) column's cell into array elements whenever the target bean
- * property is a {@code Collection}, independently of the column's declared type — the read-side twin
- * of the write-side finding in session 1 that the separator applies per schema, not per column.
- * Measured directly against this mapper, not inferred from the jackson source.
+ * <p>Both directions run off one mechanism: every schema this mapper builds — read or write, plain,
+ * labelled or positional-fallback — passes through {@code dialectSchema}, which stamps
+ * {@code listDelimiter} on as the schema-wide array-element separator. On write, jackson's
+ * {@code CsvGenerator} recognises a multi-valued property from the {@code writeStartArray()} calls the
+ * bean serialiser makes and joins with that separator; on read,
+ * {@code CsvParser.isExpectedStartArrayToken()} splits an untyped (STRING) column's cell into elements
+ * whenever the target bean property is a {@code Collection}. Both are independent of the column's
+ * declared type, and both were measured directly against this mapper rather than inferred from the
+ * jackson source.
  */
 public class RosettaCsvMapperListColumnTest {
 
@@ -146,7 +146,7 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * The reader drops a list element equal to the canonical null token (see
+     * The reader drops a list element equal to a null token (see
      * {@code aTrailingListDelimiterHasItsEmptyElementDropped} below), so the writer must refuse to
      * emit one: otherwise the value would come back one element shorter, silently, and for a
      * {@code (1..*)} attribute that is a cardinality violation rather than merely a different string.
@@ -165,7 +165,7 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     @Test
-    void listElementEqualToAConfiguredCanonicalNullTokenIsRejectedAtWriteTime() {
+    void listElementEqualToAConfiguredNullTokenIsRejectedAtWriteTime() {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setNullTokens(Collections.singletonList("N/A"))
                 .build();
@@ -179,24 +179,23 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * The write-side check keys off the canonical token alone, exactly as the read side does. An
-     * element equal to a <i>later</i> null token round-trips losslessly — those tokens apply to whole
-     * cells only — so refusing it would reject a value this mapper reads back perfectly. This is the
-     * write half of {@code anElementEqualToANonCanonicalNullTokenIsKept}; the two checks have to stay
-     * narrowed together or one side starts refusing what the other accepts.
+     * The write-side check covers the same token set the read side strips, including a token that is not
+     * the one the schema carries. This is the write half of
+     * {@code anElementEqualToANonEmptyNullTokenIsDropped}: were it narrowed to {@code nullTokens[0]},
+     * the writer would emit {@code EUR;N/A} and the reader would hand back {@code [EUR]}.
      */
     @Test
-    void listElementEqualToANonCanonicalNullTokenIsWrittenAndRoundTrips() throws IOException {
+    void listElementEqualToANonCanonicalNullTokenIsAlsoRejectedAtWriteTime() {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setNullTokens(Arrays.asList("", "N/A"))
                 .build();
         RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
-        MultiCardinalityAttributes original = withTags("EUR", "N/A");
+        MultiCardinalityAttributes value = withTags("EUR", "N/A");
 
-        String csv = mapper.writeValueAsString(original);
-
-        assertEquals("id,tags\nid1,EUR;N/A\n", csv);
-        assertEquals(original, mapper.readValue(csv, MultiCardinalityAttributes.class));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> mapper.writeValueAsString(value));
+        assertTrue(exception.getMessage().contains("tags"));
+        assertTrue(exception.getMessage().contains("N/A"));
     }
 
     /**
@@ -315,13 +314,11 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * Measured (see {@code csv-single-delimited-column-lists.md} §3): a wholly empty cell matches the
-     * default null token before array-splitting is even considered, so the property comes back
-     * {@code null} rather than a one-element list holding {@code ""}. This is not distinguishable from
-     * "empty list" for a Rosetta model object anyway — session 1 established that the generated
-     * immutable object already collapses an empty list and an absent one to the same {@code null}
-     * {@code getTags()} — so asserting equality against the absent-list object is the whole story,
-     * not a gap.
+     * A wholly empty cell matches the default null token before array-splitting is even considered, so
+     * the property comes back {@code null} rather than a one-element list holding {@code ""}. That is
+     * indistinguishable from "empty list" for a Rosetta model object regardless: the generated immutable
+     * collapses an empty list and an absent one to the same {@code null} {@code getTags()}, so asserting
+     * equality against the absent-list object is the whole story, not a gap.
      */
     @Test
     void anEmptyCellDeserialisesToTheSameValueAsAnAbsentList() throws IOException {
@@ -338,8 +335,8 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * {@code TRIM_SPACES} is off and nothing in this mapper turns it on (§3 of the plan) — a
-     * deliberate default, not an oversight, so it gets a regression test rather than silent drift.
+     * {@code TRIM_SPACES} is off and nothing in this mapper turns it on — a deliberate default, not an
+     * oversight, so it gets a regression test rather than silent drift.
      */
     @Test
     void elementWhitespaceIsPreserved() throws IOException {
@@ -373,12 +370,7 @@ public class RosettaCsvMapperListColumnTest {
      * it means the empty <i>list</i>, never a hole inside one (the generated immutable rejects a
      * {@code null} element, and {@code MapperC} filters one out as an error item). So an element that
      * means "absent" is <b>dropped</b> — the direct analogue of the scalar rule that a cell meaning
-     * "absent" makes its attribute absent, and what the Rune serialisation spec §5.2.1 says ingestion
-     * does with a null value.
-     *
-     * <p>This replaces an earlier decision to reject such a cell outright. Rejecting refused files
-     * that carry no ambiguity — a stray trailing delimiter means one value, not two — and was
-     * inconsistent with the scalar path, which loses an empty string silently and without complaint.
+     * "absent" makes its attribute absent.
      */
     @Test
     void aTrailingListDelimiterHasItsEmptyElementDropped() throws IOException {
@@ -417,14 +409,13 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * Only the <b>canonical</b> null token ({@code nullTokens[0]}) is dropped from a list cell. Tokens
-     * beyond the first are whole-cell only — {@code normalizeExtraNullTokens} substitutes cell by cell
-     * and never looks inside one — so an element equal to a later token is an ordinary string and
-     * reads back intact. Dropping it as well would destroy data that deserialises perfectly, and would
-     * make the same cell's meaning depend on the <i>order</i> of the configured tokens.
+     * <b>Every</b> configured null token is dropped from a list cell, not only the one the schema
+     * carries. {@code nullTokens} declares synonyms for "absent", so which one a producer wrote cannot
+     * change what the cell means — a non-empty token inside a list cell means absent exactly as the
+     * empty one does.
      */
     @Test
-    void anElementEqualToANonCanonicalNullTokenIsKept() throws IOException {
+    void anElementEqualToANonEmptyNullTokenIsDropped() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setNullTokens(Arrays.asList("", "N/A"))
                 .build();
@@ -433,16 +424,18 @@ public class RosettaCsvMapperListColumnTest {
         MultiCardinalityAttributes result = mapper.readValue(
                 "id,tags\nid1,EUR;N/A\n", MultiCardinalityAttributes.class);
 
-        assertEquals(withTags("EUR", "N/A"), result);
+        assertEquals(withTags("EUR"), result);
     }
 
     /**
-     * The mirror of the previous test: reverse the two tokens so {@code N/A} becomes canonical, and the
-     * very same cell now loses that element. Which token is at index 0 is the whole difference, which
-     * is why both the reader and the writer key off exactly that one.
+     * The same file, the same two tokens, the other configuration order — and the same result. Only one
+     * null token can reach the schema ({@code CsvSchema} has a single null-value slot, filled from
+     * {@code nullTokens[0]}), so a rule keyed on that entry alone would make this cell mean
+     * {@code [EUR, N/A]} here and {@code [EUR]} in the previous test. Index 0 is a mechanical detail of
+     * jackson, not a difference in meaning, and this pair is what holds the two apart.
      */
     @Test
-    void anElementEqualToTheCanonicalNullTokenIsDroppedEvenWhenItIsNotEmpty() throws IOException {
+    void tokenOrderDoesNotChangeWhatAListCellMeans() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setNullTokens(Arrays.asList("N/A", ""))
                 .build();
@@ -455,14 +448,31 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * A cell holding a single element is the whole-cell case and belongs to the schema's own
-     * null-value handling, so the element-stripping pre-pass must leave it alone: a cell that is
-     * exactly the canonical token still means "absent attribute", not "a list with nothing dropped
-     * from it". Uses a non-empty canonical token, the configuration where the two paths would produce
-     * visibly different bytes.
+     * A list cell whose every element is a null token leaves the attribute absent — the same value an
+     * empty cell gives. Uses a non-empty canonical token, so the stripped cell is genuinely empty
+     * rather than merely unchanged.
      */
     @Test
-    void aWholeCellEqualToTheCanonicalNullTokenStillMeansAnAbsentList() throws IOException {
+    void aListCellOfOnlyNullTokensDeserialisesToAnAbsentList() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullTokens(Collections.singletonList("N/A"))
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+
+        MultiCardinalityAttributes result = mapper.readValue(
+                "id,tags\nid1,N/A;N/A\n", MultiCardinalityAttributes.class);
+
+        assertEquals(MultiCardinalityAttributes.builder().setId("id1").build(), result);
+    }
+
+    /**
+     * A cell holding a single element is the whole-cell case and belongs to the schema's own null-value
+     * handling, so the element-stripping pre-pass must leave it alone: a cell that is exactly a null
+     * token still means "absent attribute". Uses a non-empty token, the configuration where stripping it
+     * here instead would change the bytes jackson sees.
+     */
+    @Test
+    void aWholeCellEqualToANullTokenStillMeansAnAbsentList() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setNullTokens(Collections.singletonList("N/A"))
                 .build();

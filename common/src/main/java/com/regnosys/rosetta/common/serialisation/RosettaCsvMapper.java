@@ -282,16 +282,21 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Stamps the configured {@link CsvDialect} (column separator, quote character, escape character)
-     * and the canonical null token onto a schema this class produces. Every schema built anywhere in
-     * this class must be passed through here — a call site that forgets produces a mapper that reads
-     * and writes differently.
+     * Stamps the configured {@link CsvDialect} (column separator, quote character, escape character),
+     * the canonical null token, and the list delimiter onto a schema this class produces. Every schema
+     * built anywhere in this class must be passed through here — a call site that forgets produces a
+     * mapper that reads and writes differently.
      */
     private CsvSchema dialectSchema(CsvSchema schema) {
         CsvDialect dialect = configuration.getDialect();
         CsvSchema.Builder builder = schema.rebuild()
                 .setColumnSeparator(dialect.getColumnDelimiter())
-                .setQuoteChar(dialect.getQuoteChar());
+                .setQuoteChar(dialect.getQuoteChar())
+                // Applies schema-wide rather than per column: jackson's CsvGenerator recognises a
+                // multi-valued property by the writeStartArray()/writeEndArray() calls its own bean
+                // serialiser makes, regardless of the column's declared ColumnType, and always
+                // consults this one schema-level separator to join the elements into the cell.
+                .setArrayElementSeparator(configuration.getListDelimiter());
         if (dialect.getEscapeChar() == dialect.getQuoteChar()) {
             // RFC 4180 has no distinct escape character, only the doubled quote: see CsvDialect's
             // javadoc. Translating that into CsvSchema means no explicit escape character at all.
@@ -378,6 +383,27 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
+     * A list element containing the configured list delimiter cannot round-trip: jackson's array
+     * handling has no escape for it (RFC 4180 quoting is a cell-level concern, already consumed by
+     * the time the cell is split on this delimiter), so a two-element list containing it would be
+     * silently written and read back as three. Rejecting it here, at the point the bad value is
+     * known, turns that corruption into a loud failure instead. Only {@link RosettaModelObject}
+     * values are checked — a plain POJO (as {@link #schemaInDeclarationOrder(Object)} already
+     * accommodates) has no {@code process} visitor to walk.
+     *
+     * @throws IllegalArgumentException naming the attribute and the offending value
+     */
+    private void rejectListElementsContainingTheListDelimiter(Object value) {
+        if (!(value instanceof RosettaModelObject)) {
+            return;
+        }
+        String listDelimiter = configuration.getListDelimiter();
+        RosettaModelObject instance = (RosettaModelObject) value;
+        instance.process(RosettaPath.valueOf(instance.getType().getSimpleName()),
+                new ListDelimiterCollisionDetector(listDelimiter));
+    }
+
+    /**
      * Collects the attribute names {@code process} visits, in visitation (declaration) order. Tabular
      * CSV types have only simple attributes, so {@code processRosetta} is never expected to fire; it
      * declines to recurse rather than silently omitting a complex attribute from the order.
@@ -415,6 +441,62 @@ public class RosettaCsvMapper extends CsvMapper  {
         }
     }
 
+    /**
+     * Walks a value's simple attributes looking for a multi-valued one whose element text contains
+     * the configured list delimiter, throwing as soon as it finds one. Declines to recurse into a
+     * complex attribute for the same reason {@link DeclarationOrderCollector} does: tabular CSV
+     * types have none.
+     */
+    private static final class ListDelimiterCollisionDetector implements Processor {
+        private final String listDelimiter;
+
+        private ListDelimiterCollisionDetector(String listDelimiter) {
+            this.listDelimiter = listDelimiter;
+        }
+
+        @Override
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+                R instance, RosettaModelObject parent, AttributeMeta... metas) {
+            return false;
+        }
+
+        @Override
+        public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
+                List<? extends R> instance, RosettaModelObject parent, AttributeMeta... metas) {
+            return false;
+        }
+
+        @Override
+        public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance,
+                RosettaModelObject parent, AttributeMeta... metas) {
+            // A single-valued attribute serialises to one whole cell; the list delimiter has no
+            // special meaning there, so there is nothing to reject.
+        }
+
+        @Override
+        public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, Collection<? extends T> instance,
+                RosettaModelObject parent, AttributeMeta... metas) {
+            if (instance == null) {
+                return;
+            }
+            for (T element : instance) {
+                if (element != null && String.valueOf(element).contains(listDelimiter)) {
+                    throw new IllegalArgumentException(String.format(
+                            "Cannot serialise attribute '%s' to CSV: element '%s' contains the configured list "
+                                    + "delimiter '%s'. A list element containing the list delimiter cannot "
+                                    + "round-trip — there is no escape for a delimiter inside a list element — so "
+                                    + "either change the value or configure a listDelimiter that cannot occur in it.",
+                            path.getElement().getPath(), element, listDelimiter));
+                }
+            }
+        }
+
+        @Override
+        public Report report() {
+            return null;
+        }
+    }
+
     //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
     @Override
     public String writeValueAsString(Object value) throws JsonProcessingException {
@@ -442,6 +524,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
         @Override
         public String writeValueAsString(Object value) throws JsonProcessingException {
+            mapper.rejectListElementsContainingTheListDelimiter(value);
             CsvSchema schemaInOrder = mapper.schemaInDeclarationOrder(value);
             if (mapper.configuration.getHeaderStyle() != HeaderStyle.LABEL) {
                 CsvSchema schema = mapper.dialectSchema(schemaInOrder.withHeader());

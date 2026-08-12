@@ -73,11 +73,18 @@ import java.util.function.Supplier;
  * {@link #csvLabelledMapper(String, Class, TransformRoot)} and {@link #xmlMapper(String, Class)}. Below
  * those: {@link #resolveLabelProvider(Class, TransformRoot)} for label resolution,
  * {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} for the config lookups,
- * and {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader. The two
- * deprecated single-{@code Class} overloads, {@link #csvLabelledMapper(Class)} and
- * {@link #resolveLabelProvider(Class)}, are still consulted, but only where the caller supplied no
- * {@link TransformRoot} — a supplied root outranks both. Both are deprecated since 12.10.0 and will
- * be removed in the next major version; prefer the two-argument forms in new code and new overrides.
+ * and {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader.
+ * <p>
+ * Three narrower overloads predate the parameters above and are <b>deprecated since 12.10.0, for removal
+ * in the next major version</b>. Each is still consulted, but only for the case it was written for, so an
+ * existing override keeps deciding that case rather than compiling, running and being silently ignored:
+ * <ul>
+ *   <li>{@link #csvLabelledMapper(Class)} and {@link #resolveLabelProvider(Class)} — only where the
+ *       caller supplied no {@link TransformRoot}. A supplied root outranks both.</li>
+ *   <li>{@link #csvMapper()} — only where the transform declares no {@code configPath}. A declared
+ *       config path outranks it.</li>
+ * </ul>
+ * Prefer the wider forms in new code and new overrides.
  * <p>
  * <b>Supplying a CSV configuration at deployment time.</b> A deployment that must change the CSV dialect
  * — a client whose files are semicolon-delimited, say — without rebuilding the model overrides
@@ -153,9 +160,37 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * Mirrors {@link #xmlMapper(String, Class)}: no config path means a bare {@code [ingest CSV]} with
      * no schema/config, so an empty CSV configuration is used; otherwise the config is read via
      * {@link #openCsvConfig(String, Class)}.
+     * <p>
+     * The no-config-path case is delegated to the deprecated no-argument {@link #csvMapper()} rather
+     * than reimplemented here, for the same reason {@link #csvLabelledMapper(String, Class, TransformRoot)}
+     * delegates to {@link #csvLabelledMapper(Class)}: that overload is the released extension point for
+     * exactly this case, so a subclass that already overrides it keeps deciding the case it was written
+     * for, instead of compiling, running and being silently ignored. There is no dropped configuration to
+     * report on that path — it is reached only when there is no config path to drop.
      */
     protected ObjectMapper csvMapper(String configPath, Class<?> functionClass) {
+        if (configPath == null || configPath.isEmpty()) {
+            return csvMapper();
+        }
         return forCsv(configPath, functionClass, null).create();
+    }
+
+    /**
+     * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
+     *         {@link #csvMapper(String, Class)}, which is told the transform's {@code configPath} and
+     *         so can honour a CSV configuration. Kept, and still called whenever the transform declares
+     *         no config path, so a subclass that already overrides this overload keeps deciding that
+     *         case — the RFC 4180 defaults, with no configuration read. What it can no longer do is
+     *         answer for a transform that did declare a config path; override
+     *         {@link #csvMapper(String, Class)} to influence that.
+     *         <p>
+     *         Deprecated with javadoc rather than {@code @Deprecated(forRemoval = true, since = "...")}
+     *         because this module compiles at {@code maven.compiler.release=8} and those attributes are
+     *         Java 9+. The same applies to {@link #csvLabelledMapper(Class)}.
+     */
+    @Deprecated
+    protected ObjectMapper csvMapper() {
+        return RosettaObjectMapperCreator.forCSV().create();
     }
 
     /**

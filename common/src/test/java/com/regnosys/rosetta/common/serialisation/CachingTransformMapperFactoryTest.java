@@ -105,6 +105,39 @@ class CachingTransformMapperFactoryTest {
     }
 
     /**
+     * {@code CSV} became classloader-sensitive when it gained a config path: {@code openCsvConfig}
+     * resolves the document against {@code classLoader(functionClass)}, exactly as {@code openXmlConfig}
+     * does, so a CSV mapper is now built from that classloader's view of the path. Sharing within one
+     * classloader is still correct and is what this asserts.
+     */
+    @Test
+    void csvSharesOneMapperPerClassLoader() {
+        TransformSerialization csv = new TransformSerialization(SerializationFormat.CSV, null);
+        assertSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, LabelledFunctionB.class),
+                "functions loaded by the same classloader must share one CSV mapper");
+    }
+
+    /**
+     * The observable consequence of putting the classloader into the CSV scope. Before the change every
+     * CSV request shared one entry regardless of function class, so a request carrying a function class
+     * and a request carrying none collided. They no longer do, because the first scopes to that class's
+     * classloader and the second to {@code null}.
+     *
+     * <p>This is the reachable half of the guarantee. The unreachable half — two function classes from
+     * genuinely different classloaders declaring the same {@code configPath} — needs a second classloader
+     * to demonstrate, and the ownership rule (one factory per model instance) means production never puts
+     * two model classloaders behind one factory anyway. The scope is what makes that a structural fact
+     * rather than a convention.</p>
+     */
+    @Test
+    void csvDoesNotShareAcrossDifferentClassLoaderScopes() {
+        TransformSerialization csv = new TransformSerialization(SerializationFormat.CSV, null);
+        assertNotSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, null),
+                "a CSV mapper resolved through a function class's classloader must not be served to a "
+                        + "request that has no function class, and so no classloader, at all");
+    }
+
+    /**
      * A plain-CSV mapper is cached on {@code (format, configPath)} alone, so once {@code hasHeader}
      * became something a mapper differs by, the question was whether two transforms with different
      * header expectations could collide on one cache entry. They cannot, and the reason is structural

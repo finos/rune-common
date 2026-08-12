@@ -202,6 +202,12 @@ public class RosettaCsvMapper extends CsvMapper  {
      * <em>wide</em>, but it is checked here as well so both directions of mismatch report the same
      * thing, naming the type and both counts.</p>
      *
+     * <p><b>The first row only, and that is the whole document this call binds.</b> A {@code readValue}
+     * binds one value from one row, so a later row in the same document is never read and its width is
+     * never checked. The check therefore covers everything this call consumes. Do not read it as a
+     * validation of the file: a multi-row header-less document passes on the strength of row one, and a
+     * caller that iterates rows itself gets no width check on rows two onward.</p>
+     *
      * @param content the whole document — needed to measure the first row, which is why a header-less
      *                read cannot stream ({@link #canStream})
      */

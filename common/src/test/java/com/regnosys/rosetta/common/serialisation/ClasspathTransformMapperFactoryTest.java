@@ -27,6 +27,8 @@ import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.regnosys.rosetta.common.serialisation.csv.config.CsvDialect;
+import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
@@ -659,6 +661,53 @@ class ClasspathTransformMapperFactoryTest {
         // '|' is ascii 124, so jackson-csv's quoting heuristic (see the comment on the test above)
         // quotes every lowercase letter too; stripped for the same reason.
         assertEquals("username|identifier|firstName|lastName", unquoted(header(mapper)));
+    }
+
+    /**
+     * The deprecated no-argument {@code csvMapper()} is the released extension point for a transform that
+     * declares no config path, so it must still decide that case. A subclass that overrode it before the
+     * config path existed would otherwise compile, run and be silently ignored — the failure this
+     * delegation exists to prevent, and the same treatment {@code csvLabelledMapper(Class)} gets.
+     */
+    @Test
+    @SuppressWarnings("deprecation")
+    void subclassOverridingTheDeprecatedCsvMapperStillDecidesTheNoConfigPathCase() throws JsonProcessingException {
+        ClasspathTransformMapperFactory overriding = new ClasspathTransformMapperFactory() {
+            @Override
+            protected ObjectMapper csvMapper() {
+                return RosettaObjectMapperCreator.forCSV(
+                        RosettaCSVConfiguration.builder()
+                                .setDialect(CsvDialect.builder().setColumnDelimiter('|').build())
+                                .build()).create();
+            }
+        };
+
+        ObjectMapper mapper = overriding.create(
+                new TransformSerialization(SerializationFormat.CSV, null), CsvProjection.class);
+
+        assertEquals("username|identifier|firstName|lastName", unquoted(header(mapper)),
+                "a transform declaring no configPath must still be served by the overridden csvMapper()");
+    }
+
+    /**
+     * The complement, and what stops the delegation above from becoming a way to ignore a declared
+     * configuration: a declared {@code configPath} outranks the deprecated overload, so the override is
+     * not consulted and the config decides.
+     */
+    @Test
+    @SuppressWarnings("deprecation")
+    void aDeclaredConfigPathOutranksTheDeprecatedCsvMapperOverride() throws JsonProcessingException {
+        ClasspathTransformMapperFactory overriding = new ClasspathTransformMapperFactory() {
+            @Override
+            protected ObjectMapper csvMapper() {
+                throw new AssertionError("csvMapper() must not be consulted when a configPath is declared");
+            }
+        };
+
+        ObjectMapper mapper = overriding.create(
+                new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+
+        assertEquals("username;identifier;firstName;lastName", header(mapper));
     }
 
     // ---------------------------------------------------------------------------

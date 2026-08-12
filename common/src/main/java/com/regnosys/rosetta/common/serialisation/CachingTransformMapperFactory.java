@@ -41,11 +41,20 @@ import java.util.concurrent.ConcurrentMap;
  *       {@code LabelProvider} depends on both the root type and the transform side (see
  *       {@link ClasspathTransformMapperFactory}), so two requests for the same function but different
  *       roots must not share a mapper, and vice versa.</li>
- *   <li>{@code RUNE_JSON} and {@code XML} — the function class's {@link ClassLoader}: these mappers
- *       resolve model types against it, so functions from the same model share one mapper while
- *       models in different classloaders never cross. The root does not affect their
- *       construction, so it is not part of their scope.</li>
- *   <li>{@code JSON} and {@code CSV} — nothing: one mapper per factory.</li>
+ *   <li>{@code RUNE_JSON}, {@code XML} and {@code CSV} — the function class's {@link ClassLoader}:
+ *       {@code RUNE_JSON} resolves model types against it, and {@code XML} and {@code CSV} resolve their
+ *       serialization config against it (see {@link ClasspathTransformMapperFactory#openXmlConfig} and
+ *       {@link ClasspathTransformMapperFactory#openCsvConfig}). So functions from the same model share
+ *       one mapper while models in different classloaders never cross. The root does not affect their
+ *       construction, so it is not part of their scope.
+ *       <p>
+ *       {@code CSV} joined this group when it gained a config path. Before that, a CSV mapper was built
+ *       from no context at all and one per factory was correct. It is now built from a document resolved
+ *       through the function class's classloader, exactly as an XML mapper is, so it needs the same scope:
+ *       two transforms declaring the same {@code configPath} from different classloaders must not share a
+ *       mapper. A bare {@code [ingest CSV]} that declares no config path is still classloader-independent,
+ *       and keying it this way only narrows sharing — it cannot serve a wrong mapper.</li>
+ *   <li>{@code JSON} — nothing: one mapper per factory.</li>
  * </ul>
  * <p>
  * The cache lives and dies with this factory instance, and cached mappers may hold references into the
@@ -93,6 +102,7 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
                 return Arrays.asList(functionClass, root);
             case RUNE_JSON:
             case XML:
+            case CSV:
                 return functionClass != null ? functionClass.getClassLoader() : null;
             default:
                 return null;

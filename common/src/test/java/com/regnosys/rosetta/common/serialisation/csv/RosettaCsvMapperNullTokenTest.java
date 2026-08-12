@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * neither existing test type ({@code User}, {@code LabelledTrade}) declares an optional attribute,
  * and one is needed to observe absent-vs-empty-string at all.</p>
  */
-public class RosettaCsvMapperNullTokensTest {
+public class RosettaCsvMapperNullTokenTest {
 
     @Test
     void defaultConfigurationEmptyCellDeserialisesToAbsent() throws IOException {

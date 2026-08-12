@@ -106,42 +106,51 @@ class CachingTransformMapperFactoryTest {
     }
 
     /**
-     * {@code CSV} became classloader-sensitive when it gained a config path: {@code openCsvConfig}
-     * resolves the document against {@code classLoader(functionClass)}, exactly as {@code openXmlConfig}
-     * does, so a CSV mapper is now built from that classloader's view of the path. Sharing within one
-     * classloader is still correct and is what this asserts.
+     * {@code CSV} takes the same {@code (function class, root)} scope as {@code CSV_LABELLED}, because its
+     * configuration decides whether it resolves a {@link LabelProvider} and that cannot be known without
+     * loading the config. So two function classes do not share a CSV mapper even within one classloader.
+     *
+     * <p>That is deliberately wider than this particular request depends on — with no config path no
+     * provider is resolved, so the two mappers are identical and the only cost is building them twice.
+     * Pinned so the narrowing is a decision rather than an accident.</p>
      */
     @Test
-    void csvSharesOneMapperPerClassLoader() {
+    void csvIsCachedPerFunctionClassAndRoot() {
         TransformSerialization csv = new TransformSerialization(SerializationFormat.CSV, null);
-        assertSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, LabelledFunctionB.class),
-                "functions loaded by the same classloader must share one CSV mapper");
+        assertSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, LabelledFunctionA.class),
+                "the same function class and root must reuse the cached mapper");
+        assertNotSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, LabelledFunctionB.class),
+                "CSV is scoped to the function class and root, so two function classes must not share an entry");
+        assertNotSame(factory.create(csv, LabelledFunctionA.class, TransformRoot.output(RootTypeA.class)),
+                factory.create(csv, LabelledFunctionA.class, TransformRoot.input(RootTypeA.class)),
+                "the transform side decides whether a function-rooted provider may be used, so the two "
+                        + "sides must not share an entry");
     }
 
     /**
-     * The observable consequence of putting the classloader into the CSV scope. Before the change every
-     * CSV request shared one entry regardless of function class, so a request carrying a function class
-     * and a request carrying none collided. They no longer do, because the first scopes to that class's
-     * classloader and the second to {@code null}.
+     * The cross-model guarantee, carried by the function class rather than by its classloader: a function
+     * class determines its own loader, so scoping to the class is strictly narrower than scoping to the
+     * loader and can never serve a mapper built against another model.
      *
-     * <p>This is the reachable half of the guarantee. The unreachable half — two function classes from
-     * genuinely different classloaders declaring the same {@code configPath} — needs a second classloader
-     * to demonstrate, and the ownership rule (one factory per model instance) means production never puts
-     * two model classloaders behind one factory anyway. The scope is what makes that a structural fact
-     * rather than a convention.</p>
+     * <p>This is the reachable half. The unreachable half — two function classes from genuinely different
+     * classloaders declaring the same {@code configPath} — needs a second classloader to demonstrate, and
+     * the ownership rule (one factory per model instance) means production never puts two model
+     * classloaders behind one factory anyway. The scope is what makes that a structural fact rather than a
+     * convention.</p>
      */
     @Test
     void csvDoesNotShareAcrossDifferentClassLoaderScopes() {
         TransformSerialization csv = new TransformSerialization(SerializationFormat.CSV, null);
         assertNotSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, null),
-                "a CSV mapper resolved through a function class's classloader must not be served to a "
-                        + "request that has no function class, and so no classloader, at all");
+                "a CSV mapper resolved through a function class must not be served to a request that has "
+                        + "no function class, and so no classloader, at all");
     }
 
     /**
-     * A plain-CSV mapper is cached on {@code (format, configPath)} alone, so once {@code hasHeader}
-     * became something a mapper differs by, the question was whether two transforms with different
-     * header expectations could collide on one cache entry. They cannot, and the reason is structural
+     * The {@code configPath} is the only part of the key that distinguishes these two requests — they
+     * carry the same function class and root — so once {@code hasHeader} became something a mapper
+     * differs by, the question was whether two transforms with different header expectations could
+     * collide on one cache entry. They cannot, and the reason is structural
      * rather than a property of this key: a non-default configuration is only reachable through a
      * {@code configPath} — {@code ClasspathTransformMapperFactory.forCsv} short-circuits to
      * {@code RosettaCSVConfiguration.EMPTY}, which is header-bearing, when the path is null or empty —

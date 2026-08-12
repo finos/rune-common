@@ -564,6 +564,49 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
+     * The root-less {@code CSV_LABELLED} path discards a declared {@code configPath} — verified, not
+     * inferred: this asserts the comma, where
+     * {@link #csvLabelledMapperWithConfigPathUsesTheConfiguredDialectAndHeaderStyle} asserts the semicolon
+     * the same config produces once a root is supplied. The two together are what makes the drop a fact
+     * rather than a reading of the delegation.
+     * <p>
+     * Behaviour deliberately preserved (the deprecated overload predates the config path), so this test
+     * exists to pin it and to prove it is now audible — see the WARN asserted below.
+     */
+    @Test
+    void csvLabelledWithConfigPathButNoRootDropsTheConfig() throws JsonProcessingException {
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
+
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class);
+
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", unquoted(header(mapper)),
+                "the declared semicolon config is not applied on the root-less path");
+    }
+
+    @Test
+    void csvLabelledDroppingADeclaredConfigPathSaysSo() {
+        // A declared configPath is a configuration someone supplied. Dropped in silence, the transform
+        // writes a well-formed comma-delimited file and nothing indicates its own config was never read.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
+
+        String warning = onlyWarning(() -> factory.create(s, CsvLabelledProjectionWithConfig.class));
+
+        assertTrue(warning.contains(CSV_LABELLED_CONFIG), "the dropped config path must be named: " + warning);
+        assertTrue(warning.contains(CsvLabelledProjectionWithConfig.class.getName()), warning);
+        assertTrue(warning.contains("TransformRoot"), "the fix must be stated: " + warning);
+    }
+
+    @Test
+    void csvLabelledWithNoConfigPathAndNoRootWarnsAboutNothing() {
+        // The complement: nothing was supplied, so there is nothing to report. A warning here would fire
+        // on every pre-config CSV_LABELLED transform in existence.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
+
+        assertEquals(Collections.emptyList(),
+                warningsWhile(() -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class)));
+    }
+
+    /**
      * A {@code CSV_LABELLED} transform whose config does not ask for label headers is a
      * contradiction: the provider resolves, and then nothing would ever call it, so the file would
      * come out with attribute-name headers and no indication that the labels were dropped. It fails
@@ -616,6 +659,91 @@ class ClasspathTransformMapperFactoryTest {
         // '|' is ascii 124, so jackson-csv's quoting heuristic (see the comment on the test above)
         // quotes every lowercase letter too; stripped for the same reason.
         assertEquals("username|identifier|firstName|lastName", unquoted(header(mapper)));
+    }
+
+    // ---------------------------------------------------------------------------
+    // TASK-9603: supplying the CSV configuration at deployment time
+    // ---------------------------------------------------------------------------
+
+    /** A deployment that keeps its CSV configuration outside the model artifact. */
+    private static ClasspathTransformMapperFactory deploymentSupplying(String configJson) {
+        return new ClasspathTransformMapperFactory() {
+            @Override
+            protected InputStream openCsvConfig(String configPath, Class<?> functionClass) {
+                return new ByteArrayInputStream(configJson.getBytes(StandardCharsets.UTF_8));
+            }
+        };
+    }
+
+    /**
+     * The requirement this task exists for: a client whose files are semicolon-delimited, served without
+     * rebuilding the model. A round trip is the proof asked for — a header assertion alone would show the
+     * writer honouring the configuration while leaving the reader untested, and the two are configured
+     * from the same object.
+     */
+    @Test
+    void aDeploymentSuppliedConfigurationRoundTripsSemicolonDelimitedCsv() throws IOException {
+        // listDelimiter must move off its ';' default too, or the configuration is rejected for
+        // collision with the column delimiter — which is the validation doing its job.
+        ObjectMapper mapper = deploymentSupplying(
+                "{\"dialect\":{\"columnDelimiter\":\";\"},\"listDelimiter\":\"|\"}")
+                .create(new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+
+        String csv = mapper.writeValueAsString(buildUser());
+        assertEquals("username;identifier;firstName;lastName", header(mapper));
+
+        User roundTripped = mapper.readValue(csv, User.class);
+        assertEquals(buildUser(), roundTripped, "the same configuration must serve the read side too");
+    }
+
+    /**
+     * Precedence, asserted in both directions by one override that answers for its own path and delegates
+     * the rest — the workspace-first shape {@code openXmlConfig} is already overridden with in
+     * rosetta-products. Where the override answers it wins; where it delegates, the model's classpath
+     * config stands.
+     */
+    @Test
+    void aDeploymentOverrideWinsWhereItAnswersAndTheClasspathConfigStandsWhereItDelegates()
+            throws JsonProcessingException {
+        String deploymentOnlyPath = "deployment/pipe-csv-config.json";
+        ClasspathTransformMapperFactory workspaceFirst = new ClasspathTransformMapperFactory() {
+            @Override
+            protected InputStream openCsvConfig(String configPath, Class<?> functionClass) throws IOException {
+                if (deploymentOnlyPath.equals(configPath)) {
+                    return new ByteArrayInputStream(
+                            "{\"dialect\":{\"columnDelimiter\":\"|\"}}".getBytes(StandardCharsets.UTF_8));
+                }
+                return super.openCsvConfig(configPath, functionClass);
+            }
+        };
+
+        ObjectMapper overridden = workspaceFirst.create(
+                new TransformSerialization(SerializationFormat.CSV, deploymentOnlyPath), CsvProjection.class);
+        // '|' is ascii 124, so jackson-csv's quoting heuristic (see the comment further up) quotes the
+        // lowercase letters too; stripped, since the dialect is what is under test.
+        assertEquals("username|identifier|firstName|lastName", unquoted(header(overridden)));
+
+        ObjectMapper delegated = workspaceFirst.create(
+                new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+        assertEquals("username;identifier;firstName;lastName", header(delegated),
+                "a path the override declines must fall through to the model's classpath config");
+    }
+
+    /**
+     * The accepted limitation, pinned so it is a decision on record rather than a surprise: the hook is
+     * keyed on the config path, so a transform declaring none never reaches it and takes
+     * {@code RosettaCSVConfiguration.EMPTY}. A deployment chooses the content behind a declared path; it
+     * cannot introduce a configuration where the model asked for none.
+     * <p>
+     * The override here would return a pipe dialect if it were ever called. The comma proves it was not.
+     */
+    @Test
+    void aDeploymentCannotSupplyAConfigurationForATransformThatDeclaresNoConfigPath()
+            throws JsonProcessingException {
+        ObjectMapper mapper = deploymentSupplying("{\"dialect\":{\"columnDelimiter\":\"|\"}}")
+                .create(new TransformSerialization(SerializationFormat.CSV, null), CsvProjection.class);
+
+        assertEquals("username,identifier,firstName,lastName", header(mapper));
     }
 
     @Test

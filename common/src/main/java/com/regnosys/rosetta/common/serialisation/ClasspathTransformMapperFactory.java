@@ -79,6 +79,30 @@ import java.util.function.Supplier;
  * {@link TransformRoot} — a supplied root outranks both. Both are deprecated since 12.10.0 and will
  * be removed in the next major version; prefer the two-argument forms in new code and new overrides.
  * <p>
+ * <b>Supplying a CSV configuration at deployment time.</b> A deployment that must change the CSV dialect
+ * — a client whose files are semicolon-delimited, say — without rebuilding the model overrides
+ * {@link #openCsvConfig(String, Class)} and returns its own document, exactly as it would override
+ * {@link #openXmlConfig(String, Class)} to resolve an XML config from a workspace directory. There is no
+ * separate settable-configuration API: {@code RosettaObjectMapperCreator.forCSV(RosettaCSVConfiguration,
+ * LabelProvider)} is already the public construction API, and a second route into it would have to define
+ * which of the two wins, then make the losing one visible. The override has no such ambiguity — it
+ * <em>is</em> the lookup, so what it returns is what is used.
+ * <p>
+ * Precedence for the CSV configuration, highest first:
+ * <ol>
+ *   <li>whatever {@link #openCsvConfig(String, Class)} returns — the override, if there is one, else the
+ *       config packaged on the model classpath at the declared {@code configPath};</li>
+ *   <li>{@code RosettaCSVConfiguration.EMPTY} (RFC 4180, attribute-name headers) when the transform
+ *       declares no {@code configPath}.</li>
+ * </ol>
+ * <b>The limitation that follows, stated because it is accepted rather than overlooked:</b> the hook is
+ * only consulted when the transform declares a {@code configPath}. A bare {@code [ingest CSV]} gets
+ * {@code EMPTY} and a deployment cannot override it, because there is no path to key the lookup on — see
+ * the {@code forCsv} branch below. A model whose feed needs a non-default dialect must
+ * therefore declare a {@code configPath}, even if the file it names is replaced at deployment time. What
+ * a deployment can always do is choose the <em>content</em> behind that path; what it cannot do is
+ * introduce a configuration where the model asked for none.
+ * <p>
  * Neither provider is deprecated, and neither is scheduled for removal — they are not in a supersession
  * relationship. A transform's output type whose labels sit entirely on nested descendants never gets a
  * type-rooted provider in any DSL version (the gate is structural: the DSL only emits one for a type
@@ -145,9 +169,19 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * written for, instead of compiling, running and being silently ignored. That deprecated overload
      * predates the config path too, so it continues to ignore it, exactly as it ignored the
      * {@link TransformRoot} before this parameter existed.
+     * <p>
+     * Ignoring it is <b>reported</b>, because a declared {@code configPath} is a configuration someone
+     * supplied. Dropping it without a word is the failure mode this class guards against everywhere else:
+     * the transform would serialise with default RFC 4180 punctuation, produce a perfectly well-formed
+     * file, and give no indication that its own configuration was never read. The WARN names the path and
+     * the fix (supply a {@link TransformRoot}); it is not an exception because this overload's
+     * config-ignoring behaviour predates the config path and callers rely on the request succeeding.
      */
     protected ObjectMapper csvLabelledMapper(String configPath, Class<?> functionClass, TransformRoot root) {
         if (root == null) {
+            if (configPath != null && !configPath.isEmpty()) {
+                LOGGER.warn(droppedConfigPathWarning(configPath, functionClass));
+            }
             return csvLabelledMapper(functionClass);
         }
         LabelProvider labelProvider = resolveLabelProvider(functionClass, root);
@@ -249,6 +283,21 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return noFunctionProviderWarning(functionClass);
     }
 
+    /**
+     * Explains that a declared CSV configuration was not applied, and how to make it apply. Deliberately
+     * says what the file will look like instead ("default RFC 4180"), since the symptom a reader is
+     * holding is a comma-delimited file from a transform whose config asked for something else.
+     */
+    private static String droppedConfigPathWarning(String configPath, Class<?> functionClass) {
+        return String.format("CSV_LABELLED transform %s declares configPath '%s', but no TransformRoot was "
+                        + "supplied, so the request is served by the deprecated csvLabelledMapper(Class) "
+                        + "overload, which predates the config path and ignores it: the CSV configuration was "
+                        + "NOT applied and default RFC 4180 punctuation is in use. Call "
+                        + "create(serialization, functionClass, root) with a TransformRoot so the configuration "
+                        + "is honoured.",
+                functionClass != null ? functionClass.getName() : "(unknown function)", configPath);
+    }
+
     private static String noFunctionProviderWarning(Class<?> functionClass) {
         return String.format("CSV_LABELLED requested but no @RuneLabelProvider could be resolved%s; "
                 + "falling back to unlabelled CSV.", functionClass != null ? " from " + functionClass.getName() : "");
@@ -289,7 +338,14 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * implementation resolves it against {@link #classLoader(Class)} (falling back to the legacy Guava
      * classpath lookup when that is {@code null}), exactly like {@link #openXmlConfig(String, Class)}.
      * This is the hook a runtime that keeps its CSV configuration somewhere other than the classpath
-     * overrides.
+     * overrides — and the one route by which a deployment supplies its own CSV configuration at runtime;
+     * see the class javadoc for the precedence order.
+     * <p>
+     * <b>Only consulted when the transform declares a {@code configPath}</b>, since the path is what the
+     * lookup is keyed on. An override cannot introduce a configuration for a transform that declares
+     * none: that request never reaches here and takes {@code RosettaCSVConfiguration.EMPTY}. An override
+     * is free to ignore {@code configPath} entirely and return the same document for every path — what it
+     * cannot do is be called when there is no path at all.
      */
     protected InputStream openCsvConfig(String configPath, Class<?> functionClass) throws IOException {
         ClassLoader classLoader = classLoader(functionClass);

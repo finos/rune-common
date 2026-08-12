@@ -198,10 +198,33 @@ class ClasspathTransformMapperFactoryTest {
     private static class CsvLabelledProjectionWithConfig implements RosettaFunction {
     }
 
-    /** {@code CSV_LABELLED}, but pointed at a config that leaves {@code headerStyle} unset. */
-    @Projection(format = SerializationFormat.CSV_LABELLED, configPath = CSV_CONFIG)
+    /**
+     * The plain {@code CSV} format pointed at a config declaring {@code headerStyle: LABEL} — the shape
+     * that replaces {@code CSV_LABELLED}. The provider is resolved because the <em>config</em> asks for
+     * labels, not because the format does.
+     */
+    @Projection(format = SerializationFormat.CSV, configPath = CSV_LABELLED_CONFIG)
     @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
-    private static class CsvLabelledProjectionWithNonLabelConfig implements RosettaFunction {
+    private static class CsvProjectionWithLabelConfig implements RosettaFunction {
+    }
+
+    /**
+     * The same, as an ingest: its function-rooted provider is rooted at its <b>output</b>, so on the
+     * declared input side there is nothing legitimate to label with.
+     */
+    @Ingest(format = SerializationFormat.CSV, configPath = CSV_LABELLED_CONFIG)
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class CsvIngestWithLabelConfig implements RosettaFunction {
+    }
+
+    /**
+     * A labelled function whose {@code CSV} config leaves {@code headerStyle} at {@code ATTRIBUTE_NAME}.
+     * The regression guard for the whole redesign: the format no longer decides, so this must <b>not</b>
+     * acquire labels from its function.
+     */
+    @Projection(format = SerializationFormat.CSV, configPath = CSV_CONFIG)
+    @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
+    private static class CsvProjectionWithNonLabelConfigAndProvider implements RosettaFunction {
     }
 
     /**
@@ -552,37 +575,118 @@ class ClasspathTransformMapperFactoryTest {
         assertEquals("username;identifier;firstName;lastName", header(mapper));
     }
 
+    /**
+     * The headline of the redesign: the plain {@code CSV} format serves labelled CSV when — and only
+     * when — its configuration asks for it. Both halves of the config take effect, the semicolon dialect
+     * and the LABEL header style.
+     * <p>
+     * jackson-csv's own quoting heuristic quotes any character below max(separator, quoteChar) + 1, so
+     * ':' (58) gets quoted once the separator is ';' (59) even though ':' is not the separator — stripped
+     * here since the config taking effect, not jackson's quoting choice, is what's under test.
+     */
     @Test
-    void csvLabelledMapperWithConfigPathUsesTheConfiguredDialectAndHeaderStyle() throws JsonProcessingException {
-        // headerStyle is LABEL only because the config says so — the function's provider being
-        // present is not, by itself, enough (that auto-derivation is the no-configPath shim's job).
-        // jackson-csv's own quoting heuristic quotes any character below max(separator, quoteChar) + 1,
-        // so ':' (58) gets quoted once the separator is ';' (59) even though ':' is not the separator —
-        // stripped here since the dialect taking effect, not jackson's quoting choice, is what's under test.
-        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class, TransformRoot.output());
+    void csvMapperWithALabelConfigIsLabelled() throws JsonProcessingException {
+        TransformSerialization s = TransformSerializationResolver.output(CsvProjectionWithLabelConfig.class).get();
+        ObjectMapper mapper = factory.create(s, CsvProjectionWithLabelConfig.class, TransformRoot.output());
 
         assertEquals("func:username;func:identifier;func:firstName;func:lastName", unquoted(header(mapper)));
     }
 
     /**
-     * The root-less {@code CSV_LABELLED} path discards a declared {@code configPath} — verified, not
-     * inferred: this asserts the comma, where
-     * {@link #csvLabelledMapperWithConfigPathUsesTheConfiguredDialectAndHeaderStyle} asserts the semicolon
-     * the same config produces once a root is supplied. The two together are what makes the drop a fact
-     * rather than a reading of the delegation.
-     * <p>
-     * Behaviour deliberately preserved (the deprecated overload predates the config path), so this test
-     * exists to pin it and to prove it is now audible — see the WARN asserted below.
+     * The complement, and the regression guard for the whole redesign: the same format on a function that
+     * <em>does</em> carry {@code @RuneLabelProvider}, whose config does not ask for labels, must stay
+     * plain. Before this change the format decided; now the config does, and a plain CSV transform must
+     * not acquire labels merely because its function has a provider.
      */
     @Test
-    void csvLabelledWithConfigPathButNoRootDropsTheConfig() throws JsonProcessingException {
+    void csvMapperWithANonLabelConfigStaysPlainEvenWithAProviderAvailable() throws JsonProcessingException {
+        TransformSerialization s =
+                TransformSerializationResolver.output(CsvProjectionWithNonLabelConfigAndProvider.class).get();
+        ObjectMapper mapper =
+                factory.create(s, CsvProjectionWithNonLabelConfigAndProvider.class, TransformRoot.output());
+
+        assertEquals("username;identifier;firstName;lastName", header(mapper),
+                "the config asked for ATTRIBUTE_NAME headers, so the function's provider must go unused");
+    }
+
+    /**
+     * A {@code CSV} config asking for labels is honoured whether or not the caller supplies a root — which
+     * is the property that makes this the migration target for {@code CSV_LABELLED}, whose config is
+     * dropped on the root-less path. With no root nothing is suppressed, so the function's provider stands.
+     */
+    @Test
+    void csvMapperWithALabelConfigIsHonouredWithNoRootAtAll() throws JsonProcessingException {
+        TransformSerialization s = TransformSerializationResolver.output(CsvProjectionWithLabelConfig.class).get();
+
+        ObjectMapper mapper = factory.create(s, CsvProjectionWithLabelConfig.class);
+
+        assertEquals("func:username;func:identifier;func:firstName;func:lastName", unquoted(header(mapper)));
+        assertEquals(Collections.emptyList(),
+                warningsWhile(() -> factory.create(s, CsvProjectionWithLabelConfig.class)),
+                "nothing was dropped and nothing degraded, so there is nothing to report");
+    }
+
+    /** A labelled ingest reads its labels from the root type — the only provider correct on that side. */
+    @Test
+    void csvMapperWithALabelConfigOnTheInputSideUsesTheRootTypeProvider() throws JsonProcessingException {
+        TransformSerialization s = TransformSerializationResolver.input(CsvIngestWithLabelConfig.class).get();
+
+        ObjectMapper mapper = factory.create(s, CsvIngestWithLabelConfig.class,
+                TransformRoot.input(LabelledRootType.class));
+
+        assertEquals("type:username;type:identifier;type:firstName;type:lastName", unquoted(header(mapper)));
+    }
+
+    /**
+     * The decision this redesign turns on: a config declaring {@code headerStyle=LABEL} for which no
+     * provider can be found <b>fails</b>, where {@code CSV_LABELLED} degrades to plain CSV. Proceeding
+     * would mean treating LABEL as ATTRIBUTE_NAME — silently discarding the one setting the configuration
+     * exists to state.
+     * <p>
+     * The message has to carry both ends of the diagnosis: which config asked, and why nothing could
+     * answer. Here the function's provider exists but is rooted at its own output, and this is the
+     * declared input side.
+     */
+    @Test
+    void csvMapperWithALabelConfigAndNoResolvableProviderFails() {
+        TransformSerialization s = TransformSerializationResolver.input(CsvIngestWithLabelConfig.class).get();
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> factory.create(s, CsvIngestWithLabelConfig.class, TransformRoot.input()));
+
+        assertTrue(e.getMessage().contains(CSV_LABELLED_CONFIG), "the config that asked must be named: " + e.getMessage());
+        assertTrue(e.getMessage().contains(CsvIngestWithLabelConfig.class.getName()),
+                "the provider that could not be used must be named: " + e.getMessage());
+        assertTrue(e.getMessage().contains("rooted at its own output"), e.getMessage());
+        assertTrue(e.getMessage().contains("headerStyle=ATTRIBUTE_NAME"),
+                "the way out via the config must be stated: " + e.getMessage());
+    }
+
+    /**
+     * {@code CSV_LABELLED} reads no configuration at all now — with a root or without one. Verified in
+     * both directions rather than inferred from the delegation: this and the test below assert the comma
+     * where {@link #csvMapperWithALabelConfigIsLabelled} asserts the semicolon the same config produces
+     * through the {@code CSV} format.
+     */
+    @Test
+    void csvLabelledWithConfigPathDropsTheConfigWithNoRoot() throws JsonProcessingException {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
 
         ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class);
 
         assertEquals("func:username,func:identifier,func:firstName,func:lastName", unquoted(header(mapper)),
-                "the declared semicolon config is not applied on the root-less path");
+                "the declared semicolon config is not applied to a CSV_LABELLED transform");
+    }
+
+    @Test
+    void csvLabelledWithConfigPathDropsTheConfigWithARootToo() throws JsonProcessingException {
+        // Supplying a root used to be what made the config apply. The format reads none now, so it does
+        // not — this is the one behaviour the redesign deliberately takes away.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
+
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class, TransformRoot.output());
+
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", unquoted(header(mapper)));
     }
 
     @Test
@@ -595,7 +699,19 @@ class ClasspathTransformMapperFactoryTest {
 
         assertTrue(warning.contains(CSV_LABELLED_CONFIG), "the dropped config path must be named: " + warning);
         assertTrue(warning.contains(CsvLabelledProjectionWithConfig.class.getName()), warning);
-        assertTrue(warning.contains("TransformRoot"), "the fix must be stated: " + warning);
+        assertTrue(warning.contains("format = CSV"), "the migration must be stated: " + warning);
+        assertTrue(warning.contains("headerStyle"), "the migration must be stated: " + warning);
+    }
+
+    @Test
+    void csvLabelledDroppingADeclaredConfigPathSaysSoWithARootToo() {
+        // The WARN is no longer conditional on the root: the drop no longer is either.
+        TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
+
+        String warning = onlyWarning(
+                () -> factory.create(s, CsvLabelledProjectionWithConfig.class, TransformRoot.output()));
+
+        assertTrue(warning.contains(CSV_LABELLED_CONFIG), warning);
     }
 
     @Test
@@ -608,25 +724,6 @@ class ClasspathTransformMapperFactoryTest {
                 warningsWhile(() -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class)));
     }
 
-    /**
-     * A {@code CSV_LABELLED} transform whose config does not ask for label headers is a
-     * contradiction: the provider resolves, and then nothing would ever call it, so the file would
-     * come out with attribute-name headers and no indication that the labels were dropped. It fails
-     * at construction instead, and the message names the config path — the config file is the side
-     * that has to change.
-     */
-    @Test
-    void csvLabelledWithAConfigThatDoesNotAskForLabelsIsRejected() {
-        TransformSerialization s = TransformSerializationResolver
-                .output(CsvLabelledProjectionWithNonLabelConfig.class).get();
-
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> factory.create(s, CsvLabelledProjectionWithNonLabelConfig.class, TransformRoot.output()));
-
-        assertTrue(e.getMessage().contains(CSV_CONFIG));
-        assertTrue(e.getMessage().contains("ATTRIBUTE_NAME"));
-    }
-
     @Test
     void missingCsvConfigResourceIsReported() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
@@ -635,12 +732,18 @@ class ClasspathTransformMapperFactoryTest {
         assertTrue(e.getMessage().contains("does/not/exist.json"));
     }
 
+    /**
+     * The counterpart of {@link #missingCsvConfigResourceIsReported}: a missing resource cannot be
+     * reported for {@code CSV_LABELLED} because the format never looks one up. An unresolvable path is
+     * simply part of the configuration it drops — which the WARN reports.
+     */
     @Test
-    void missingCsvLabelledConfigResourceIsReported() {
+    void csvLabelledDoesNotEvenLookUpItsConfigResource() throws JsonProcessingException {
         TransformSerialization s = new TransformSerialization(SerializationFormat.CSV_LABELLED, "does/not/exist.json");
-        IllegalStateException e = assertThrows(IllegalStateException.class,
-                () -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, TransformRoot.output()));
-        assertTrue(e.getMessage().contains("does/not/exist.json"));
+
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, TransformRoot.output());
+
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
 
     @Test
@@ -661,6 +764,31 @@ class ClasspathTransformMapperFactoryTest {
         // '|' is ascii 124, so jackson-csv's quoting heuristic (see the comment on the test above)
         // quotes every lowercase letter too; stripped for the same reason.
         assertEquals("username|identifier|firstName|lastName", unquoted(header(mapper)));
+    }
+
+    /**
+     * A consequence of the configuration rather than the format deciding: since the header style is
+     * configuration, a deployment that overrides where the configuration comes from can make a transform
+     * labelled — here one whose classpath config asks for {@code ATTRIBUTE_NAME} headers. It still needs a
+     * provider to resolve, by the ordinary rules.
+     */
+    @Test
+    void aDeploymentSuppliedConfigurationCanMakeAPlainCsvTransformLabelled() throws JsonProcessingException {
+        ClasspathTransformMapperFactory overriding = new ClasspathTransformMapperFactory() {
+            @Override
+            protected InputStream openCsvConfig(String configPath, Class<?> functionClass) {
+                return new ByteArrayInputStream(
+                        "{\"headerStyle\":\"LABEL\"}".getBytes(StandardCharsets.UTF_8));
+            }
+        };
+        TransformSerialization s =
+                TransformSerializationResolver.output(CsvProjectionWithNonLabelConfigAndProvider.class).get();
+
+        ObjectMapper mapper =
+                overriding.create(s, CsvProjectionWithNonLabelConfigAndProvider.class, TransformRoot.output());
+
+        assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper),
+                "the override's LABEL header style must outrank the classpath config's ATTRIBUTE_NAME");
     }
 
     /**

@@ -168,8 +168,7 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * With a single token there is no separate "canonical" token to write back, so the round trip is
-     * symmetric by construction.
+     * A cell read as absent writes back as the same token it was read as.
      */
     @Test
     void roundTripThroughAFileContainingTheDefaultNullTokenWritesBackTheSameToken() throws IOException {

@@ -574,8 +574,8 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * The plain {@code CSV} format serves labelled CSV when — and only when — its configuration asks for it. Both halves of the config take effect, the semicolon dialect
-     * and the LABEL header style.
+     * The plain {@code CSV} format serves labelled CSV when — and only when — its configuration asks for
+     * it. Both halves of the config take effect, the semicolon dialect and the LABEL header style.
      * <p>
      * jackson-csv's own quoting heuristic quotes any character below max(separator, quoteChar) + 1, so
      * ':' (58) gets quoted once the separator is ';' (59) even though ':' is not the separator — stripped
@@ -885,7 +885,7 @@ class ClasspathTransformMapperFactoryTest {
 
     /**
      * Precedence, asserted in both directions by one override that answers for its own path and delegates
-     * the rest — the workspace-first shape {@code openXmlConfig} is already overridden with in
+     * the rest — the workspace-first shape {@code openXmlConfig} is already overridden in
      * rosetta-products. Where the override answers it wins; where it delegates, the model's classpath
      * config stands.
      */
@@ -917,9 +917,9 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * The accepted limitation: the hook is keyed on the config path, so a transform declaring none never reaches it and takes
-     * {@code RosettaCSVConfiguration.EMPTY}. A deployment chooses the content behind a declared path; it
-     * cannot introduce a configuration where the model asked for none.
+     * The accepted limitation: the hook is keyed on the config path, so a transform declaring none never
+     * reaches it and takes {@code RosettaCSVConfiguration.EMPTY}. A deployment chooses the content behind
+     * a declared path; it cannot introduce a configuration where the model asked for none.
      * <p>
      * The override here would return a pipe dialect if it were ever called. The comma proves it was not.
      */

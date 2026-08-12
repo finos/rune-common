@@ -487,8 +487,8 @@ public class RosettaCsvMapperListColumnTest {
 
     /**
      * {@code readValue(URL, …)} hands the document straight to jackson when nothing needs the whole
-     * file up front. The element-stripping pre-pass does need it, for a type with a list attribute and
-     * at least one null token configured — so that path has to stop streaming, or the cell reaches
+     * file up front. The element-stripping pre-pass does need it, for any type with a list attribute —
+     * so that path has to stop streaming, or the cell reaches
      * jackson unstripped and fails inside Guava's null-rejecting {@code ImmutableList} instead. A
      * behaviour that differs between the {@code String} and {@code URL} overloads of the same read is
      * the kind of gap only a test at the boundary catches.

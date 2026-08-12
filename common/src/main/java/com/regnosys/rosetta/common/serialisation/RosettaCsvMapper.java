@@ -319,7 +319,7 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     /**
      * Stamps the configured {@link CsvDialect} (column separator, quote character, escape character),
-     * the canonical null token, and the list delimiter onto a schema this class produces. Every schema
+     * the null token, and the list delimiter onto a schema this class produces. Every schema
      * built anywhere in this class must be passed through here — a call site that forgets produces a
      * mapper that reads and writes differently.
      */

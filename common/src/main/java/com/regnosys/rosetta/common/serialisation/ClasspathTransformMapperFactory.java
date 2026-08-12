@@ -51,7 +51,7 @@ import java.util.function.Supplier;
  * concerns are isolated in protected hooks — {@link #defaultClassLoader()} (the model loader to use when
  * no function class is resolvable) and {@link #openXmlConfig(String, Class)} (where the XML config is
  * looked up) — and caching comes from wrapping in a {@link CachingTransformMapperFactory}. Everything
- * else (which mapper implements which format, the {@code CSV_LABELLED} label resolution) is inherited.
+ * else (which mapper implements which format, the CSV label resolution) is inherited.
  * <p>
  * <b>Which CSV mapper a CSV format gets — the configuration decides, not the format.</b>
  * <ul>
@@ -461,10 +461,12 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * The {@link LabelProvider} for a {@code CSV_LABELLED} mapper: the root type's own provider when it
-     * has one, else the function's — unless the caller said this is the transform's
+     * The {@link LabelProvider} for a labelled CSV mapper — {@code CSV_LABELLED}, or {@code CSV} whose
+     * configuration declares {@code headerStyle=LABEL}: the root type's own provider when it has one,
+     * else the function's — unless the caller said this is the transform's
      * {@link TransformRoot.Side#INPUT} side, where a function-rooted provider may never be used.
-     * Returns {@code null} when neither applies, so the caller degrades to unlabelled CSV.
+     * Returns {@code null} when neither applies; {@code CSV_LABELLED} then degrades to unlabelled CSV
+     * and a {@code LABEL} configuration fails.
      * <p>
      * Resolution is type-first: a function-rooted provider is rooted at the function's <b>output</b>, so
      * using it for any other root resolves paths against the wrong graph and could return a plausible label
@@ -517,8 +519,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     /**
      * Whether a function-rooted provider exists to be resolved at all: there is a function class, it is a
      * {@link RosettaFunction}, and it carries {@code @RuneLabelProvider}. Both
-     * {@link #functionRootedProvider} and the WARN in {@link #noLabelProviderWarning} go through here, so
-     * what the resolver does and what the log says cannot disagree.
+     * {@link #functionRootedProvider} and the reporting in {@link #noProviderReason} go through here, so
+     * what the resolver does and what the WARN or exception says cannot disagree.
      */
     private static boolean hasFunctionLabelProvider(Class<?> functionClass) {
         return functionClass != null

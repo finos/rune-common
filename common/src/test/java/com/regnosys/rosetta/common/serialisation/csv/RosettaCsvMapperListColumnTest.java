@@ -167,7 +167,7 @@ public class RosettaCsvMapperListColumnTest {
     @Test
     void listElementEqualToAConfiguredNullTokenIsRejectedAtWriteTime() {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Collections.singletonList("N/A"))
+                .setNullToken("N/A")
                 .build();
         RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
         MultiCardinalityAttributes value = withTags("EUR", "N/A");
@@ -179,34 +179,15 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * The write-side check covers the same token set the read side strips, including a token that is not
-     * the one the schema carries. This is the write half of
-     * {@code anElementEqualToANonEmptyNullTokenIsDropped}: were it narrowed to {@code nullTokens[0]},
-     * the writer would emit {@code EUR;N/A} and the reader would hand back {@code [EUR]}.
+     * With the null token reconfigured away from the default, there is nothing for an empty element
+     * to be confused with, so the write side must not reject it either — and the pair round-trips.
+     * This is the write-side half of
+     * {@code aTrailingListDelimiterProducesAnEmptyElementWhenTheNullTokenIsNotEmpty}.
      */
     @Test
-    void listElementEqualToANonCanonicalNullTokenIsAlsoRejectedAtWriteTime() {
+    void anEmptyListElementRoundTripsWhenTheNullTokenIsNotEmpty() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Arrays.asList("", "N/A"))
-                .build();
-        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
-        MultiCardinalityAttributes value = withTags("EUR", "N/A");
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> mapper.writeValueAsString(value));
-        assertTrue(exception.getMessage().contains("tags"));
-        assertTrue(exception.getMessage().contains("N/A"));
-    }
-
-    /**
-     * With no null tokens configured there is nothing for an empty element to be confused with, so
-     * the write side must not reject it either — and the pair round-trips. This is the write-side
-     * half of {@code aTrailingListDelimiterProducesAnEmptyElementWhenNoNullTokensAreConfigured}.
-     */
-    @Test
-    void anEmptyListElementRoundTripsWhenNoNullTokensAreConfigured() throws IOException {
-        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Collections.emptyList())
+                .setNullToken("N/A")
                 .build();
         RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
         MultiCardinalityAttributes original = withTags("EUR", "");
@@ -365,7 +346,7 @@ public class RosettaCsvMapperListColumnTest {
 
     /**
      * A trailing (or doubled) list delimiter splits into an element that is the empty string —
-     * indistinguishable, under the default {@code nullTokens}, from the token that means "absent". Rune
+     * indistinguishable, under the default {@code nullToken}, from the token that means "absent". Rune
      * cannot represent that: {@code empty} is the absence of a value, and for a multi-valued attribute
      * it means the empty <i>list</i>, never a hole inside one (the generated immutable rejects a
      * {@code null} element, and {@code MapperC} filters one out as an error item). So an element that
@@ -409,35 +390,13 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * <b>Every</b> configured null token is dropped from a list cell, not only the one the schema
-     * carries. {@code nullTokens} declares synonyms for "absent", so which one a producer wrote cannot
-     * change what the cell means — a non-empty token inside a list cell means absent exactly as the
-     * empty one does.
+     * The configured null token is dropped from a list cell exactly as it is from a scalar cell — a
+     * non-empty token inside a list cell means absent exactly as the empty one does.
      */
     @Test
     void anElementEqualToANonEmptyNullTokenIsDropped() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Arrays.asList("", "N/A"))
-                .build();
-        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
-
-        MultiCardinalityAttributes result = mapper.readValue(
-                "id,tags\nid1,EUR;N/A\n", MultiCardinalityAttributes.class);
-
-        assertEquals(withTags("EUR"), result);
-    }
-
-    /**
-     * The same file, the same two tokens, the other configuration order — and the same result. Only one
-     * null token can reach the schema ({@code CsvSchema} has a single null-value slot, filled from
-     * {@code nullTokens[0]}), so a rule keyed on that entry alone would make this cell mean
-     * {@code [EUR, N/A]} here and {@code [EUR]} in the previous test. Index 0 is a mechanical detail of
-     * jackson, not a difference in meaning, and this pair is what holds the two apart.
-     */
-    @Test
-    void tokenOrderDoesNotChangeWhatAListCellMeans() throws IOException {
-        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Arrays.asList("N/A", ""))
+                .setNullToken("N/A")
                 .build();
         RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
 
@@ -449,13 +408,13 @@ public class RosettaCsvMapperListColumnTest {
 
     /**
      * A list cell whose every element is a null token leaves the attribute absent — the same value an
-     * empty cell gives. Uses a non-empty canonical token, so the stripped cell is genuinely empty
-     * rather than merely unchanged.
+     * empty cell gives. Uses a non-empty token, so the stripped cell is genuinely empty rather than
+     * merely unchanged.
      */
     @Test
     void aListCellOfOnlyNullTokensDeserialisesToAnAbsentList() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Collections.singletonList("N/A"))
+                .setNullToken("N/A")
                 .build();
         RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
 
@@ -474,7 +433,7 @@ public class RosettaCsvMapperListColumnTest {
     @Test
     void aWholeCellEqualToANullTokenStillMeansAnAbsentList() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Collections.singletonList("N/A"))
+                .setNullToken("N/A")
                 .build();
         RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
 
@@ -555,13 +514,14 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * With no configured null tokens there is nothing for an empty element to collide with, so the
-     * same trailing-delimiter cell reads back as a genuine empty-string element instead of throwing.
+     * With the null token reconfigured away from the default, there is nothing for an empty element
+     * to collide with, so the same trailing-delimiter cell reads back as a genuine empty-string
+     * element instead of being dropped.
      */
     @Test
-    void aTrailingListDelimiterProducesAnEmptyElementWhenNoNullTokensAreConfigured() throws IOException {
+    void aTrailingListDelimiterProducesAnEmptyElementWhenTheNullTokenIsNotEmpty() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
-                .setNullTokens(Collections.emptyList())
+                .setNullToken("N/A")
                 .build();
         RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
 

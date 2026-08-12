@@ -28,14 +28,11 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
 /**
  * Global settings governing how CSV is read and written: dialect, header style, the delimiter
- * used within a single delimited-list column, which tokens deserialise to an absent value, and
+ * used within a single delimited-list column, which token deserialises to an absent value, and
  * whether a file has a header row at all — though {@code hasHeader=false} is currently refused,
  * since header-less CSV is not implemented.
  *
@@ -67,10 +64,9 @@ public class RosettaCSVConfiguration {
     public static final HeaderStyle DEFAULT_HEADER_STYLE = HeaderStyle.ATTRIBUTE_NAME;
     public static final String DEFAULT_LIST_DELIMITER = ";";
     /**
-     * A single empty string: by default an empty cell, and only an empty cell, deserialises to an
-     * absent value.
+     * By default an empty cell, and only an empty cell, deserialises to an absent value.
      */
-    public static final List<String> DEFAULT_NULL_TOKENS = Collections.singletonList("");
+    public static final String DEFAULT_NULL_TOKEN = "";
     public static final boolean DEFAULT_HAS_HEADER = true;
 
     /**
@@ -81,7 +77,7 @@ public class RosettaCSVConfiguration {
     private final CsvDialect dialect;
     private final HeaderStyle headerStyle;
     private final String listDelimiter;
-    private final List<String> nullTokens;
+    private final String nullToken;
     private final boolean hasHeader;
 
     /**
@@ -99,8 +95,8 @@ public class RosettaCSVConfiguration {
      *                      at its own construction rather than here.
      * @param listDelimiter the separator between the elements of a multi-cardinality attribute
      *                      serialised into one column, or {@code null} for {@code ;}
-     * @param nullTokens    the cell values that deserialise to an absent value, or {@code null} for
-     *                      a single empty string. Copied defensively.
+     * @param nullToken     the cell value that deserialises to an absent value, and that an absent
+     *                      value is written back as, or {@code null} for the empty string.
      * @param hasHeader     whether the file being read (or, on write, the file being produced) has a
      *                      header row; {@code null} for {@code true}. This describes the file, not a
      *                      preference: a CSV file cannot be sniffed for a header — a header row of
@@ -116,14 +112,12 @@ public class RosettaCSVConfiguration {
             @JsonProperty("dialect") CsvDialect dialect,
             @JsonProperty("headerStyle") HeaderStyle headerStyle,
             @JsonProperty("listDelimiter") String listDelimiter,
-            @JsonProperty("nullTokens") List<String> nullTokens,
+            @JsonProperty("nullToken") String nullToken,
             @JsonProperty("hasHeader") Boolean hasHeader) {
         this.dialect = dialect != null ? dialect : DEFAULT_DIALECT;
         this.headerStyle = headerStyle != null ? headerStyle : DEFAULT_HEADER_STYLE;
         this.listDelimiter = listDelimiter != null ? listDelimiter : DEFAULT_LIST_DELIMITER;
-        this.nullTokens = nullTokens != null
-                ? Collections.unmodifiableList(new ArrayList<>(nullTokens))
-                : DEFAULT_NULL_TOKENS;
+        this.nullToken = nullToken != null ? nullToken : DEFAULT_NULL_TOKEN;
         this.hasHeader = hasHeader != null ? hasHeader : DEFAULT_HAS_HEADER;
         if (!this.hasHeader) {
             // Rejected rather than accepted-and-ignored. Nothing on the read or write path honours
@@ -168,7 +162,7 @@ public class RosettaCSVConfiguration {
                 .setDialect(dialect)
                 .setHeaderStyle(headerStyle)
                 .setListDelimiter(listDelimiter)
-                .setNullTokens(nullTokens)
+                .setNullToken(nullToken)
                 .setHasHeader(hasHeader);
     }
 
@@ -206,15 +200,21 @@ public class RosettaCSVConfiguration {
     }
 
     /**
-     * @return the cell values that deserialise to an absent value; unmodifiable. On write, the
-     *         first entry is the token an absent value is written back as, and an empty list means
-     *         the empty string. A token that collides with a legitimate data value (e.g. a real
-     *         attribute value of literally {@code "N/A"}) is indistinguishable from absence — that
-     *         collision is the caller's problem to avoid by choosing tokens that cannot occur in
-     *         real data, not something this class can detect.
+     * @return the cell value that deserialises to an absent value, and that an absent value is
+     *         written back as. Defaults to the empty string, so by default only an empty cell is
+     *         absent. A token that collides with a legitimate data value (e.g. a real attribute
+     *         value of literally {@code "N/A"}) is indistinguishable from absence — that collision
+     *         is the caller's problem to avoid by choosing a token that cannot occur in real data,
+     *         not something this class can detect.
+     *
+     *         <p>To carry the empty string as data, set {@code nullToken} to something that cannot
+     *         occur in the feed — whichever string is chosen becomes the one string that cannot
+     *         then be data. There is no configuration under which every string is representable
+     *         <em>and</em> absence is expressible; that is inherent to a token-based encoding of
+     *         "absent", not a defect of this shape.</p>
      */
-    public List<String> getNullTokens() {
-        return nullTokens;
+    public String getNullToken() {
+        return nullToken;
     }
 
     /**
@@ -228,7 +228,7 @@ public class RosettaCSVConfiguration {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dialect, headerStyle, listDelimiter, nullTokens, hasHeader);
+        return Objects.hash(dialect, headerStyle, listDelimiter, nullToken, hasHeader);
     }
 
     @Override
@@ -242,13 +242,13 @@ public class RosettaCSVConfiguration {
                 && Objects.equals(dialect, other.dialect)
                 && headerStyle == other.headerStyle
                 && Objects.equals(listDelimiter, other.listDelimiter)
-                && Objects.equals(nullTokens, other.nullTokens);
+                && Objects.equals(nullToken, other.nullToken);
     }
 
     @Override
     public String toString() {
         return "RosettaCSVConfiguration{dialect=" + dialect + ", headerStyle=" + headerStyle
-                + ", listDelimiter=" + listDelimiter + ", nullTokens=" + nullTokens + ", hasHeader=" + hasHeader + "}";
+                + ", listDelimiter=" + listDelimiter + ", nullToken=" + nullToken + ", hasHeader=" + hasHeader + "}";
     }
 
     /**
@@ -260,7 +260,7 @@ public class RosettaCSVConfiguration {
         private CsvDialect dialect;
         private HeaderStyle headerStyle;
         private String listDelimiter;
-        private List<String> nullTokens;
+        private String nullToken;
         private Boolean hasHeader;
 
         private Builder() {
@@ -301,14 +301,16 @@ public class RosettaCSVConfiguration {
         }
 
         /**
-         * @param nullTokens the cell values that deserialise to an absent value. Defaults to a
-         *                   single empty string, so by default only an empty cell is absent.
-         *                   {@code null} restores that default; an empty list means no cell value
-         *                   deserialises to absent.
+         * @param nullToken the cell value that deserialises to an absent value, and that an absent
+         *                  value is written back as. Defaults to the empty string, so by default
+         *                  only an empty cell is absent. {@code null} restores that default — there
+         *                  is no "disabled" value, since the empty string is itself a legitimate
+         *                  token (the default), not an off switch. To carry the empty string as
+         *                  data, set this to something that cannot occur in the feed.
          * @return this builder
          */
-        public Builder setNullTokens(List<String> nullTokens) {
-            this.nullTokens = nullTokens;
+        public Builder setNullToken(String nullToken) {
+            this.nullToken = nullToken;
             return this;
         }
 
@@ -335,7 +337,7 @@ public class RosettaCSVConfiguration {
          *                                  {@code columnDelimiter}
          */
         public RosettaCSVConfiguration build() {
-            return new RosettaCSVConfiguration(dialect, headerStyle, listDelimiter, nullTokens, hasHeader);
+            return new RosettaCSVConfiguration(dialect, headerStyle, listDelimiter, nullToken, hasHeader);
         }
     }
 }

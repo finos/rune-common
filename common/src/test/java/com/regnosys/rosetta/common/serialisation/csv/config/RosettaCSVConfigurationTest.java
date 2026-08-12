@@ -28,9 +28,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -50,7 +47,7 @@ public class RosettaCSVConfigurationTest {
         assertEquals(RosettaCSVConfiguration.EMPTY, config);
         assertTrue(config.isHasHeader());
         assertEquals(HeaderStyle.ATTRIBUTE_NAME, config.getHeaderStyle());
-        assertEquals(Arrays.asList(""), config.getNullTokens());
+        assertEquals("", config.getNullToken());
         assertEquals(',', config.getDialect().getColumnDelimiter());
         assertEquals('"', config.getDialect().getQuoteChar());
         // null, not the quote character: RFC 4180 has no escape character, only the doubled quote.
@@ -63,7 +60,7 @@ public class RosettaCSVConfigurationTest {
                 + "\"dialect\": {\"columnDelimiter\": \";\", \"quoteChar\": \"'\", \"escapeChar\": \"\\\\\"},"
                 + "\"headerStyle\": \"LABEL\","
                 + "\"listDelimiter\": \"|\","
-                + "\"nullTokens\": [\"\", \"NULL\", \"N/A\"],"
+                + "\"nullToken\": \"N/A\","
                 + "\"hasHeader\": true"
                 + "}";
 
@@ -74,7 +71,7 @@ public class RosettaCSVConfigurationTest {
         assertEquals(Character.valueOf('\\'), config.getDialect().getEscapeChar());
         assertEquals(HeaderStyle.LABEL, config.getHeaderStyle());
         assertEquals("|", config.getListDelimiter());
-        assertEquals(Arrays.asList("", "NULL", "N/A"), config.getNullTokens());
+        assertEquals("N/A", config.getNullToken());
         assertTrue(config.isHasHeader());
     }
 
@@ -153,7 +150,7 @@ public class RosettaCSVConfigurationTest {
         assertEquals("|", config.getListDelimiter());
         assertEquals(CsvDialect.RFC_4180, config.getDialect());
         assertEquals(HeaderStyle.ATTRIBUTE_NAME, config.getHeaderStyle());
-        assertEquals(Arrays.asList(""), config.getNullTokens());
+        assertEquals("", config.getNullToken());
         assertTrue(config.isHasHeader());
     }
 
@@ -190,13 +187,13 @@ public class RosettaCSVConfigurationTest {
     @Test
     void toBuilderVariesOneSettingAndKeepsTheRest() throws IOException {
         RosettaCSVConfiguration loaded = RosettaCSVConfiguration.load(
-                json("{\"listDelimiter\": \"|\", \"nullTokens\": [\"\", \"NULL\"]}"));
+                json("{\"listDelimiter\": \"|\", \"nullToken\": \"NULL\"}"));
 
         RosettaCSVConfiguration varied = loaded.toBuilder().setHeaderStyle(HeaderStyle.LABEL).build();
 
         assertEquals(loaded, varied.toBuilder().setHeaderStyle(HeaderStyle.ATTRIBUTE_NAME).build());
         assertEquals("|", varied.getListDelimiter());
-        assertEquals(Arrays.asList("", "NULL"), varied.getNullTokens());
+        assertEquals("NULL", varied.getNullToken());
         assertEquals(HeaderStyle.LABEL, varied.getHeaderStyle());
     }
 
@@ -214,16 +211,5 @@ public class RosettaCSVConfigurationTest {
         assertEquals("|", config.getListDelimiter());
         assertEquals(CsvDialect.RFC_4180, config.getDialect());
         assertTrue(config.isHasHeader());
-    }
-
-    @Test
-    void nullTokensAreCopiedDefensivelyAndReturnedUnmodifiable() {
-        List<String> supplied = new ArrayList<>(Arrays.asList("", "NULL"));
-        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder().setNullTokens(supplied).build();
-
-        supplied.add("N/A");
-
-        assertEquals(Arrays.asList("", "NULL"), config.getNullTokens());
-        assertThrows(UnsupportedOperationException.class, () -> config.getNullTokens().add("N/A"));
     }
 }

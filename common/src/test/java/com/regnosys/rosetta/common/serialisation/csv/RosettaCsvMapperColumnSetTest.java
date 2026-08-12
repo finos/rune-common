@@ -32,15 +32,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Putting columns in declaration order must not change <em>which</em> columns there are.
  *
- * <p>The order is recovered from the generated {@code process} visitor, and the visitor does not
- * report every property jackson serialises — a metadata-annotated attribute arrives at
- * {@code processRosetta} rather than {@code processBasic}. When such an attribute was left out of the
- * recovered order, the reordered schema lost its column, and jackson then refused to write the
- * property at all ({@code Unrecognized column 'scheme'}) even though nothing had been assigned to it.
- *
- * <p>{@code MetadataAttributeHolder} is the construct available here that reproduces that. These
- * tests fail without both halves of the fix: recording {@code processRosetta} attributes in the
- * collector, and never letting the reorder narrow the column set.
+ * <p>The order is recovered from the generated {@code process} visitor, which does not report every property
+ * jackson serialises — a metadata-annotated attribute arrives at {@code processRosetta} rather than
+ * {@code processBasic}. Left out of the recovered order, such an attribute loses its column in the reordered
+ * schema, and jackson then refuses to write the property at all ({@code Unrecognized column 'scheme'}) even
+ * though nothing was assigned to it. {@code MetadataAttributeHolder} is the construct available here that
+ * reproduces that.
  */
 public class RosettaCsvMapperColumnSetTest {
 
@@ -52,9 +49,8 @@ public class RosettaCsvMapperColumnSetTest {
     }
 
     /**
-     * The regression this class exists for. An unassigned metadata attribute must still get its
-     * column and an empty cell, which is what the mapper did before column order moved to declaration
-     * order. Without the fix this throws {@code CsvWriteException: Unrecognized column 'scheme'}.
+     * An unassigned metadata attribute must still get its column and an empty cell. Without both halves of
+     * the fix this throws {@code CsvWriteException: Unrecognized column 'scheme'}.
      */
     @Test
     void anAttributeTheVisitorDoesNotReportAsBasicStillGetsItsColumn() throws Exception {
@@ -77,10 +73,9 @@ public class RosettaCsvMapperColumnSetTest {
     }
 
     /**
-     * The header-less paths read the column count from the same reordered schema, so a narrowed set
-     * showed up there as a width complaint about a file that was in fact the right width — the wrong
-     * diagnosis for the wrong problem. Asserted through a write/read round trip, since both sides are
-     * built from the one helper.
+     * The header-less paths read the column count from the same reordered schema, so a narrowed set surfaces
+     * there as a width complaint about a file that is in fact the right width. Asserted through a write/read
+     * round trip, since both sides are built from the one helper.
      */
     @Test
     void aHeaderlessRoundTripAgreesOnTheColumnCount() throws Exception {
@@ -95,10 +90,10 @@ public class RosettaCsvMapperColumnSetTest {
     }
 
     /**
-     * The complement, pinned so the fix is not mistaken for support this mapper does not have: a
-     * <em>populated</em> metadata attribute cannot be written to CSV, because jackson has no cell
-     * shape for the {@code FieldWithMeta*} object it generates. That is true before and after the
-     * fix, and it is why the rune-dsl tabular rule is the right place to refuse such a type.
+     * The complement, so the above is not mistaken for support this mapper does not have: a
+     * <em>populated</em> metadata attribute cannot be written to CSV, because jackson has no cell shape for
+     * the {@code FieldWithMeta*} object it generates. Which is why the rune-dsl tabular rule is the right
+     * place to refuse such a type.
      */
     @Test
     void aPopulatedMetadataAttributeStillCannotBeWritten() {

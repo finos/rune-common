@@ -218,9 +218,8 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * A labelled function whose {@code CSV} config leaves {@code headerStyle} at {@code ATTRIBUTE_NAME}.
-     * The regression guard for the whole redesign: the format no longer decides, so this must <b>not</b>
-     * acquire labels from its function.
+     * A labelled function whose {@code CSV} config leaves {@code headerStyle} at {@code ATTRIBUTE_NAME}. The
+     * format does not decide, so this must <b>not</b> acquire labels from its function.
      */
     @Projection(format = SerializationFormat.CSV, configPath = CSV_CONFIG)
     @RuneLabelProvider(labelProvider = FunctionLabelProvider.class)
@@ -268,7 +267,7 @@ class ClasspathTransformMapperFactoryTest {
     @Test
     void csvLabelledProjectionWithoutRootTypeStillUsesTheFunctionProvider() throws JsonProcessingException {
         // Regression guard for today's working path: no root type supplied, so resolution falls back to
-        // the function's own provider exactly as before Step 3.
+        // the function's own provider.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class);
 
@@ -352,7 +351,7 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void csvLabelledIngestWithLabelledInputTypeUsesTheTypeProvider() throws JsonProcessingException {
-        // The CSV-import case this whole story exists for: an ingest's function-rooted provider is wrongly
+        // The CSV-import case: an ingest's function-rooted provider is wrongly
         // rooted at its output, but the caller now supplies the CSV input type as rootType, and type-first
         // resolution picks that up regardless of the (rejected) function provider.
         TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
@@ -364,8 +363,8 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void csvLabelledResolvesTheTypeProviderThroughAnImplClass() throws JsonProcessingException {
-        // Ties Step 1's supertype search to this seam: passing the "…Impl" shape as rootType (rather than
-        // the pojo interface itself) must still find the interface's annotation.
+        // The supertype search applies here too: passing the "…Impl" shape as rootType, rather than the
+        // pojo interface itself, must still find the interface's annotation.
         ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
                 null, TransformRoot.input(LabelledRootTypeImpl.class));
 
@@ -478,8 +477,8 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void anExistingSubclassOverrideStillDecidesTheFunctionRootedBranch() throws JsonProcessingException {
-        // Kept-but-never-called would be worse than removed: it compiles, runs, and silently stops doing
-        // anything. On the branch it was written for, it still decides.
+        // A hook kept but never called is worse than one removed: it compiles, runs and silently stops
+        // deciding anything. On the branch it was written for, it still decides.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = new OverridingResolutionFactory()
                 .create(s, CsvLabelledProjectionWithFunctionProvider.class);
@@ -498,9 +497,8 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void anExistingSubclassOverrideOfCsvLabelledMapperStillDecidesWhenNoRootIsSupplied() throws JsonProcessingException {
-        // Same rule as for resolveLabelProvider(Class): a hook kept only so it still compiles is worse
-        // than one removed, because it compiles, runs, and silently stops doing anything. A null root is
-        // exactly this overload's pre-root-context case, so it still decides that case.
+        // Same rule as for resolveLabelProvider(Class). A null root is exactly this overload's
+        // pre-root-context case, so it still decides that case.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = new OverridingCsvLabelledMapperFactory()
                 .create(s, CsvLabelledProjectionWithFunctionProvider.class);
@@ -576,8 +574,7 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * The headline of the redesign: the plain {@code CSV} format serves labelled CSV when — and only
-     * when — its configuration asks for it. Both halves of the config take effect, the semicolon dialect
+     * The plain {@code CSV} format serves labelled CSV when — and only when — its configuration asks for it. Both halves of the config take effect, the semicolon dialect
      * and the LABEL header style.
      * <p>
      * jackson-csv's own quoting heuristic quotes any character below max(separator, quoteChar) + 1, so
@@ -593,10 +590,9 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * The complement, and the regression guard for the whole redesign: the same format on a function that
-     * <em>does</em> carry {@code @RuneLabelProvider}, whose config does not ask for labels, must stay
-     * plain. Before this change the format decided; now the config does, and a plain CSV transform must
-     * not acquire labels merely because its function has a provider.
+     * The complement: the same format on a function that <em>does</em> carry {@code @RuneLabelProvider},
+     * whose config does not ask for labels, must stay plain. A plain CSV transform must not acquire labels
+     * merely because its function has a provider.
      */
     @Test
     void csvMapperWithANonLabelConfigStaysPlainEvenWithAProviderAvailable() throws JsonProcessingException {
@@ -638,10 +634,9 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * The decision this redesign turns on: a config declaring {@code headerStyle=LABEL} for which no
-     * provider can be found <b>fails</b>, where {@code CSV_LABELLED} degrades to plain CSV. Proceeding
-     * would mean treating LABEL as ATTRIBUTE_NAME — silently discarding the one setting the configuration
-     * exists to state.
+     * A config declaring {@code headerStyle=LABEL} for which no provider can be found <b>fails</b>, where
+     * {@code CSV_LABELLED} degrades to plain CSV. Proceeding would mean treating LABEL as ATTRIBUTE_NAME,
+     * discarding the one setting the configuration exists to state.
      * <p>
      * The message has to carry both ends of the diagnosis: which config asked, and why nothing could
      * answer. Here the function's provider exists but is rooted at its own output, and this is the
@@ -663,10 +658,9 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * {@code CSV_LABELLED} reads no configuration at all now — with a root or without one. Verified in
-     * both directions rather than inferred from the delegation: this and the test below assert the comma
-     * where {@link #csvMapperWithALabelConfigIsLabelled} asserts the semicolon the same config produces
-     * through the {@code CSV} format.
+     * {@code CSV_LABELLED} reads no configuration, with a root or without one. Asserted in both directions:
+     * this and the test below assert the comma where {@link #csvMapperWithALabelConfigIsLabelled} asserts the
+     * semicolon the same config produces through the {@code CSV} format.
      */
     @Test
     void csvLabelledWithConfigPathDropsTheConfigWithNoRoot() throws JsonProcessingException {
@@ -680,8 +674,7 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void csvLabelledWithConfigPathDropsTheConfigWithARootToo() throws JsonProcessingException {
-        // Supplying a root used to be what made the config apply. The format reads none now, so it does
-        // not — this is the one behaviour the redesign deliberately takes away.
+        // Supplying a root does not make the config apply either: this format reads none at all.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
 
         ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class, TransformRoot.output());
@@ -794,8 +787,8 @@ class ClasspathTransformMapperFactoryTest {
     /**
      * The deprecated no-argument {@code csvMapper()} is the released extension point for a transform that
      * declares no config path, so it must still decide that case. A subclass that overrode it before the
-     * config path existed would otherwise compile, run and be silently ignored — the failure this
-     * delegation exists to prevent, and the same treatment {@code csvLabelledMapper(Class)} gets.
+     * config path existed would otherwise compile, run and be silently ignored — the same treatment
+     * {@code csvLabelledMapper(Class)} gets.
      */
     @Test
     @SuppressWarnings("deprecation")
@@ -839,7 +832,7 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     // ---------------------------------------------------------------------------
-    // TASK-9603: supplying the CSV configuration at deployment time
+    // Supplying the CSV configuration at deployment time
     // ---------------------------------------------------------------------------
 
     /** A deployment that keeps its CSV configuration outside the model artifact. */
@@ -853,10 +846,9 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * The requirement this task exists for: a client whose files are semicolon-delimited, served without
-     * rebuilding the model. A round trip is the proof asked for — a header assertion alone would show the
-     * writer honouring the configuration while leaving the reader untested, and the two are configured
-     * from the same object.
+     * A client whose files are semicolon-delimited, served without rebuilding the model. Asserted as a round
+     * trip: a header assertion alone would show the writer honouring the configuration while leaving the
+     * reader untested.
      */
     @Test
     void aDeploymentSuppliedConfigurationRoundTripsSemicolonDelimitedCsv() throws IOException {
@@ -874,10 +866,8 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * {@code hasHeader: false} reaches the mapper by the same deployment route, now that header-less CSV
-     * is implemented — the setting used to be refused at construction, so a deployment declaring it got
-     * an {@code UncheckedIOException} rather than a mapper. Header-less is the setting most likely to
-     * come from a deployment rather than a model: whether a production feed carries a header row is a
+     * {@code hasHeader: false} reaches the mapper by the same deployment route. It is the setting most likely
+     * to come from a deployment rather than a model: whether a production feed carries a header row is a
      * property of the feed, not of the type being ingested.
      */
     @Test
@@ -927,8 +917,7 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
-     * The accepted limitation, pinned so it is a decision on record rather than a surprise: the hook is
-     * keyed on the config path, so a transform declaring none never reaches it and takes
+     * The accepted limitation: the hook is keyed on the config path, so a transform declaring none never reaches it and takes
      * {@code RosettaCSVConfiguration.EMPTY}. A deployment chooses the content behind a declared path; it
      * cannot introduce a configuration where the model asked for none.
      * <p>

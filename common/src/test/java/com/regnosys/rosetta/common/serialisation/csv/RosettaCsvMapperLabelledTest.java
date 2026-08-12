@@ -343,14 +343,13 @@ public class RosettaCsvMapperLabelledTest {
     // ---------------------------------------------------------------------------
 
     /**
-     * {@link #shouldFallBackToPositionalBindingWhenTwoColumnsShareTheSameLabelOnRead} writes then
-     * reads through the same order, so it only proves the two sides agree with each other — which
-     * is exactly how an alphabetical binding could have survived undetected. A hand-authored file,
-     * read directly, is the only thing that distinguishes "positional fallback binds by declaration
-     * order" from "positional fallback binds by some other order the writer happens to also use".
-     * {@code firstName} and {@code lastName} share the label "Name", forcing positional binding;
-     * {@code User} declares {@code username, identifier, firstName, lastName}, so column A must
-     * bind to {@code username}, not (alphabetically) to {@code firstName}.
+     * {@link #shouldFallBackToPositionalBindingWhenTwoColumnsShareTheSameLabelOnRead} writes then reads
+     * through the same order, so it only proves the two sides agree with each other. A hand-authored file,
+     * read directly, is what distinguishes "positional fallback binds by declaration order" from "binds by
+     * some other order the writer happens to also use". {@code firstName} and {@code lastName} share the
+     * label "Name", forcing positional binding; {@code User} declares
+     * {@code username, identifier, firstName, lastName}, so column A must bind to {@code username}, not
+     * (alphabetically) to {@code firstName}.
      */
     @Test
     void shouldBindPositionalFallbackByDeclarationOrderOnADirectlyAuthoredFile() throws JsonProcessingException {
@@ -381,10 +380,8 @@ public class RosettaCsvMapperLabelledTest {
     // ---------------------------------------------------------------------------
 
     /**
-     * A {@code headerStyle: LABEL} configuration with no {@link LabelProvider} has no
-     * attribute-to-label mapping to use, so it must fail loudly at construction rather than
-     * silently writing attribute names — a supplied setting that has no effect and reports
-     * nothing is precisely the defect to avoid.
+     * A {@code headerStyle: LABEL} configuration with no {@link LabelProvider} has no attribute-to-label
+     * mapping to use, so it fails at construction rather than silently writing attribute names.
      */
     @Test
     void shouldThrowWhenHeaderStyleIsLabelWithNoLabelProviderSupplied() {
@@ -402,11 +399,10 @@ public class RosettaCsvMapperLabelledTest {
     // ---------------------------------------------------------------------------
 
     /**
-     * The mirror of {@link #shouldThrowWhenHeaderStyleIsLabelWithNoLabelProviderSupplied}, and the
-     * more dangerous half: {@code ATTRIBUTE_NAME} never consults a {@link LabelProvider}, so a
-     * supplied one would be dropped and attribute names written in its place — plausible output
-     * rather than an obvious failure. Both halves of the pairing are therefore checked, so the
-     * header style and the provider cannot disagree.
+     * The mirror of {@link #shouldThrowWhenHeaderStyleIsLabelWithNoLabelProviderSupplied}, and the more
+     * dangerous half: {@code ATTRIBUTE_NAME} never consults a {@link LabelProvider}, so a supplied one would
+     * be dropped and attribute names written in its place — plausible output rather than an obvious
+     * failure.
      */
     @Test
     void shouldThrowWhenALabelProviderIsSuppliedButHeaderStyleIsAttributeName() {

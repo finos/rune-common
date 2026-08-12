@@ -84,9 +84,8 @@ public class RosettaCSVConfigurationTest {
     }
 
     /**
-     * {@code hasHeader=false} used to be refused outright, header-less CSV being unimplemented. It is
-     * now implemented — reads bind by position in declaration order, writes suppress the header row —
-     * so the setting is accepted, and this is the test that the blanket refusal is gone.
+     * {@code hasHeader=false} is accepted: reads bind by position in declaration order, writes suppress the
+     * header row.
      */
     @Test
     void hasHeaderFalseIsAccepted() {
@@ -97,10 +96,8 @@ public class RosettaCSVConfigurationTest {
     }
 
     /**
-     * The one combination header-less support does not make reachable, and the check the removed
-     * blanket refusal's own comment said to reinstate alongside it. A label is header text; a file
-     * declared to have no header row has nowhere to carry one, so the two settings contradict each
-     * other and neither half can be assumed to be the one the caller meant.
+     * A label is header text; a file declared to have no header row has nowhere to carry one. The two
+     * settings contradict each other and neither half can be assumed to be the one the caller meant.
      */
     @Test
     void hasHeaderFalseWithLabelHeaderStyleThrowsAtConstruction() {
@@ -115,10 +112,9 @@ public class RosettaCSVConfigurationTest {
     }
 
     /**
-     * If the list delimiter and the column delimiter were the same character, a list element and a
-     * column boundary inside the same cell could not be told apart. Design §3.7 lists this as a
-     * configure-time validation on the import side; rejecting it here too closes the runtime case at
-     * the same place every other invalid combination in this class is rejected — construction.
+     * If the list delimiter and the column delimiter were the same character, a list element and a column
+     * boundary inside the same cell could not be told apart. Rejected at construction, where every other
+     * invalid combination in this class is rejected.
      */
     @Test
     void listDelimiterEqualToColumnDelimiterThrowsAtConstruction() {
@@ -189,10 +185,9 @@ public class RosettaCSVConfigurationTest {
     }
 
     /**
-     * The escape character is independent of the quote character. Were it defaulted to the quote
-     * character instead of to {@code null}, customising only {@code quoteChar} would leave it
-     * holding the <i>default</i> quote character — no longer equal to the quote character in force,
-     * so the mapper would configure a real escape character the caller never asked for.
+     * The escape character is independent of the quote character. Defaulted to the quote character instead
+     * of {@code null}, customising only {@code quoteChar} would leave it holding the <i>default</i> quote
+     * character, and the mapper would configure a real escape character the caller never asked for.
      */
     @Test
     void customisingTheQuoteCharDoesNotIntroduceAnEscapeChar() {
@@ -225,8 +220,7 @@ public class RosettaCSVConfigurationTest {
     /**
      * The constructor takes plain nullable types rather than {@code Optional}s, so — unlike
      * {@code RosettaXMLConfiguration} — this class deserialises through a caller's own mapper with no
-     * {@code Jdk8Module} registered. Before that change an absent property bound to a null
-     * {@code Optional} and the constructor threw {@code NullPointerException}.
+     * {@code Jdk8Module} registered.
      */
     @Test
     void deserialisesThroughAnUnconfiguredObjectMapper() throws IOException {

@@ -108,11 +108,9 @@ class CachingTransformMapperFactoryTest {
     /**
      * {@code CSV} takes the same {@code (function class, root)} scope as {@code CSV_LABELLED}, because its
      * configuration decides whether it resolves a {@link LabelProvider} and that cannot be known without
-     * loading the config. So two function classes do not share a CSV mapper even within one classloader.
-     *
-     * <p>That is deliberately wider than this particular request depends on — with no config path no
-     * provider is resolved, so the two mappers are identical and the only cost is building them twice.
-     * Pinned so the narrowing is a decision rather than an accident.</p>
+     * loading the config. So two function classes do not share a CSV mapper even within one classloader,
+     * wider than this particular request depends on — with no config path the two mappers are identical and
+     * the only cost is building them twice.
      */
     @Test
     void csvIsCachedPerFunctionClassAndRoot() {
@@ -132,11 +130,9 @@ class CachingTransformMapperFactoryTest {
      * class determines its own loader, so scoping to the class is strictly narrower than scoping to the
      * loader and can never serve a mapper built against another model.
      *
-     * <p>This is the reachable half. The unreachable half — two function classes from genuinely different
-     * classloaders declaring the same {@code configPath} — needs a second classloader to demonstrate, and
-     * the ownership rule (one factory per model instance) means production never puts two model
-     * classloaders behind one factory anyway. The scope is what makes that a structural fact rather than a
-     * convention.</p>
+     * <p>Only the reachable half is asserted. Two function classes from genuinely different classloaders
+     * would need a second classloader to demonstrate, and the ownership rule — one factory per model
+     * instance — means production never puts two model classloaders behind one factory.</p>
      */
     @Test
     void csvDoesNotShareAcrossDifferentClassLoaderScopes() {
@@ -147,18 +143,15 @@ class CachingTransformMapperFactoryTest {
     }
 
     /**
-     * The {@code configPath} is the only part of the key that distinguishes these two requests — they
-     * carry the same function class and root — so once {@code hasHeader} became something a mapper
-     * differs by, the question was whether two transforms with different header expectations could
-     * collide on one cache entry. They cannot, and the reason is structural
-     * rather than a property of this key: a non-default configuration is only reachable through a
-     * {@code configPath} — {@code ClasspathTransformMapperFactory.forCsv} short-circuits to
-     * {@code RosettaCSVConfiguration.EMPTY}, which is header-bearing, when the path is null or empty —
-     * so a transform that expects no header necessarily declares a path, and differs in the key.
+     * Two transforms with different header expectations must not collide on one cache entry. The
+     * {@code configPath} is the only part of the key that distinguishes these two requests — they carry the
+     * same function class and root — and that suffices structurally: a non-default configuration is only
+     * reachable through a {@code configPath}, since the factory short-circuits to the header-bearing
+     * {@code RosettaCSVConfiguration.EMPTY} when the path is null or empty.
      *
      * <p>Asserted by behaviour rather than identity: two paths whose configurations differ only in
-     * {@code hasHeader} must produce mappers that write differently. Identity alone would pass on a key
-     * that happened to distinguish them for some unrelated reason.</p>
+     * {@code hasHeader} must produce mappers that write differently. Identity alone would pass on a key that
+     * happened to distinguish them for an unrelated reason.</p>
      */
     @Test
     void csvMappersWithDifferentHeaderExpectationsDoNotShareACacheEntry() throws JsonProcessingException {
@@ -195,12 +188,11 @@ class CachingTransformMapperFactoryTest {
     /**
      * A {@code CSV} mapper is labelled or not according to its configuration, so once a config path is
      * declared it depends on the root exactly as a {@code CSV_LABELLED} mapper does, and two roots must not
-     * share an entry. This is why {@code CSV} with a config path takes the wider scope even though which
-     * configs ask for labels cannot be known when the key is computed.
+     * share an entry — which is why {@code CSV} takes the wider scope even though which configs ask for
+     * labels cannot be known when the key is computed.
      *
-     * <p>Asserted by behaviour rather than identity: two root types carrying different providers must
-     * produce mappers that label differently. Identity alone would pass on a key that happened to
-     * distinguish them for some unrelated reason.</p>
+     * <p>Asserted by behaviour rather than identity: two root types carrying different providers must produce
+     * mappers that label differently.</p>
      */
     @Test
     void csvWithALabelConfigIsCachedPerRoot() throws JsonProcessingException {

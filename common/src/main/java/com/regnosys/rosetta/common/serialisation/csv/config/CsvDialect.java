@@ -29,29 +29,23 @@ import java.util.Objects;
  * The punctuation of a CSV file: the character separating columns, the character quoting a
  * value that contains that separator, and the character escaping a quote inside a quoted value.
  *
- * <p>{@code columnDelimiter}, {@code quoteChar} and {@code escapeChar} are a single {@code char}
- * each, not a {@code String} — {@code com.fasterxml.jackson.dataformat.csv.CsvSchema} takes a
- * {@code char} for each of these three. (The list delimiter on {@code RosettaCSVConfiguration} is
- * a {@code String}, because {@code CsvSchema}'s array-element separator is.)</p>
+ * <p>Each of the three is a single {@code char}, not a {@code String}, because
+ * {@code com.fasterxml.jackson.dataformat.csv.CsvSchema} takes a {@code char} for each. (The list delimiter
+ * on {@code RosettaCSVConfiguration} is a {@code String}, because {@code CsvSchema}'s array-element
+ * separator is.)</p>
  *
- * <p>Defaults are RFC 4180: comma-separated, double-quoted, with a quote inside a quoted value
- * escaped by doubling it. RFC 4180 has no separate escape character, only that doubled quote, so
- * {@link #getEscapeChar()} defaults to {@code null} — "there is no escape character" — rather than
- * to any particular one. Translating that into a {@code CsvSchema} ({@code disableEscapeChar()} vs.
- * an explicit escape character) is the mapper's job, not this class's.</p>
+ * <p>Defaults are RFC 4180: comma-separated, double-quoted, with a quote inside a quoted value escaped by
+ * doubling it. RFC 4180 has no separate escape character, only that doubled quote, so
+ * {@link #getEscapeChar()} defaults to {@code null} — "there is no escape character" — rather than to the
+ * quote character, which would couple the two settings: a caller customising only {@code quoteChar} would
+ * leave {@code escapeChar} holding the <em>default</em> quote character, and a mapper reading both fields
+ * would configure a real, distinct escape character nobody asked for. Translating {@code null} into a
+ * {@code CsvSchema} ({@code disableEscapeChar()} vs. an explicit escape character) is the mapper's job.</p>
  *
- * <p>The default is {@code null} rather than the quote character because the two settings have to
- * be independent. Defaulting {@code escapeChar} to the quote character couples them: a caller who
- * customises only {@code quoteChar} would leave {@code escapeChar} holding the *default* quote
- * character, which is then no longer equal to the quote character in force, so a mapper reading
- * these two fields would configure a real, distinct escape character the caller never asked for —
- * silently escaping {@code "} inside every value.</p>
- *
- * <p><b>Construction.</b> Use {@link #builder()}, or {@link #RFC_4180} for the defaults. Every
- * setting left unset on the builder takes its default, so
- * {@code CsvDialect.builder().setColumnDelimiter(';').build()} is a semicolon-separated RFC 4180
- * dialect in every other respect. JSON deserialisation goes through the same constructor, so a
- * document naming only {@code columnDelimiter} produces the same object.</p>
+ * <p><b>Construction.</b> Use {@link #builder()}, or {@link #RFC_4180} for the defaults. Every setting left
+ * unset takes its default, so {@code CsvDialect.builder().setColumnDelimiter(';').build()} is a
+ * semicolon-separated RFC 4180 dialect in every other respect. JSON deserialisation goes through the same
+ * constructor.</p>
  */
 public class CsvDialect {
     public static final char DEFAULT_COLUMN_DELIMITER = ',';

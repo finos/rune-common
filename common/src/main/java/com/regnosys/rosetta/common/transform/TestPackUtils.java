@@ -183,12 +183,10 @@ public class TestPackUtils {
     /**
      * <b>Limitation, for the {@code CSV} format.</b> A CSV mapper is labelled or not according to its
      * configuration, and this method has no function class or transform root to resolve a
-     * {@code LabelProvider} from — it passes {@code null} for both, preserving the legacy classpath
-     * lookup. So a {@code CSV} serialisation whose configuration declares {@code headerStyle: LABEL}
-     * cannot be served here and fails with the factory's own message. Resolve the serialization from the
-     * function's annotations instead, as the deprecation note says; that path has the context this one
-     * discarded. Extending the deprecated API to carry a provider into {@code CSV} would deepen a route
-     * that is being removed.
+     * {@code LabelProvider} from — it passes {@code null} for both, preserving the legacy classpath lookup.
+     * So a {@code CSV} serialisation whose configuration declares {@code headerStyle: LABEL} cannot be
+     * served here and fails with the factory's own message. Resolve the serialization from the function's
+     * annotations instead, as the deprecation note says; that path has the context this one discarded.
      */
     @SuppressWarnings("deprecation")
     private static Optional<ObjectMapper> legacyObjectMapper(PipelineModel.Serialisation serialisation) {

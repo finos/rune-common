@@ -83,11 +83,9 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * The header style and the {@link LabelProvider} have to agree: {@link HeaderStyle#LABEL} is the
-     * one style that consults a provider, and it is the only style that can. Either half without the
-     * other is rejected here rather than resolved silently — a provider that no header style will
-     * ever call would be dropped without a word, which is the failure this constructor exists to
-     * make impossible.
+     * The header style and the {@link LabelProvider} have to agree: {@link HeaderStyle#LABEL} is the one
+     * style that consults a provider, and the only one that can. Either half without the other is rejected
+     * rather than resolved silently, so a supplied provider is never dropped without a word.
      *
      * @throws IllegalArgumentException if {@code headerStyle} is {@code LABEL} and no provider is
      *                                  supplied, or a provider is supplied and {@code headerStyle}
@@ -142,17 +140,15 @@ public class RosettaCsvMapper extends CsvMapper  {
     /**
      * Whether a {@link URL} can be handed straight to jackson rather than being buffered into a
      * {@code String} first. Three things need the whole document up front: reading the header row to
-     * resolve labels; the list-element null-token pre-pass — that one only for a type that actually
-     * has a multi-cardinality attribute for a null token to appear inside; and a header-less read,
-     * which has to measure the first row's width before binding it (see
-     * {@link #buildHeaderlessReadSchema}). A type of scalars only, read with a header, still streams.
+     * resolve labels; the list-element null-token pre-pass, for a type that has a multi-cardinality
+     * attribute for a null token to appear inside; and a header-less read, which has to measure the first
+     * row's width before binding it (see {@link #buildHeaderlessReadSchema}). A type of scalars only, read
+     * with a header, still streams.
      *
-     * <p>Takes {@code valueType} rather than reading the configuration alone because the second
-     * condition is a property of the type, not of the configuration. Getting this wrong is not a
-     * performance question: the streaming path skips
-     * {@link #stripListElementsMeaningAbsent}, so a list cell that needs stripping
-     * would instead reach jackson intact and fail deep inside Guava's null-rejecting
-     * {@code ImmutableList}.</p>
+     * <p>Takes {@code valueType} because the second condition is a property of the type, not of the
+     * configuration. Not merely a performance question: the streaming path skips
+     * {@link #stripListElementsMeaningAbsent}, so a list cell that needs stripping would reach jackson
+     * intact and fail deep inside Guava's null-rejecting {@code ImmutableList}.</p>
      */
     private boolean canStream(Class<?> valueType) {
         return configuration.getHeaderStyle() != HeaderStyle.LABEL
@@ -189,24 +185,21 @@ public class RosettaCsvMapper extends CsvMapper  {
     /**
      * Binds a header-less file's columns by position, against the type's attribute declaration order —
      * the one order every other path in this class uses, so a header-less write and a header-less read
-     * agree by construction.
+     * agree by construction. The explicit column list is what makes this work: an
+     * {@code emptySchema().withoutHeader()} has no columns, so jackson emits an array and nothing binds to
+     * the bean.
      *
-     * <p>An explicit column list is what makes this work: {@code emptySchema().withoutHeader()} has no
-     * columns at all, so jackson emits an array and nothing binds to the bean. Measured, not inferred.</p>
+     * <p>Requires the first row's width to match the type's column count exactly. With a header row a
+     * structurally unexpected file announces itself; with none, a short row silently leaves its trailing
+     * attributes absent, which for a mandatory attribute becomes a cardinality violation somewhere later,
+     * or plausible-looking data. Jackson throws on a row that is too <em>wide</em>, but that is checked
+     * here as well so both directions of mismatch report the same thing, naming the type and both
+     * counts.</p>
      *
-     * <p>Requires the first row's width to match the type's column count exactly. With a header row
-     * there is a name for every column and a structurally unexpected file announces itself; with none,
-     * a short row would silently leave its trailing attributes absent — jackson reports nothing, as
-     * measured — which for a mandatory attribute turns a malformed file into a cardinality violation
-     * somewhere later, or into plausible-looking data. Jackson does throw on a row that is too
-     * <em>wide</em>, but it is checked here as well so both directions of mismatch report the same
-     * thing, naming the type and both counts.</p>
-     *
-     * <p><b>The first row only, and that is the whole document this call binds.</b> A {@code readValue}
-     * binds one value from one row, so a later row in the same document is never read and its width is
-     * never checked. The check therefore covers everything this call consumes. Do not read it as a
-     * validation of the file: a multi-row header-less document passes on the strength of row one, and a
-     * caller that iterates rows itself gets no width check on rows two onward.</p>
+     * <p><b>The first row only, which is the whole document this call binds.</b> A {@code readValue} binds
+     * one value from one row, so this is not a validation of the file: a multi-row header-less document
+     * passes on the strength of row one, and a caller that iterates rows itself gets no width check on rows
+     * two onward.</p>
      *
      * @param content the whole document — needed to measure the first row, which is why a header-less
      *                read cannot stream ({@link #canStream})
@@ -236,16 +229,14 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * The first row of {@code content}, read raw, or an <b>empty list</b> if the document holds no
-     * row at all. What that row <em>means</em> is the caller's business: header labels on the labelled
-     * path, attribute names on the plain path, and a data row when {@code hasHeader} is {@code false},
-     * where only its width is of interest.
+     * The first row of {@code content}, read raw, or an <b>empty list</b> if the document holds no row at
+     * all. What that row <em>means</em> is the caller's business: header labels on the labelled path,
+     * attribute names on the plain path, and a data row when {@code hasHeader} is {@code false}, where only
+     * its width is of interest.
      *
-     * <p>Empty rather than an exception because the callers disagree about what a missing first row
-     * means. On the labelled path it is fatal and the caller says so. Elsewhere it is not this
-     * method's business: an empty document is simply an empty document, and jackson's own message —
-     * raised by the read that follows — describes it better than anything thrown from here, which
-     * would otherwise report a labelled-CSV failure on a read that is not labelled.</p>
+     * <p>Empty rather than an exception because the callers disagree about what a missing first row means.
+     * The labelled path treats it as fatal and says so; elsewhere jackson's own message from the read that
+     * follows describes an empty document better than anything thrown from here.</p>
      */
     private List<String> readFirstRow(String content) throws IOException {
         try (MappingIterator<String[]> rows = super.readerFor(String[].class)
@@ -306,12 +297,11 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Binds columns by position against the type's attribute declaration order rather than by
-     * label name. Used only when duplicate labels make name-based binding impossible.
-     * Requires the header column count to match the schema so that a structurally unexpected
-     * file (e.g. reordered or truncated) fails fast rather than silently mis-mapping columns —
-     * the same requirement {@link #buildHeaderlessReadSchema} imposes for the same reason, the
-     * difference being only that the row measured there is data rather than a header.
+     * Binds columns by position against the type's attribute declaration order rather than by label name.
+     * Used only when duplicate labels make name-based binding impossible. Requires the header column count
+     * to match the schema, so a reordered or truncated file fails fast rather than silently mis-mapping
+     * columns — the same requirement {@link #buildHeaderlessReadSchema} imposes, differing only in that the
+     * row measured there is data rather than a header.
      */
     private CsvSchema buildPositionalReadSchema(Class<?> valueType, CsvSchema schema, List<String> headerLabels) {
         if (headerLabels.size() != schema.size()) {
@@ -338,28 +328,27 @@ public class RosettaCsvMapper extends CsvMapper  {
         CsvSchema.Builder builder = schema.rebuild()
                 .setColumnSeparator(dialect.getColumnDelimiter())
                 .setQuoteChar(dialect.getQuoteChar())
-                // Applies schema-wide rather than per column: jackson's CsvGenerator recognises a
-                // multi-valued property by the writeStartArray()/writeEndArray() calls its own bean
-                // serialiser makes, regardless of the column's declared ColumnType, and always
-                // consults this one schema-level separator to join the elements into the cell.
+                // Schema-wide rather than per column: jackson's CsvGenerator recognises a multi-valued
+                // property by the writeStartArray()/writeEndArray() calls its own bean serialiser makes,
+                // regardless of the column's declared ColumnType, and always consults this one
+                // schema-level separator to join the elements into the cell.
                 .setArrayElementSeparator(configuration.getListDelimiter());
         if (dialect.getEscapeChar() == null) {
-            // No escape character — RFC 4180's doubled quote, and the default. See CsvDialect's
-            // javadoc for why this is null rather than the quote character.
+            // No escape character — RFC 4180's doubled quote, and the default. See CsvDialect's javadoc
+            // for why this is null rather than the quote character.
             builder.disableEscapeChar();
         } else {
             builder.setEscapeChar(dialect.getEscapeChar());
         }
-        // On read, a cell exactly matching this is reported as VALUE_NULL by the parser itself,
-        // before any type-specific (number/date/boolean) text parsing is attempted; on write, it is
-        // the token an absent value is written back as. Works for every column type because it is
-        // the parser, not a bean deserialiser, that recognises it.
+        // On read, a cell exactly matching this is reported as VALUE_NULL by the parser itself, before any
+        // type-specific (number/date/boolean) text parsing; on write, it is the token an absent value is
+        // written back as. Works for every column type because it is the parser, not a bean deserialiser,
+        // that recognises it.
         //
-        // The write half depends on RosettaObjectMapperCreator giving the CSV path ALWAYS
-        // serialisation inclusion: an absent attribute has to reach the generator as a null for this
-        // null value to be consulted at all. Under an omitting inclusion (NON_EMPTY/NON_ABSENT) the
-        // generator leaves the column empty and this setting silently has no effect on write —
-        // measured, and the reason the two must stay paired.
+        // The write half depends on RosettaObjectMapperCreator giving the CSV path ALWAYS serialisation
+        // inclusion: an absent attribute has to reach the generator as a null for this null value to be
+        // consulted. Under an omitting inclusion the generator leaves the column empty and this setting
+        // has no effect on write, so the two must stay paired.
         builder.setNullValue(configuration.getNullToken());
         return builder.build();
     }
@@ -390,19 +379,18 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * {@code schema}'s columns in {@code order}, <b>with the column set unchanged</b>. Reordering is
-     * all this does: a column jackson knows about that {@code order} does not mention keeps its
-     * column, appended in {@code schemaFor} order after the ordered ones.
+     * {@code schema}'s columns in {@code order}, <b>with the column set unchanged</b>: a column jackson
+     * knows about that {@code order} does not mention is kept, appended in {@code schemaFor} order after
+     * the ordered ones.
      *
      * <p>That last part is load-bearing, not defensive. {@code order} comes from the generated
-     * {@code process} visitor, and the visitor does not report every property jackson serialises: a
-     * metadata-annotated attribute ({@code [metadata scheme]}, {@code [metadata id]}) is generated as
-     * a {@code FieldWithMeta*} wrapper, so it arrives at {@code processRosetta} rather than
-     * {@code processBasic}. {@link DeclarationOrderCollector} does record those, so they normally keep
-     * their declaration position — but a property no collector knows about at all would otherwise be
-     * dropped from the schema silently, and jackson then fails on writing a property with no column
-     * ({@code Unrecognized column}) or rejects a file whose width no longer matches. Narrowing a
-     * column set is never the right answer to "put these columns in a different order".</p>
+     * {@code process} visitor, which does not report every property jackson serialises — a
+     * metadata-annotated attribute ({@code [metadata scheme]}, {@code [metadata id]}) is generated as a
+     * {@code FieldWithMeta*} wrapper and so arrives at {@code processRosetta} rather than
+     * {@code processBasic}. {@link DeclarationOrderCollector} records those, so they keep their declaration
+     * position; a property no collector knows about at all would otherwise be dropped from the schema
+     * silently, and jackson then fails on writing a property with no column ({@code Unrecognized column})
+     * or rejects a file whose width no longer matches.</p>
      */
     private static CsvSchema reorderColumns(CsvSchema schema, List<String> order) {
         CsvSchema.Builder builder = CsvSchema.builder();
@@ -455,32 +443,28 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Rejects a list element this mapper could write but could not read back. Two kinds cannot
-     * round-trip, and both are rejected here, at the point the bad value is known, rather than
-     * leaving the writer to emit a file its own reader refuses:
+     * Rejects a list element this mapper could write but could not read back, at the point the bad value is
+     * known, rather than leaving the writer to emit a file its own reader refuses. Two kinds cannot
+     * round-trip:
      *
      * <ul>
-     *   <li>an element <b>containing the configured list delimiter</b>. Jackson's array handling has
-     *       no escape for it (RFC 4180 quoting is a cell-level concern, already consumed by the time
-     *       the cell is split on this delimiter), so a two-element list containing it would be
-     *       silently written and read back as three; and</li>
+     *   <li>an element <b>containing the configured list delimiter</b>. Jackson's array handling has no
+     *       escape for it (RFC 4180 quoting is a cell-level concern, already consumed by the time the cell
+     *       is split on this delimiter), so a two-element list containing it would be written and read back
+     *       as three; and</li>
      *   <li>an element <b>equal to the configured null token</b> — the empty string under the default
-     *       {@code nullToken=""}. Written out, such an element is indistinguishable from one meaning
-     *       "absent", and {@link #stripListElementsMeaningAbsent} drops those on read.
-     *       Refusing it here is what stops the writer silently shortening a list: the value would come
-     *       back with one element fewer, which for a {@code (1..*)} attribute is a cardinality violation
-     *       rather than a merely different string.</li>
+     *       {@code nullToken=""}. Such an element is indistinguishable from one meaning "absent", and
+     *       {@link #stripListElementsMeaningAbsent} drops those on read, so writing it would silently
+     *       shorten the list — for a {@code (1..*)} attribute, a cardinality violation.</li>
      * </ul>
      *
-     * <p>The second check is the exact counterpart of {@link #stripListElementsMeaningAbsent} —
-     * <b>the same token</b>, so the writer refuses to emit precisely the element the reader would drop
-     * and the reader never silently loses data this writer produced. <b>The two must be changed
-     * together</b>; narrowing either alone breaks the pairing in one direction or the other. The
-     * asymmetry between them is intended: loud on write, forgiving on read.</p>
+     * <p>The second check uses <b>the same token</b> as {@link #stripListElementsMeaningAbsent}, so the
+     * writer refuses precisely the element the reader would drop. <b>The two must be changed
+     * together.</b></p>
      *
-     * <p>Only {@link RosettaModelObject} values are checked — a plain POJO (as
-     * {@link #schemaInDeclarationOrder(Object)} already accommodates) has no {@code process} visitor
-     * to walk.</p>
+     * <p>Only {@link RosettaModelObject} values are checked — a plain POJO (which
+     * {@link #schemaInDeclarationOrder(Object)} also accommodates) has no {@code process} visitor to
+     * walk.</p>
      *
      * @throws IllegalArgumentException naming the attribute and the offending value
      */
@@ -496,20 +480,16 @@ public class RosettaCsvMapper extends CsvMapper  {
     /**
      * Collects the attribute names {@code process} visits, in visitation (declaration) order.
      *
-     * <p>Records what {@code processRosetta} visits as well as what {@code processBasic} does, because
-     * a <b>metadata-annotated</b> attribute is not visited as basic: {@code [metadata scheme]} or
+     * <p>Records what {@code processRosetta} visits as well as what {@code processBasic} does, because a
+     * <b>metadata-annotated</b> attribute is not visited as basic: {@code [metadata scheme]} or
      * {@code [metadata id]} on a {@code string} is generated as a {@code FieldWithMetaString} wrapper,
-     * which is a {@link RosettaModelObject}, so the visitor routes it to {@code processRosetta}. Such
-     * an attribute is still a column jackson serialises, so it has to keep its declaration position;
-     * omitting it here left {@link #reorderColumns} building a schema without it.</p>
+     * which is a {@link RosettaModelObject}, so the visitor routes it to {@code processRosetta}. Such an
+     * attribute is still a column jackson serialises, so it has to keep its declaration position.</p>
      *
-     * <p>Recursion is still declined in both cases. Only the attribute's own position is wanted, never
-     * the fields inside a wrapper or a complex attribute — those are not columns.</p>
-     *
-     * <p>A genuinely complex attribute is recorded too, harmlessly: {@code reorderColumns} looks each
-     * name up in {@code schemaFor}'s columns and skips one it does not find. Whether such a type can be
-     * written at all is a separate question, and jackson answers it — a nested object in a cell fails
-     * with {@code does not support Object values}, before and after this change alike.</p>
+     * <p>Recursion is declined in both cases: only the attribute's own position is wanted, never the fields
+     * inside a wrapper or a complex attribute, which are not columns. A genuinely complex attribute is
+     * recorded too, harmlessly — {@link #reorderColumns} skips a name it does not find among
+     * {@code schemaFor}'s columns, and jackson is what refuses to write a nested object into a cell.</p>
      */
     private static final class DeclarationOrderCollector implements Processor {
         private final List<String> attributeNames = new ArrayList<>();
@@ -625,29 +605,26 @@ public class RosettaCsvMapper extends CsvMapper  {
      * configured null token — so {@code "EUR;"} reads as {@code [EUR]} and {@code "EUR;;USD"} as
      * {@code [EUR, USD]}.
      *
-     * <p>An element meaning "absent" is nothing. Rune has no representation for a hole inside a list —
-     * the generated immutable rejects a {@code null} element outright — so dropping it applies the
-     * whole-cell rule one level down: a cell meaning "absent" makes its attribute absent, so an element
-     * meaning "absent" makes its element absent.</p>
+     * <p>Rune has no representation for a hole inside a list — the generated immutable rejects a
+     * {@code null} element outright — so dropping it applies the whole-cell rule one level down: a cell
+     * meaning "absent" makes its attribute absent, so an element meaning "absent" makes its element
+     * absent.</p>
      *
      * <p>A cell that splits into a <b>single</b> element is left untouched: that is the whole-cell case,
      * which belongs to the schema's own null-value handling. A cell whose <em>every</em> element is
      * stripped becomes empty, which reads back as an absent list under any configuration.</p>
      *
      * <p>Skips entirely — returning {@code content} itself rather than a re-rendered copy — when
-     * {@code valueType} has no multi-cardinality attribute, or when no cell needed stripping. That
-     * first guard runs <b>before</b> the header row is read, which is why the header is read here
-     * rather than passed in by the plain-path caller: an argument would be evaluated first and the
-     * guard could no longer prevent the work.</p>
+     * {@code valueType} has no multi-cardinality attribute, or when no cell needed stripping. That first
+     * guard runs <b>before</b> the header row is read, which is why the header is read here rather than
+     * passed in by the plain-path caller: an argument would be evaluated first and the guard could no
+     * longer prevent the work.</p>
      *
-     * @param columnAttributeNames the attribute each column binds to, in column order, or
-     *                             {@code null} to read them from the header row. Only the plain
-     *                             header-bearing path passes {@code null}, its header being attribute
-     *                             names already. The labelled path supplies them because its header
-     *                             holds labels rather than attribute names and it has already resolved
-     *                             the mapping; the header-less path supplies them because its first
-     *                             row is data, so reading it would match no attribute and strip
-     *                             nothing
+     * @param columnAttributeNames the attribute each column binds to, in column order, or {@code null} to
+     *                             read them from the header row. Only the plain header-bearing path passes
+     *                             {@code null}, its header being attribute names already. The labelled path
+     *                             supplies them because its header holds labels; the header-less path
+     *                             because its first row is data, so reading it would match no attribute
      * @return {@code content} with those elements removed, or {@code content} itself if none were
      */
     private String stripListElementsMeaningAbsent(String content, Class<?> valueType,
@@ -670,11 +647,10 @@ public class RosettaCsvMapper extends CsvMapper  {
                 String[] row = it.nextValue();
                 for (int i = 0; i < row.length; i++) {
                     if (row[i] == null) {
-                        // Restored to text: the raw reader maps a cell equal to nullToken to Java
-                        // null (the schema's null value), and jackson's CSV generator omits a null
-                        // element from this column-less schema rather than writing an empty field,
-                        // shifting every later column one place left. Never on its own a reason to
-                        // re-emit, so it does not set the flag.
+                        // Restored to text: the raw reader maps a cell equal to nullToken to Java null (the
+                        // schema's null value), and jackson's CSV generator omits a null element from this
+                        // column-less schema rather than writing an empty field, shifting every later
+                        // column one place left. Not on its own a reason to re-emit, so no flag.
                         row[i] = nullToken;
                         continue;
                     }
@@ -804,12 +780,11 @@ public class RosettaCsvMapper extends CsvMapper  {
             mapper.rejectListElementsThatCannotRoundTrip(value);
             CsvSchema schemaInOrder = mapper.schemaInDeclarationOrder(value);
             if (mapper.configuration.getHeaderStyle() != HeaderStyle.LABEL) {
-                // hasHeader describes the file on both sides, so it suppresses the header row on write
-                // as well as expecting none on read. Safe because there is one canonical column order
-                // across every path in this class: a header-less write and a header-less read agree by
-                // construction, so nothing needs the header row to stay in as a safety net. The
-                // LABEL branch below cannot reach hasHeader=false — RosettaCSVConfiguration refuses
-                // that combination.
+                // hasHeader describes the file on both sides, so it suppresses the header row on write as
+                // well as expecting none on read. Safe because there is one canonical column order across
+                // every path in this class, so a header-less write and a header-less read agree by
+                // construction. The LABEL branch below cannot reach hasHeader=false —
+                // RosettaCSVConfiguration refuses that combination.
                 CsvSchema schema = mapper.configuration.isHasHeader()
                         ? mapper.dialectSchema(schemaInOrder.withHeader())
                         : mapper.dialectSchema(schemaInOrder.withoutHeader());

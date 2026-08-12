@@ -35,16 +35,13 @@ import java.util.Objects;
  * used within a single delimited-list column, which token deserialises to an absent value, and
  * whether a file has a header row at all.
  *
- * <p>This is deliberately global-only. It carries no per-type or per-attribute map: column↔attribute
- * binding lives in the model as labels, column order comes from attribute declaration order, and
- * scalar type and conversion come from the attribute type. Adding a keyed layer would reintroduce
- * the drift failure mode a per-type map has elsewhere — an entry naming a type or attribute that no
- * longer exists, silently ignored at lookup rather than reported — for no benefit here, since
- * everything this class configures is already global.</p>
+ * <p>Global-only by design. It carries no per-type or per-attribute map: column↔attribute binding lives in
+ * the model as labels, column order comes from attribute declaration order, and scalar type and conversion
+ * come from the attribute type. A keyed layer would only add the drift failure mode a per-type map has
+ * elsewhere — an entry naming a type or attribute that no longer exists, silently ignored at lookup.</p>
  *
  * <p>An empty configuration ({@code {}}) is behaviourally indistinguishable from RFC 4180 with no
- * configuration at all supplied — every default below is today's hard-coded behaviour, not a new
- * choice. That is what makes introducing this class a no-behaviour-change commit.</p>
+ * configuration supplied at all: every default below is the pre-configuration hard-coded behaviour.</p>
  *
  * <p><b>Construction.</b> Two routes, both ending at the same constructor:</p>
  * <ul>
@@ -69,7 +66,8 @@ public class RosettaCSVConfiguration {
     public static final boolean DEFAULT_HAS_HEADER = true;
 
     /**
-     * The RFC 4180 / today's-hard-coded-behaviour configuration.
+     * The RFC 4180 defaults: comma-separated, attribute-name headers, {@code ;} list delimiter, empty
+     * string as the null token.
      */
     public static final RosettaCSVConfiguration EMPTY = builder().build();
 
@@ -97,11 +95,9 @@ public class RosettaCSVConfiguration {
      * @param nullToken     the cell value that deserialises to an absent value, and that an absent
      *                      value is written back as, or {@code null} for the empty string.
      * @param hasHeader     whether the file being read (or, on write, the file being produced) has a
-     *                      header row; {@code null} for {@code true}. This describes the file, not a
-     *                      preference: a CSV file cannot be sniffed for a header — a header row of
-     *                      codes looks like a data row — so it has to be declared, and this is where.
-     *                      {@code false} binds columns by position, in model attribute declaration
-     *                      order, and suppresses the header row on write.
+     *                      header row; {@code null} for {@code true}. {@code false} binds columns by
+     *                      position, in model attribute declaration order, and suppresses the header row
+     *                      on write. See {@link Builder#setHasHeader(boolean)}.
      * @throws IllegalArgumentException if {@code listDelimiter} is the same as
      *                                  {@code dialect.columnDelimiter}, or if {@code hasHeader} is
      *                                  {@code false} and {@code headerStyle} is
@@ -120,10 +116,8 @@ public class RosettaCSVConfiguration {
         this.nullToken = nullToken != null ? nullToken : DEFAULT_NULL_TOKEN;
         this.hasHeader = hasHeader != null ? hasHeader : DEFAULT_HAS_HEADER;
         if (!this.hasHeader && this.headerStyle == HeaderStyle.LABEL) {
-            // Invalid on its own terms, and the one combination header-less support does not make
-            // reachable: a label is header text, and a file declared to have no header row has
-            // nowhere to put one. Refused here rather than resolved silently, since either half
-            // could plausibly have been the one the caller meant.
+            // A label is header text, and a file declared to have no header row has nowhere to put one.
+            // Refused rather than resolved silently, since either half could have been the one meant.
             throw new IllegalArgumentException(
                     "Invalid RosettaCSVConfiguration: headerStyle=LABEL with hasHeader=false. A label is header "
                             + "text and a file declared to have no header row has nowhere to carry one. Either set "
@@ -162,13 +156,13 @@ public class RosettaCSVConfiguration {
 
     /**
      * Loads a configuration from JSON. An unknown property is tolerated, not rejected — mirroring
-     * {@code RosettaXMLConfiguration.load}, so a configuration document written against a newer
-     * version of this class still loads against an older one.
+     * {@code RosettaXMLConfiguration.load}, so a document written against a newer version of this class
+     * still loads against an older one.
      *
      * <p>Every property is optional and an absent one takes its default, so {@code {}} loads to
-     * {@link #EMPTY}. Unlike {@code RosettaXMLConfiguration}, this needs no {@code Jdk8Module}:
-     * the constructor takes plain nullable types rather than {@code Optional}s, which also means a
-     * caller's own {@code ObjectMapper} can deserialise this class without special configuration.</p>
+     * {@link #EMPTY}. The constructor takes plain nullable types rather than {@code Optional}s, so no
+     * {@code Jdk8Module} is needed and a caller's own {@code ObjectMapper} can deserialise this class
+     * without special configuration.</p>
      *
      * @param input the JSON document
      * @return the configuration the document describes, with defaults filled in
@@ -187,9 +181,9 @@ public class RosettaCSVConfiguration {
 
     /**
      * @return what the header row holds: attribute names or labels. More than a description of the file —
-     *         for a transform declaring {@code SerializationFormat.CSV} this is what decides whether a
+     *         for a transform declaring {@code SerializationFormat.CSV} this decides whether a
      *         {@code LabelProvider} is resolved at all, so {@link HeaderStyle#LABEL} is how a CSV transform
-     *         asks to be labelled. See {@link HeaderStyle#LABEL}.
+     *         asks to be labelled
      */
     public HeaderStyle getHeaderStyle() {
         return headerStyle;
@@ -200,29 +194,24 @@ public class RosettaCSVConfiguration {
     }
 
     /**
-     * @return the cell value that deserialises to an absent value, and that an absent value is
-     *         written back as. Defaults to the empty string, so by default only an empty cell is
-     *         absent. A token that collides with a legitimate data value (e.g. a real attribute
-     *         value of literally {@code "N/A"}) is indistinguishable from absence — that collision
-     *         is the caller's problem to avoid by choosing a token that cannot occur in real data,
-     *         not something this class can detect.
-     *
-     *         <p>To carry the empty string as data, set {@code nullToken} to something that cannot
-     *         occur in the feed — whichever string is chosen becomes the one string that cannot
-     *         then be data. There is no configuration under which every string is representable
-     *         <em>and</em> absence is expressible; that is inherent to a token-based encoding of
-     *         "absent", not a defect of this shape.</p>
+     * @return the cell value that deserialises to an absent value, and that an absent value is written back
+     *         as. Defaults to the empty string, so by default only an empty cell is absent. A token that
+     *         collides with a legitimate data value (a real attribute value of literally {@code "N/A"}, say)
+     *         is indistinguishable from absence, and this class cannot detect that — choose a token that
+     *         cannot occur in the feed. Whichever string is chosen becomes the one string that cannot then
+     *         be data: a token-based encoding of "absent" cannot both express absence and represent every
+     *         string
      */
     public String getNullToken() {
         return nullToken;
     }
 
     /**
-     * @return whether the file has a header row. {@code false} makes a read bind columns by position
-     *         in model attribute declaration order, and makes a write suppress the header row — one
-     *         canonical column order across both, so a header-less write and a header-less read agree
-     *         by construction. A header-less read requires the row width to match the type's column
-     *         count exactly, since there is no header to detect a structurally unexpected file by.
+     * @return whether the file has a header row. {@code false} makes a read bind columns by position in
+     *         model attribute declaration order, and makes a write suppress the header row — one canonical
+     *         column order across both, so the two agree by construction. A header-less read requires the
+     *         row width to match the type's column count exactly, there being no header to detect a
+     *         structurally unexpected file by
      */
     public boolean isHasHeader() {
         return hasHeader;

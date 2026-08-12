@@ -47,25 +47,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Reading and writing CSV with no header row — {@code hasHeader: false}.
  *
- * <p>Before this, {@code hasHeader=false} was refused at construction, and the underlying read path
- * lost data silently: the schema was unconditionally {@code withHeader()}, so a header-less file had
- * its first data row consumed as column names and every later row bound to names no attribute
- * matched, then dropped without a word because {@code FAIL_ON_UNKNOWN_PROPERTIES} is disabled. The
- * measured result was an all-null object. See the story plan's §3.3 for that evidence and design
- * §5.1/§5.2 for the corrections it forced.
- *
- * <p>With no header there is nothing naming a column, so two things carry the whole contract, and
- * each has a test here that would fail if it were wrong:
+ * <p>With no header there is nothing naming a column, so two things carry the whole contract, and each has
+ * a test here that would fail if it were wrong:
  * <ul>
- *   <li><b>order</b> — columns bind by position, in model attribute declaration order, the one
- *       canonical order every path in {@code RosettaCsvMapper} uses. {@code User} is the type that
- *       distinguishes it: it declares {@code username} first but sorts alphabetically to
- *       {@code firstName} first, so a hand-authored file read directly tells the two apart. A
- *       write-then-read round trip cannot — it passes under either order, which is exactly how the
- *       alphabetical binding survived undetected before; and</li>
- *   <li><b>width</b> — the row must have exactly as many columns as the type has attributes. Jackson
- *       throws on a row that is too wide, but silently leaves the trailing attributes absent on one
- *       that is too narrow, so the mapper checks both.</li>
+ *   <li><b>order</b> — columns bind by position, in model attribute declaration order, the one canonical
+ *       order every path in {@code RosettaCsvMapper} uses. {@code User} is the type that distinguishes it:
+ *       it declares {@code username} first but sorts alphabetically to {@code firstName} first, so a
+ *       hand-authored file read directly tells the two apart. A write-then-read round trip cannot — it
+ *       passes under either order; and</li>
+ *   <li><b>width</b> — the row must have exactly as many columns as the type has attributes. Jackson throws
+ *       on a row that is too wide, but silently leaves the trailing attributes absent on one that is too
+ *       narrow, so the mapper checks both.</li>
  * </ul>
  */
 public class RosettaCsvMapperHeaderlessTest {
@@ -95,9 +87,8 @@ public class RosettaCsvMapperHeaderlessTest {
     // ---------------------------------------------------------------------------
 
     /**
-     * The characterisation of the old defect, inverted into the assertion that matters: a header-less
-     * file no longer yields an all-null object. Every attribute of {@code User} is {@code (1..1)}, so
-     * the four non-null assertions are the whole object.
+     * A header-less file binds every attribute rather than yielding an all-null object. Every attribute of
+     * {@code User} is {@code (1..1)}, so the four non-null assertions are the whole object.
      */
     @Test
     void aHeaderlessFileNoLongerReadsAsAnAllNullObject() throws JsonMappingException {
@@ -111,12 +102,12 @@ public class RosettaCsvMapperHeaderlessTest {
     }
 
     /**
-     * The test that proves declaration order rather than {@code schemaFor}'s alphabetical order.
-     * {@code User} declares {@code username, identifier, firstName, lastName} and sorts to
-     * {@code firstName, identifier, lastName, username}, so a file of {@code A,B,C,D} distinguishes
-     * them: declaration order gives {@code username=A}, alphabetical order would give
-     * {@code firstName=A} and {@code username=D}. Hand-authored and read directly — a round trip
-     * through this mapper's own writer would pass under either order.
+     * Declaration order, not {@code schemaFor}'s alphabetical order. {@code User} declares
+     * {@code username, identifier, firstName, lastName} and sorts to
+     * {@code firstName, identifier, lastName, username}, so a file of {@code A,B,C,D} distinguishes them:
+     * declaration order gives {@code username=A}, alphabetical would give {@code firstName=A}.
+     * Hand-authored and read directly — a round trip through this mapper's own writer would pass under
+     * either order.
      */
     @Test
     void headerlessReadBindsByDeclarationOrderNotAlphabetically() throws JsonMappingException {
@@ -131,10 +122,8 @@ public class RosettaCsvMapperHeaderlessTest {
     }
 
     /**
-     * A single-row header-less file used to throw {@code MismatchedInputException} ("No content to
-     * map due to end-of-input"): its one row was eaten as a header and nothing was left to bind. It
-     * is the commonest shape of all — one CSV row per object — so it is pinned separately from the
-     * multi-row case.
+     * One row per object is the commonest shape of all, and the one where a row eaten as a header leaves
+     * nothing to bind, so it is pinned separately from the multi-row case.
      */
     @Test
     void aSingleRowHeaderlessFileReads() throws JsonMappingException {
@@ -160,10 +149,10 @@ public class RosettaCsvMapperHeaderlessTest {
     // ---------------------------------------------------------------------------
 
     /**
-     * A row narrower than the type is the dangerous half: jackson reports nothing and leaves the
-     * trailing attributes absent, which for a mandatory attribute becomes a cardinality failure
-     * somewhere later, far from the malformed file that caused it. There is no header to notice the
-     * shortfall by, so the mapper measures the row itself.
+     * A row narrower than the type is the dangerous half: jackson reports nothing and leaves the trailing
+     * attributes absent, which for a mandatory attribute becomes a cardinality failure somewhere later, far
+     * from the malformed file. No header means no way to notice the shortfall, so the mapper measures the
+     * row itself.
      */
     @Test
     void aHeaderlessRowWithTooFewColumnsThrows() {
@@ -276,12 +265,11 @@ public class RosettaCsvMapperHeaderlessTest {
     // ---------------------------------------------------------------------------
 
     /**
-     * The list-element null-token pre-pass has to be told which columns it is looking at. With a
-     * header row it reads them off the header; with none, the first row is data, so the mapper hands
-     * over the declaration-order column names instead. Had it read the row, no cell would have
-     * matched a multi-cardinality attribute name and nothing would have been stripped: {@code a;;b}
-     * would have reached jackson as a three-element list containing an empty middle element, and
-     * failed inside the generated immutable's null-rejecting list.
+     * The list-element null-token pre-pass has to be told which columns it is looking at. With a header row
+     * it reads them off the header; with none, the first row is data, so the mapper hands over the
+     * declaration-order column names instead. Reading the row would match no multi-cardinality attribute
+     * name and strip nothing, so {@code a;;b} would reach jackson as a three-element list with an empty
+     * middle element and fail inside the generated immutable's null-rejecting list.
      */
     @Test
     void aHeaderlessListColumnStillHasItsNullTokensStripped() throws JsonMappingException {
@@ -324,10 +312,9 @@ public class RosettaCsvMapperHeaderlessTest {
     }
 
     /**
-     * {@code readValue(URL)} hands a document straight to jackson when it can, and buffers it when
-     * something needs the whole thing up front. A header-less read is one of those things — it has to
-     * measure the first row — so this pins that the URL overload routes through the buffering path
-     * rather than streaming past the width check with the wrong schema.
+     * {@code readValue(URL)} hands a document straight to jackson when it can and buffers it when something
+     * needs the whole thing up front. A header-less read has to measure the first row, so the URL overload
+     * must take the buffering path rather than stream past the width check with the wrong schema.
      */
     @Test
     void theUrlOverloadHonoursAHeaderlessConfiguration(@TempDir Path dir) throws IOException {

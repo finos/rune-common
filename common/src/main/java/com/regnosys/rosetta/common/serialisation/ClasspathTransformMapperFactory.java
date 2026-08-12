@@ -53,8 +53,7 @@ import java.util.function.Supplier;
  * looked up) — and caching comes from wrapping in a {@link CachingTransformMapperFactory}. Everything
  * else (which mapper implements which format, the {@code CSV_LABELLED} label resolution) is inherited.
  * <p>
- * <b>Which CSV mapper a CSV format gets — the configuration decides, not the format.</b> There are two
- * CSV formats and they divide as follows:
+ * <b>Which CSV mapper a CSV format gets — the configuration decides, not the format.</b>
  * <ul>
  *   <li>{@code CSV} reads its {@link RosettaCSVConfiguration} and is labelled or unlabelled according to
  *       it: {@code headerStyle=LABEL} resolves a {@link LabelProvider}, anything else resolves none —
@@ -63,9 +62,9 @@ import java.util.function.Supplier;
  *       {@link #csvMapper(String, Class, TransformRoot)}.</li>
  *   <li>{@code CSV_LABELLED} is <b>frozen</b>: it reads no configuration, always resolves a provider, and
  *       degrades to plain CSV when none is found. Any {@code configPath} it declares is dropped, with a
- *       WARN naming the fix. The format is on its way out, and {@code CSV} with
- *       {@code "headerStyle": "LABEL"} is where a transform using it goes — same label resolution, and the
- *       dialect, list delimiter, null token and header settings become available to it.</li>
+ *       WARN naming the fix. The format is on its way out; {@code CSV} with
+ *       {@code "headerStyle": "LABEL"} is where a transform using it goes — same label resolution, plus
+ *       the dialect, list delimiter, null token and header settings.</li>
  * </ul>
  * <p>
  * Wherever a {@link LabelProvider} is required — by either format — it is resolved type-first: the
@@ -73,16 +72,18 @@ import java.util.function.Supplier;
  * {@link #create(TransformSerialization, Class, TransformRoot)} wins when it carries its own
  * {@code @RuneLabelProvider}, otherwise the function class's — but never on the transform's
  * {@link TransformRoot.Side#INPUT} side, where a function-rooted provider is rooted at the wrong type
- * (see {@link #resolveLabelProvider(Class, TransformRoot)}). When neither applies (e.g. a hand-written
- * function, or an input side whose type has no provider), a {@code CSV_LABELLED} mapper degrades to plain
- * (unlabelled) CSV rather than failing, and a {@code CSV} mapper whose configuration asked for labels
- * fails rather than degrading.
+ * (see {@link #resolveLabelProvider(Class, TransformRoot)}). When neither applies, a {@code CSV_LABELLED}
+ * mapper degrades to plain (unlabelled) CSV and a {@code CSV} mapper whose configuration asked for labels
+ * fails.
  * <p>
- * A caller that supplies no {@link TransformRoot} gets the behaviour that predates root context: the
- * function's provider, unguarded. That is deliberate. The side cannot be inferred from the function's
- * annotations — a report, an enrichment and a pre-annotation model all carry a label provider and no
- * {@code @Projection} — so a factory that guessed would strip labels from exactly the transforms that
- * most need them.
+ * A caller that supplies no {@link TransformRoot} gets the function's provider, unguarded, as it did
+ * before root context existed. The side cannot be inferred from the function's annotations — a report, an
+ * enrichment and a pre-annotation model all carry a label provider and no {@code @Projection} — so a
+ * factory that guessed would strip labels from exactly the transforms that most need them.
+ * <p>
+ * Both provider kinds are permanent: a type whose labels sit entirely on nested descendants never gets a
+ * type-rooted provider (the DSL only emits one for a type carrying labels on its own attributes), and the
+ * function-rooted provider is what serves that shape.
  * <p>
  * <b>Extension points.</b> Only these methods are on the {@link #create} path, so overriding anything
  * else changes no constructed mapper. Per format: {@link #jsonMapper()},
@@ -94,7 +95,7 @@ import java.util.function.Supplier;
  * <p>
  * Three narrower overloads predate the parameters above and are <b>deprecated since 12.10.0, for removal
  * in the next major version</b>. Each is still consulted, but only for the case it was written for, so an
- * existing override keeps deciding that case rather than compiling, running and being silently ignored:
+ * existing override keeps deciding that case rather than being silently ignored:
  * <ul>
  *   <li>{@link #csvLabelledMapper(Class)} and {@link #resolveLabelProvider(Class)} — only where the
  *       caller supplied no {@link TransformRoot}. A supplied root outranks both.</li>
@@ -104,17 +105,11 @@ import java.util.function.Supplier;
  * Prefer the wider forms in new code and new overrides.
  * <p>
  * <b>Supplying a CSV configuration at deployment time.</b> A deployment that must change the CSV dialect
- * — a client whose files are semicolon-delimited, say — without rebuilding the model overrides
- * {@link #openCsvConfig(String, Class)} and returns its own document, exactly as it would override
- * {@link #openXmlConfig(String, Class)} to resolve an XML config from a workspace directory. There is no
- * separate settable-configuration API: {@code RosettaObjectMapperCreator.forCSV(RosettaCSVConfiguration,
- * LabelProvider)} is already the public construction API, and a second route into it would have to define
- * which of the two wins, then make the losing one visible. The override has no such ambiguity — it
- * <em>is</em> the lookup, so what it returns is what is used. Since the configuration decides the header
- * style, such an override can also make a {@code CSV} transform labelled — or unlabelled — provided a
- * provider resolves for the {@code LABEL} case.
- * <p>
- * Precedence for the CSV configuration, highest first:
+ * without rebuilding the model overrides {@link #openCsvConfig(String, Class)} and returns its own
+ * document, exactly as it would override {@link #openXmlConfig(String, Class)} for an XML config in a
+ * workspace directory. Since the configuration decides the header style, such an override can also make a
+ * {@code CSV} transform labelled — or unlabelled — provided a provider resolves for the {@code LABEL}
+ * case. Precedence, highest first:
  * <ol>
  *   <li>whatever {@link #openCsvConfig(String, Class)} returns — the override, if there is one, else the
  *       config packaged on the model classpath at the declared {@code configPath};</li>
@@ -123,21 +118,11 @@ import java.util.function.Supplier;
  * </ol>
  * Neither step applies to {@code CSV_LABELLED}, which reads no configuration.
  * <p>
- * <b>The limitation that follows, stated because it is accepted rather than overlooked:</b> the hook is
- * only consulted when the transform declares a {@code configPath}. A bare {@code [ingest CSV]} gets
- * {@code EMPTY} and a deployment cannot override it, because there is no path to key the lookup on — see
- * {@link #csvMapper(String, Class, TransformRoot)}. A model whose feed needs a non-default dialect must
- * therefore declare a {@code configPath}, even if the file it names is replaced at deployment time. What
- * a deployment can always do is choose the <em>content</em> behind that path; what it cannot do is
- * introduce a configuration where the model asked for none.
- * <p>
- * Neither provider is deprecated, and neither is scheduled for removal — they are not in a supersession
- * relationship. A transform's output type whose labels sit entirely on nested descendants never gets a
- * type-rooted provider in any DSL version (the gate is structural: the DSL only emits one for a type
- * carrying labels on its own attributes), and a type defined in an upstream artifact may never get one
- * at all if that artifact does not carry labels on it. The function-rooted provider is what serves both
- * of those shapes, permanently, alongside the type-rooted one — deleting it would silently drop labels
- * from both.
+ * The hook is only consulted when the transform declares a {@code configPath}, since the path is what
+ * keys the lookup. A bare {@code [ingest CSV]} gets {@code EMPTY} and a deployment cannot override it, so
+ * a model whose feed needs a non-default dialect must declare a {@code configPath} even if the file it
+ * names is replaced at deployment time. A deployment chooses the <em>content</em> behind a path; it
+ * cannot introduce a configuration where the model asked for none.
  */
 public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
@@ -184,26 +169,22 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * {@code [ingest CSV]} with no schema/config, so an empty CSV configuration is used; otherwise the
      * config is read via {@link #openCsvConfig(String, Class)}.
      * <p>
-     * The configuration decides, not the format: {@code headerStyle=LABEL} resolves a
-     * {@link LabelProvider} — type-first, with the input-side guard, through the same
-     * {@link #resolveLabelProvider(Class, TransformRoot)} the {@code CSV_LABELLED} format uses — and any
-     * other header style resolves none, <b>even for a function carrying {@code @RuneLabelProvider}</b>.
+     * {@code headerStyle=LABEL} resolves a {@link LabelProvider} — type-first, with the input-side guard,
+     * through the same {@link #resolveLabelProvider(Class, TransformRoot)} {@code CSV_LABELLED} uses — and
+     * any other header style resolves none, <b>even for a function carrying {@code @RuneLabelProvider}</b>.
      * That is why this takes the {@link TransformRoot}: only the caller knows which side of the transform
      * is being serialized, and a function-rooted provider may not be used on the input side.
      * <p>
      * A {@code LABEL} configuration for which no provider resolves <b>fails</b>, where {@code CSV_LABELLED}
-     * degrades to plain CSV. The asymmetry is deliberate: {@code CSV_LABELLED}'s degradation is a
-     * compatibility obligation to callers that predate configuration, whereas a config declaring
-     * {@code headerStyle=LABEL} is an explicit request that cannot be honoured, and the only way to
-     * proceed would be to silently treat it as {@code ATTRIBUTE_NAME} — discarding a setting someone
-     * supplied, and writing a well-formed file with the wrong header row.
+     * degrades to plain CSV. {@code CSV_LABELLED}'s degradation is a compatibility obligation to callers
+     * that predate configuration; a config declaring {@code headerStyle=LABEL} is an explicit request, and
+     * the only way to proceed would be to treat it as {@code ATTRIBUTE_NAME} — writing a well-formed file
+     * with the wrong header row.
      * <p>
-     * The no-config-path case is delegated to the deprecated no-argument {@link #csvMapper()} rather
-     * than reimplemented here, for the same reason {@link #csvLabelledMapper(Class, TransformRoot)}
-     * delegates to {@link #csvLabelledMapper(Class)}: that overload is the released extension point for
-     * exactly this case, so a subclass that already overrides it keeps deciding the case it was written
-     * for, instead of compiling, running and being silently ignored. No configuration is dropped on that
-     * path — it is reached only when there is none to drop, and so none that could have asked for labels.
+     * The no-config-path case is delegated to the deprecated no-argument {@link #csvMapper()} rather than
+     * reimplemented, so a subclass that already overrides that released extension point keeps deciding the
+     * case it was written for. Nothing is dropped on that path: it is reached only when there is no
+     * configuration, and so none that could have asked for labels.
      *
      * @throws IllegalArgumentException if the configuration declares {@code headerStyle=LABEL} and no
      *                                  {@link LabelProvider} can be resolved
@@ -226,11 +207,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     /**
      * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
      *         {@link #csvMapper(String, Class, TransformRoot)}, which is told the transform's
-     *         {@code configPath} and so can honour a CSV configuration. Kept, and still called whenever
-     *         the transform declares no config path, so a subclass that already overrides this overload
-     *         keeps deciding that case — the RFC 4180 defaults, with no configuration read. It is also
-     *         where both {@code CSV_LABELLED} paths degrade to when no {@link LabelProvider} resolves.
-     *         What it can no longer do is answer for a transform that did declare a config path; override
+     *         {@code configPath} and so can honour a CSV configuration. Still called whenever the transform
+     *         declares no config path — the RFC 4180 defaults, with no configuration read — and where both
+     *         {@code CSV_LABELLED} paths degrade to when no {@link LabelProvider} resolves. It can no
+     *         longer answer for a transform that did declare a config path; override
      *         {@link #csvMapper(String, Class, TransformRoot)} to influence that.
      *         <p>
      *         Deprecated with javadoc rather than {@code @Deprecated(forRemoval = true, since = "...")}
@@ -251,15 +231,13 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * format is on its way out — see the class javadoc — and a configurable CSV transform is spelled
      * {@code format = CSV} with {@code headerStyle: LABEL}, which reaches
      * {@link #csvMapper(String, Class, TransformRoot)} and resolves a provider by the same rules. Freezing
-     * this format rather than configuring it also removes a contradiction only it could express: a
-     * transform that resolves a provider and then declares a header style that never consults one. A
-     * declared {@code configPath} is reported dropped before this is reached — see
-     * {@link #warnIfConfigPathDropped}.
+     * it also keeps out a contradiction only this format could express: a transform that resolves a
+     * provider and then declares a header style that never consults one. A declared {@code configPath} is
+     * reported dropped before this is reached — see {@link #warnIfConfigPathDropped}.
      * <p>
-     * A {@code null} root means the caller declared nothing, and that state is exactly what the
-     * deprecated {@link #csvLabelledMapper(Class)} has always meant. So it is delegated to rather than
-     * reimplemented here: a subclass that already overrode that overload keeps deciding the case it was
-     * written for, instead of compiling, running and being silently ignored.
+     * A {@code null} root means the caller declared nothing, which is exactly what the deprecated
+     * {@link #csvLabelledMapper(Class)} has always meant, so that overload is delegated to rather than
+     * reimplemented here.
      */
     protected ObjectMapper csvLabelledMapper(Class<?> functionClass, TransformRoot root) {
         if (root == null) {
@@ -271,13 +249,11 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
-     *         {@link #csvLabelledMapper(Class, TransformRoot)}, which is told what
-     *         sits at the root and so can resolve type-first. Kept, and still called whenever the caller
-     *         supplies no {@link TransformRoot}, so a subclass that already overrides this overload
-     *         keeps deciding that case — function-rooted resolution with no guard, via the equally
-     *         deprecated {@link #resolveLabelProvider(Class)}. What it can no longer do is answer for a
-     *         caller that did supply a root; override {@link #csvLabelledMapper(Class, TransformRoot)}
-     *         to influence that.
+     *         {@link #csvLabelledMapper(Class, TransformRoot)}, which is told what sits at the root and so
+     *         can resolve type-first. Still called whenever the caller supplies no {@link TransformRoot} —
+     *         function-rooted resolution with no guard, via the equally deprecated
+     *         {@link #resolveLabelProvider(Class)}. It can no longer answer for a caller that did supply a
+     *         root; override {@link #csvLabelledMapper(Class, TransformRoot)} to influence that.
      */
     @Deprecated
     protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
@@ -287,13 +263,12 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * The {@code CSV_LABELLED} mapper for a resolved provider, or — when nothing resolved — the plain CSV
-     * mapper, having logged why. The warning is built lazily because composing it is only worth doing on
-     * the path that actually degrades.
+     * mapper, having logged why. The warning is built lazily since only the degrading path needs it.
      * <p>
-     * A resolved provider implies {@code headerStyle=LABEL}, which is what {@code CSV_LABELLED} has always
-     * meant and what {@code RosettaObjectMapperCreator.forCSV(LabelProvider)} derives. The degrade goes
-     * through the deprecated {@link #csvMapper()} hook, which is where a configuration-free plain CSV
-     * mapper has always come from on this path.
+     * A resolved provider implies {@code headerStyle=LABEL}, which is what
+     * {@code RosettaObjectMapperCreator.forCSV(LabelProvider)} derives. The degrade goes through the
+     * deprecated {@link #csvMapper()} hook, where a configuration-free plain CSV mapper has always come
+     * from on this path.
      */
     private ObjectMapper labelledOrPlainCsvMapper(LabelProvider labelProvider, Supplier<String> noProviderWarning) {
         if (labelProvider == null) {
@@ -322,20 +297,18 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * Which of the three ways a request for labels can end up with no provider actually happened: no
-     * provider anywhere, a root type whose own hierarchy carries none, or a function provider that exists
-     * but was suppressed because the caller said this is the transform's {@link TransformRoot.Side#INPUT}
-     * side (the guard in {@link #resolveLabelProvider(Class, TransformRoot)}). Whichever function provider
-     * would have been suppressed is named, so an ingest's missing labels are self-explaining rather than a
-     * mystery.
+     * provider anywhere, a root type whose own hierarchy carries none, or a function provider suppressed
+     * because the caller said this is the transform's {@link TransformRoot.Side#INPUT} side (the guard in
+     * {@link #resolveLabelProvider(Class, TransformRoot)}). A suppressed function provider is named, so an
+     * ingest's missing labels explain themselves.
      * <p>
-     * The <b>diagnosis only</b>, with no consequence clause, because the two callers differ in what the
-     * consequence is: {@code CSV_LABELLED} degrades and warns ({@link #noLabelProviderWarning}), while a
-     * {@code CSV} configuration declaring {@code headerStyle=LABEL} fails
-     * ({@link #unhonourableLabelConfigMessage}). Sharing the diagnosis is what stops the two drifting into
-     * disagreement about the same situation.
+     * The <b>diagnosis only</b>, with no consequence clause, since the callers differ in the consequence:
+     * {@code CSV_LABELLED} degrades and warns ({@link #noLabelProviderWarning}), while a {@code CSV}
+     * configuration declaring {@code headerStyle=LABEL} fails
+     * ({@link #unhonourableLabelConfigMessage}).
      * <p>
      * It describes the <em>default</em> resolution, and shares {@link #hasFunctionLabelProvider(Class)}
-     * with it so the reporting and the resolver cannot disagree either. A subclass that overrides
+     * with it so the reporting and the resolver cannot disagree. A subclass that overrides
      * {@link #resolveLabelProvider(Class, TransformRoot)} and declines for reasons of its own should
      * override this reporting too.
      */
@@ -358,9 +331,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * The terminal case of {@link #noProviderReason}: nothing carries a provider. Separate because the
-     * deprecated {@link #csvLabelledMapper(Class)} path reaches it without a {@link TransformRoot} to
-     * diagnose, and because a subclass override of {@link #resolveLabelProvider(Class)} can decline for
-     * reasons this class cannot describe.
+     * deprecated {@link #csvLabelledMapper(Class)} path reaches it with no {@link TransformRoot} to
+     * diagnose.
      */
     private static String noProviderAnywhereReason(Class<?> functionClass) {
         return String.format("no @RuneLabelProvider could be resolved%s",
@@ -379,10 +351,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * Explains that a CSV configuration asked for label headers and no {@link LabelProvider} could be
-     * found to produce them. Names both ways out, because either side can legitimately be the one that is
-     * wrong: the model may be missing a {@code @RuneLabelProvider}, or the configuration may be asking for
-     * labels it did not mean to ask for. The config path appears twice on purpose — once as the thing that
-     * made the request, once as the file to edit.
+     * found to produce them. Names both ways out, since either side can be the one that is wrong: a model
+     * missing a {@code @RuneLabelProvider}, or a configuration asking for labels it did not mean to.
      */
     private String unhonourableLabelConfigMessage(String configPath, Class<?> functionClass, TransformRoot root) {
         return String.format("CSV configuration '%s' declares headerStyle=LABEL, but %s. A LABEL header style "
@@ -395,14 +365,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * Reports a {@code configPath} declared by a {@code CSV_LABELLED} transform, which reads no
-     * configuration at all. A declared path is a configuration someone supplied; dropped in silence, the
-     * transform serialises with default RFC 4180 punctuation, produces a perfectly well-formed file, and
-     * gives no indication that its own configuration was never read.
-     * <p>
-     * Deliberately says what the file will look like instead ("default RFC 4180"), since the symptom a
-     * reader is holding is a comma-delimited file from a transform whose config asked for something else —
-     * and names the fix, which is to move the transform to the {@code CSV} format. It is a WARN rather than
-     * an exception because a {@code CSV_LABELLED} transform must keep working.
+     * configuration at all. Dropped in silence, such a transform serialises with default RFC 4180
+     * punctuation and gives no indication that its own configuration was never read. The message says what
+     * the file will look like instead and names the fix (move to the {@code CSV} format). A WARN rather
+     * than an exception, because a {@code CSV_LABELLED} transform must keep working.
      */
     private static void warnIfConfigPathDropped(String configPath, Class<?> functionClass) {
         if (configPath == null || configPath.isEmpty()) {
@@ -446,18 +412,16 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * Opens the CSV serialization config, for the {@code CSV} format. The classpath
-     * implementation resolves it against {@link #classLoader(Class)} (falling back to the legacy Guava
-     * classpath lookup when that is {@code null}), exactly like {@link #openXmlConfig(String, Class)}.
-     * This is the hook a runtime that keeps its CSV configuration somewhere other than the classpath
-     * overrides — and the one route by which a deployment supplies its own CSV configuration at runtime;
-     * see the class javadoc for the precedence order.
+     * Opens the CSV serialization config, for the {@code CSV} format. The classpath implementation resolves
+     * it against {@link #classLoader(Class)} (falling back to the legacy Guava classpath lookup when that
+     * is {@code null}), exactly like {@link #openXmlConfig(String, Class)}. This is the hook a runtime that
+     * keeps its CSV configuration elsewhere overrides, and the one route by which a deployment supplies its
+     * own — see the class javadoc for the precedence order.
      * <p>
-     * <b>Only consulted when the transform declares a {@code configPath}</b>, since the path is what the
-     * lookup is keyed on. An override cannot introduce a configuration for a transform that declares
-     * none: that request never reaches here and takes {@code RosettaCSVConfiguration.EMPTY}. An override
-     * is free to ignore {@code configPath} entirely and return the same document for every path — what it
-     * cannot do is be called when there is no path at all.
+     * <b>Only consulted when the transform declares a {@code configPath}</b>, since the path is what keys
+     * the lookup. An override may ignore {@code configPath} and return the same document for every path,
+     * but it cannot introduce a configuration for a transform that declares none: that request never
+     * reaches here and takes {@code RosettaCSVConfiguration.EMPTY}.
      * <p>
      * <b>Never consulted for {@code CSV_LABELLED}</b>, which reads no configuration; a path declared by
      * such a transform is reported dropped instead.
@@ -502,16 +466,15 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * {@link TransformRoot.Side#INPUT} side, where a function-rooted provider may never be used.
      * Returns {@code null} when neither applies, so the caller degrades to unlabelled CSV.
      * <p>
-     * Resolution is type-first (see the class javadoc for why): a function-rooted provider is rooted at
-     * the function's <b>output</b>, so using it for any other root would resolve paths against the wrong
-     * graph and could return a plausible label for a coincidentally matching path — a silent mislabel,
-     * worse than no label at all. The guard is the caller's declared {@link TransformRoot.Side} and
-     * nothing else. It is not inferred from {@code @Ingest}/{@code @Projection}, which cannot answer the
-     * question: a report, an enrichment and a pre-annotation model each carry a label provider and no
-     * {@code @Projection}, and a CSV-to-CSV transform carries both annotations with the same format.
+     * Resolution is type-first: a function-rooted provider is rooted at the function's <b>output</b>, so
+     * using it for any other root resolves paths against the wrong graph and could return a plausible label
+     * for a coincidentally matching path — a silent mislabel, worse than no label. The guard is the
+     * caller's declared {@link TransformRoot.Side} and nothing else; it is not inferred from
+     * {@code @Ingest}/{@code @Projection}, which cannot answer the question — a report, an enrichment and a
+     * pre-annotation model each carry a label provider and no {@code @Projection}, and a CSV-to-CSV
+     * transform carries both annotations with the same format.
      * <p>
-     * Override this method, not the deprecated single-{@code Class} overload below, to change
-     * resolution.
+     * Override this method, not the deprecated single-{@code Class} overload below, to change resolution.
      */
     protected LabelProvider resolveLabelProvider(Class<?> functionClass, TransformRoot root) {
         if (root != null && root.getType() != null) {
@@ -523,9 +486,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         if (isInputSide(root)) {
             return null;
         }
-        // Deliberately through the deprecated overload rather than functionRootedProvider directly: a
-        // subclass that already overrode it keeps influencing the one branch it was written for,
-        // instead of compiling, running and being silently ignored.
+        // Through the deprecated overload rather than functionRootedProvider directly, so a subclass that
+        // already overrode it keeps influencing the one branch it was written for.
         return resolveLabelProvider(functionClass);
     }
 
@@ -553,10 +515,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     }
 
     /**
-     * Whether a function-rooted provider exists to be resolved at all: there is a function class, it is
-     * a {@link RosettaFunction}, and it carries {@code @RuneLabelProvider}. The single source of this
-     * fact — both {@link #functionRootedProvider} and the WARN in {@link #noLabelProviderWarning} go
-     * through it, so what the resolver does and what the log says cannot disagree.
+     * Whether a function-rooted provider exists to be resolved at all: there is a function class, it is a
+     * {@link RosettaFunction}, and it carries {@code @RuneLabelProvider}. Both
+     * {@link #functionRootedProvider} and the WARN in {@link #noLabelProviderWarning} go through here, so
+     * what the resolver does and what the log says cannot disagree.
      */
     private static boolean hasFunctionLabelProvider(Class<?> functionClass) {
         return functionClass != null
@@ -566,12 +528,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
-     *         {@link #resolveLabelProvider(Class, TransformRoot)}, which resolves
-     *         type-first and refuses a function-rooted provider on the transform's input side.
-     *         Kept, and still called on the fallback branch, so
-     *         a subclass that already overrides this overload keeps deciding what it used to decide.
-     *         What it can no longer do is answer for the whole of resolution: the type-rooted provider
-     *         wins before this is reached, and the guard can reject the function outright. Override
+     *         {@link #resolveLabelProvider(Class, TransformRoot)}, which resolves type-first and refuses a
+     *         function-rooted provider on the transform's input side. Still called on the fallback branch,
+     *         but it no longer answers for the whole of resolution: the type-rooted provider wins before
+     *         this is reached, and the guard can reject the function outright. Override
      *         {@link #resolveLabelProvider(Class, TransformRoot)} to influence either.
      */
     @Deprecated

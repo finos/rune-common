@@ -102,18 +102,15 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * A configured null token in a middle column routes the document through the list-stripping
-     * pre-pass ({@code stripListElementsMeaningAbsent}), and that pre-pass must not change the row's
-     * arity. It used to be able to: it substituted a Java {@code null}, and jackson's CSV generator
-     * omits a null element from the column-less schema the pre-pass writes with, rather than emitting
-     * an empty field — so the column disappeared and every column after it shifted one place left,
-     * binding each attribute to its neighbour's value. Silent, and plausible rather than obviously
-     * wrong.
+     * A configured null token in a middle column routes the document through the list-stripping pre-pass
+     * ({@code stripListElementsMeaningAbsent}), which must not change the row's arity. A Java {@code null}
+     * left in the row would be omitted by jackson's CSV generator rather than written as an empty field,
+     * dropping the column and shifting every later one a place left — silent, and plausible rather than
+     * obviously wrong.
      *
-     * <p>{@code MultiCardinalityAttributes} is used — rather than a scalar-only type — because a
-     * scalar-only type never enters this pre-pass at all: {@code stripListElementsMeaningAbsent}
-     * returns its input unchanged whenever the type has no multi-cardinality attribute, before it
-     * reads a single row.</p>
+     * <p>{@code MultiCardinalityAttributes} rather than a scalar-only type, since a scalar-only type never
+     * enters the pre-pass at all: it returns its input unchanged whenever the type has no multi-cardinality
+     * attribute, before reading a single row.</p>
      */
     @Test
     void aNullTokenInAMiddleColumnDoesNotShiftTheColumnsAfterIt() throws IOException {
@@ -131,11 +128,10 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * The same shift, from the other direction: this cell matches no <i>configured</i> token beyond
-     * the default — it is simply empty — but the pre-pass's raw reader maps a cell equal to the
-     * schema's null value to Java {@code null} just the same, so it was dropped on rewrite just the
-     * same. Any absent cell outside the last column was affected, not only one spelt with a
-     * non-default token.
+     * The same arity guarantee from the other direction: this cell matches no <i>configured</i> token — it
+     * is simply empty — but the pre-pass's raw reader maps a cell equal to the schema's null value to Java
+     * {@code null} just the same, so any absent cell outside the last column is at risk, not only one spelt
+     * with a non-default token.
      */
     @Test
     void anEmptyCellInAMiddleColumnDoesNotShiftTheColumnsAfterIt() throws IOException {
@@ -150,10 +146,9 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * The list-stripping pre-pass re-renders the whole document once it strips anything, so a quoted
-     * cell elsewhere in the row has to survive it byte-for-byte — including one holding the column
-     * delimiter, which is the case that would break if the rewrite ever stopped going through the
-     * mapper's own dialect-aware writer.
+     * The list-stripping pre-pass re-renders the whole document once it strips anything, so a quoted cell
+     * elsewhere in the row has to survive byte-for-byte — including one holding the column delimiter, which
+     * is what breaks if the rewrite stops going through the mapper's own dialect-aware writer.
      */
     @Test
     void aQuotedCellSurvivesTheListStrippingRewrite() throws IOException {
@@ -173,8 +168,8 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * With one token there is no "canonical" token to write back that differs from the one configured
-     * — the default is used for both directions, so the round trip is trivially symmetric.
+     * With a single token there is no separate "canonical" token to write back, so the round trip is
+     * symmetric by construction.
      */
     @Test
     void roundTripThroughAFileContainingTheDefaultNullTokenWritesBackTheSameToken() throws IOException {
@@ -189,16 +184,11 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * The write side of {@code nullToken}, and the inversion of the gap this test used to record: an
-     * absent optional attribute writes the <i>configured</i> token, not a blank cell.
-     *
-     * <p>It used to write blank whatever the token was, because the absent attribute was omitted from
-     * the token stream entirely rather than written as a null, so jackson's {@code CsvGenerator} never
-     * consulted the schema's null value and simply left the column empty. The mapper's own writer
-     * therefore produced a file its own reader misread — reading a blank cell back as the empty string
-     * under exactly the configuration {@code nullToken}'s javadoc recommends for carrying the empty
-     * string as data. Fixed by giving the CSV path {@code ALWAYS} serialisation inclusion; see
-     * {@code RosettaObjectMapperCreator.serializationInclusion}.</p>
+     * The write side: an absent optional attribute writes the <i>configured</i> token, not a blank cell. It
+     * has to reach the generator as a null for the schema's null value to be consulted at all, which is why
+     * the CSV path takes {@code ALWAYS} serialisation inclusion — see
+     * {@code RosettaObjectMapperCreator.serializationInclusion}. A blank cell here would be a file this
+     * mapper's own reader misreads as the empty string.
      */
     @Test
     void anAbsentAttributeWritesTheConfiguredNullToken() throws IOException {
@@ -214,8 +204,8 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * The point of the write side: what this mapper writes, this mapper reads back as the same value.
-     * Before the fix this round trip turned an absent attribute into the empty string.
+     * What this mapper writes, this mapper reads back as the same value — an absent attribute must not come
+     * back as the empty string.
      */
     @Test
     void anAbsentAttributeRoundTripsUnderANonEmptyNullToken() throws IOException {
@@ -233,11 +223,10 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * The empty-string escape hatch, now working in <b>both</b> directions — which is the reason for
-     * doing the write side at all. {@code nullToken}'s javadoc tells a deployment needing to carry the
-     * empty string as data to configure a token that cannot occur in its feed; that advice is only
-     * sound if a genuine {@code ""} both writes as a blank cell and reads back as {@code ""}, rather
-     * than being confused with absence in either direction.
+     * The empty-string escape hatch, in <b>both</b> directions. {@code nullToken}'s javadoc tells a
+     * deployment needing to carry the empty string as data to configure a token that cannot occur in its
+     * feed; that advice only holds if a genuine {@code ""} writes as a blank cell and reads back as
+     * {@code ""} rather than being confused with absence either way.
      */
     @Test
     void aGenuineEmptyStringRoundTripsUnderANonEmptyNullToken() throws IOException {

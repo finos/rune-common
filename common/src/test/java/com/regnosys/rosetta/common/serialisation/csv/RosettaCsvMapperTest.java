@@ -191,13 +191,11 @@ public class RosettaCsvMapperTest {
     }
 
     /**
-     * Customising the quote character must not introduce an escape character. It used to: the
-     * dialect's {@code escapeChar} defaulted to the <i>default</i> quote character, so once
-     * {@code quoteChar} was changed the two were no longer equal, and the mapper — which decided
-     * "no escape character" by comparing them — configured {@code "} as a real escape character.
-     * Every {@code "} in the data was then doubled. It round-tripped through this mapper, since the
-     * same escape was applied on read, but a conforming single-quote/no-escape reader saw
-     * {@code a""b} where the value was {@code a"b}.
+     * Customising the quote character must not introduce an escape character. If {@code escapeChar} defaulted
+     * to the quote character, changing {@code quoteChar} would leave the two unequal and the mapper would
+     * configure {@code "} as a real escape character, doubling every {@code "} in the data. It would still
+     * round-trip through this mapper, but a conforming single-quote/no-escape reader would see {@code a""b}
+     * where the value is {@code a"b}.
      */
     @Test
     void testCustomQuoteCharDoesNotEscapeTheDefaultQuoteCharacter() throws IOException {
@@ -212,9 +210,8 @@ public class RosettaCsvMapperTest {
                 .setUsername("username")
                 .build();
 
-        // Only the value needing them gets quotes. The point is what is *not* there: before this
-        // fix the cell read 'First""Name', with the double quote escaped by an escape character
-        // nobody configured.
+        // Only the value needing them gets quotes, and the double quote is not doubled — no escape
+        // character is in force.
         String serialized = csvObjectMapper.writeValueAsString(user);
         String expected = "username,identifier,firstName,lastName\n"
                 + "username,identifier,'First\"Name',LastName\n";
@@ -225,8 +222,8 @@ public class RosettaCsvMapperTest {
     }
 
     /**
-     * An explicitly configured escape character still applies — the change above removes a default,
-     * not the capability.
+     * An explicitly configured escape character still applies: there is no default, but the capability
+     * remains.
      */
     @Test
     void testExplicitEscapeCharIsHonoured() throws IOException {

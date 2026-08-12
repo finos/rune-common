@@ -53,15 +53,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>{@code MultiCardinalityAttributes} ({@code csv.test.multi}) declares {@code id (1..1)} then
  * {@code tags (0..*)}, so column order alone would catch a delimiter wired to the wrong schema.
  *
- * <p>Both directions run off one mechanism: every schema this mapper builds — read or write, plain,
- * labelled or positional-fallback — passes through {@code dialectSchema}, which stamps
- * {@code listDelimiter} on as the schema-wide array-element separator. On write, jackson's
- * {@code CsvGenerator} recognises a multi-valued property from the {@code writeStartArray()} calls the
- * bean serialiser makes and joins with that separator; on read,
- * {@code CsvParser.isExpectedStartArrayToken()} splits an untyped (STRING) column's cell into elements
- * whenever the target bean property is a {@code Collection}. Both are independent of the column's
- * declared type, and both were measured directly against this mapper rather than inferred from the
- * jackson source.
+ * <p>Both directions run off one mechanism: every schema this mapper builds — read or write, plain, labelled
+ * or positional-fallback — passes through {@code dialectSchema}, which stamps {@code listDelimiter} on as the
+ * schema-wide array-element separator. On write, jackson's {@code CsvGenerator} recognises a multi-valued
+ * property from the {@code writeStartArray()} calls the bean serialiser makes and joins with that separator;
+ * on read, {@code CsvParser.isExpectedStartArrayToken()} splits an untyped (STRING) column's cell into
+ * elements whenever the target bean property is a {@code Collection}. Both are independent of the column's
+ * declared type.
  */
 public class RosettaCsvMapperListColumnTest {
 
@@ -87,11 +85,9 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * The generated immutable object stores an empty list exactly as it stores an absent one — both
-     * collapse to {@code null} in the builder (a list attribute is only ever non-null when it holds
-     * at least one element) — so there is no distinct "empty list" value for the writer to receive in
-     * the first place. Both therefore write the same empty cell; the two cases cannot differ, and
-     * this test documents that measurement rather than asserting a choice.
+     * The generated immutable stores an empty list exactly as it stores an absent one — both collapse to
+     * {@code null} in the builder — so there is no distinct "empty list" value for the writer to receive, and
+     * both write the same empty cell. Not a choice this mapper makes.
      */
     @Test
     void anEmptyListAndAnAbsentListBothWriteAnEmptyCell() throws JsonProcessingException {
@@ -108,16 +104,13 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     /**
-     * A list column takes the null token on write exactly as a scalar column does, rather than keeping
-     * the blank cell it wrote before {@code nullToken} was honoured. Decided rather than inherited: the
-     * alternative — an absent scalar writing {@code N/A} while an absent list writes blank — would mean
-     * two spellings of absence in one row, and the blank one is the spelling that reads back as the
-     * empty string under this very configuration.
+     * A list column takes the null token on write exactly as a scalar column does. The alternative — an absent
+     * scalar writing {@code N/A} while an absent list writes blank — would mean two spellings of absence in
+     * one row, and the blank one reads back as the empty string under this very configuration.
      *
-     * <p>It round-trips because a whole cell equal to the token already deserialises to an absent list
-     * (see {@code aWholeCellEqualToANullTokenStillMeansAnAbsentList}). The empty-list case is not a
-     * second behaviour: the generated builder collapses an empty list to an absent one, so the writer
-     * never receives a distinct value — the same measurement
+     * <p>It round-trips because a whole cell equal to the token already deserialises to an absent list (see
+     * {@code aWholeCellEqualToANullTokenStillMeansAnAbsentList}). The empty-list case is not a second
+     * behaviour: the generated builder collapses an empty list to an absent one, as
      * {@code anEmptyListAndAnAbsentListBothWriteAnEmptyCell} records for the default token.</p>
      */
     @Test
@@ -197,11 +190,10 @@ public class RosettaCsvMapperListColumnTest {
 
     /**
      * The reader drops a list element equal to a null token (see
-     * {@code aTrailingListDelimiterHasItsEmptyElementDropped} below), so the writer must refuse to
-     * emit one: otherwise the value would come back one element shorter, silently, and for a
-     * {@code (1..*)} attribute that is a cardinality violation rather than merely a different string.
-     * Loud on write, forgiving on read — the asymmetry is the point, and the failure lands where the
-     * bad value is known.
+     * {@code aTrailingListDelimiterHasItsEmptyElementDropped} below), so the writer refuses to emit one:
+     * otherwise the value comes back one element shorter, silently, and for a {@code (1..*)} attribute that is
+     * a cardinality violation rather than merely a different string. Loud on write, forgiving on read, with
+     * the failure where the bad value is known.
      */
     @Test
     void listElementEqualToTheDefaultNullTokenIsRejectedAtWriteTime() {
@@ -282,7 +274,7 @@ public class RosettaCsvMapperListColumnTest {
     }
 
     // ---------------------------------------------------------------------------
-    // Session 2 — read side and round trip
+    // Read side and round trip
     // ---------------------------------------------------------------------------
 
     @Test

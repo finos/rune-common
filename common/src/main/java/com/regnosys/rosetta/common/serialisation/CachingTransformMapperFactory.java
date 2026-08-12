@@ -30,35 +30,24 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * A {@link TransformMapperFactory} decorator that builds each distinct mapper once and caches it.
  * Mapper construction is not cheap — Jackson module registration, and for XML a full parse of the
- * serialization config — while a runtime requests a mapper on every transform execution, so
- * implementors get per-instance reuse without writing any caching themselves.
+ * serialization config — while a runtime requests a mapper on every transform execution.
  * <p>
  * The cache key pairs the {@link TransformSerialization} with the part of the function-class context
- * the format is actually sensitive to, so equal serializations are shared exactly as widely as is
- * correct:
+ * the format is actually sensitive to:
  * <ul>
  *   <li>Both CSV formats — the function class <em>and</em> the {@link TransformRoot}: the resolved
  *       {@code LabelProvider} depends on both the root type and the transform side (see
  *       {@link ClasspathTransformMapperFactory#resolveLabelProvider(Class, TransformRoot)}), so two
- *       requests for the same function but different roots must not share a mapper, and vice versa.
- *       {@code CSV} takes the same scope as {@code CSV_LABELLED} because its configuration, not its
- *       format, decides whether it is labelled: a config declaring {@code headerStyle=LABEL} resolves a
- *       provider by exactly the {@code CSV_LABELLED} rules.
- *       <p>
- *       This is deliberately wider than what every CSV request depends on. A request that resolves no
- *       provider — no config path, or a config with any other header style — is built from neither the
- *       function class nor the root, so its per-{@code (function, root)} entries hold mappers that are
- *       identical. Which case a request is in cannot be known here without loading the config, and the
- *       decorator cannot key on the resolved provider instead without duplicating a {@code protected}
- *       hook a subclass may have overridden. So it keys on what the caller supplied, and pays duplicate
- *       construction (measured at roughly half a millisecond per extra mapper) for a guarantee that holds
- *       whatever the delegate does. Note it is strictly <em>narrower</em> than the classloader scope
- *       below — a function class determines its own classloader — so it can only reduce sharing, never
- *       serve a mapper built for another model.</li>
+ *       requests differing in either must not share a mapper. {@code CSV} takes the same scope because
+ *       its configuration, not its format, decides whether it is labelled, and that cannot be known
+ *       here without loading the config. A CSV request that resolves no provider therefore gets a
+ *       duplicate but identical mapper per {@code (function, root)} — the price of a guarantee that
+ *       holds whatever the delegate does. The scope is strictly narrower than the classloader scope
+ *       below, since a function class determines its own classloader, so it can only reduce sharing,
+ *       never serve a mapper built for another model.</li>
  *   <li>{@code RUNE_JSON} and {@code XML} — the function class's {@link ClassLoader}: these mappers
  *       resolve model types against it, so functions from the same model share one mapper while
- *       models in different classloaders never cross. The root does not affect their
- *       construction, so it is not part of their scope.</li>
+ *       models in different classloaders never cross. The root does not affect their construction.</li>
  *   <li>{@code JSON} — nothing: one mapper per factory.</li>
  * </ul>
  * <p>
@@ -105,10 +94,9 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
         switch (serialization.getFormat()) {
             case CSV_LABELLED:
             case CSV:
-                // Both CSV formats can resolve a LabelProvider, which depends on the root type and the
-                // transform side as well as the function class. CSV reaches it through a configuration
-                // declaring headerStyle=LABEL, and whether a given config declares it cannot be known
-                // here without loading it, so every CSV request takes the scope its labelled case needs.
+                // Both formats can resolve a LabelProvider, which depends on the root and the transform
+                // side as well as the function class. CSV reaches it through a configuration this method
+                // cannot see, so every CSV request takes the scope its labelled case needs.
                 return Arrays.asList(functionClass, root);
             case RUNE_JSON:
             case XML:

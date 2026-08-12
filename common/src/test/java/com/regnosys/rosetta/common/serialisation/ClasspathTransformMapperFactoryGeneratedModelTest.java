@@ -61,12 +61,11 @@ class ClasspathTransformMapperFactoryGeneratedModelTest {
     }
 
     /**
-     * The CSV-import case this task exists for: an ingest whose function-rooted provider is (wrongly)
-     * rooted at some unrelated output type — modelled here by {@link User}, standing in for "any type
-     * that isn't the CSV input" — rather than the CSV input, {@link LabelledTrade}. Before this task that
-     * wrongly rooted provider is all the resolver could ever find; passing {@link LabelledTrade} as the
-     * {@link TransformRoot}'s type must now win instead, sourced from the annotation the generator
-     * actually stamped.
+     * The CSV-import case: an ingest whose function-rooted provider is (wrongly) rooted at some unrelated
+     * output type — modelled here by {@link User}, standing in for "any type that isn't the CSV input" —
+     * rather than the CSV input, {@link LabelledTrade}. Passing {@link LabelledTrade} as the
+     * {@link TransformRoot}'s type must win over that wrongly rooted provider, sourced from the annotation
+     * the generator actually stamped.
      */
     public static class UnrelatedOutputLabelProvider implements LabelProvider {
         @Override

@@ -183,20 +183,15 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     }
 
     /**
-     * CSV is the one format whose columns are fixed by a schema rather than by which properties a
-     * value happens to have, so an absent attribute must reach the generator <b>as a null</b> for the
-     * schema's null value — {@code RosettaCSVConfiguration}'s {@code nullToken} — to be written into
-     * its column. {@code NON_EMPTY} omits the property instead, and jackson's {@code CsvGenerator}
-     * then fills the column with nothing.
+     * {@code ALWAYS} for CSV, {@code NON_EMPTY} for every other format.
      *
-     * <p>Measured, writing an absent optional attribute under {@code nullToken="N/A"}: omitted gives
-     * {@code abc,}, present-and-null gives {@code abc,N/A}. The former is a file this mapper's own
-     * reader misreads — it reads a blank cell back as the empty string under that configuration — so
-     * the CSV path takes {@code ALWAYS}.</p>
-     *
-     * <p>Every other format drops an absent property from the document entirely, which is what
-     * {@code NON_EMPTY} is for; those are unchanged. (The {@code NON_ABSENT} call that used to
-     * precede the {@code NON_EMPTY} one here had no effect — the second immediately replaced it.)</p>
+     * <p>CSV is the one format whose columns are fixed by a schema rather than by which properties a value
+     * happens to have, so an absent attribute must reach the generator <b>as a null</b> for the schema's
+     * null value — {@code RosettaCSVConfiguration}'s {@code nullToken} — to be written into its column.
+     * {@code NON_EMPTY} omits the property instead, and jackson's {@code CsvGenerator} then leaves the
+     * column empty: under {@code nullToken="N/A"} that gives {@code abc,} rather than {@code abc,N/A}, a
+     * file this mapper's own reader misreads as the empty string. Every other format drops an absent
+     * property from the document entirely, which is what {@code NON_EMPTY} is for.</p>
      */
     private static JsonInclude.Include serializationInclusion(ObjectMapper mapper) {
         return mapper instanceof CsvMapper ? JsonInclude.Include.ALWAYS : JsonInclude.Include.NON_EMPTY;

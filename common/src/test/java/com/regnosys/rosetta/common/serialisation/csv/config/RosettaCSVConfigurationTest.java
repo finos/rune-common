@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,18 +84,34 @@ public class RosettaCSVConfigurationTest {
     }
 
     /**
-     * Header-less CSV is not implemented: nothing on the read or write path honours
-     * {@code hasHeader=false}. It is refused at construction rather than accepted and silently
-     * ignored, so a deployment that needs it finds out at configuration time instead of getting
-     * all-null objects out of a file whose first data row was eaten as a header.
+     * {@code hasHeader=false} used to be refused outright, header-less CSV being unimplemented. It is
+     * now implemented — reads bind by position in declaration order, writes suppress the header row —
+     * so the setting is accepted, and this is the test that the blanket refusal is gone.
      */
     @Test
-    void hasHeaderFalseIsRefusedAsNotYetImplemented() {
-        UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class,
-                () -> RosettaCSVConfiguration.builder().setHasHeader(false).build());
+    void hasHeaderFalseIsAccepted() {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder().setHasHeader(false).build();
 
-        assertTrue(exception.getMessage().contains("hasHeader"));
-        assertTrue(exception.getMessage().contains("not implemented"));
+        assertFalse(config.isHasHeader());
+        assertEquals(HeaderStyle.ATTRIBUTE_NAME, config.getHeaderStyle());
+    }
+
+    /**
+     * The one combination header-less support does not make reachable, and the check the removed
+     * blanket refusal's own comment said to reinstate alongside it. A label is header text; a file
+     * declared to have no header row has nowhere to carry one, so the two settings contradict each
+     * other and neither half can be assumed to be the one the caller meant.
+     */
+    @Test
+    void hasHeaderFalseWithLabelHeaderStyleThrowsAtConstruction() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> RosettaCSVConfiguration.builder()
+                        .setHasHeader(false)
+                        .setHeaderStyle(HeaderStyle.LABEL)
+                        .build());
+
+        assertTrue(exception.getMessage().contains("headerStyle=LABEL"));
+        assertTrue(exception.getMessage().contains("hasHeader=false"));
     }
 
     /**
@@ -126,13 +143,21 @@ public class RosettaCSVConfigurationTest {
     }
 
     @Test
-    void loadingAHeaderlessConfigurationFailsWithTheSameCause() {
+    void aHeaderlessConfigurationLoadsFromJson() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.load(json("{\"hasHeader\": false}"));
+
+        assertFalse(config.isHasHeader());
+        assertEquals(RosettaCSVConfiguration.EMPTY.toBuilder().setHasHeader(false).build(), config);
+    }
+
+    @Test
+    void loadingAHeaderlessLabelledConfigurationFailsWithTheSameCause() {
         // Jackson wraps the constructor's exception; the rejection still happens at construction,
         // load() just cannot surface it unwrapped.
         ValueInstantiationException exception = assertThrows(ValueInstantiationException.class,
-                () -> RosettaCSVConfiguration.load(json("{\"hasHeader\": false}")));
+                () -> RosettaCSVConfiguration.load(json("{\"hasHeader\": false, \"headerStyle\": \"LABEL\"}")));
 
-        assertTrue(exception.getCause() instanceof UnsupportedOperationException);
+        assertTrue(exception.getCause() instanceof IllegalArgumentException);
     }
 
     @Test

@@ -697,6 +697,26 @@ class ClasspathTransformMapperFactoryTest {
     }
 
     /**
+     * {@code hasHeader: false} reaches the mapper by the same deployment route, now that header-less CSV
+     * is implemented — the setting used to be refused at construction, so a deployment declaring it got
+     * an {@code UncheckedIOException} rather than a mapper. Header-less is the setting most likely to
+     * come from a deployment rather than a model: whether a production feed carries a header row is a
+     * property of the feed, not of the type being ingested.
+     */
+    @Test
+    void aDeploymentSuppliedConfigurationCanTurnOffTheHeaderRow() throws IOException {
+        ObjectMapper mapper = deploymentSupplying("{\"hasHeader\":false}")
+                .create(new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+
+        String csv = mapper.writeValueAsString(buildUser());
+        assertEquals("asmith,id-001,Alice,Smith", header(mapper),
+                "the first line must be data, not column names");
+
+        assertEquals(buildUser(), mapper.readValue(csv, User.class),
+                "the same configuration must serve the read side too");
+    }
+
+    /**
      * Precedence, asserted in both directions by one override that answers for its own path and delegates
      * the rest — the workspace-first shape {@code openXmlConfig} is already overridden with in
      * rosetta-products. Where the override answers it wins; where it delegates, the model's classpath

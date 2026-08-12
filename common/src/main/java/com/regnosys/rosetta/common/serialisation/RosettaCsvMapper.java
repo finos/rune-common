@@ -61,6 +61,11 @@ public class RosettaCsvMapper extends CsvMapper  {
     private static final Logger LOGGER = LoggerFactory.getLogger(RosettaCsvMapper.class);
 
     private final RosettaCSVConfiguration configuration;
+    /**
+     * The plain read schema: column-less, so jackson takes the column names from the header row.
+     * Type-independent, hence a field. Unused when {@code hasHeader} is {@code false} — a header-less
+     * read needs a type-specific column list, built per call by {@link #buildHeaderlessReadSchema}.
+     */
     private final CsvSchema defaultSchema;
     private final LabelProvider labelProvider;
 
@@ -136,10 +141,11 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     /**
      * Whether a {@link URL} can be handed straight to jackson rather than being buffered into a
-     * {@code String} first. Two things need the whole document up front: reading the header row to
-     * resolve labels, and the list-element null-token pre-pass — the latter only for a type that
-     * actually has a multi-cardinality attribute for a null token to appear inside. A type of
-     * scalars only still streams.
+     * {@code String} first. Three things need the whole document up front: reading the header row to
+     * resolve labels; the list-element null-token pre-pass — that one only for a type that actually
+     * has a multi-cardinality attribute for a null token to appear inside; and a header-less read,
+     * which has to measure the first row's width before binding it (see
+     * {@link #buildHeaderlessReadSchema}). A type of scalars only, read with a header, still streams.
      *
      * <p>Takes {@code valueType} rather than reading the configuration alone because the second
      * condition is a property of the type, not of the configuration. Getting this wrong is not a
@@ -149,24 +155,70 @@ public class RosettaCsvMapper extends CsvMapper  {
      * {@code ImmutableList}.</p>
      */
     private boolean canStream(Class<?> valueType) {
-        return configuration.getHeaderStyle() != HeaderStyle.LABEL && multiValuedAttributeNames(valueType).isEmpty();
+        return configuration.getHeaderStyle() != HeaderStyle.LABEL
+                && configuration.isHasHeader()
+                && multiValuedAttributeNames(valueType).isEmpty();
     }
 
     private <T> T readValueFromContent(String content, Class<T> valueType) throws IOException {
-        if (configuration.getHeaderStyle() != HeaderStyle.LABEL) {
-            // No column names to hand over: the header row of a non-LABEL file holds attribute names
-            // already, so the pre-pass reads them itself — and only if it has anything to strip.
-            String normalized = stripListElementsMeaningAbsent(content, valueType, null);
-            return super.readerFor(valueType).with(defaultSchema).readValue(normalized, valueType);
+        if (configuration.getHeaderStyle() == HeaderStyle.LABEL) {
+            List<String> headerLabels = readFirstRow(content);
+            if (headerLabels.isEmpty()) {
+                throw new IllegalStateException("Cannot deserialise labelled CSV: missing header row");
+            }
+            CsvSchema labelReadSchema = buildLabelReadSchema(valueType, headerLabels);
+            String normalized = stripListElementsMeaningAbsent(
+                    content, valueType, columnNames(labelReadSchema));
+            return super.readerFor(valueType).with(labelReadSchema).readValue(normalized, valueType);
         }
-        List<String> headerLabels = readHeaderLabels(content);
-        if (headerLabels.isEmpty()) {
-            throw new IllegalStateException("Cannot deserialise labelled CSV: missing header row");
+        if (!configuration.isHasHeader()) {
+            CsvSchema positionalSchema = buildHeaderlessReadSchema(valueType, content);
+            // The column names have to be handed over here, unlike on the path below: with no header
+            // row, reading the first row yields data, not attribute names, and the pre-pass would
+            // match none of them and strip nothing.
+            String normalized = stripListElementsMeaningAbsent(
+                    content, valueType, columnNames(positionalSchema));
+            return super.readerFor(valueType).with(positionalSchema).readValue(normalized, valueType);
         }
-        CsvSchema labelReadSchema = buildLabelReadSchema(valueType, headerLabels);
-        String normalized = stripListElementsMeaningAbsent(
-                content, valueType, columnNames(labelReadSchema));
-        return super.readerFor(valueType).with(labelReadSchema).readValue(normalized, valueType);
+        // No column names to hand over: the header row of a non-LABEL file holds attribute names
+        // already, so the pre-pass reads them itself — and only if it has anything to strip.
+        String normalized = stripListElementsMeaningAbsent(content, valueType, null);
+        return super.readerFor(valueType).with(defaultSchema).readValue(normalized, valueType);
+    }
+
+    /**
+     * Binds a header-less file's columns by position, against the type's attribute declaration order —
+     * the one order every other path in this class uses, so a header-less write and a header-less read
+     * agree by construction.
+     *
+     * <p>An explicit column list is what makes this work: {@code emptySchema().withoutHeader()} has no
+     * columns at all, so jackson emits an array and nothing binds to the bean. Measured, not inferred.</p>
+     *
+     * <p>Requires the first row's width to match the type's column count exactly. With a header row
+     * there is a name for every column and a structurally unexpected file announces itself; with none,
+     * a short row would silently leave its trailing attributes absent — jackson reports nothing, as
+     * measured — which for a mandatory attribute turns a malformed file into a cardinality violation
+     * somewhere later, or into plausible-looking data. Jackson does throw on a row that is too
+     * <em>wide</em>, but it is checked here as well so both directions of mismatch report the same
+     * thing, naming the type and both counts.</p>
+     *
+     * @param content the whole document — needed to measure the first row, which is why a header-less
+     *                read cannot stream ({@link #canStream})
+     */
+    private CsvSchema buildHeaderlessReadSchema(Class<?> valueType, String content) throws IOException {
+        CsvSchema schema = dialectSchema(schemaInDeclarationOrder(valueType).withoutHeader());
+        List<String> firstRow = readFirstRow(content);
+        // An empty document has no row to measure. Left to jackson, whose "No content to map due to
+        // end-of-input" says it better than a column-count complaint about a file holding no columns.
+        if (!firstRow.isEmpty() && firstRow.size() != schema.size()) {
+            throw new IllegalStateException(
+                    String.format("Cannot deserialise header-less CSV: the first row has %d column(s) while %s has "
+                                    + "%d attribute(s). With no header row, columns bind by position, so a row of "
+                                    + "the wrong width cannot be mapped without silently shifting or dropping "
+                                    + "values. Expected columns, in order: %s",
+                            firstRow.size(), valueType.getName(), schema.size(), columnNames(schema)));
+        }
+        return schema;
     }
 
     private static List<String> columnNames(CsvSchema schema) {
@@ -179,16 +231,17 @@ public class RosettaCsvMapper extends CsvMapper  {
 
     /**
      * The first row of {@code content}, read raw, or an <b>empty list</b> if the document holds no
-     * row at all.
+     * row at all. What that row <em>means</em> is the caller's business: header labels on the labelled
+     * path, attribute names on the plain path, and a data row when {@code hasHeader} is {@code false},
+     * where only its width is of interest.
      *
-     * <p>Empty rather than an exception because the callers disagree about what a missing header
-     * means. On the labelled path it is fatal and the caller says so. On the plain path it is not
-     * this method's business: an empty document is simply an empty document, and jackson's own
-     * {@code CsvReadException} ("Empty header line: can not bind data") — raised by the read that
-     * follows — describes it better than anything thrown from here, which would otherwise report a
-     * labelled-CSV failure on a read that is not labelled.</p>
+     * <p>Empty rather than an exception because the callers disagree about what a missing first row
+     * means. On the labelled path it is fatal and the caller says so. Elsewhere it is not this
+     * method's business: an empty document is simply an empty document, and jackson's own message —
+     * raised by the read that follows — describes it better than anything thrown from here, which
+     * would otherwise report a labelled-CSV failure on a read that is not labelled.</p>
      */
-    private List<String> readHeaderLabels(String content) throws IOException {
+    private List<String> readFirstRow(String content) throws IOException {
         try (MappingIterator<String[]> rows = super.readerFor(String[].class)
                 .with(dialectSchema(CsvSchema.emptySchema()))
                 .with(CsvParser.Feature.WRAP_AS_ARRAY)
@@ -213,8 +266,8 @@ public class RosettaCsvMapper extends CsvMapper  {
             String previous = labelToAttribute.putIfAbsent(key, attribute);
             if (previous != null) {
                 // Two attributes share a label, so the header text cannot be resolved to a
-                // single attribute. Fall back to positional binding against the canonical
-                // schema order, which is the order the writer always emits columns in.
+                // single attribute. Fall back to positional binding against attribute
+                // declaration order, which is the order the writer always emits columns in.
                 ambiguousLabels = true;
                 duplicateLabel = key;
                 duplicateAttribute = attribute;
@@ -247,10 +300,12 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Binds columns by position against the type's canonical schema order rather than by
+     * Binds columns by position against the type's attribute declaration order rather than by
      * label name. Used only when duplicate labels make name-based binding impossible.
      * Requires the header column count to match the schema so that a structurally unexpected
-     * file (e.g. reordered or truncated) fails fast rather than silently mis-mapping columns.
+     * file (e.g. reordered or truncated) fails fast rather than silently mis-mapping columns —
+     * the same requirement {@link #buildHeaderlessReadSchema} imposes for the same reason, the
+     * difference being only that the row measured there is data rather than a header.
      */
     private CsvSchema buildPositionalReadSchema(Class<?> valueType, CsvSchema schema, List<String> headerLabels) {
         if (headerLabels.size() != schema.size()) {
@@ -540,10 +595,13 @@ public class RosettaCsvMapper extends CsvMapper  {
      * guard could no longer prevent the work.</p>
      *
      * @param columnAttributeNames the attribute each column binds to, in column order, or
-     *                             {@code null} to read them from the header row. The labelled path
-     *                             supplies them because its header holds labels rather than
-     *                             attribute names and it has already resolved the mapping; the plain
-     *                             path passes {@code null}, its header being attribute names already
+     *                             {@code null} to read them from the header row. Only the plain
+     *                             header-bearing path passes {@code null}, its header being attribute
+     *                             names already. The labelled path supplies them because its header
+     *                             holds labels rather than attribute names and it has already resolved
+     *                             the mapping; the header-less path supplies them because its first
+     *                             row is data, so reading it would match no attribute and strip
+     *                             nothing
      * @return {@code content} with those elements removed, or {@code content} itself if none were
      */
     private String stripListElementsMeaningAbsent(String content, Class<?> valueType,
@@ -553,7 +611,7 @@ public class RosettaCsvMapper extends CsvMapper  {
             return content;
         }
         String nullToken = configuration.getNullToken();
-        List<String> columns = columnAttributeNames != null ? columnAttributeNames : readHeaderLabels(content);
+        List<String> columns = columnAttributeNames != null ? columnAttributeNames : readFirstRow(content);
         CsvSchema rawSchema = dialectSchema(CsvSchema.emptySchema());
         List<String[]> rows = new ArrayList<>();
         boolean stripped = false;
@@ -700,7 +758,15 @@ public class RosettaCsvMapper extends CsvMapper  {
             mapper.rejectListElementsThatCannotRoundTrip(value);
             CsvSchema schemaInOrder = mapper.schemaInDeclarationOrder(value);
             if (mapper.configuration.getHeaderStyle() != HeaderStyle.LABEL) {
-                CsvSchema schema = mapper.dialectSchema(schemaInOrder.withHeader());
+                // hasHeader describes the file on both sides, so it suppresses the header row on write
+                // as well as expecting none on read. Safe because there is one canonical column order
+                // across every path in this class: a header-less write and a header-less read agree by
+                // construction, so nothing needs the header row to stay in as a safety net. The
+                // LABEL branch below cannot reach hasHeader=false — RosettaCSVConfiguration refuses
+                // that combination.
+                CsvSchema schema = mapper.configuration.isHasHeader()
+                        ? mapper.dialectSchema(schemaInOrder.withHeader())
+                        : mapper.dialectSchema(schemaInOrder.withoutHeader());
                 return mapper.writer(schema).writeValueAsString(value);
             }
             CsvSchema schema = mapper.dialectSchema(schemaInOrder.withoutHeader());

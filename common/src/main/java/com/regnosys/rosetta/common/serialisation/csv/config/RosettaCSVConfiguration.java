@@ -33,8 +33,7 @@ import java.util.Objects;
 /**
  * Global settings governing how CSV is read and written: dialect, header style, the delimiter
  * used within a single delimited-list column, which token deserialises to an absent value, and
- * whether a file has a header row at all — though {@code hasHeader=false} is currently refused,
- * since header-less CSV is not implemented.
+ * whether a file has a header row at all.
  *
  * <p>This is deliberately global-only. It carries no per-type or per-attribute map: column↔attribute
  * binding lives in the model as labels, column order comes from attribute declaration order, and
@@ -101,11 +100,12 @@ public class RosettaCSVConfiguration {
      *                      header row; {@code null} for {@code true}. This describes the file, not a
      *                      preference: a CSV file cannot be sniffed for a header — a header row of
      *                      codes looks like a data row — so it has to be declared, and this is where.
-     *                      <b>Only {@code true} is currently supported</b> — see below.
-     * @throws UnsupportedOperationException if {@code hasHeader} is {@code false}; header-less CSV
-     *                                  is not implemented yet
+     *                      {@code false} binds columns by position, in model attribute declaration
+     *                      order, and suppresses the header row on write.
      * @throws IllegalArgumentException if {@code listDelimiter} is the same as
-     *                                  {@code dialect.columnDelimiter}
+     *                                  {@code dialect.columnDelimiter}, or if {@code hasHeader} is
+     *                                  {@code false} and {@code headerStyle} is
+     *                                  {@link HeaderStyle#LABEL}
      */
     @JsonCreator
     private RosettaCSVConfiguration(
@@ -119,22 +119,16 @@ public class RosettaCSVConfiguration {
         this.listDelimiter = listDelimiter != null ? listDelimiter : DEFAULT_LIST_DELIMITER;
         this.nullToken = nullToken != null ? nullToken : DEFAULT_NULL_TOKEN;
         this.hasHeader = hasHeader != null ? hasHeader : DEFAULT_HAS_HEADER;
-        if (!this.hasHeader) {
-            // Rejected rather than accepted-and-ignored. Nothing on the read or write path honours
-            // hasHeader=false today: the read schema is unconditionally withHeader(), so a
-            // header-less file has its first data row consumed as column names and every later row
-            // bound to bogus names and silently dropped; and the writer emits a header row
-            // regardless. A setting that is accepted, has no effect and reports nothing is worse
-            // than one that is refused.
-            //
-            // When header-less support lands, the check to reintroduce alongside it is
-            // hasHeader=false with headerStyle=LABEL, which stays invalid on its own terms: a label
-            // is header text, and a file declared to have no header row has nowhere to put one.
-            throw new UnsupportedOperationException(
-                    "RosettaCSVConfiguration: hasHeader=false is not implemented yet. Reading and writing "
-                            + "header-less CSV is not supported — both paths assume a header row — so the setting "
-                            + "is refused rather than accepted and silently ignored. Supply a file with a header "
-                            + "row, or leave hasHeader at its default of true.");
+        if (!this.hasHeader && this.headerStyle == HeaderStyle.LABEL) {
+            // Invalid on its own terms, and the one combination header-less support does not make
+            // reachable: a label is header text, and a file declared to have no header row has
+            // nowhere to put one. Refused here rather than resolved silently, since either half
+            // could plausibly have been the one the caller meant.
+            throw new IllegalArgumentException(
+                    "Invalid RosettaCSVConfiguration: headerStyle=LABEL with hasHeader=false. A label is header "
+                            + "text and a file declared to have no header row has nowhere to carry one. Either set "
+                            + "hasHeader=true, or use headerStyle=ATTRIBUTE_NAME — a header-less file binds columns "
+                            + "by position, in model attribute declaration order, so it needs no column names.");
         }
         if (this.listDelimiter.equals(String.valueOf(this.dialect.getColumnDelimiter()))) {
             throw new IllegalArgumentException(
@@ -218,9 +212,11 @@ public class RosettaCSVConfiguration {
     }
 
     /**
-     * @return whether the file has a header row. Always {@code true} today — the constructor refuses
-     *         {@code false} because header-less CSV is not implemented. The setting and this getter
-     *         exist so the read and write paths can already be written against it.
+     * @return whether the file has a header row. {@code false} makes a read bind columns by position
+     *         in model attribute declaration order, and makes a write suppress the header row — one
+     *         canonical column order across both, so a header-less write and a header-less read agree
+     *         by construction. A header-less read requires the row width to match the type's column
+     *         count exactly, since there is no header to detect a structurally unexpected file by.
      */
     public boolean isHasHeader() {
         return hasHeader;
@@ -319,9 +315,9 @@ public class RosettaCSVConfiguration {
          *                  header row. Defaults to {@code true}. This describes the file, not a
          *                  preference: a CSV file cannot be sniffed for a header — a header row of
          *                  codes looks like a data row — so it has to be declared, and this is where.
-         *                  <b>Only {@code true} is currently supported</b>: header-less CSV is not
-         *                  implemented, and {@link #build()} refuses {@code false} rather than
-         *                  accepting a setting nothing acts on.
+         *                  {@code false} binds columns by position, in model attribute declaration
+         *                  order, and suppresses the header row on write. It is incompatible with
+         *                  {@link HeaderStyle#LABEL}, which has nowhere to put its labels.
          * @return this builder
          */
         public Builder setHasHeader(boolean hasHeader) {
@@ -331,10 +327,10 @@ public class RosettaCSVConfiguration {
 
         /**
          * @return the configuration these settings describe, with defaults filled in
-         * @throws UnsupportedOperationException if {@code hasHeader} is {@code false}; header-less
-         *                                  CSV is not implemented yet
          * @throws IllegalArgumentException if {@code listDelimiter} is the same as the dialect's
-         *                                  {@code columnDelimiter}
+         *                                  {@code columnDelimiter}, or if {@code hasHeader} is
+         *                                  {@code false} and {@code headerStyle} is
+         *                                  {@link HeaderStyle#LABEL}
          */
         public RosettaCSVConfiguration build() {
             return new RosettaCSVConfiguration(dialect, headerStyle, listDelimiter, nullToken, hasHeader);

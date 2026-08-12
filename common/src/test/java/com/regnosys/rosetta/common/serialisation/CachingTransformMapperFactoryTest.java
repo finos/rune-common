@@ -20,14 +20,17 @@ package com.regnosys.rosetta.common.serialisation;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.rosetta.model.lib.transform.SerializationFormat;
+import csv.test.user.User;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -99,6 +102,51 @@ class CachingTransformMapperFactoryTest {
         TransformSerialization runeJson = new TransformSerialization(SerializationFormat.RUNE_JSON, null);
         assertSame(factory.create(runeJson, LabelledFunctionA.class), factory.create(runeJson, LabelledFunctionB.class),
                 "functions loaded by the same classloader must share one RUNE_JSON mapper");
+    }
+
+    /**
+     * A plain-CSV mapper is cached on {@code (format, configPath)} alone, so once {@code hasHeader}
+     * became something a mapper differs by, the question was whether two transforms with different
+     * header expectations could collide on one cache entry. They cannot, and the reason is structural
+     * rather than a property of this key: a non-default configuration is only reachable through a
+     * {@code configPath} — {@code ClasspathTransformMapperFactory.forCsv} short-circuits to
+     * {@code RosettaCSVConfiguration.EMPTY}, which is header-bearing, when the path is null or empty —
+     * so a transform that expects no header necessarily declares a path, and differs in the key.
+     *
+     * <p>Asserted by behaviour rather than identity: two paths whose configurations differ only in
+     * {@code hasHeader} must produce mappers that write differently. Identity alone would pass on a key
+     * that happened to distinguish them for some unrelated reason.</p>
+     */
+    @Test
+    void csvMappersWithDifferentHeaderExpectationsDoNotShareACacheEntry() throws JsonProcessingException {
+        TransformSerialization headerless = new TransformSerialization(SerializationFormat.CSV,
+                "serialisation/csv/csv-config/headerless-csv-config.json");
+        TransformSerialization headerBearing = new TransformSerialization(SerializationFormat.CSV,
+                "serialisation/csv/csv-config/semicolon-csv-config.json");
+        User user = User.builder()
+                .setUsername("asmith")
+                .setIdentifier("id-001")
+                .setFirstName("Alice")
+                .setLastName("Smith")
+                .build();
+
+        ObjectMapper first = factory.create(headerless, null);
+        assertSame(first, factory.create(headerless, null), "an equal serialization must reuse the cached mapper");
+        assertEquals("asmith,id-001,Alice,Smith", firstLine(first, user), "the first line must be data");
+
+        ObjectMapper second = factory.create(headerBearing, null);
+        assertNotSame(first, second, "a different configPath must not be served the header-less mapper");
+        assertEquals("username;identifier;firstName;lastName", firstLine(second, user),
+                "the first line must be column names");
+
+        // And the header-less mapper is still itself afterwards — the second request did not evict
+        // or overwrite it.
+        assertEquals("asmith,id-001,Alice,Smith", firstLine(factory.create(headerless, null), user));
+    }
+
+    private static String firstLine(ObjectMapper mapper, User user) throws JsonProcessingException {
+        String csv = mapper.writeValueAsString(user);
+        return csv.substring(0, csv.indexOf('\n'));
     }
 
     @Test

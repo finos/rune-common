@@ -189,16 +189,19 @@ public class RosettaCsvMapperNullTokensTest {
     }
 
     /**
-     * <b>Known gap, closed by TASK-9623 session 6.6.</b> Under a non-empty {@code nullToken}, an
-     * absent optional attribute still writes a <i>blank</i> cell rather than the configured token —
-     * so this file, read back through the same configuration, deserialises {@code note} as the empty
-     * string rather than absent. The mapper's own writer produces a file its own reader misreads,
-     * under precisely the configuration {@code nullToken}'s javadoc recommends for carrying the empty
-     * string as data. See {@code csv-single-delimited-column-lists.md} §6.2 and
-     * {@code csv-single-null-token.md} §4.
+     * The write side of {@code nullToken}, and the inversion of the gap this test used to record: an
+     * absent optional attribute writes the <i>configured</i> token, not a blank cell.
+     *
+     * <p>It used to write blank whatever the token was, because the absent attribute was omitted from
+     * the token stream entirely rather than written as a null, so jackson's {@code CsvGenerator} never
+     * consulted the schema's null value and simply left the column empty. The mapper's own writer
+     * therefore produced a file its own reader misread — reading a blank cell back as the empty string
+     * under exactly the configuration {@code nullToken}'s javadoc recommends for carrying the empty
+     * string as data. Fixed by giving the CSV path {@code ALWAYS} serialisation inclusion; see
+     * {@code RosettaObjectMapperCreator.serializationInclusion}.</p>
      */
     @Test
-    void anAbsentAttributeStillWritesABlankCellEvenWhenTheNullTokenIsNotEmpty() throws IOException {
+    void anAbsentAttributeWritesTheConfiguredNullToken() throws IOException {
         RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
                 .setNullToken("N/A")
                 .build();
@@ -207,6 +210,6 @@ public class RosettaCsvMapperNullTokensTest {
 
         String written = mapper.writeValueAsString(noNote);
 
-        assertEquals("id,note\nabc,\n", written);
+        assertEquals("id,note\nabc,N/A\n", written);
     }
 }

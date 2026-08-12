@@ -293,6 +293,12 @@ public class RosettaCsvMapper extends CsvMapper  {
         // before any type-specific (number/date/boolean) text parsing is attempted; on write, it is
         // the token an absent value is written back as. Works for every column type because it is
         // the parser, not a bean deserialiser, that recognises it.
+        //
+        // The write half depends on RosettaObjectMapperCreator giving the CSV path ALWAYS
+        // serialisation inclusion: an absent attribute has to reach the generator as a null for this
+        // null value to be consulted at all. Under an omitting inclusion (NON_EMPTY/NON_ABSENT) the
+        // generator leaves the column empty and this setting silently has no effect on write —
+        // measured, and the reason the two must stay paired.
         builder.setNullValue(configuration.getNullToken());
         return builder.build();
     }

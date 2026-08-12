@@ -32,6 +32,12 @@ public enum HeaderStyle {
      * Columns are named after the label a {@code LabelProvider} returns for the attribute.
      * Requires a {@code LabelProvider} to be supplied; contradicts {@code hasHeader: false},
      * since a label has no meaning without a header row to carry it.
+     *
+     * <p>This setting is what makes a {@code SerializationFormat.CSV} transform labelled: the
+     * transform factory resolves a {@code LabelProvider} when — and only when — the configuration
+     * declares this style, and fails if none can be found. So it is not merely a description of a
+     * file's header row; it decides how the mapper is built. See
+     * {@code ClasspathTransformMapperFactory.csvMapper(String, Class, TransformRoot)}.</p>
      */
     LABEL
 }

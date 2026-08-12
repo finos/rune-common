@@ -185,6 +185,12 @@ public class RosettaCSVConfiguration {
         return dialect;
     }
 
+    /**
+     * @return what the header row holds: attribute names or labels. More than a description of the file —
+     *         for a transform declaring {@code SerializationFormat.CSV} this is what decides whether a
+     *         {@code LabelProvider} is resolved at all, so {@link HeaderStyle#LABEL} is how a CSV transform
+     *         asks to be labelled. See {@link HeaderStyle#LABEL}.
+     */
     public HeaderStyle getHeaderStyle() {
         return headerStyle;
     }

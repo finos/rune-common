@@ -389,10 +389,35 @@ public class RosettaCsvMapper extends CsvMapper  {
         return reorderColumns(schema, declarationOrder((RosettaModelObject) value));
     }
 
+    /**
+     * {@code schema}'s columns in {@code order}, <b>with the column set unchanged</b>. Reordering is
+     * all this does: a column jackson knows about that {@code order} does not mention keeps its
+     * column, appended in {@code schemaFor} order after the ordered ones.
+     *
+     * <p>That last part is load-bearing, not defensive. {@code order} comes from the generated
+     * {@code process} visitor, and the visitor does not report every property jackson serialises: a
+     * metadata-annotated attribute ({@code [metadata scheme]}, {@code [metadata id]}) is generated as
+     * a {@code FieldWithMeta*} wrapper, so it arrives at {@code processRosetta} rather than
+     * {@code processBasic}. {@link DeclarationOrderCollector} does record those, so they normally keep
+     * their declaration position — but a property no collector knows about at all would otherwise be
+     * dropped from the schema silently, and jackson then fails on writing a property with no column
+     * ({@code Unrecognized column}) or rejects a file whose width no longer matches. Narrowing a
+     * column set is never the right answer to "put these columns in a different order".</p>
+     */
     private static CsvSchema reorderColumns(CsvSchema schema, List<String> order) {
         CsvSchema.Builder builder = CsvSchema.builder();
+        Set<String> placed = new HashSet<>();
         for (String attribute : order) {
-            builder.addColumn(schema.column(attribute));
+            CsvSchema.Column column = schema.column(attribute);
+            if (column != null) {
+                builder.addColumn(column);
+                placed.add(attribute);
+            }
+        }
+        for (CsvSchema.Column column : schema) {
+            if (!placed.contains(column.getName())) {
+                builder.addColumn(column);
+            }
         }
         return builder.build();
     }
@@ -469,9 +494,22 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Collects the attribute names {@code process} visits, in visitation (declaration) order. Tabular
-     * CSV types have only simple attributes, so {@code processRosetta} is never expected to fire; it
-     * declines to recurse rather than silently omitting a complex attribute from the order.
+     * Collects the attribute names {@code process} visits, in visitation (declaration) order.
+     *
+     * <p>Records what {@code processRosetta} visits as well as what {@code processBasic} does, because
+     * a <b>metadata-annotated</b> attribute is not visited as basic: {@code [metadata scheme]} or
+     * {@code [metadata id]} on a {@code string} is generated as a {@code FieldWithMetaString} wrapper,
+     * which is a {@link RosettaModelObject}, so the visitor routes it to {@code processRosetta}. Such
+     * an attribute is still a column jackson serialises, so it has to keep its declaration position;
+     * omitting it here left {@link #reorderColumns} building a schema without it.</p>
+     *
+     * <p>Recursion is still declined in both cases. Only the attribute's own position is wanted, never
+     * the fields inside a wrapper or a complex attribute — those are not columns.</p>
+     *
+     * <p>A genuinely complex attribute is recorded too, harmlessly: {@code reorderColumns} looks each
+     * name up in {@code schemaFor}'s columns and skips one it does not find. Whether such a type can be
+     * written at all is a separate question, and jackson answers it — a nested object in a cell fails
+     * with {@code does not support Object values}, before and after this change alike.</p>
      */
     private static final class DeclarationOrderCollector implements Processor {
         private final List<String> attributeNames = new ArrayList<>();
@@ -479,12 +517,14 @@ public class RosettaCsvMapper extends CsvMapper  {
         @Override
         public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
                 R instance, RosettaModelObject parent, AttributeMeta... metas) {
+            attributeNames.add(path.getElement().getPath());
             return false;
         }
 
         @Override
         public <R extends RosettaModelObject> boolean processRosetta(RosettaPath path, Class<? extends R> rosettaType,
                 List<? extends R> instance, RosettaModelObject parent, AttributeMeta... metas) {
+            attributeNames.add(path.getElement().getPath());
             return false;
         }
 

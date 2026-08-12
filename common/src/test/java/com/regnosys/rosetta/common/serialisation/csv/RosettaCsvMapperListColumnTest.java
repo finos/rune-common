@@ -107,6 +107,56 @@ public class RosettaCsvMapperListColumnTest {
         assertEquals(expected, mapper.writeValueAsString(empty));
     }
 
+    /**
+     * A list column takes the null token on write exactly as a scalar column does, rather than keeping
+     * the blank cell it wrote before {@code nullToken} was honoured. Decided rather than inherited: the
+     * alternative — an absent scalar writing {@code N/A} while an absent list writes blank — would mean
+     * two spellings of absence in one row, and the blank one is the spelling that reads back as the
+     * empty string under this very configuration.
+     *
+     * <p>It round-trips because a whole cell equal to the token already deserialises to an absent list
+     * (see {@code aWholeCellEqualToANullTokenStillMeansAnAbsentList}). The empty-list case is not a
+     * second behaviour: the generated builder collapses an empty list to an absent one, so the writer
+     * never receives a distinct value — the same measurement
+     * {@code anEmptyListAndAnAbsentListBothWriteAnEmptyCell} records for the default token.</p>
+     */
+    @Test
+    void anAbsentListWritesTheConfiguredNullTokenAndRoundTrips() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullToken("N/A")
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        MultiCardinalityAttributes absent = MultiCardinalityAttributes.builder().setId("id1").build();
+        MultiCardinalityAttributes empty = MultiCardinalityAttributes.builder()
+                .setId("id1")
+                .setTags(Collections.emptyList())
+                .build();
+
+        String csv = mapper.writeValueAsString(absent);
+
+        assertEquals("id,tags\nid1,N/A\n", csv);
+        assertEquals(csv, mapper.writeValueAsString(empty));
+        assertEquals(absent, mapper.readValue(csv, MultiCardinalityAttributes.class));
+    }
+
+    /**
+     * A populated list is untouched by the write-side null token: only an absent value takes the token,
+     * so a non-empty list still writes its delimited elements.
+     */
+    @Test
+    void aPopulatedListIsUnaffectedByANonEmptyNullToken() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullToken("N/A")
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        MultiCardinalityAttributes original = withTags("EUR", "USD");
+
+        String csv = mapper.writeValueAsString(original);
+
+        assertEquals("id,tags\nid1,EUR;USD\n", csv);
+        assertEquals(original, mapper.readValue(csv, MultiCardinalityAttributes.class));
+    }
+
     @Test
     void listElementContainingTheColumnDelimiterIsQuoted() throws JsonProcessingException {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();

@@ -212,4 +212,45 @@ public class RosettaCsvMapperNullTokensTest {
 
         assertEquals("id,note\nabc,N/A\n", written);
     }
+
+    /**
+     * The point of the write side: what this mapper writes, this mapper reads back as the same value.
+     * Before the fix this round trip turned an absent attribute into the empty string.
+     */
+    @Test
+    void anAbsentAttributeRoundTripsUnderANonEmptyNullToken() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullToken("N/A")
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        NullableAttributes original = NullableAttributes.builder().setId("abc").build();
+
+        String written = mapper.writeValueAsString(original);
+        NullableAttributes read = mapper.readValue(written, NullableAttributes.class);
+
+        assertNull(read.getNote());
+        assertEquals(original, read);
+    }
+
+    /**
+     * The empty-string escape hatch, now working in <b>both</b> directions — which is the reason for
+     * doing the write side at all. {@code nullToken}'s javadoc tells a deployment needing to carry the
+     * empty string as data to configure a token that cannot occur in its feed; that advice is only
+     * sound if a genuine {@code ""} both writes as a blank cell and reads back as {@code ""}, rather
+     * than being confused with absence in either direction.
+     */
+    @Test
+    void aGenuineEmptyStringRoundTripsUnderANonEmptyNullToken() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullToken("N/A")
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        NullableAttributes original = NullableAttributes.builder().setId("abc").setNote("").build();
+
+        String written = mapper.writeValueAsString(original);
+
+        assertEquals("id,note\nabc,\n", written);
+        assertEquals("", mapper.readValue(written, NullableAttributes.class).getNote());
+        assertEquals(original, mapper.readValue(written, NullableAttributes.class));
+    }
 }

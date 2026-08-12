@@ -22,6 +22,7 @@ package com.regnosys.rosetta.common.serialisation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
@@ -182,6 +183,39 @@ class CachingTransformMapperFactoryTest {
         return csv.substring(0, csv.indexOf('\n'));
     }
 
+    /**
+     * A {@code CSV} mapper is labelled or not according to its configuration, so once a config path is
+     * declared it depends on the root exactly as a {@code CSV_LABELLED} mapper does, and two roots must not
+     * share an entry. This is why {@code CSV} with a config path takes the wider scope even though which
+     * configs ask for labels cannot be known when the key is computed.
+     *
+     * <p>Asserted by behaviour rather than identity: two root types carrying different providers must
+     * produce mappers that label differently. Identity alone would pass on a key that happened to
+     * distinguish them for some unrelated reason.</p>
+     */
+    @Test
+    void csvWithALabelConfigIsCachedPerRoot() throws JsonProcessingException {
+        TransformSerialization labelConfig = new TransformSerialization(SerializationFormat.CSV,
+                "serialisation/csv/csv-config/labelled-semicolon-csv-config.json");
+        User user = User.builder().setUsername("asmith").setIdentifier("id-001")
+                .setFirstName("Alice").setLastName("Smith").build();
+
+        ObjectMapper forA = factory.create(labelConfig, LabelledFunctionA.class,
+                TransformRoot.output(LabelledRootTypeA.class));
+        assertSame(forA, factory.create(labelConfig, LabelledFunctionA.class,
+                        TransformRoot.output(LabelledRootTypeA.class)),
+                "the same function and root must reuse the cached mapper");
+
+        ObjectMapper forB = factory.create(labelConfig, LabelledFunctionA.class,
+                TransformRoot.output(LabelledRootTypeB.class));
+        assertNotSame(forA, forB, "a different root type resolves a different provider, so it must not share");
+
+        // ':' (58) sits below the ';' (59) separator, so jackson-csv quotes these labels; stripped, since
+        // which provider was used is what is under test.
+        assertEquals("A:username;A:identifier;A:firstName;A:lastName", firstLine(forA, user).replace("\"", ""));
+        assertEquals("B:username;B:identifier;B:firstName;B:lastName", firstLine(forB, user).replace("\"", ""));
+    }
+
     @Test
     void clearDropsEveryCachedMapper() {
         TransformSerialization json = TransformSerialization.DEFAULT_JSON;
@@ -210,5 +244,28 @@ class CachingTransformMapperFactoryTest {
     }
 
     private static class RootTypeB {
+    }
+
+    /** Distinguishable providers, so a cache-scope test can prove which root type was resolved from. */
+    public static class RootALabelProvider implements LabelProvider {
+        @Override
+        public String getLabel(RosettaPath path) {
+            return "A:" + path.buildPath();
+        }
+    }
+
+    public static class RootBLabelProvider implements LabelProvider {
+        @Override
+        public String getLabel(RosettaPath path) {
+            return "B:" + path.buildPath();
+        }
+    }
+
+    @RuneLabelProvider(labelProvider = RootALabelProvider.class)
+    private interface LabelledRootTypeA extends RosettaModelObject {
+    }
+
+    @RuneLabelProvider(labelProvider = RootBLabelProvider.class)
+    private interface LabelledRootTypeB extends RosettaModelObject {
     }
 }

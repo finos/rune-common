@@ -180,6 +180,14 @@ public class TestPackUtils {
         return legacyObjectMapper(serialisation).map(ObjectMapper::writerWithDefaultPrettyPrinter);
     }
 
+    /**
+     * <b>Limitation, for the {@code CSV} format.</b> A CSV mapper is labelled or not according to its
+     * configuration, and this method has no function class or transform root to resolve a
+     * {@code LabelProvider} from — it passes {@code null} for both, preserving the legacy classpath lookup.
+     * So a {@code CSV} serialisation whose configuration declares {@code headerStyle: LABEL} cannot be
+     * served here and fails with the factory's own message. Resolve the serialization from the function's
+     * annotations instead, as the deprecation note says; that path has the context this one discarded.
+     */
     @SuppressWarnings("deprecation")
     private static Optional<ObjectMapper> legacyObjectMapper(PipelineModel.Serialisation serialisation) {
         if (serialisation == null || serialisation.getFormat() == null) {

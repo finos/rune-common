@@ -41,8 +41,8 @@ public interface TransformMapperFactory {
     /**
      * Builds the mapper for the given serialization. The function class is supplied because some
      * construction concerns need it: resolving the serialization config and model types against the
-     * model's classloader, and instantiating the {@code @RuneLabelProvider} for the
-     * {@code CSV_LABELLED} format. May be {@code null} when no function context exists.
+     * model's classloader, and instantiating the {@code @RuneLabelProvider} for a labelled CSV format.
+     * May be {@code null} when no function context exists.
      */
     ObjectMapper create(TransformSerialization serialization, Class<?> functionClass);
 
@@ -59,8 +59,9 @@ public interface TransformMapperFactory {
      * graph it will read or write — which side of the transform this is, and the root type when the
      * caller knows it. See {@link TransformRoot}, which explains why only the caller can supply this.
      * <p>
-     * It lets the {@code CSV_LABELLED} format resolve a type-rooted {@code LabelProvider} — the only
-     * correct provider on an ingest read path — and stops a function-rooted provider being used on the
+     * It lets a labelled CSV format ({@code CSV_LABELLED}, or {@code CSV} configured with
+     * {@code headerStyle=LABEL}) resolve a type-rooted {@code LabelProvider} — the only correct provider
+     * on an ingest read path — and stops a function-rooted provider being used on the
      * input side, where it is rooted at the wrong type. {@code null} means "the caller said nothing" and
      * preserves the function-derived behaviour of {@link #create(TransformSerialization, Class)}.
      * <p>

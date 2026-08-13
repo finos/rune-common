@@ -297,7 +297,9 @@ public class RosettaCSVConfiguration {
          *                  only an empty cell is absent. {@code null} restores that default — there
          *                  is no "disabled" value, since the empty string is itself a legitimate
          *                  token (the default), not an off switch. To carry the empty string as
-         *                  data, set this to something that cannot occur in the feed.
+         *                  data, set this to something that cannot occur in the feed — a value
+         *                  equal to a non-empty token is refused on write rather than written and
+         *                  read back as absent.
          * @return this builder
          */
         public Builder setNullToken(String nullToken) {

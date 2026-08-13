@@ -443,24 +443,32 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Rejects a list element this mapper could write but could not read back, at the point the bad value is
-     * known, rather than leaving the writer to emit a file its own reader refuses. Two kinds cannot
+     * Rejects a value this mapper could write but could not read back, at the point the bad value is
+     * known, rather than leaving the writer to emit a file its own reader refuses. Three kinds cannot
      * round-trip:
      *
      * <ul>
-     *   <li>an element <b>containing the configured list delimiter</b>. Jackson's array handling has no
+     *   <li>a <b>single value equal to a non-empty configured null token</b>. It is written into its cell
+     *       verbatim, and the schema's null value turns that cell back into an absent attribute — for a
+     *       {@code (1..1)} attribute, a cardinality violation. Only checked for a non-empty token: under
+     *       the default {@code nullToken=""} an empty cell is CSV's only spelling of absence, so an
+     *       empty-string value is unrepresentable rather than misconfigured, and refusing it would fail
+     *       writes that succeed today;</li>
+     *   <li>a list element <b>containing the configured list delimiter</b>. Jackson's array handling has no
      *       escape for it (RFC 4180 quoting is a cell-level concern, already consumed by the time the cell
      *       is split on this delimiter), so a two-element list containing it would be written and read back
      *       as three; and</li>
-     *   <li>an element <b>equal to the configured null token</b> — the empty string under the default
+     *   <li>a list element <b>equal to the configured null token</b> — the empty string under the default
      *       {@code nullToken=""}. Such an element is indistinguishable from one meaning "absent", and
      *       {@link #stripListElementsMeaningAbsent} drops those on read, so writing it would silently
-     *       shorten the list — for a {@code (1..*)} attribute, a cardinality violation.</li>
+     *       shorten the list — for a {@code (1..*)} attribute, a cardinality violation. Checked under an
+     *       empty token too, unlike the single-valued case: a hole inside a list has no representation in
+     *       Rune at all, so there is no value the empty token makes writable.</li>
      * </ul>
      *
-     * <p>The second check uses <b>the same token</b> as {@link #stripListElementsMeaningAbsent}, so the
-     * writer refuses precisely the element the reader would drop. <b>The two must be changed
-     * together.</b></p>
+     * <p>The token checks use <b>the same token</b> the read path applies — the schema's null value, and
+     * {@link #stripListElementsMeaningAbsent} one level down — so the writer refuses precisely what the
+     * reader would turn into absence. <b>They must be changed together.</b></p>
      *
      * <p>Only {@link RosettaModelObject} values are checked — a plain POJO (which
      * {@link #schemaInDeclarationOrder(Object)} also accommodates) has no {@code process} visitor to
@@ -468,13 +476,13 @@ public class RosettaCsvMapper extends CsvMapper  {
      *
      * @throws IllegalArgumentException naming the attribute and the offending value
      */
-    private void rejectListElementsThatCannotRoundTrip(Object value) {
+    private void rejectValuesThatCannotRoundTrip(Object value) {
         if (!(value instanceof RosettaModelObject)) {
             return;
         }
         RosettaModelObject instance = (RosettaModelObject) value;
         instance.process(RosettaPath.valueOf(instance.getType().getSimpleName()),
-                new ListElementCollisionDetector(configuration.getListDelimiter(), configuration.getNullToken()));
+                new RoundTripCollisionDetector(configuration.getListDelimiter(), configuration.getNullToken()));
     }
 
     /**
@@ -527,20 +535,20 @@ public class RosettaCsvMapper extends CsvMapper  {
     }
 
     /**
-     * Walks a value's simple attributes looking for a multi-valued one holding an element that
-     * cannot round-trip, throwing as soon as it finds one. Declines to recurse into a complex
-     * attribute for the same reason {@link DeclarationOrderCollector} does: tabular CSV types have
-     * none.
+     * Walks a value's simple attributes looking for one holding a value that cannot round-trip,
+     * throwing as soon as it finds one. Declines to recurse into a complex attribute for the same
+     * reason {@link DeclarationOrderCollector} does: tabular CSV types have none.
      */
-    private static final class ListElementCollisionDetector implements Processor {
+    private static final class RoundTripCollisionDetector implements Processor {
         private final String listDelimiter;
         private final String nullToken;
 
         /**
-         * @param nullToken the configured null token — the exact value
-         *                  {@link #stripListElementsMeaningAbsent} drops on read
+         * @param nullToken the configured null token — the exact value the read path turns into
+         *                  absence, whole-cell via the schema's null value and per element via
+         *                  {@link #stripListElementsMeaningAbsent}
          */
-        private ListElementCollisionDetector(String listDelimiter, String nullToken) {
+        private RoundTripCollisionDetector(String listDelimiter, String nullToken) {
             this.listDelimiter = listDelimiter;
             this.nullToken = nullToken;
         }
@@ -560,8 +568,21 @@ public class RosettaCsvMapper extends CsvMapper  {
         @Override
         public <T> void processBasic(RosettaPath path, Class<? extends T> rosettaType, T instance,
                 RosettaModelObject parent, AttributeMeta... metas) {
-            // A single-valued attribute serialises to one whole cell; the list delimiter has no
-            // special meaning there, so there is nothing to reject.
+            // A single-valued attribute serialises to one whole cell, where the list delimiter has no
+            // special meaning — only the null token does. Skipped for an empty token: an empty cell is
+            // CSV's only spelling of absence, so an empty-string value has no other form to take.
+            if (instance == null || nullToken.isEmpty()) {
+                return;
+            }
+            String text = String.valueOf(instance);
+            if (nullToken.equals(text)) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot serialise attribute '%s' to CSV: value '%s' is the configured null token, so it "
+                                + "would be written as a cell indistinguishable from an absent value and read back "
+                                + "as absent, silently losing it. Either change the value or reconfigure nullToken "
+                                + "so it does not collide.",
+                        path.getElement().getPath(), text));
+            }
         }
 
         @Override
@@ -777,7 +798,7 @@ public class RosettaCsvMapper extends CsvMapper  {
         //TODO: see if it's possible to use a custom serialiser so we don't have to override the writer methods
         @Override
         public String writeValueAsString(Object value) throws JsonProcessingException {
-            mapper.rejectListElementsThatCannotRoundTrip(value);
+            mapper.rejectValuesThatCannotRoundTrip(value);
             CsvSchema schemaInOrder = mapper.schemaInDeclarationOrder(value);
             if (mapper.configuration.getHeaderStyle() != HeaderStyle.LABEL) {
                 // hasHeader describes the file on both sides, so it suppresses the header row on write as

@@ -32,6 +32,8 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@code nullToken}: the cell value that deserialises to an absent attribute, and that an
@@ -239,6 +241,80 @@ public class RosettaCsvMapperNullTokenTest {
 
         assertEquals("id,note\nabc,\n", written);
         assertEquals("", mapper.readValue(written, NullableAttributes.class).getNote());
+        assertEquals(original, mapper.readValue(written, NullableAttributes.class));
+    }
+
+    /**
+     * The whole-cell counterpart of {@code listElementEqualToAConfiguredNullTokenIsRejectedAtWriteTime}: the
+     * schema's null value turns a cell equal to the token back into an absent attribute, so writing that
+     * string as a value loses it silently. Refused where the bad value is known rather than emitted into a
+     * file this mapper's own reader reads as absent.
+     */
+    @Test
+    void aValueEqualToAConfiguredNullTokenIsRejectedAtWriteTime() {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullToken("N/A")
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        NullableAttributes value = NullableAttributes.builder().setId("abc").setNote("N/A").build();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> mapper.writeValueAsString(value));
+        assertTrue(exception.getMessage().contains("note"));
+        assertTrue(exception.getMessage().contains("N/A"));
+        assertTrue(exception.getMessage().contains("null token"));
+    }
+
+    /**
+     * The same on a {@code (1..1)} attribute, where the loss is a cardinality violation rather than merely a
+     * different string.
+     */
+    @Test
+    void aMandatoryValueEqualToAConfiguredNullTokenIsRejectedAtWriteTime() {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullToken("N/A")
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        NullableAttributes value = NullableAttributes.builder().setId("N/A").setNote("a real value").build();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> mapper.writeValueAsString(value));
+        assertTrue(exception.getMessage().contains("id"));
+        assertTrue(exception.getMessage().contains("N/A"));
+    }
+
+    /**
+     * What has <i>not</i> changed. Under the default empty token an empty cell is CSV's only spelling of
+     * absence, so an empty-string value has no other form to take — it is unrepresentable rather than
+     * misconfigured, and refusing it would fail writes that succeed today. It still writes, and still comes
+     * back absent; {@code aGenuineEmptyStringRoundTripsUnderANonEmptyNullToken} is the configuration that
+     * carries it as data.
+     */
+    @Test
+    void anEmptyStringIsStillWritableUnderTheDefaultNullToken() throws IOException {
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
+        NullableAttributes original = NullableAttributes.builder().setId("abc").setNote("").build();
+
+        String written = mapper.writeValueAsString(original);
+
+        assertEquals("id,note\nabc,\n", written);
+        assertNull(mapper.readValue(written, NullableAttributes.class).getNote());
+    }
+
+    /**
+     * A non-empty token constrains only the exact token, not any cell that merely contains it.
+     */
+    @Test
+    void aValueMerelyContainingTheNullTokenIsWritable() throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.builder()
+                .setNullToken("N/A")
+                .build();
+        RosettaCsvMapper mapper = (RosettaCsvMapper) RosettaObjectMapperCreator.forCSV(config).create();
+        NullableAttributes original = NullableAttributes.builder().setId("abc").setNote("XN/AY").build();
+
+        String written = mapper.writeValueAsString(original);
+
+        assertEquals("id,note\nabc,XN/AY\n", written);
         assertEquals(original, mapper.readValue(written, NullableAttributes.class));
     }
 }

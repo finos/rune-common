@@ -23,21 +23,25 @@ package com.regnosys.rosetta.common.serialisation.csv;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.regnosys.rosetta.common.serialisation.RosettaCsvMapper;
+import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
+import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.rosetta.model.lib.functions.LabelProvider;
 import csv.test.user.User;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests for {@link RosettaCsvMapper} label-header behaviour (tests #1–5 from the plan).
+ * Tests for {@link RosettaCsvMapper} label-header behaviour.
  *
- * <p>Uses the existing generated {@code User} type (fields: firstName, identifier, lastName,
- * username — alphabetical CSV column order) together with hand-written stub
+ * <p>Uses the existing generated {@code User} type (fields declared in the order username,
+ * identifier, firstName, lastName — the CSV column order) together with hand-written stub
  * {@link LabelProvider} implementations, following the same pattern as
  * {@link LabelProviderResolverTest}.
  */
@@ -61,13 +65,9 @@ public class RosettaCsvMapperLabelledTest {
         return path -> labels.get(path.buildPath());
     }
 
-    // ---------------------------------------------------------------------------
-    // Test #1 — Labels present → label headers
-    // ---------------------------------------------------------------------------
-
     /**
      * When every column has a label the CSV header must use the label text, not the
-     * attribute name.  Values must appear in the same (alphabetical) column order.
+     * attribute name. Values must appear in the same (declaration) column order.
      */
     @Test
     void shouldUseLabelsAsHeadersWhenAllColumnsAreLabelled() throws JsonProcessingException {
@@ -81,14 +81,10 @@ public class RosettaCsvMapperLabelledTest {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
         String csv = mapper.writeValueAsString(buildUser());
 
-        String expected = "\"First Name\",ID,\"Last Name\",\"User Name\"\n"
-                + "Alice,id-001,Smith,asmith\n";
+        String expected = "\"User Name\",ID,\"First Name\",\"Last Name\"\n"
+                + "asmith,id-001,Alice,Smith\n";
         assertEquals(expected, csv);
     }
-
-    // ---------------------------------------------------------------------------
-    // Test #2 — Label absent → attribute-name header (per-column fallback)
-    // ---------------------------------------------------------------------------
 
     /**
      * When the provider returns null for every path the header must fall back to the
@@ -102,14 +98,10 @@ public class RosettaCsvMapperLabelledTest {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
         String csv = mapper.writeValueAsString(buildUser());
 
-        String expected = "firstName,identifier,lastName,username\n"
-                + "Alice,id-001,Smith,asmith\n";
+        String expected = "username,identifier,firstName,lastName\n"
+                + "asmith,id-001,Alice,Smith\n";
         assertEquals(expected, csv);
     }
-
-    // ---------------------------------------------------------------------------
-    // Test #3 — Mixed labelled/unlabelled attributes
-    // ---------------------------------------------------------------------------
 
     /**
      * When only some columns have labels the header must use the label for labelled
@@ -126,14 +118,10 @@ public class RosettaCsvMapperLabelledTest {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
         String csv = mapper.writeValueAsString(buildUser());
 
-        String expected = "\"First Name\",identifier,\"Last Name\",username\n"
-                + "Alice,id-001,Smith,asmith\n";
+        String expected = "username,identifier,\"First Name\",\"Last Name\"\n"
+                + "asmith,id-001,Alice,Smith\n";
         assertEquals(expected, csv);
     }
-
-    // ---------------------------------------------------------------------------
-    // Test #4 — Plain CSV unchanged (regression guard)
-    // ---------------------------------------------------------------------------
 
     /**
      * The no-arg {@code createCsvObjectMapper()} (plain CSV, no provider) must produce
@@ -145,14 +133,10 @@ public class RosettaCsvMapperLabelledTest {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper();
         String csv = mapper.writeValueAsString(buildUser());
 
-        String expected = "firstName,identifier,lastName,username\n"
-                + "Alice,id-001,Smith,asmith\n";
+        String expected = "username,identifier,firstName,lastName\n"
+                + "asmith,id-001,Alice,Smith\n";
         assertEquals(expected, csv);
     }
-
-    // ---------------------------------------------------------------------------
-    // Test #5 — Duplicate labels (mirror csv012/csv016 from BnmCsvIRSType)
-    // ---------------------------------------------------------------------------
 
     /**
      * When two distinct columns share the same label text both columns must emit that
@@ -177,16 +161,12 @@ public class RosettaCsvMapperLabelledTest {
         RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
         String csv = mapper.writeValueAsString(buildUser());
 
-        // Columns are in alphabetical order: firstName, identifier, lastName, username
-        // firstName → "Name", identifier → "ID", lastName → "Name", username → "User Name"
-        String expected = "Name,ID,Name,\"User Name\"\n"
-                + "Alice,id-001,Smith,asmith\n";
+        // Columns are in declaration order: username, identifier, firstName, lastName
+        // username → "User Name", identifier → "ID", firstName → "Name", lastName → "Name"
+        String expected = "\"User Name\",ID,Name,Name\n"
+                + "asmith,id-001,Alice,Smith\n";
         assertEquals(expected, csv);
     }
-
-    // ---------------------------------------------------------------------------
-    // Test #6 — Round-trip, all columns labelled
-    // ---------------------------------------------------------------------------
 
     /**
      * A CSV written with a fully-labelled provider must read back into an equal
@@ -209,10 +189,6 @@ public class RosettaCsvMapperLabelledTest {
         assertEquals(original, roundTripped);
     }
 
-    // ---------------------------------------------------------------------------
-    // Test #7 — Round-trip, only some columns labelled (mixed fallback)
-    // ---------------------------------------------------------------------------
-
     /**
      * Columns without a label fall back to the attribute name for both the header
      * written and the header expected on read, so mixed labelling still round-trips.
@@ -231,10 +207,6 @@ public class RosettaCsvMapperLabelledTest {
         User roundTripped = mapper.readValue(csv, User.class);
         assertEquals(original, roundTripped);
     }
-
-    // ---------------------------------------------------------------------------
-    // Test #8 — Header columns reordered
-    // ---------------------------------------------------------------------------
 
     /**
      * The reader must bind by column name (translated from label to attribute),
@@ -261,15 +233,11 @@ public class RosettaCsvMapperLabelledTest {
         assertEquals(buildUser(), result);
     }
 
-    // ---------------------------------------------------------------------------
-    // Test #9 — Duplicate labels on read → positional fallback
-    // ---------------------------------------------------------------------------
-
     /**
      * When two attributes share the same label the header text is ambiguous, so the reader
      * cannot bind by name. Rather than fail, it falls back to positional binding against the
-     * type's canonical (alphabetical) schema order — the order the writer always emits — so a
-     * duplicate-labelled file the writer produced still round-trips correctly.
+     * type's canonical (declaration-order) schema order — the order the writer always emits —
+     * so a duplicate-labelled file the writer produced still round-trips correctly.
      */
     @Test
     void shouldFallBackToPositionalBindingWhenTwoColumnsShareTheSameLabelOnRead() throws JsonProcessingException {
@@ -287,10 +255,6 @@ public class RosettaCsvMapperLabelledTest {
         User roundTripped = mapper.readValue(csv, User.class);
         assertEquals(original, roundTripped);
     }
-
-    // ---------------------------------------------------------------------------
-    // Test #11 — Duplicate labels + wrong column count → throws
-    // ---------------------------------------------------------------------------
 
     /**
      * The positional fallback only fires when the file is structurally consistent with the
@@ -315,10 +279,6 @@ public class RosettaCsvMapperLabelledTest {
         assertThrows(IllegalStateException.class, () -> mapper.readValue(csv, User.class));
     }
 
-    // ---------------------------------------------------------------------------
-    // Test #10 — Regression: plain (no provider) read still works
-    // ---------------------------------------------------------------------------
-
     /**
      * With no {@link LabelProvider}, deserialisation must continue to work exactly as
      * before: header row holds attribute names, columns bound by name.
@@ -331,5 +291,69 @@ public class RosettaCsvMapperLabelledTest {
 
         User result = mapper.readValue(csv, User.class);
         assertEquals(buildUser(), result);
+    }
+
+    /**
+     * {@link #shouldFallBackToPositionalBindingWhenTwoColumnsShareTheSameLabelOnRead} writes then reads
+     * through the same order, so it only proves the two sides agree with each other. A hand-authored file,
+     * read directly, is what distinguishes "positional fallback binds by declaration order" from "binds by
+     * some other order the writer happens to also use". {@code firstName} and {@code lastName} share the
+     * label "Name", forcing positional binding; {@code User} declares
+     * {@code username, identifier, firstName, lastName}, so column A must bind to {@code username}, not
+     * (alphabetically) to {@code firstName}.
+     */
+    @Test
+    void shouldBindPositionalFallbackByDeclarationOrderOnADirectlyAuthoredFile() throws JsonProcessingException {
+        Map<String, String> labels = new HashMap<>();
+        labels.put("firstName",  "Name");
+        labels.put("identifier", "ID");
+        labels.put("lastName",   "Name");   // duplicate label forces positional binding
+        labels.put("username",   "User Name");
+        LabelProvider provider = mapProvider(labels);
+
+        RosettaCsvMapper mapper = RosettaCsvMapper.createCsvObjectMapper(provider);
+        String csv = "Name,ID,Name,\"User Name\"\n"
+                + "A,B,C,D\n";
+
+        User result = mapper.readValue(csv, User.class);
+
+        User expected = User.builder()
+                .setUsername("A")
+                .setIdentifier("B")
+                .setFirstName("C")
+                .setLastName("D")
+                .build();
+        assertEquals(expected, result);
+    }
+
+    /**
+     * A {@code headerStyle: LABEL} configuration with no {@link LabelProvider} has no attribute-to-label
+     * mapping to use, so it fails at construction rather than silently writing attribute names.
+     */
+    @Test
+    void shouldThrowWhenHeaderStyleIsLabelWithNoLabelProviderSupplied() {
+        RosettaCSVConfiguration labelConfig = RosettaCSVConfiguration.builder()
+                .setHeaderStyle(HeaderStyle.LABEL)
+                .build();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RosettaCsvMapper(labelConfig, null));
+        assertTrue(exception.getMessage().contains("LABEL"));
+    }
+
+    /**
+     * The mirror of {@link #shouldThrowWhenHeaderStyleIsLabelWithNoLabelProviderSupplied}, and the more
+     * dangerous half: {@code ATTRIBUTE_NAME} never consults a {@link LabelProvider}, so a supplied one would
+     * be dropped and attribute names written in its place — plausible output rather than an obvious
+     * failure.
+     */
+    @Test
+    void shouldThrowWhenALabelProviderIsSuppliedButHeaderStyleIsAttributeName() {
+        LabelProvider provider = mapProvider(Collections.singletonMap("username", "User Name"));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RosettaCsvMapper(RosettaCSVConfiguration.EMPTY, provider));
+        assertTrue(exception.getMessage().contains("ATTRIBUTE_NAME"));
+        assertTrue(exception.getMessage().contains("LabelProvider"));
     }
 }

@@ -33,8 +33,8 @@ import java.util.Objects;
  * transform). The side is free information at the call site — a caller has already chosen to serialize
  * an input or an output — and guessing it from annotations is wrong in both directions.
  * <p>
- * Two things depend on it, both in {@link ClasspathTransformMapperFactory}'s {@code CSV_LABELLED}
- * handling:
+ * Two things depend on it, both in {@link ClasspathTransformMapperFactory}'s labelled CSV handling —
+ * {@code CSV_LABELLED}, and {@code CSV} whose configuration declares {@code headerStyle=LABEL}:
  * <ul>
  *   <li>{@link #getType()} supplies the type-rooted {@code @RuneLabelProvider} lookup, which is the only
  *       correct provider on an ingest read path.</li>

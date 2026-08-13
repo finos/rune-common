@@ -30,22 +30,25 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * A {@link TransformMapperFactory} decorator that builds each distinct mapper once and caches it.
  * Mapper construction is not cheap — Jackson module registration, and for XML a full parse of the
- * serialization config — while a runtime requests a mapper on every transform execution, so
- * implementors get per-instance reuse without writing any caching themselves.
+ * serialization config — while a runtime requests a mapper on every transform execution.
  * <p>
  * The cache key pairs the {@link TransformSerialization} with the part of the function-class context
- * the format is actually sensitive to, so equal serializations are shared exactly as widely as is
- * correct:
+ * the format is actually sensitive to:
  * <ul>
- *   <li>{@code CSV_LABELLED} — the function class <em>and</em> the {@link TransformRoot}: the resolved
+ *   <li>Both CSV formats — the function class <em>and</em> the {@link TransformRoot}: the resolved
  *       {@code LabelProvider} depends on both the root type and the transform side (see
- *       {@link ClasspathTransformMapperFactory}), so two requests for the same function but different
- *       roots must not share a mapper, and vice versa.</li>
+ *       {@link ClasspathTransformMapperFactory#resolveLabelProvider(Class, TransformRoot)}), so two
+ *       requests differing in either must not share a mapper. {@code CSV} takes the same scope because
+ *       its configuration, not its format, decides whether it is labelled, and that cannot be known
+ *       here without loading the config. A CSV request that resolves no provider therefore gets a
+ *       duplicate but identical mapper per {@code (function, root)} — the price of a guarantee that
+ *       holds whatever the delegate does. The scope is strictly narrower than the classloader scope
+ *       below, since a function class determines its own classloader, so it can only reduce sharing,
+ *       never serve a mapper built for another model.</li>
  *   <li>{@code RUNE_JSON} and {@code XML} — the function class's {@link ClassLoader}: these mappers
  *       resolve model types against it, so functions from the same model share one mapper while
- *       models in different classloaders never cross. The root does not affect their
- *       construction, so it is not part of their scope.</li>
- *   <li>{@code JSON} and {@code CSV} — nothing: one mapper per factory.</li>
+ *       models in different classloaders never cross. The root does not affect their construction.</li>
+ *   <li>{@code JSON} — nothing: one mapper per factory.</li>
  * </ul>
  * <p>
  * The cache lives and dies with this factory instance, and cached mappers may hold references into the
@@ -90,6 +93,10 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
     private static Object cacheScope(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
         switch (serialization.getFormat()) {
             case CSV_LABELLED:
+            case CSV:
+                // Both formats can resolve a LabelProvider, which depends on the root and the transform
+                // side as well as the function class. CSV reaches it through a configuration this method
+                // cannot see, so every CSV request takes the scope its labelled case needs.
                 return Arrays.asList(functionClass, root);
             case RUNE_JSON:
             case XML:

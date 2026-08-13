@@ -1,0 +1,17 @@
+namespace csv.test.metadata
+version "${project.version}"
+
+// A metadata-annotated attribute is generated as a FieldWithMeta* wrapper rather than a plain
+// scalar, so the generated process() visitor routes it to processRosetta rather than processBasic.
+// That makes this type the one construct available here that exercises RosettaCsvMapper's
+// declaration-order column collection against a property the visitor does not report as basic.
+//
+// `scheme` sits in the middle deliberately: it pins the recovered position, not just the presence
+// of the column. Every attribute is optional so a value can be built without populating it — a
+// populated metadata attribute cannot be written to CSV at all (jackson has no cell shape for a
+// nested object), which is behaviour this mapper does not change.
+type MetadataAttributeHolder:
+    head string (0..1)
+    scheme string (0..1)
+        [metadata scheme]
+    tail string (0..1)

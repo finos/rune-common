@@ -1,0 +1,7 @@
+{
+  "headerStyle": "LABEL",
+  "dialect": {
+    "columnDelimiter": ";"
+  },
+  "listDelimiter": "|"
+}

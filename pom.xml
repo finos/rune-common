@@ -92,13 +92,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rune.dsl.version>10.8.0</rune.dsl.version>
+        <rune.dsl.version>10.10.0</rune.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
         <gpg.passphrase>configured-by-release-profile</gpg.passphrase>
 
-        <jackson.version>2.18.8</jackson.version>
+        <jackson.version>2.18.9</jackson.version>
         <guice.version>6.0.0</guice.version>
         <guava.version>33.3.1-jre</guava.version>
         <slf4j-api.version>2.0.13</slf4j-api.version>

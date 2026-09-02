@@ -98,7 +98,6 @@
         <gpg.passphrase>configured-by-release-profile</gpg.passphrase>
 
         <jackson.version>2.18.10</jackson.version>
-        <plexus-utils.version>3.6.1</plexus-utils.version>
         <guice.version>6.0.0</guice.version>
         <guava.version>33.3.1-jre</guava.version>
         <slf4j-api.version>2.0.13</slf4j-api.version>
@@ -252,11 +251,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-utils</artifactId>
-                <version>${plexus-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit</groupId>

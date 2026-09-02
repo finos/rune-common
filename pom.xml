@@ -104,7 +104,6 @@
         <slf4j-api.version>2.0.13</slf4j-api.version>
         <commons.io.version>2.14.0</commons.io.version>
         <xtext.version>2.38.0</xtext.version>
-        <plexus-utils.version>3.6.1</plexus-utils.version>
 
         <!-- test -->
         <junit.version>5.10.2</junit.version>
@@ -173,11 +172,6 @@
                 <groupId>org.finos.rune</groupId>
                 <artifactId>rune-runtime</artifactId>
                 <version>${rune.dsl.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-utils</artifactId>
-                <version>${plexus-utils.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>

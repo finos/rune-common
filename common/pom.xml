@@ -94,6 +94,18 @@
                     <groupId>ch.qos.reload4j</groupId>
                     <artifactId>reload4j</artifactId>
                 </exclusion>
+                <!-- This dependency is here for the Rune DSL and Xtext generator classes it
+                brings; the Maven plugin API those mojos compile against is only ever needed
+                when Maven itself runs the plugin, and Maven supplies it from core then. Left
+                in, it puts maven-plugin-api and its plexus-utils on the compile classpath of
+                every consumer of this library, where its CVEs surface (most recently
+                CVE-2025-67030). A dependencyManagement pin cannot fix that for consumers -
+                Maven ignores a transitive dependency's dependencyManagement - but an
+                exclusion here is honoured downstream. -->
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-plugin-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
     </dependencies>

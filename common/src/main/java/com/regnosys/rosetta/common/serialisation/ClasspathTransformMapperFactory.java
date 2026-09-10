@@ -76,10 +76,12 @@ import java.util.function.Supplier;
  * mapper degrades to plain (unlabelled) CSV and a {@code CSV} mapper whose configuration asked for labels
  * fails.
  * <p>
- * A caller that supplies no {@link TransformRoot} gets the function's provider, unguarded, as it did
- * before root context existed. The side cannot be inferred from the function's annotations — a report, an
- * enrichment and a pre-annotation model all carry a label provider and no {@code @Projection} — so a
- * factory that guessed would strip labels from exactly the transforms that most need them.
+ * A caller that passes a {@code null} {@link TransformRoot} gets the function's provider, unguarded, as
+ * it did before root context existed. The side cannot be inferred from the function's annotations — a
+ * report, an enrichment and a pre-annotation model all carry a label provider and no {@code @Projection}
+ * — so a factory that guessed would strip labels from exactly the transforms that most need them. The
+ * root is a required parameter for that reason: a caller that knows the side has to say so rather than
+ * fall into the fallback by omission.
  * <p>
  * Both provider kinds are permanent: a type whose labels sit entirely on nested descendants never gets a
  * type-rooted provider (the DSL only emits one for a type carrying labels on its own attributes), and the
@@ -98,7 +100,7 @@ import java.util.function.Supplier;
  * existing override keeps deciding that case rather than being silently ignored:
  * <ul>
  *   <li>{@link #csvLabelledMapper(Class)} and {@link #resolveLabelProvider(Class)} — only where the
- *       caller supplied no {@link TransformRoot}. A supplied root outranks both.</li>
+ *       caller passed a {@code null} {@link TransformRoot}. A non-null root outranks both.</li>
  *   <li>{@link #csvMapper()} — only where the transform declares no {@code configPath}. A declared
  *       config path outranks it. It is also where both {@code CSV_LABELLED} paths degrade to.</li>
  * </ul>
@@ -127,11 +129,6 @@ import java.util.function.Supplier;
 public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathTransformMapperFactory.class);
-
-    @Override
-    public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass) {
-        return create(serialization, functionClass, (TransformRoot) null);
-    }
 
     @Override
     public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
@@ -250,10 +247,10 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     /**
      * @deprecated since 12.10.0, will be removed in the next major version. Superseded by
      *         {@link #csvLabelledMapper(Class, TransformRoot)}, which is told what sits at the root and so
-     *         can resolve type-first. Still called whenever the caller supplies no {@link TransformRoot} —
-     *         function-rooted resolution with no guard, via the equally deprecated
-     *         {@link #resolveLabelProvider(Class)}. It can no longer answer for a caller that did supply a
-     *         root; override {@link #csvLabelledMapper(Class, TransformRoot)} to influence that.
+     *         can resolve type-first. Still called whenever the caller passes a {@code null}
+     *         {@link TransformRoot} — function-rooted resolution with no guard, via the equally deprecated
+     *         {@link #resolveLabelProvider(Class)}. It can no longer answer for a caller that passed a
+     *         non-null root; override {@link #csvLabelledMapper(Class, TransformRoot)} to influence that.
      */
     @Deprecated
     protected ObjectMapper csvLabelledMapper(Class<?> functionClass) {
@@ -495,7 +492,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * Whether the caller declared that the serialized graph is the transform's <b>input</b> — the one
-     * state in which a function-rooted provider is provably wrong. A caller that supplied no
+     * state in which a function-rooted provider is provably wrong. A caller that passed a {@code null}
      * {@link TransformRoot} declared nothing, so this is {@code false} and the function's provider
      * stands, exactly as it did before root context existed.
      */

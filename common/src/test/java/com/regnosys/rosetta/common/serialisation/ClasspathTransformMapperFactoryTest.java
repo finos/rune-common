@@ -72,11 +72,11 @@ class ClasspathTransformMapperFactoryTest {
     private final ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
 
     private Optional<ObjectMapper> inputMapper(Class<?> functionClass) {
-        return TransformSerializationResolver.input(functionClass).map(s -> factory.create(s, functionClass));
+        return TransformSerializationResolver.input(functionClass).map(s -> factory.create(s, functionClass, TransformRoot.input()));
     }
 
     private Optional<ObjectMapper> outputMapper(Class<?> functionClass) {
-        return TransformSerializationResolver.output(functionClass).map(s -> factory.create(s, functionClass));
+        return TransformSerializationResolver.output(functionClass).map(s -> factory.create(s, functionClass, TransformRoot.output()));
     }
 
     @Ingest(id = "extensionSchema", format = SerializationFormat.XML, configPath = XML_CONFIG)
@@ -269,7 +269,7 @@ class ClasspathTransformMapperFactoryTest {
         // Regression guard for today's working path: no root type supplied, so resolution falls back to
         // the function's own provider.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class);
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, null);
 
         assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
@@ -298,10 +298,10 @@ class ClasspathTransformMapperFactoryTest {
 
     @Test
     void csvLabelledIngestWithNoDeclaredSideKeepsTodaysFunctionProvider() throws JsonProcessingException {
-        // The guard is the caller's declared side and nothing else. A caller that has not been updated
-        // supplies no root, so it keeps exactly the behaviour it had before root context existed.
+        // The guard is the caller's declared side and nothing else. A caller that passes a null root has
+        // declared nothing, so it keeps exactly the behaviour it had before root context existed.
         TransformSerialization s = TransformSerializationResolver.input(CsvLabelledIngestWithFunctionProvider.class).get();
-        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class);
+        ObjectMapper mapper = factory.create(s, CsvLabelledIngestWithFunctionProvider.class, null);
 
         assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
@@ -311,7 +311,7 @@ class ClasspathTransformMapperFactoryTest {
         // Reports, enrichments and pre-annotation models all carry a label provider and no @Projection.
         // A guard that read the annotations would strip the labels off every one of them.
         ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null),
-                LabelledFunctionWithoutTransformAnnotation.class);
+                LabelledFunctionWithoutTransformAnnotation.class, null);
 
         assertEquals("func:username,func:identifier,func:firstName,func:lastName", header(mapper));
     }
@@ -428,7 +428,7 @@ class ClasspathTransformMapperFactoryTest {
     void noProviderAnywhereWarnsWithoutClaimingOneWasSuppressed() {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithoutLabelProvider.class).get();
 
-        String warning = onlyWarning(() -> factory.create(s, CsvLabelledProjectionWithoutLabelProvider.class));
+        String warning = onlyWarning(() -> factory.create(s, CsvLabelledProjectionWithoutLabelProvider.class, TransformRoot.output()));
 
         assertTrue(warning.contains("no @RuneLabelProvider could be resolved"), warning);
         assertFalse(warning.contains("rooted at its own output"),
@@ -481,7 +481,7 @@ class ClasspathTransformMapperFactoryTest {
         // deciding anything. On the branch it was written for, it still decides.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = new OverridingResolutionFactory()
-                .create(s, CsvLabelledProjectionWithFunctionProvider.class);
+                .create(s, CsvLabelledProjectionWithFunctionProvider.class, null);
 
         assertEquals("sub:username,sub:identifier,sub:firstName,sub:lastName", header(mapper));
     }
@@ -501,7 +501,7 @@ class ClasspathTransformMapperFactoryTest {
         // pre-root-context case, so it still decides that case.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
         ObjectMapper mapper = new OverridingCsvLabelledMapperFactory()
-                .create(s, CsvLabelledProjectionWithFunctionProvider.class);
+                .create(s, CsvLabelledProjectionWithFunctionProvider.class, null);
 
         assertEquals("sub:username,sub:identifier,sub:firstName,sub:lastName", header(mapper));
     }
@@ -614,11 +614,11 @@ class ClasspathTransformMapperFactoryTest {
     void csvMapperWithALabelConfigIsHonouredWithNoRootAtAll() throws JsonProcessingException {
         TransformSerialization s = TransformSerializationResolver.output(CsvProjectionWithLabelConfig.class).get();
 
-        ObjectMapper mapper = factory.create(s, CsvProjectionWithLabelConfig.class);
+        ObjectMapper mapper = factory.create(s, CsvProjectionWithLabelConfig.class, null);
 
         assertEquals("func:username;func:identifier;func:firstName;func:lastName", unquoted(header(mapper)));
         assertEquals(Collections.emptyList(),
-                warningsWhile(() -> factory.create(s, CsvProjectionWithLabelConfig.class)),
+                warningsWhile(() -> factory.create(s, CsvProjectionWithLabelConfig.class, null)),
                 "nothing was dropped and nothing degraded, so there is nothing to report");
     }
 
@@ -666,7 +666,7 @@ class ClasspathTransformMapperFactoryTest {
     void csvLabelledWithConfigPathDropsTheConfigWithNoRoot() throws JsonProcessingException {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
 
-        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class);
+        ObjectMapper mapper = factory.create(s, CsvLabelledProjectionWithConfig.class, null);
 
         assertEquals("func:username,func:identifier,func:firstName,func:lastName", unquoted(header(mapper)),
                 "the declared semicolon config is not applied to a CSV_LABELLED transform");
@@ -688,7 +688,7 @@ class ClasspathTransformMapperFactoryTest {
         // writes a well-formed comma-delimited file and nothing indicates its own config was never read.
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithConfig.class).get();
 
-        String warning = onlyWarning(() -> factory.create(s, CsvLabelledProjectionWithConfig.class));
+        String warning = onlyWarning(() -> factory.create(s, CsvLabelledProjectionWithConfig.class, null));
 
         assertTrue(warning.contains(CSV_LABELLED_CONFIG), "the dropped config path must be named: " + warning);
         assertTrue(warning.contains(CsvLabelledProjectionWithConfig.class.getName()), warning);
@@ -714,14 +714,14 @@ class ClasspathTransformMapperFactoryTest {
         TransformSerialization s = TransformSerializationResolver.output(CsvLabelledProjectionWithFunctionProvider.class).get();
 
         assertEquals(Collections.emptyList(),
-                warningsWhile(() -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class)));
+                warningsWhile(() -> factory.create(s, CsvLabelledProjectionWithFunctionProvider.class, null)));
     }
 
     @Test
     void missingCsvConfigResourceIsReported() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
                 () -> factory.create(new TransformSerialization(SerializationFormat.CSV, "does/not/exist.json"),
-                        ClasspathTransformMapperFactoryTest.class));
+                        ClasspathTransformMapperFactoryTest.class, null));
         assertTrue(e.getMessage().contains("does/not/exist.json"));
     }
 
@@ -752,7 +752,7 @@ class ClasspathTransformMapperFactoryTest {
         };
         ObjectMapper mapper = overriding.create(
                 new TransformSerialization(SerializationFormat.CSV, "irrelevant-on-this-override.json"),
-                CsvProjection.class);
+                CsvProjection.class, TransformRoot.output());
 
         // '|' is ascii 124, so jackson-csv's quoting heuristic (see the comment on the test above)
         // quotes every lowercase letter too; stripped for the same reason.
@@ -804,7 +804,7 @@ class ClasspathTransformMapperFactoryTest {
         };
 
         ObjectMapper mapper = overriding.create(
-                new TransformSerialization(SerializationFormat.CSV, null), CsvProjection.class);
+                new TransformSerialization(SerializationFormat.CSV, null), CsvProjection.class, TransformRoot.output());
 
         assertEquals("username|identifier|firstName|lastName", unquoted(header(mapper)),
                 "a transform declaring no configPath must still be served by the overridden csvMapper()");
@@ -826,7 +826,8 @@ class ClasspathTransformMapperFactoryTest {
         };
 
         ObjectMapper mapper = overriding.create(
-                new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+                new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class,
+                        TransformRoot.output());
 
         assertEquals("username;identifier;firstName;lastName", header(mapper));
     }
@@ -856,7 +857,8 @@ class ClasspathTransformMapperFactoryTest {
         // collision with the column delimiter — which is the validation doing its job.
         ObjectMapper mapper = deploymentSupplying(
                 "{\"dialect\":{\"columnDelimiter\":\";\"},\"listDelimiter\":\"|\"}")
-                .create(new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+                .create(new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class,
+                        TransformRoot.output());
 
         String csv = mapper.writeValueAsString(buildUser());
         assertEquals("username;identifier;firstName;lastName", header(mapper));
@@ -873,7 +875,8 @@ class ClasspathTransformMapperFactoryTest {
     @Test
     void aDeploymentSuppliedConfigurationCanTurnOffTheHeaderRow() throws IOException {
         ObjectMapper mapper = deploymentSupplying("{\"hasHeader\":false}")
-                .create(new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+                .create(new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class,
+                        TransformRoot.output());
 
         String csv = mapper.writeValueAsString(buildUser());
         assertEquals("asmith,id-001,Alice,Smith", header(mapper),
@@ -905,13 +908,15 @@ class ClasspathTransformMapperFactoryTest {
         };
 
         ObjectMapper overridden = workspaceFirst.create(
-                new TransformSerialization(SerializationFormat.CSV, deploymentOnlyPath), CsvProjection.class);
+                new TransformSerialization(SerializationFormat.CSV, deploymentOnlyPath), CsvProjection.class,
+                        TransformRoot.output());
         // '|' is ascii 124, so jackson-csv's quoting heuristic (see the comment further up) quotes the
         // lowercase letters too; stripped, since the dialect is what is under test.
         assertEquals("username|identifier|firstName|lastName", unquoted(header(overridden)));
 
         ObjectMapper delegated = workspaceFirst.create(
-                new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class);
+                new TransformSerialization(SerializationFormat.CSV, CSV_CONFIG), CsvProjectionWithConfig.class,
+                        TransformRoot.output());
         assertEquals("username;identifier;firstName;lastName", header(delegated),
                 "a path the override declines must fall through to the model's classpath config");
     }
@@ -927,7 +932,7 @@ class ClasspathTransformMapperFactoryTest {
     void aDeploymentCannotSupplyAConfigurationForATransformThatDeclaresNoConfigPath()
             throws JsonProcessingException {
         ObjectMapper mapper = deploymentSupplying("{\"dialect\":{\"columnDelimiter\":\"|\"}}")
-                .create(new TransformSerialization(SerializationFormat.CSV, null), CsvProjection.class);
+                .create(new TransformSerialization(SerializationFormat.CSV, null), CsvProjection.class, TransformRoot.output());
 
         assertEquals("username,identifier,firstName,lastName", header(mapper));
     }
@@ -941,7 +946,7 @@ class ClasspathTransformMapperFactoryTest {
     @Test
     void csvLabelledFromFormatAloneFallsBackToPlainCsv() {
         // Built from the format alone (no function class -> no label provider): plain CSV, no exception.
-        ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null), null);
+        ObjectMapper mapper = factory.create(new TransformSerialization(SerializationFormat.CSV_LABELLED, null), null, null);
         assertNotNull(mapper);
     }
 
@@ -970,7 +975,7 @@ class ClasspathTransformMapperFactoryTest {
     void missingXmlConfigResourceIsReported() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
                 () -> factory.create(new TransformSerialization(SerializationFormat.XML, "does/not/exist.json"),
-                        ClasspathTransformMapperFactoryTest.class));
+                        ClasspathTransformMapperFactoryTest.class, null));
         assertTrue(e.getMessage().contains("does/not/exist.json"));
     }
 
@@ -986,7 +991,7 @@ class ClasspathTransformMapperFactoryTest {
                 return modelClassLoader;
             }
         };
-        ObjectMapper mapper = modelOwned.create(new TransformSerialization(SerializationFormat.XML, XML_CONFIG), null);
+        ObjectMapper mapper = modelOwned.create(new TransformSerialization(SerializationFormat.XML, XML_CONFIG), null, null);
         assertInstanceOf(XmlMapper.class, mapper);
     }
 }

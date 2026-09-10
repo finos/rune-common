@@ -43,12 +43,13 @@ import java.util.Objects;
  *       {@link Side#INPUT}.</li>
  * </ul>
  * <p>
- * Passing no {@code TransformRoot} at all (the two-argument
- * {@link TransformMapperFactory#create(TransformSerialization, Class)}, or an explicit {@code null})
- * means "the caller said nothing". Resolution then behaves exactly as it did before root context
- * existed: the function's provider is used if it has one, unguarded. Supplying a root is therefore
- * additive — it can only make resolution more accurate, never silently strip labels from a caller that
- * has not been updated.
+ * The root is a required parameter of
+ * {@link TransformMapperFactory#create(TransformSerialization, Class, TransformRoot)}, but {@code null}
+ * is a legal value meaning "the caller said nothing". Resolution then behaves exactly as it did before
+ * root context existed: the function's provider is used if it has one, unguarded. Pass {@code null} only
+ * where there genuinely is no side — a JSON mapper, a null function class. Everywhere else, name the
+ * side: the unguarded fallback is wrong on the input side, and the parameter is required precisely so
+ * that nobody reaches it by writing nothing.
  */
 public final class TransformRoot {
 

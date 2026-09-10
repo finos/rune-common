@@ -129,10 +129,10 @@ class TransformSerializationResolverTest {
     void classpathFactoryConstructsFromResolvedSerialization() {
         ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
         TransformSerialization xml = TransformSerializationResolver.input(XmlIngestFunction.class).get();
-        ObjectMapper mapper = factory.create(xml, XmlIngestFunction.class);
+        ObjectMapper mapper = factory.create(xml, XmlIngestFunction.class, TransformRoot.input());
         assertInstanceOf(XmlMapper.class, mapper);
 
-        assertNotNull(factory.createWriter(TransformSerialization.DEFAULT_JSON, null),
-                "the default JSON serialization needs no function class");
+        assertNotNull(factory.createWriter(TransformSerialization.DEFAULT_JSON, null, null),
+                "the default JSON serialization needs no function class, and so no side");
     }
 }

@@ -43,27 +43,27 @@ class CachingTransformMapperFactoryTest {
     @Test
     void buildsEachSerializationOnceAndReuses() {
         TransformSerialization json = TransformSerialization.DEFAULT_JSON;
-        ObjectMapper first = factory.create(json, null);
-        assertSame(first, factory.create(json, null), "an equal serialization must reuse the cached mapper");
-        assertSame(first, factory.create(new TransformSerialization(SerializationFormat.JSON, null), null),
+        ObjectMapper first = factory.create(json, null, null);
+        assertSame(first, factory.create(json, null, null), "an equal serialization must reuse the cached mapper");
+        assertSame(first, factory.create(new TransformSerialization(SerializationFormat.JSON, null), null, null),
                 "equality is by value, not identity");
-        assertNotSame(first, factory.create(new TransformSerialization(SerializationFormat.CSV, null), null));
+        assertNotSame(first, factory.create(new TransformSerialization(SerializationFormat.CSV, null), null, null));
     }
 
     @Test
     void classInsensitiveFormatsShareOneMapperAcrossFunctions() {
         TransformSerialization json = TransformSerialization.DEFAULT_JSON;
-        assertSame(factory.create(json, LabelledFunctionA.class), factory.create(json, LabelledFunctionB.class),
+        assertSame(factory.create(json, LabelledFunctionA.class, null), factory.create(json, LabelledFunctionB.class, null),
                 "a JSON mapper does not depend on the function class, so all functions share it");
     }
 
     @Test
     void csvLabelledIsCachedPerFunctionClass() {
         TransformSerialization labelled = new TransformSerialization(SerializationFormat.CSV_LABELLED, null);
-        ObjectMapper forA = factory.create(labelled, LabelledFunctionA.class);
-        assertSame(forA, factory.create(labelled, LabelledFunctionA.class),
+        ObjectMapper forA = factory.create(labelled, LabelledFunctionA.class, TransformRoot.output());
+        assertSame(forA, factory.create(labelled, LabelledFunctionA.class, TransformRoot.output()),
                 "the same labelled function must reuse its cached mapper");
-        assertNotSame(forA, factory.create(labelled, LabelledFunctionB.class),
+        assertNotSame(forA, factory.create(labelled, LabelledFunctionB.class, TransformRoot.output()),
                 "labels derive from the function class, so another function must not share the mapper");
     }
 
@@ -76,8 +76,8 @@ class CachingTransformMapperFactoryTest {
         assertNotSame(forRootA, factory.create(labelled, LabelledFunctionA.class, TransformRoot.output(RootTypeB.class)),
                 "a type-rooted label provider is resolved from the root type, so a different root type "
                         + "must not share the mapper");
-        assertNotSame(forRootA, factory.create(labelled, LabelledFunctionA.class),
-                "no root at all is its own scope, distinct from a supplied one");
+        assertNotSame(forRootA, factory.create(labelled, LabelledFunctionA.class, null),
+                "a null root is its own scope, distinct from a declared one");
     }
 
     @Test
@@ -101,7 +101,7 @@ class CachingTransformMapperFactoryTest {
     @Test
     void classLoaderSensitiveFormatsShareOneMapperPerClassLoader() {
         TransformSerialization runeJson = new TransformSerialization(SerializationFormat.RUNE_JSON, null);
-        assertSame(factory.create(runeJson, LabelledFunctionA.class), factory.create(runeJson, LabelledFunctionB.class),
+        assertSame(factory.create(runeJson, LabelledFunctionA.class, null), factory.create(runeJson, LabelledFunctionB.class, null),
                 "functions loaded by the same classloader must share one RUNE_JSON mapper");
     }
 
@@ -115,9 +115,9 @@ class CachingTransformMapperFactoryTest {
     @Test
     void csvIsCachedPerFunctionClassAndRoot() {
         TransformSerialization csv = new TransformSerialization(SerializationFormat.CSV, null);
-        assertSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, LabelledFunctionA.class),
+        assertSame(factory.create(csv, LabelledFunctionA.class, null), factory.create(csv, LabelledFunctionA.class, null),
                 "the same function class and root must reuse the cached mapper");
-        assertNotSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, LabelledFunctionB.class),
+        assertNotSame(factory.create(csv, LabelledFunctionA.class, null), factory.create(csv, LabelledFunctionB.class, null),
                 "CSV is scoped to the function class and root, so two function classes must not share an entry");
         assertNotSame(factory.create(csv, LabelledFunctionA.class, TransformRoot.output(RootTypeA.class)),
                 factory.create(csv, LabelledFunctionA.class, TransformRoot.input(RootTypeA.class)),
@@ -137,7 +137,7 @@ class CachingTransformMapperFactoryTest {
     @Test
     void csvDoesNotShareAcrossDifferentClassLoaderScopes() {
         TransformSerialization csv = new TransformSerialization(SerializationFormat.CSV, null);
-        assertNotSame(factory.create(csv, LabelledFunctionA.class), factory.create(csv, null),
+        assertNotSame(factory.create(csv, LabelledFunctionA.class, null), factory.create(csv, null, null),
                 "a CSV mapper resolved through a function class must not be served to a request that has "
                         + "no function class, and so no classloader, at all");
     }
@@ -166,18 +166,18 @@ class CachingTransformMapperFactoryTest {
                 .setLastName("Smith")
                 .build();
 
-        ObjectMapper first = factory.create(headerless, null);
-        assertSame(first, factory.create(headerless, null), "an equal serialization must reuse the cached mapper");
+        ObjectMapper first = factory.create(headerless, null, null);
+        assertSame(first, factory.create(headerless, null, null), "an equal serialization must reuse the cached mapper");
         assertEquals("asmith,id-001,Alice,Smith", firstLine(first, user), "the first line must be data");
 
-        ObjectMapper second = factory.create(headerBearing, null);
+        ObjectMapper second = factory.create(headerBearing, null, null);
         assertNotSame(first, second, "a different configPath must not be served the header-less mapper");
         assertEquals("username;identifier;firstName;lastName", firstLine(second, user),
                 "the first line must be column names");
 
         // And the header-less mapper is still itself afterwards — the second request did not evict
         // or overwrite it.
-        assertEquals("asmith,id-001,Alice,Smith", firstLine(factory.create(headerless, null), user));
+        assertEquals("asmith,id-001,Alice,Smith", firstLine(factory.create(headerless, null, null), user));
     }
 
     private static String firstLine(ObjectMapper mapper, User user) throws JsonProcessingException {
@@ -220,9 +220,9 @@ class CachingTransformMapperFactoryTest {
     @Test
     void clearDropsEveryCachedMapper() {
         TransformSerialization json = TransformSerialization.DEFAULT_JSON;
-        ObjectMapper before = factory.create(json, null);
+        ObjectMapper before = factory.create(json, null, null);
         factory.clear();
-        assertNotSame(before, factory.create(json, null),
+        assertNotSame(before, factory.create(json, null, null),
                 "after clear() the mapper must be rebuilt, not served from the stale cache");
     }
 

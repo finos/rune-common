@@ -68,11 +68,6 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
     }
 
     @Override
-    public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass) {
-        return create(serialization, functionClass, (TransformRoot) null);
-    }
-
-    @Override
     public ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
         CacheKey key = new CacheKey(serialization, cacheScope(serialization, functionClass, root));
         return cache.computeIfAbsent(key, k -> delegate.create(serialization, functionClass, root));

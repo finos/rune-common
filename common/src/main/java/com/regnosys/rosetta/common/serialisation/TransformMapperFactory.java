@@ -39,41 +39,34 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 public interface TransformMapperFactory {
 
     /**
-     * Builds the mapper for the given serialization. The function class is supplied because some
-     * construction concerns need it: resolving the serialization config and model types against the
-     * model's classloader, and instantiating the {@code @RuneLabelProvider} for a labelled CSV format.
-     * May be {@code null} when no function context exists.
+     * Builds the mapper for the given serialization.
+     * <p>
+     * The function class is supplied because some construction concerns need it: resolving the
+     * serialization config and model types against the model's classloader, and instantiating the
+     * {@code @RuneLabelProvider} for a labelled CSV format. May be {@code null} when no function context
+     * exists.
+     * <p>
+     * The {@code root} says what sits at the <b>root</b> of the object graph the mapper will read or
+     * write — which side of the transform this is, and the root type when the caller knows it. See
+     * {@link TransformRoot}, which explains why only the caller can supply this. It lets a labelled CSV
+     * format ({@code CSV_LABELLED}, or {@code CSV} configured with {@code headerStyle=LABEL}) resolve a
+     * type-rooted {@code LabelProvider} — the only correct provider on an ingest read path — and stops a
+     * function-rooted provider being used on the input side, where it is rooted at the wrong type.
+     * <p>
+     * {@code root} is a required parameter but {@code null} is a legal value, meaning "the caller said
+     * nothing": resolution then behaves as it did before root context existed, and the function's own
+     * provider is used unguarded. Pass {@code null} only where there genuinely is no side — a JSON
+     * mapper, a null function class. A caller that knows which side it is serializing should say so,
+     * because the unguarded fallback is wrong on the input side.
      */
-    ObjectMapper create(TransformSerialization serialization, Class<?> functionClass);
+    ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, TransformRoot root);
 
     /**
-     * Builds the pretty-printing writer for the given serialization — the output-side counterpart of
-     * {@link #create(TransformSerialization, Class)}.
+     * Builds the pretty-printing writer for the given serialization — the {@link ObjectWriter}
+     * counterpart of {@link #create(TransformSerialization, Class, TransformRoot)}, and subject to the
+     * same {@code root} contract.
      */
-    default ObjectWriter createWriter(TransformSerialization serialization, Class<?> functionClass) {
-        return create(serialization, functionClass).writerWithDefaultPrettyPrinter();
-    }
-
-    /**
-     * Builds the mapper for the given serialization, told what sits at the <b>root</b> of the object
-     * graph it will read or write — which side of the transform this is, and the root type when the
-     * caller knows it. See {@link TransformRoot}, which explains why only the caller can supply this.
-     * <p>
-     * It lets a labelled CSV format ({@code CSV_LABELLED}, or {@code CSV} configured with
-     * {@code headerStyle=LABEL}) resolve a type-rooted {@code LabelProvider} — the only correct provider
-     * on an ingest read path — and stops a function-rooted provider being used on the
-     * input side, where it is rooted at the wrong type. {@code null} means "the caller said nothing" and
-     * preserves the function-derived behaviour of {@link #create(TransformSerialization, Class)}.
-     * <p>
-     * The default implementation ignores {@code root}. Implementors that extend
-     * {@link ClasspathTransformMapperFactory} inherit a real implementation; a factory written from
-     * scratch must override this to get type-rooted labels.
-     * <p>
-     * There is deliberately no {@code createWriter} counterpart. Nothing needs one yet, and its whole
-     * body would be {@code create(serialization, functionClass, root).writerWithDefaultPrettyPrinter()},
-     * which a caller can write. Add the overload in the change that first requires it.
-     */
-    default ObjectMapper create(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
-        return create(serialization, functionClass);
+    default ObjectWriter createWriter(TransformSerialization serialization, Class<?> functionClass, TransformRoot root) {
+        return create(serialization, functionClass, root).writerWithDefaultPrettyPrinter();
     }
 }

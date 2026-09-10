@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.regnosys.rosetta.common.serialisation.ClasspathTransformMapperFactory;
 import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.serialisation.TransformMapperFactory;
+import com.regnosys.rosetta.common.serialisation.TransformRoot;
 import com.regnosys.rosetta.common.serialisation.TransformSerialization;
 import com.regnosys.rosetta.common.serialisation.TransformSerializationResolver;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
@@ -203,7 +204,9 @@ public class TestPackUtils {
         // Delegate to the shared per-format construction. The null function class preserves the legacy
         // Guava Resources classpath lookup historically used by this method.
         SerializationFormat format = SerializationFormat.valueOf(serialisation.getFormat().name());
-        return Optional.of(CLASSPATH_FACTORY.create(new TransformSerialization(format, serialisation.getConfigPath()), null));
+        // Null root: this method is reached from both the input and the output path, and the null function
+        // class means no function-rooted provider can resolve either way, so there is no side to declare.
+        return Optional.of(CLASSPATH_FACTORY.create(new TransformSerialization(format, serialisation.getConfigPath()), null, null));
     }
 
     /**
@@ -265,6 +268,15 @@ public class TestPackUtils {
      * {@code @Ingest} annotation when present, then the pipeline's (deprecated) {@code inputSerialisation},
      * and finally the supplied default mapper.
      *
+     * <p><b>Labelled CSV.</b> The annotation path declares {@link TransformRoot#input()}, so a
+     * function-rooted {@code @RuneLabelProvider} — which is rooted at the function's <em>output</em> type —
+     * is refused here. For a {@code CSV} serialisation whose configuration declares
+     * {@code headerStyle: LABEL} and for which no type-rooted provider resolves, that is a thrown
+     * {@link IllegalArgumentException} rather than a mapper binding the wrong type's labels;
+     * {@code CSV_LABELLED} degrades to plain CSV with a WARN. There is no input type in this signature to
+     * root at, so a model whose input carries {@code [label ...]} annotations must move off this
+     * deprecated method to the replacement named below, which can supply one.
+     *
      * @param inputSerialisation  the pipeline input serialisation (may be {@code null})
      * @param functionClass       the generated transform function class (may be {@code null})
      * @param defaultObjectMapper the fallback when neither an annotation nor a pipeline serialisation applies
@@ -282,7 +294,7 @@ public class TestPackUtils {
                 "TestPackUtils.getInputObjectMapper is deprecated; resolve the serialization with "
                         + "TransformSerializationResolver and construct through a TransformMapperFactory.");
         Optional<ObjectMapper> fromAnnotation = TransformSerializationResolver.input(functionClass)
-                .map(serialization -> CLASSPATH_FACTORY.create(serialization, functionClass));
+                .map(serialization -> CLASSPATH_FACTORY.create(serialization, functionClass, TransformRoot.input()));
         return fromAnnotation
                 .orElseGet(() -> legacyObjectMapper(inputSerialisation).orElse(defaultObjectMapper));
     }
@@ -309,7 +321,7 @@ public class TestPackUtils {
                 "TestPackUtils.getOutputObjectWriter is deprecated; resolve the serialization with "
                         + "TransformSerializationResolver and construct through a TransformMapperFactory.");
         Optional<ObjectWriter> fromAnnotation = TransformSerializationResolver.output(functionClass)
-                .map(serialization -> CLASSPATH_FACTORY.createWriter(serialization, functionClass));
+                .map(serialization -> CLASSPATH_FACTORY.createWriter(serialization, functionClass, TransformRoot.output()));
         return fromAnnotation
                 .orElseGet(() -> legacyObjectMapper(outputSerialisation, labelProvider)
                         .map(ObjectMapper::writerWithDefaultPrettyPrinter)

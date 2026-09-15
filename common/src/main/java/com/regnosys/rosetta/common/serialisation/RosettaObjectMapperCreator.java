@@ -24,16 +24,23 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.util.DefaultXmlPrettyPrinter;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXmlMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.rosetta.model.lib.functions.LabelProvider;
+import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
@@ -104,8 +111,39 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
         return forXML(new RosettaXMLConfiguration(Collections.emptyMap()), RosettaObjectMapperCreator.class.getClassLoader());
     }
 
+    public static RosettaObjectMapperCreator forCSV(RosettaCSVConfiguration config, LabelProvider labelProvider) {
+        RosettaCsvMapper csvMapper = new RosettaCsvMapper(config, labelProvider);
+        return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
+    }
+
+    public static RosettaObjectMapperCreator forCSV(RosettaCSVConfiguration config) {
+        return forCSV(config, null);
+    }
+
+    public static RosettaObjectMapperCreator forCSV(InputStream configInputStream, LabelProvider labelProvider) throws IOException {
+        RosettaCSVConfiguration config = RosettaCSVConfiguration.load(configInputStream);
+        return forCSV(config, labelProvider);
+    }
+
+    public static RosettaObjectMapperCreator forCSV(InputStream configInputStream) throws IOException {
+        return forCSV(configInputStream, null);
+    }
+
+    /**
+     * Compatibility shim for the pre-configuration signature: equivalent to
+     * {@code forCSV(RosettaCSVConfiguration.EMPTY)}.
+     */
     public static RosettaObjectMapperCreator forCSV() {
         RosettaCsvMapper csvMapper = new RosettaCsvMapper();
+        return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
+    }
+
+    /**
+     * Compatibility shim for the pre-configuration signature: {@code headerStyle} is derived from
+     * whether {@code labelProvider} is {@code null}, via {@link RosettaCsvMapper#RosettaCsvMapper(LabelProvider)}.
+     */
+    public static RosettaObjectMapperCreator forCSV(LabelProvider labelProvider) {
+        RosettaCsvMapper csvMapper = new RosettaCsvMapper(labelProvider);
         return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
     }
 
@@ -119,8 +157,7 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
                 .registerModule(new JavaTimeModule())
                 .registerModule(new RosettaDateModule())
                 .registerModule(rosettaModule)
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                .setSerializationInclusion(serializationInclusion(baseMapper))
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
@@ -138,6 +175,41 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
 
                 .setVisibility(PropertyAccessor.ALL, Visibility.PUBLIC_ONLY);
 
+        PrettyPrinter prettyPrinter = platformIndependentPrettyPrinter(mapper);
+        if (prettyPrinter != null) {
+            mapper.setDefaultPrettyPrinter(prettyPrinter);
+        }
         return mapper;
+    }
+
+    /**
+     * {@code ALWAYS} for CSV, {@code NON_EMPTY} for every other format.
+     *
+     * <p>CSV is the one format whose columns are fixed by a schema rather than by which properties a value
+     * happens to have, so an absent attribute must reach the generator <b>as a null</b> for the schema's
+     * null value — {@code RosettaCSVConfiguration}'s {@code nullToken} — to be written into its column.
+     * {@code NON_EMPTY} omits the property instead, and jackson's {@code CsvGenerator} then leaves the
+     * column empty: under {@code nullToken="N/A"} that gives {@code abc,} rather than {@code abc,N/A}, a
+     * file this mapper's own reader misreads as the empty string. Every other format drops an absent
+     * property from the document entirely, which is what {@code NON_EMPTY} is for.</p>
+     */
+    private static JsonInclude.Include serializationInclusion(ObjectMapper mapper) {
+        return mapper instanceof CsvMapper ? JsonInclude.Include.ALWAYS : JsonInclude.Include.NON_EMPTY;
+    }
+
+    /**
+     * Jackson's default pretty printers separate lines with the platform line separator.
+     * Serialised documents are stored and compared across operating systems, so pretty
+     * printing always uses "\n". CSV is left alone: its line separator comes from the
+     * {@code CsvSchema}, which already defaults to "\n".
+     */
+    private static PrettyPrinter platformIndependentPrettyPrinter(ObjectMapper mapper) {
+        if (mapper instanceof CsvMapper) {
+            return null;
+        }
+        if (mapper instanceof XmlMapper) {
+            return new DefaultXmlPrettyPrinter().withCustomNewLine("\n");
+        }
+        return new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter("  ", "\n"));
     }
 }

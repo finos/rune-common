@@ -23,10 +23,12 @@ package org.finos.rune.mapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.cfg.JsonNodeFeature;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -34,7 +36,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.google.common.annotations.Beta;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.date.RuneDateModule;
 import org.finos.rune.mapper.filters.SubtypeFilter;
@@ -68,7 +69,6 @@ import java.util.List;
  *
  * @see ObjectMapper
  */
-@Beta
 public class RuneJsonObjectMapper extends ObjectMapper {
     public RuneJsonObjectMapper() {
         super(create());
@@ -82,21 +82,6 @@ public class RuneJsonObjectMapper extends ObjectMapper {
 
     public static List<String> getMetaProperties() {
         return RuneJsonConfig.getMetaProperties();
-    }
-  
-    @Override
-    protected ObjectWriter _newWriter(SerializationConfig config) {
-        return new RuneJsonObjectWriter(this, config);
-    }
-
-    @Override
-    protected ObjectWriter _newWriter(SerializationConfig config, FormatSchema schema) {
-        return new RuneJsonObjectWriter(this, config, schema);
-    }
-
-    @Override
-    protected ObjectWriter _newWriter(SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
-        return new RuneJsonObjectWriter(this, config, rootType, pp);
     }
 
     private static ObjectMapper create() {
@@ -116,9 +101,13 @@ public class RuneJsonObjectMapper extends ObjectMapper {
                 .configure(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE, false)
                 .configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false)
                 .configure(SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS, false)
+                .configure(JsonNodeFeature.STRIP_TRAILING_BIGDECIMAL_ZEROES, false)
                 .setFilterProvider(new SimpleFilterProvider().addFilter("SubtypeFilter", new SubtypeFilter()))
                 .addMixIn(RosettaModelObject.class, RosettaModelObjectMixin.class)
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
-                .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.PUBLIC_ONLY);
+                .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.PUBLIC_ONLY)
+                // Always pretty print with "\n": serialised documents are stored and
+                // compared across operating systems
+                .setDefaultPrettyPrinter(new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter("  ", "\n")));
     }
 }

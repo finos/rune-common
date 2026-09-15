@@ -1,0 +1,6 @@
+{
+  "dialect": {
+    "columnDelimiter": ";"
+  },
+  "listDelimiter": "|"
+}

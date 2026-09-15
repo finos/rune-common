@@ -20,10 +20,20 @@ package com.regnosys.rosetta.common.transform;
  * ==============
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.regnosys.rosetta.common.serialisation.csv.LabelProviderResolverTest;
+import com.rosetta.model.lib.functions.LabelProvider;
+import com.rosetta.model.lib.functions.RosettaFunction;
+import com.rosetta.model.lib.transform.Ingest;
+import com.rosetta.model.lib.transform.Projection;
+import com.rosetta.model.lib.transform.SerializationFormat;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -137,5 +147,182 @@ class TestPackUtilsTest {
     void shouldCreatePipelineIdWithoutModelId() {
         String pipelineId = TestPackUtils.createPipelineId(TransformType.REPORT, null, "com.example.MyReportFunction");
         assertEquals("pipeline-report-my", pipelineId);
+    }
+
+    // ---------------------------------------------------------------------------
+    // New tests — CSV_LABELLED pipeline wiring (#7 & #8)
+    //
+    // Resolution of the LabelProvider happens at the call site (from the already-loaded
+    // transform function class), so TestPackUtils receives the resolved provider directly
+    // via getObjectMapper/getObjectWriter(Serialisation, LabelProvider) — no ClassLoader.
+    // ---------------------------------------------------------------------------
+
+    /** Real provider for the StubCsvRow's "attr" field, resolved via @RuneLabelProvider. */
+    private static LabelProvider stubLabelProvider() {
+        return LabelProviderResolver.fromTransformFunction(
+                LabelProviderResolverTest.StubFunctionWithProvider.class);
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentWhenSerialisationOnlyGetObjectMapperCalledWithCsvLabelled() {
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> TestPackUtils.getObjectMapper(serialisation));
+
+        assertTrue(ex.getMessage().contains("CSV_LABELLED"),
+                "Exception message should mention CSV_LABELLED");
+        assertTrue(ex.getMessage().contains("getObjectMapper(PipelineModel.Serialisation, LabelProvider)"),
+                "Exception message should point callers at the LabelProvider overload");
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentWhenSerialisationOnlyGetObjectWriterCalledWithCsvLabelled() {
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> TestPackUtils.getObjectWriter(serialisation));
+    }
+
+    @Test
+    void shouldEmitLabelHeadersWhenGetObjectMapperCalledWithCsvLabelledAndProvider() throws IOException {
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(serialisation, stubLabelProvider());
+
+        assertTrue(mapperOpt.isPresent(), "Expected a non-empty ObjectMapper for CSV_LABELLED");
+
+        StubCsvRow row = new StubCsvRow("hello");
+        String csv = mapperOpt.get().writerWithDefaultPrettyPrinter().writeValueAsString(row);
+
+        assertTrue(csv.startsWith("My Attribute Label") || csv.startsWith("\"My Attribute Label\""),
+                "Expected label header 'My Attribute Label' (possibly quoted) but got: " + csv);
+        assertTrue(csv.contains("hello"),
+                "Expected value 'hello' in CSV body but got: " + csv);
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentWhenGetObjectMapperCalledWithCsvLabelledAndNullProvider() {
+        // CSV_LABELLED must never silently degrade to plain CSV — a null provider must throw.
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> TestPackUtils.getObjectMapper(serialisation, null));
+
+        assertTrue(ex.getMessage().contains("CSV_LABELLED"),
+                "Exception message should mention CSV_LABELLED");
+        assertTrue(ex.getMessage().contains("LabelProvider"),
+                "Exception message should explain a LabelProvider is required");
+    }
+
+    @Test
+    void shouldEmitAttributeNameHeadersWhenGetObjectMapperCalledWithPlainCsvIgnoringProvider() throws IOException {
+        // For plain CSV the provider is ignored — even when supplied, headers stay attribute names.
+        PipelineModel.Serialisation serialisation =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV, null);
+
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(serialisation, stubLabelProvider());
+
+        assertTrue(mapperOpt.isPresent());
+
+        StubCsvRow row = new StubCsvRow("hello");
+        String csv = mapperOpt.get().writerWithDefaultPrettyPrinter().writeValueAsString(row);
+
+        assertTrue(csv.startsWith("attr"),
+                "Expected attribute-name header 'attr' for plain CSV but got: " + csv);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenGetObjectMapperWithProviderCalledWithNullSerialisation() {
+        Optional<ObjectMapper> mapperOpt = TestPackUtils.getObjectMapper(null, stubLabelProvider());
+
+        assertFalse(mapperOpt.isPresent());
+    }
+
+    // ---------------------------------------------------------------------------
+    // Minimal POJO for CSV serialisation tests
+    // ---------------------------------------------------------------------------
+
+    /** Single-field POJO whose field name matches the stub provider's labelled attribute. */
+    public static class StubCsvRow {
+        private final String attr;
+
+        public StubCsvRow(String attr) {
+            this.attr = attr;
+        }
+
+        public String getAttr() {
+            return attr;
+        }
+    }
+
+    @Ingest(format = SerializationFormat.JSON)
+    private static class JsonIngestFunction implements RosettaFunction {
+    }
+
+    @Projection(format = SerializationFormat.JSON)
+    private static class JsonProjectionFunction implements RosettaFunction {
+    }
+
+    private static class UnannotatedFunction implements RosettaFunction {
+    }
+
+    @Test
+    void getInputObjectMapperUsesPipelineSerialisationWhenAnnotationAbsent() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        PipelineModel.Serialisation jsonInput = new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.JSON, null);
+        ObjectMapper resolved = TestPackUtils.getInputObjectMapper(jsonInput, UnannotatedFunction.class, defaultMapper);
+        assertNotNull(resolved);
+        assertNotSame(defaultMapper, resolved, "the pipeline serialisation should build its own mapper");
+    }
+
+    @Test
+    void getInputObjectMapperPrefersAnnotationOverPipelineSerialisation() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        // A pipeline serialisation that would throw if consulted (CSV_LABELLED without a provider):
+        // the @Ingest annotation must win, so no exception and no default fallback.
+        PipelineModel.Serialisation labelledCsv =
+                new PipelineModel.Serialisation(PipelineModel.Serialisation.Format.CSV_LABELLED, null);
+        ObjectMapper resolved = TestPackUtils.getInputObjectMapper(labelledCsv, JsonIngestFunction.class, defaultMapper);
+        assertNotNull(resolved);
+        assertNotSame(defaultMapper, resolved, "the @Ingest annotation should build the mapper");
+    }
+
+    @Test
+    void getInputObjectMapperFallsBackToIngestAnnotation() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        // No pipeline serialisation: the @Ingest annotation supplies the input mapper.
+        ObjectMapper resolved = TestPackUtils.getInputObjectMapper(null, JsonIngestFunction.class, defaultMapper);
+        assertNotNull(resolved);
+        assertNotSame(defaultMapper, resolved, "the @Ingest annotation should build the mapper");
+    }
+
+    @Test
+    void getInputObjectMapperFallsBackToDefaultWhenNeitherPresent() {
+        ObjectMapper defaultMapper = new ObjectMapper();
+        assertSame(defaultMapper, TestPackUtils.getInputObjectMapper(null, UnannotatedFunction.class, defaultMapper));
+        assertSame(defaultMapper, TestPackUtils.getInputObjectMapper(null, null, defaultMapper));
+        // A @Projection (not @Ingest) does not supply an input mapper.
+        assertSame(defaultMapper, TestPackUtils.getInputObjectMapper(null, JsonProjectionFunction.class, defaultMapper));
+    }
+
+    @Test
+    void getOutputObjectWriterFallsBackToProjectionAnnotation() {
+        ObjectWriter defaultWriter = new ObjectMapper().writer();
+        ObjectWriter resolved = TestPackUtils.getOutputObjectWriter(null, JsonProjectionFunction.class, null, defaultWriter);
+        assertNotNull(resolved);
+        assertNotSame(defaultWriter, resolved, "the @Projection annotation should build the writer");
+    }
+
+    @Test
+    void getOutputObjectWriterFallsBackToDefaultWhenNeitherPresent() {
+        ObjectWriter defaultWriter = new ObjectMapper().writer();
+        assertSame(defaultWriter, TestPackUtils.getOutputObjectWriter(null, UnannotatedFunction.class, null, defaultWriter));
+        // An @Ingest (not @Projection) does not supply an output writer.
+        assertSame(defaultWriter, TestPackUtils.getOutputObjectWriter(null, JsonIngestFunction.class, null, defaultWriter));
     }
 }

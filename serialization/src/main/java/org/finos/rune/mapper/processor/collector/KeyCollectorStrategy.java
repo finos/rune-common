@@ -9,9 +9,9 @@ package org.finos.rune.mapper.processor.collector;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,32 +30,28 @@ import org.finos.rune.mapper.processor.pruner.ReferencePruningStrategy;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
 
 /**
  * A strategy implementation for collecting key-related information from instances of {@link RosettaModelObject}.
- * This class processes instances of {@link GlobalKey} and extracts global, external, and address keys from the
- * associated metadata, storing the corresponding values in different maps based on the type of key.
+ * For every keyed object it records how that object's keys relate to one another: which external and global key a
+ * given address key belongs to, and which global key a given external key belongs to.
  * <p>
- * The strategy creates and maintains three separate mappings:
- * <ul>
- *   <li>{@link #globalKeyToValueObjectMap}: Maps global keys to their associated values.</li>
- *   <li>{@link #externalKeyToValueObjectMap}: Maps external keys to their associated values.</li>
- *   <li>{@link #addressToValueObjectMap}: Maps address keys to their associated values.</li>
- * </ul>
- * These mappings are used by the {@link KeyLookupService} in {@link ReferencePruningStrategy} to resolve
- * references and ensure proper reference precedence during pruning operations. The collected global key information
- * is used to compare and clear redundant references based on precedence:
+ * These relationships are what the {@link KeyLookupService} exposes to {@link ReferencePruningStrategy} so it can
+ * decide that two references on the same holder are redundant - they are when the single definition identified by the
+ * higher-precedence reference also owns the lower-precedence key. Precedence runs:
  * <ol>
  *   <li>ADDRESS (highest precedence)</li>
  *   <li>EXTERNAL</li>
  *   <li>GLOBAL (lowest precedence)</li>
  * </ol>
  * <p>
- * The collected key-value mappings help ensure that only the most relevant references (higher precedence) are kept
- * while lower-precedence references pointing to the same object are removed.
+ * The maps are keyed by the address and external keys, which are unique to a definition within a document. Crucially
+ * this means a resolved/inlined copy of a reference - which carries the same global key as the genuine definition but
+ * different content, and frequently no external key at all - cannot overwrite the genuine relationship. That makes
+ * de-duplication immune to global-key collisions, so it behaves identically whether or not a reference still has its
+ * value inlined (which is what keeps serialisation idempotent across a read/write round-trip).
  * </p>
  *
  * @see RosettaModelObject
@@ -65,48 +61,45 @@ import static java.util.Optional.ofNullable;
  * @see ReferencePruningStrategy
  */
 public class KeyCollectorStrategy implements CollectorStrategy {
-    private final Map<KeyRecord, Object> globalKeyToValueObjectMap = new HashMap<>();
-    private final Map<KeyRecord, Object> externalKeyToValueObjectMap = new HashMap<>();
-    private final Map<KeyRecord, Object> addressToValueObjectMap = new HashMap<>();
+    private final Map<KeyRecord, String> addressKeyToOwnExternalKey = new HashMap<>();
+    private final Map<KeyRecord, String> addressKeyToOwnGlobalKey = new HashMap<>();
+    private final Map<KeyRecord, String> externalKeyToOwnGlobalKey = new HashMap<>();
 
     @Override
     public void collect(RosettaModelObject instance) {
         if (instance instanceof GlobalKey) {
             GlobalKey globalKey = (GlobalKey) instance;
-            Object value = getValue(instance);
             Class<?> valueClass = getValueType(instance);
-            if (value != null && valueClass != null) {
-                ofNullable(globalKey.getMeta())
-                        .map(GlobalKeyFields::getGlobalKey)
-                        .ifPresent(gk -> globalKeyToValueObjectMap.put(new KeyRecord(valueClass, gk), value));
-
-                ofNullable(globalKey.getMeta())
-                        .map(GlobalKeyFields::getExternalKey)
-                        .ifPresent(ek -> externalKeyToValueObjectMap.put(new KeyRecord(valueClass, ek), value));
-
-                ofNullable(globalKey.getMeta())
-                        .map(GlobalKeyFields::getKey)
-                        .ifPresent(keys ->
-                                keys.stream()
-                                        .map(Key::getKeyValue)
-                                        .filter(Objects::nonNull)
-                                        .forEach(kv -> addressToValueObjectMap.put(new KeyRecord(valueClass, kv), value))
-                        );
-
+            GlobalKeyFields meta = globalKey.getMeta();
+            if (valueClass == null || meta == null) {
+                return;
             }
-        }
+            String ownGlobalKey = meta.getGlobalKey();
+            String ownExternalKey = meta.getExternalKey();
 
+            if (ownExternalKey != null && ownGlobalKey != null) {
+                externalKeyToOwnGlobalKey.put(new KeyRecord(valueClass, ownExternalKey), ownGlobalKey);
+            }
+
+            ofNullable(meta.getKey()).ifPresent(keys -> {
+                for (Key key : keys) {
+                    String addressKey = key.getKeyValue();
+                    if (addressKey == null) {
+                        continue;
+                    }
+                    if (ownExternalKey != null) {
+                        addressKeyToOwnExternalKey.put(new KeyRecord(valueClass, addressKey), ownExternalKey);
+                    }
+                    if (ownGlobalKey != null) {
+                        addressKeyToOwnGlobalKey.put(new KeyRecord(valueClass, addressKey), ownGlobalKey);
+                    }
+                }
+            });
+        }
     }
 
     public KeyLookupService getKeyLookupService() {
-        return new KeyLookupService(globalKeyToValueObjectMap, externalKeyToValueObjectMap, addressToValueObjectMap);
-    }
-
-    private Object getValue(RosettaModelObject instance) {
-        if (instance instanceof FieldWithMeta) {
-            return ((FieldWithMeta<?>) instance).getValue();
-        } else
-            return instance;
+        return new KeyLookupService(addressKeyToOwnExternalKey, addressKeyToOwnGlobalKey, externalKeyToOwnGlobalKey);
     }
 
     private Class<?> getValueType(RosettaModelObject builder) {

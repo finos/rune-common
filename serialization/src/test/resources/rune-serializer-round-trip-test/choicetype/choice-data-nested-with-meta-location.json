@@ -1,0 +1,18 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.choicetype.Root",
+  "@version" : "0.0.0",
+  "choiceWithLocationNested" : {
+    "@type" : "serialization.test.passing.choicetype.ChoiceData",
+    "@key:scoped" : "someNestedLocation",
+    "@data" : {
+      "@type" : "serialization.test.passing.choicetype.A",
+      "fieldA" : "foo"
+    }
+  },
+  "typeWithAddressToChoiceWithLocationNested" : {
+    "choiceDataRef" : {
+      "@ref:scoped" : "someNestedLocation"
+    }
+  }
+}

@@ -23,7 +23,8 @@ package com.regnosys.rosetta.common.compile;
 public enum JavaCompileReleaseFlag {
     JAVA_8("8"),
     JAVA_11("11"),
-    JAVA_17("17");
+    JAVA_17("17"),
+    JAVA_21("21");
 
     private final String version;
 

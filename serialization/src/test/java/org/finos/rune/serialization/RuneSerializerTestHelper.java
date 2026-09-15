@@ -29,9 +29,9 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.regnosys.rosetta.RosettaRuntimeModule;
 import com.regnosys.rosetta.RosettaStandaloneSetup;
-import com.regnosys.rosetta.config.RosettaConfiguration;
-import com.regnosys.rosetta.config.RosettaGeneratorsConfiguration;
-import com.regnosys.rosetta.config.RosettaModelConfiguration;
+import com.regnosys.rosetta.config.RuneConfiguration;
+import com.regnosys.rosetta.config.RuneGeneratorsConfiguration;
+import com.regnosys.rosetta.config.RuneModelConfiguration;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -44,6 +44,7 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -102,7 +103,7 @@ public class RuneSerializerTestHelper {
 
     public static String readAsString(Path jsonPath) {
         try {
-            return new String(Files.readAllBytes(jsonPath));
+            return new String(Files.readAllBytes(jsonPath), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -263,10 +264,10 @@ public class RuneSerializerTestHelper {
         Module module = Modules.override(new RosettaRuntimeModule()).with(new AbstractModule() {
             @Override
             protected void configure() {
-                bind(RosettaConfiguration.class).toInstance(new RosettaConfiguration(
-                        new RosettaModelConfiguration(TEST_MODEL_NAME, Collections.emptyList()),
+                bind(RuneConfiguration.class).toInstance(new RuneConfiguration(
+                        new RuneModelConfiguration(TEST_MODEL_NAME, Collections.emptyList()),
                         new ArrayList<>(),
-                        new RosettaGeneratorsConfiguration()
+                        new RuneGeneratorsConfiguration()
                 ));
             }
         });

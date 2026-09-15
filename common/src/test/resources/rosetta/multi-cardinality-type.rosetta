@@ -1,0 +1,6 @@
+namespace csv.test.multi
+version "${project.version}"
+
+type MultiCardinalityAttributes:
+    id string (1..1)
+    tags string (0..*)

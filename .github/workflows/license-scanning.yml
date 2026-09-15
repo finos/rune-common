@@ -51,7 +51,9 @@ env:
     licenses/license/name!='The MIT License' and
     not(contains(licenses/license/url, '://opensource.org/licenses/MIT')) and
     not(contains(licenses/license/url, '://www.opensource.org/licenses/mit-license.php')) and
-    
+    licenses/license/name!='MIT' and
+    not(contains(licenses/license/url, '://opensource.org/license/mit')) and
+
     licenses/license/name!='CDDL + GPLv2 with classpath exception' and
     not(contains(licenses/license/url, '://github.com/javaee/javax.annotation/blob/master/LICENSE')) and
     
@@ -63,7 +65,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Install XQ
       run: pip install xq
     - uses: ./.github/actions/maven-build
@@ -78,12 +80,12 @@ jobs:
         LINES_FOUND=`echo "$LICENSE_REPORT" | wc -l`
         if [ $LINES_FOUND -gt 1 ]; then echo "License issues found ..." ; echo "$LICENSE_REPORT" ; exit -1; fi
     - name: Upload license reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: license-reports
         path: '**/${{ env.REPORT_PATH }}/'
     - name: Upload license XML reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: license-xml-reports
         path: '**/${{ env.REPORT_PATH }}/licenses.xml'

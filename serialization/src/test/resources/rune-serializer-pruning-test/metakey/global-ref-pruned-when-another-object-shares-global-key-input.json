@@ -1,0 +1,23 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.metakey.Root",
+  "@version" : "0.0.0",
+  "objectRefs" : [ {
+    "someField" : "definition",
+    "keyedThing" : {
+      "@key" : "sharedGlobalKey",
+      "@key:external" : "externalKey1",
+      "name" : "thing-1"
+    },
+    "keyedThingReference" : {
+      "@ref" : "sharedGlobalKey",
+      "@ref:external" : "externalKey1"
+    }
+  }, {
+    "someField" : "collision",
+    "keyedThing" : {
+      "@key" : "sharedGlobalKey",
+      "name" : "thing-2"
+    }
+  } ]
+}

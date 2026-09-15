@@ -1,0 +1,6 @@
+namespace csv.test.nullable
+version "${project.version}"
+
+type NullableAttributes:
+    id string (1..1)
+    note string (0..1)

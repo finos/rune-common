@@ -33,6 +33,12 @@ import java.util.stream.Collectors;
 import static com.regnosys.rosetta.common.util.PathUtils.toPath;
 import static com.regnosys.rosetta.common.util.PathUtils.toRosettaPath;
 
+/**
+ * @deprecated The synonym-based mapping framework has been superseded: synonym syntax was removed from the
+ * Rune DSL and its only consumer, the {@code rosetta-translate} ingestion library, is being retired.
+ * Retained for backwards compatibility and scheduled for removal in a future release.
+ */
+@Deprecated
 public class MappingProcessorUtils {
 
 	public static Optional<String> getValueAndUpdateMappings(Path synonymPath, List<Mapping> mappings, RosettaPath rosettaPath) {

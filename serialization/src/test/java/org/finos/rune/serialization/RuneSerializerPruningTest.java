@@ -29,15 +29,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class RuneSerializerPruningTest {
-    public static final String TEST_TYPE = "rune-serializer-key-pruning-test";
+    public static final String TEST_TYPE = "rune-serializer-pruning-test";
     public static final String NAMESPACE_PREFIX = TEST_MODEL_NAME + ".test.passing.";
+    public static final String GROUP_META_KEY = "metakey";
+    public static final String GROUP_OBJECT_PRUNING = "objectprune";
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     private ObjectMapper objectMapper;
 
@@ -56,8 +60,77 @@ public class RuneSerializerPruningTest {
     }
 
     @Test
+    void testGlobalKeyRefPairIsPrunedWhenExternalKeyRefAndInlinedValuePresentForMetadataKey() {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
+        String input = readAsString(getFile(groupPath, "global-and-external-key-with-inlined-body-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "global-and-external-key-with-inlined-body-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testGlobalKeyRefPairIsPrunedWhenDuplicateKeyIsNestedDeepInInlinedBody() {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
+        String input = readAsString(getFile(groupPath, "deep-nested-key-in-inlined-body-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "deep-nested-key-in-inlined-body-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testGlobalKeyRefPairIsPrunedWhenAnotherObjectSharesTheSameGlobalKey() {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
+        String input = readAsString(getFile(groupPath, "global-ref-pruned-when-another-object-shares-global-key-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "global-ref-pruned-when-another-object-shares-global-key-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testReferenceWithInlinedBodyIsPrunedWhenSiblingKeyedBodyExists() {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_OBJECT_PRUNING);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "object-prune.rosetta");
+        String input = readAsString(getFile(groupPath, "reference-with-inlined-body-input.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+        String result = toJson(objectMapper, deserializedObject);
+
+        String expected = readAsString(getFile(groupPath, "reference-with-inlined-body-expected.json"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testStringWithEmptyMetaPrunesOnDeserialise() throws NoSuchFieldException, IllegalAccessException {
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_OBJECT_PRUNING);
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "object-prune.rosetta");
+        String input = readAsString(getFile(groupPath, "string-with-empty-meta.json"));
+
+        RosettaModelObject deserializedObject = fromJson(objectMapper, input, rootDataType);
+
+        Object fieldA = getFieldValue(deserializedObject, "fieldA");
+        Object meta = getFieldValue(fieldA, "meta");
+        assertNull(meta);
+    }
+
+    @Test
     void testMetaKeyOnObjectWithNoReferenceToItIsPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-without-ref-input.json"));
 
@@ -71,7 +144,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaKeyOnObjectWithReferenceIsNotPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-ref.json"));
 
@@ -83,7 +156,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaIdOnAttributeWithNoReferenceToItIsPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "attribute-key-without-ref-input.json"));
 
@@ -97,7 +170,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testMetaIdOnAttributeWithReferenceIsNotPruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-key.rosetta");
         String input = readAsString(getFile(groupPath, "attribute-key-with-ref.json"));
 
@@ -109,7 +182,7 @@ public class RuneSerializerPruningTest {
 
     @Test
     void testDuplicateReferencesArePruned() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-duplicate-refs.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-duplicate-ref-input.json"));
 
@@ -129,7 +202,7 @@ public class RuneSerializerPruningTest {
     @Disabled
     @Test
     void testRedundantGlobalKeyIsPrunedFromRootObject() {
-        Path groupPath = getGroupPath(TEST_TYPE, "metakey");
+        Path groupPath = getGroupPath(TEST_TYPE, GROUP_META_KEY);
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath, "meta-root-key.rosetta");
         String input = readAsString(getFile(groupPath, "node-key-with-redundant-key-input.json"));
 
@@ -147,4 +220,10 @@ public class RuneSerializerPruningTest {
         return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, Collections.singletonList(rosetta), helper, dynamicCompiledClassLoader);
     }
 
+    public static Object getFieldValue(Object obj, String fieldName)
+            throws NoSuchFieldException, IllegalAccessException {
+        Field field = obj.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(obj);
+    }
 }

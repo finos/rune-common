@@ -8,5 +8,8 @@
   }, {
     "@type" : "serialization.test.passing.choicetype.B",
     "fieldB" : "foo"
+  }, {
+    "@type" : "serialization.test.passing.choicetype.A",
+    "fieldA" : "foo2"
   } ]
 }

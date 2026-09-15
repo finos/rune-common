@@ -27,9 +27,11 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.rosetta.model.lib.RosettaModelObject;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
+import com.rosetta.model.lib.meta.GlobalKeyFields;
 import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
@@ -102,7 +104,16 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         ChoiceValue selected = null;
         for (Method method : value.getClass().getMethods()) {
             RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
-            if (attribute != null && method.getParameterCount() == 0 && !RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
+            if (attribute != null
+                    && method.getParameterCount() == 0
+                    // When serializing a builder, each choice option is exposed twice: by the
+                    // covariant builder getter (e.g. A.ABuilder getA()) and by the synthetic
+                    // bridge that satisfies the base interface (A getA()). Ignore the builder-typed
+                    // getter and keep the base-typed accessor, so a single option counts once and
+                    // declaredType matches the runtime built type in validateDeclaredChoiceOptionType.
+                    && !RosettaModelObjectBuilder.class.isAssignableFrom(method.getReturnType())
+                    && !RuneJsonConfig.getMetaProperties().contains(attribute.value())
+                    && !isChoiceMetadataAttribute(method)) {
                 Object selectedValue = invoke(method, value);
                 if (!isEmptyChoiceValue(selectedValue)) {
                     Class<?> choiceType = value.getType();
@@ -123,6 +134,10 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             }
         }
         return selected;
+    }
+
+    private boolean isChoiceMetadataAttribute(Method method) {
+        return GlobalKeyFields.class.isAssignableFrom(method.getReturnType());
     }
 
     private Object invoke(Method method, Object target) throws IOException {

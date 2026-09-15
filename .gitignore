@@ -7,7 +7,8 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-
+.junie
+.claude/plans
 .DS_Store
 
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)

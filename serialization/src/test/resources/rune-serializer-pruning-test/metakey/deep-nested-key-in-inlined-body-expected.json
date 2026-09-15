@@ -1,0 +1,15 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.metakey.Root",
+  "@version" : "0.0.0",
+  "objectRefs" : [ {
+    "someField" : "objectRef",
+    "keyedThing" : {
+      "@key:external" : "objExternalKey1",
+      "name" : "thing-1"
+    },
+    "keyedThingReference" : {
+      "@ref:external" : "objExternalKey1"
+    }
+  } ]
+}

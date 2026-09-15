@@ -126,7 +126,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     public SubstitutionMap  findSubstitutionMap(MapperConfig<?> config, AnnotatedMember member, ClassLoader classLoader) {
-        AnnotatedClass ac = getAnnotatedClassOrContent(config, member);
+        AnnotatedClass ac = RosettaXMLTypeConfigLookup.getAnnotatedClassOrContent(config, member);
         RosettaDataType ann = ac.getAnnotation(RosettaDataType.class);
 
         if (ann != null) {
@@ -294,7 +294,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         // If the element name is specified in the XML configuration, use that.
         // Otherwise, if the RosettaDataType annotation is present, use the name from that.
         // Otherwise, use the default.
-        return getTypeXMLConfigurations(mapper.getSerializationConfig(), ac).stream()
+        return RosettaXMLTypeConfigLookup.getTypeXMLConfigurations(
+                        rosettaXMLConfiguration,
+                        mapper.getSerializationConfig(),
+                        ac).stream()
                 .filter(t -> t.getXmlElementName().isPresent())
                 .map(t -> t.getXmlElementName().get())
                 .findFirst()
@@ -337,7 +340,7 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     @Override
     public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass ac, List<BeanPropertyWriter> properties) {
-        getTypeXMLConfigurations(config, ac)
+        RosettaXMLTypeConfigLookup.getTypeXMLConfigurations(rosettaXMLConfiguration, config, ac)
                 .forEach(typeXMLConfiguration -> {
                     typeXMLConfiguration.getXmlAttributes().ifPresent(xmlAttributes -> {
                         // For each XML attribute in the configuration, add a virtual XML attribute.
@@ -495,29 +498,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
         }
     }
 
-    private AnnotatedClass getEnclosingAnnotatedClass(MapperConfig<?> config, AnnotatedMember member) {
-        // TODO: see issue https://github.com/FasterXML/jackson-databind/issues/4141
-        return AnnotatedClassResolver.resolve(config, config.constructType(member.getDeclaringClass()), config);
-    }
-    private AnnotatedClass getAnnotatedClassOrContent(MapperConfig<?> config, AnnotatedMember m) {
-        JavaType t;
-        if (m instanceof AnnotatedMethod) {
-            AnnotatedMethod method = (AnnotatedMethod) m;
-            if (method.getParameterCount() == 1) {
-                // For setters
-                t = method.getParameterType(0);
-            } else {
-                t = method.getType();
-            }
-        } else {
-            t = m.getType();
-        }
-        if (t.getContentType() != null) {
-            t = t.getContentType();
-        }
-        return AnnotatedClassResolver.resolve(config, t, config);
-    }
-
     private Optional<AttributeXMLConfiguration> getAttributeXMLConfiguration(MapperConfig<?> config, Annotated a) {
         return Optional.of(a)
                 .filter(annotated -> annotated instanceof AnnotatedMember)
@@ -525,7 +505,10 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
                 .flatMap(annotatedMember ->
                         Optional.ofNullable(annotatedMember.getAnnotation(RosettaAttribute.class))
                                 .flatMap(rosettaAttributeAnnotation ->
-                                        getTypeXMLConfigurations(config, getEnclosingAnnotatedClass(config, annotatedMember)).stream()
+                                        RosettaXMLTypeConfigLookup.getTypeXMLConfigurations(
+                                                        rosettaXMLConfiguration,
+                                                        config,
+                                                        RosettaXMLTypeConfigLookup.getEnclosingAnnotatedClass(config, annotatedMember)).stream()
                                                 .filter(t -> t.getAttributes().isPresent())
                                                 .map(t -> t.getAttributes().get())
                                                 .filter(attrMap -> attrMap.containsKey(rosettaAttributeAnnotation.value()))
@@ -536,23 +519,6 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
 
     }
 
-    private List<TypeXMLConfiguration> getTypeXMLConfigurations(MapperConfig<?> config, AnnotatedClass ac) {
-        List<TypeXMLConfiguration> result = new ArrayList<>();
-        Set<ModelSymbolId> visited = new HashSet<>();
-        RosettaDataType ann;
-        while ((ann = ac.getAnnotation(RosettaDataType.class)) != null) {
-            final ModelSymbolId modelSymbolId = createModelSymbolId(ac, ann.value());
-            if (visited.add(modelSymbolId)) {
-                rosettaXMLConfiguration.getConfigurationForType(modelSymbolId).ifPresent(result::add);
-            }
-
-            if (ac.getType().getSuperClass() == null) {
-                break;
-            }
-            ac = AnnotatedClassResolver.resolve(config, ac.getType().getSuperClass(), config);
-        }
-        return result;
-    }
     private Optional<TypeXMLConfiguration> getEnumXMLConfigurations(MapperConfig<?> config, AnnotatedClass ac) {
         RosettaEnum ann = ac.getAnnotation(RosettaEnum.class);
         if (ann != null) {

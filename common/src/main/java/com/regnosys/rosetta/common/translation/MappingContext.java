@@ -33,11 +33,17 @@ import java.util.concurrent.Executors;
 
 /**
  * A new MappingContext is created for each ingested file to hold any mapping state.
+ *
+ * @deprecated The synonym-based mapping framework has been superseded: synonym syntax was removed from the
+ * Rune DSL and its only consumer, the {@code rosetta-translate} ingestion library, is being retired.
+ * Retained for backwards compatibility and scheduled for removal in a future release.
  */
+@Deprecated
 public class MappingContext {
 
     private final List<Mapping> mappings;
     private final Map<Object, Object> mappingParams;
+    @Deprecated
     private final SynonymToEnumMap synonymToEnumMap;
     // Execute mapping on separate thread pool
     private final ExecutorService executor;
@@ -46,24 +52,58 @@ public class MappingContext {
 
     private final List<String> mappingErrors = new ArrayList<>();
 
+    public MappingContext() {
+        this(new ArrayList<>(), new ConcurrentHashMap<>());
+    }
+
+    // Unit testing
+    @VisibleForTesting
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams) {
+        this(mappings,
+                mappingParams,
+                defaultExecutor());
+    }
+
+    public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, ExecutorService executor) {
+        this.mappings = mappings;
+        this.mappingParams = mappingParams;
+        this.synonymToEnumMap = null;
+        this.executor = executor;
+    }
+
+    /**
+     * @deprecated Enum synonyms have been removed from the Rune DSL. Use {@link #MappingContext()} instead.
+     */
+    @Deprecated
     public MappingContext(Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
         this(new ArrayList<>(), new ConcurrentHashMap<>(), synonymToEnumMap);
     }
 
-    // Unit testing
+    /**
+     * @deprecated Enum synonyms have been removed from the Rune DSL. Use {@link #MappingContext(List, Map)} instead.
+     */
+    @Deprecated
     @VisibleForTesting
     public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap) {
         this(mappings,
                 mappingParams,
                 synonymToEnumMap,
-                Executors.newFixedThreadPool(5, new ThreadFactoryBuilder().setNameFormat("mapper-%d").build()));
+                defaultExecutor());
     }
 
+    /**
+     * @deprecated Enum synonyms have been removed from the Rune DSL. Use {@link #MappingContext(List, Map, ExecutorService)} instead.
+     */
+    @Deprecated
     public MappingContext(List<Mapping> mappings, Map<Object, Object> mappingParams, Map<Class<?>, Map<String, Enum<?>>> synonymToEnumMap, ExecutorService executor) {
         this.mappings = mappings;
         this.mappingParams = mappingParams;
         this.synonymToEnumMap = new SynonymToEnumMap(synonymToEnumMap);
         this.executor = executor;
+    }
+
+    private static ExecutorService defaultExecutor() {
+        return Executors.newFixedThreadPool(5, new ThreadFactoryBuilder().setNameFormat("mapper-%d").build());
     }
 
     public List<Mapping> getMappings() {
@@ -86,6 +126,11 @@ public class MappingContext {
         return mappingErrors;
     }
 
+    /**
+     * @deprecated Enum synonyms have been removed from the Rune DSL. Returns {@code null} unless a
+     * synonym map was supplied via one of the deprecated constructors.
+     */
+    @Deprecated
     public SynonymToEnumMap getSynonymToEnumMap() {
         return synonymToEnumMap;
     }

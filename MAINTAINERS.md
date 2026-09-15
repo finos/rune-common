@@ -6,18 +6,18 @@ This file lists the maintainers of this repository.
 
 | GitHub Username | Name | Organization | Email (optional) |
 |----------------|------|--------------|------------------|
-| @CDM-ReleaseManagement-AP | *please add name* | *please add organization* |  |
-| @CDM-ReleaseManagement-EC | *please add name* | *please add organization* |  |
-| @CDM-ReleaseManagement-LSG | *please add name* | *please add organization* |  |
-| @CDM-ReleaseManagement-OT | *please add name* | *please add organization* |  |
-| @JayasriR | *please add name* | *please add organization* |  |
-| @PayalKhanna | Payal Khanna | Regnosys |  |
-| @ReleaseManagement-BP | *please add name* | *please add organization* |  |
-| @SimonCockx | Simon Cockx | NovAda |  |
-| @davidalk | David Al-Kanani | *please add organization* |  |
+| @CDM-ReleaseManagement-AP | Akash Patel | REGnosys |  |
+| @CDM-ReleaseManagement-EC | Erin Cassidy | REGnosys |  |
+| @CDM-ReleaseManagement-LSG | Lionel Smith-Gordon | REGnosys |  |
+| @CDM-ReleaseManagement-OT | Oscar Twomey | REGnosys |  |
+| @JayasriR | Jayasri Radhakrishnan | REGnosys |  |
+| @PayalKhanna | Payal Khanna | REGnosys |  |
+| @ReleaseManagement-BP | Benjamin Page | REGnosys |  |
+| @SimonCockx | Simon Cockx | REGnosys |  |
+| @davidalk | David Al-Kanani | REGnosys |  |
 | @hugohills-regnosys | Hugo Hills | REGnosys |  |
-| @ja6a-regnosys | James Annesley | *please add organization* |  |
-| @minesh-s-patel | *please add name* | *please add organization* |  |
+| @ja6a-regnosys | James Annesley | REGnosys |  |
+| @minesh-s-patel | Minesh Patel | Individual |  |
 
 For information about maintainer responsibilities and resources, see the [FINOS Maintainers Cheatsheet](https://community.finos.org/docs/finos-maintainers-cheatsheet).
 

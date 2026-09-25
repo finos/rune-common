@@ -21,11 +21,15 @@ package org.finos.rune.serialization;
  */
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
+import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,6 +115,31 @@ public class RuneJsonChoiceTypeDeserializerTest {
     }
 
     @Test
+    void shouldDeserializeExtendedChoiceOptionWhenUnknownPropertiesAreRejected() throws JsonProcessingException {
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        String json = readAsString(getFile(groupPath, "choice-data-extension.json"));
+
+        RosettaModelObject deserializedObject = fromJsonRejectingUnknownProperties(json, rootDataType);
+
+        Object extA = invokeGetter(invokeGetter(deserializedObject, "getChoiceData"), "getExtA");
+        Assertions.assertNotNull(extA, "ChoiceData should deserialize @type ExtA into ExtA");
+        Assertions.assertEquals("bar", invokeGetter(extA, "getFieldExt"));
+    }
+
+    @Test
+    void shouldFailOnUnknownChoiceOptionFieldWhenUnknownPropertiesAreRejected() {
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        String json = readAsString(getFile(groupPath, "choice-data-unknown-field.json"));
+
+        UnrecognizedPropertyException exception = Assertions.assertThrows(UnrecognizedPropertyException.class,
+                () -> fromJsonRejectingUnknownProperties(json, rootDataType));
+
+        Assertions.assertEquals("notAField", exception.getPropertyName());
+    }
+
+    @Test
     void shouldFailWhenChoiceDoesNotDeclareTypeFromTypeMetadata() {
         Path groupPath = getGroupPath(TEST_TYPE, "invalidchoiceoption");
         Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
@@ -155,6 +184,17 @@ public class RuneJsonChoiceTypeDeserializerTest {
         );
         ROOT_TYPES.put(groupPath, rootType);
         return rootType;
+    }
+
+    /**
+     * Reads the way a strict consumer (e.g. Rosetta sample validation) does: unknown properties rejected,
+     * top-level meta properties removed first.
+     */
+    private <T extends RosettaModelObject> T fromJsonRejectingUnknownProperties(String runeJson, Class<T> type) throws JsonProcessingException {
+        ObjectMapper strictObjectMapper = newObjectMapper(dynamicCompiledClassLoader).enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        ObjectNode root = (ObjectNode) strictObjectMapper.readTree(runeJson);
+        RuneJsonObjectMapper.getMetaProperties().forEach(root::remove);
+        return strictObjectMapper.treeToValue(root, type);
     }
 
     private <T extends RosettaModelObject> T fromJson(String runeJson, Class<T> type) throws JsonProcessingException {

@@ -94,13 +94,10 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
                 return tryDeserialize(node, runeType, optionType, mapper);
             }
 
-            if (isExactRuneType(optionType, runeType)) {
-                return mapper.treeToValue(node, optionType);
-            }
-            if (isMetaWrapperForType(optionType, runeType)) {
-                ObjectNode metaWrapperNode = node.deepCopy();
-                metaWrapperNode.remove(RuneJsonConfig.MetaProperties.TYPE);
-                return mapper.treeToValue(metaWrapperNode, optionType);
+            // @type selects the option but is not a property of it, so it is removed before
+            // deserializing; otherwise a mapper that rejects unknown properties fails on it
+            if (isExactRuneType(optionType, runeType) || isMetaWrapperForType(optionType, runeType)) {
+                return mapper.treeToValue(withoutType(node), optionType);
             }
             return null;
         }
@@ -110,6 +107,13 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             return data == null || data.isNull() ? null : mapper.treeToValue(data, optionType);
         }
         return null;
+    }
+
+    // a copy, because every option (and each nested choice) is tried against the same node
+    private static ObjectNode withoutType(ObjectNode node) {
+        ObjectNode copy = node.deepCopy();
+        copy.remove(RuneJsonConfig.MetaProperties.TYPE);
+        return copy;
     }
 
     private boolean isExactRuneType(Class<?> optionType, String runeType) {

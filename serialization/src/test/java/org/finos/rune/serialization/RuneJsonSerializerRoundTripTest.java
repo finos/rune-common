@@ -21,6 +21,7 @@ package org.finos.rune.serialization;
  */
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.inject.Injector;
@@ -39,8 +40,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.finos.rune.serialization.RuneSerializerTestHelper.*;
@@ -54,6 +58,7 @@ public class RuneJsonSerializerRoundTripTest {
     private static final String[] DISABLE_GROUPS = { "ordering" };
     private static final String[] IGNORE_ORDERING_GROUPS = { "overriding" };
 
+    private static final Map<String, Class<RosettaModelObject>> ROOT_TYPES = new HashMap<>();
     private static DynamicCompiledClassLoader dynamicCompiledClassLoader;
     private static CodeGeneratorTestHelper helper;
     private ObjectMapper objectMapper;
@@ -91,18 +96,40 @@ public class RuneJsonSerializerRoundTripTest {
         }
     }
 
+    /**
+     * Subtypes in plain (non-choice) attributes carry @type, which must be consumed as the type id
+     * rather than passed to the builder as an unknown property.
+     */
+    @ParameterizedTest(name = "{0} - {1}")
+    @MethodSource("extensionTestCases")
+    void testSubtypeRoundTripWhenFailingOnUnknownProperties(String group, String testCaseName, Class<? extends RosettaModelObject> rosettaRootType, String jsonString) throws JsonProcessingException {
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+        RosettaModelObject deserializedObject = fromJson(objectMapper, withoutModelAndVersion(objectMapper, jsonString), rosettaRootType);
+        assertJsonEquals(jsonString, toJson(objectMapper, deserializedObject), testCaseName);
+    }
+
+    public static Stream<Arguments> extensionTestCases() {
+        return testCases(groupName -> groupName.equals("extension"));
+    }
+
     public static Stream<Arguments> testCases() {
+        return testCases(groupName -> true);
+    }
+
+    private static Stream<Arguments> testCases(Predicate<String> includeGroup) {
         return groups(TEST_TYPE).stream()
                 .flatMap(groupPath -> {
                     String groupName = groupPath.getFileName().toString();
 
-                    if (Arrays.asList(DISABLE_GROUPS).contains(groupName)) {
+                    if (Arrays.asList(DISABLE_GROUPS).contains(groupName) || !includeGroup.test(groupName)) {
                         return Stream.empty();
                     }
 
                     List<Path> rosettas = listFiles(groupPath, ".rosetta");
 
-                    Class<RosettaModelObject> rootDataType = generateCompileAndGetRootDataType(NAMESPACE_PREFIX, groupName, rosettas, helper, dynamicCompiledClassLoader);
+                    // each group is compiled once: a second copy of its classes would not match the @type ids the class loader resolves
+                    Class<RosettaModelObject> rootDataType = ROOT_TYPES.computeIfAbsent(groupName,
+                            name -> generateCompileAndGetRootDataType(NAMESPACE_PREFIX, name, rosettas, helper, dynamicCompiledClassLoader));
 
                             return listFiles(groupPath, ".json").stream()
                                     .map(jsonPath -> Arguments.of(

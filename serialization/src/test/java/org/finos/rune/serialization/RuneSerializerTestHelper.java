@@ -22,6 +22,7 @@ package org.finos.rune.serialization;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -36,6 +37,7 @@ import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneDataType;
+import org.finos.rune.mapper.RuneJsonConfig;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.eclipse.xtext.common.TerminalsStandaloneSetup;
 
@@ -151,6 +153,17 @@ public class RuneSerializerTestHelper {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * The top-level @model and @version headers are not attributes of the root type, so a read that
+     * fails on unknown properties would reject them; consumers validating strictly remove them first.
+     */
+    public static String withoutModelAndVersion(ObjectMapper objectMapper, String runeJson) throws JsonProcessingException {
+        ObjectNode root = (ObjectNode) objectMapper.readTree(runeJson);
+        root.remove(RuneJsonConfig.MetaProperties.MODEL);
+        root.remove(RuneJsonConfig.MetaProperties.VERSION);
+        return objectMapper.writeValueAsString(root);
     }
 
     public static String toJson(ObjectMapper objectMapper, RosettaModelObject runeObject) {

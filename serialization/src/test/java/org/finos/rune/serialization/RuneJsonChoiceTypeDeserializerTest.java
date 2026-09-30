@@ -21,8 +21,10 @@ package org.finos.rune.serialization;
  */
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -108,6 +110,51 @@ public class RuneJsonChoiceTypeDeserializerTest {
         Assertions.assertNotNull(extA, "Nested ChoiceData should deserialize @type ExtA into ExtA");
         Assertions.assertEquals("foo", invokeGetter(extA, "getFieldA"));
         Assertions.assertEquals("bar", invokeGetter(extA, "getFieldExt"));
+    }
+
+    @Test
+    void shouldDeserializeChoiceDataWhenFailingOnUnknownProperties() throws JsonProcessingException {
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        String json = withoutModelAndVersion(objectMapper, readAsString(getFile(groupPath, "choice-data-extension.json")));
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
+
+        Object extA = invokeGetter(invokeGetter(deserializedObject, "getChoiceData"), "getExtA");
+        Assertions.assertNotNull(extA, "ChoiceData should deserialize @type ExtA into ExtA");
+        Assertions.assertEquals("bar", invokeGetter(extA, "getFieldExt"));
+    }
+
+    @Test
+    void shouldDeserializeNestedChoiceDataWhenFailingOnUnknownProperties() throws JsonProcessingException {
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        String json = withoutModelAndVersion(objectMapper, readAsString(getFile(groupPath, "choice-deep-nested-extended.json")));
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+
+        RosettaModelObject deserializedObject = fromJson(json, rootDataType);
+
+        Object choiceDeepNested = invokeGetter(deserializedObject, "getChoiceDeepNested");
+        Object choiceData = firstNonNull(
+                findNestedGetterResult(choiceDeepNested, "getMiddleChoiceA", "getChoiceData"),
+                findNestedGetterResult(choiceDeepNested, "getMiddleChoiceB", "getChoiceData")
+        );
+        Assertions.assertNotNull(choiceData, "ChoiceDeepNested should resolve to a nested ChoiceData option");
+        Assertions.assertNotNull(invokeGetter(choiceData, "getExtA"), "Nested ChoiceData should deserialize @type ExtA into ExtA");
+    }
+
+    @Test
+    void shouldFailOnUnknownChoiceOptionFieldWhenUnknownPropertiesAreRejected() throws JsonProcessingException {
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        String json = withoutModelAndVersion(objectMapper, readAsString(getFile(groupPath, "choice-data-unknown-field.json")));
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+
+        UnrecognizedPropertyException exception = Assertions.assertThrows(UnrecognizedPropertyException.class,
+                () -> fromJson(json, rootDataType));
+
+        Assertions.assertEquals("notAField", exception.getPropertyName());
     }
 
     @Test

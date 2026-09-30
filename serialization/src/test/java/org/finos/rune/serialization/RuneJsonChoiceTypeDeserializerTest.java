@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.google.inject.Injector;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
@@ -141,6 +142,19 @@ public class RuneJsonChoiceTypeDeserializerTest {
         );
         Assertions.assertNotNull(choiceData, "ChoiceDeepNested should resolve to a nested ChoiceData option");
         Assertions.assertNotNull(invokeGetter(choiceData, "getExtA"), "Nested ChoiceData should deserialize @type ExtA into ExtA");
+    }
+
+    @Test
+    void shouldFailOnUnknownChoiceOptionFieldWhenUnknownPropertiesAreRejected() throws JsonProcessingException {
+        Path groupPath = getGroupPath(TEST_TYPE, "extension");
+        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        String json = withoutModelAndVersion(objectMapper, readAsString(getFile(groupPath, "choice-data-unknown-field.json")));
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+
+        UnrecognizedPropertyException exception = Assertions.assertThrows(UnrecognizedPropertyException.class,
+                () -> fromJson(json, rootDataType));
+
+        Assertions.assertEquals("notAField", exception.getPropertyName());
     }
 
     @Test

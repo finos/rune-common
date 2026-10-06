@@ -174,8 +174,6 @@ public class RuneFIXConfiguration {
 
     /**
      * Builds a {@link RuneFIXConfiguration}.
-     *
-     * @throws IllegalArgumentException if dictionaryPath is missing or blank
      */
     public static class Builder {
         private String dictionaryPath;

@@ -20,6 +20,10 @@ package com.regnosys.rosetta.common.serialisation.fix;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.serialisation.fix.processor.RuneFIXSerializerIssue;
 import com.regnosys.rosetta.common.serialisation.fix.processor.RuneFIXSerializerReport;
 import csv.test.user.User;
@@ -35,12 +39,12 @@ import fix.test.trade.FixUnlabelledReport;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import quickfix.ConfigError;
-import quickfix.DataDictionary;
+import org.quickfixj.CharsetSupport;
 import quickfix.FieldNotFound;
 import quickfix.Group;
 import quickfix.Message;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -55,6 +59,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -80,19 +85,14 @@ class RuneFIXMapperSerialisationTest {
 
     private static final String CONFIG_PATH = "serialisation/fix/fix-test-config.json";
 
-    private static RuneFIXConfiguration configuration;
-    private static DataDictionary dictionary;
     private static RuneFIXMapper mapper;
 
+    /** Built the way a caller holding only a config file would: the dictionary comes from its dictionaryPath. */
     @BeforeAll
-    static void loadMapper() throws IOException, ConfigError {
+    static void loadMapper() throws IOException {
         try (InputStream config = resource(CONFIG_PATH)) {
-            configuration = RuneFIXConfiguration.load(config);
+            mapper = (RuneFIXMapper) RosettaObjectMapperCreator.forFIX(config).create();
         }
-        try (InputStream dictionaryXml = resource(configuration.getDictionaryPath())) {
-            dictionary = new DataDictionary(dictionaryXml);
-        }
-        mapper = RuneFIXMapper.createFIXMapper(configuration, dictionary);
     }
 
     // ---------------------------------------------------------------------------
@@ -305,6 +305,67 @@ class RuneFIXMapperSerialisationTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> mapper.writeValueAsString(user));
         assertTrue(exception.getMessage().contains(User.class.getName()), exception.getMessage());
+    }
+
+    // ---------------------------------------------------------------------------
+    // Jackson ObjectMapper integration
+    // ---------------------------------------------------------------------------
+
+    @Test
+    void shouldWriteFixThroughTheObjectMapperType() throws JsonProcessingException {
+        ObjectMapper objectMapper = mapper;
+
+        assertEquals(mapper.writeValueAsString(fullReport()), objectMapper.writeValueAsString(fullReport()));
+    }
+
+    /** {@code TransformMapperFactory.createWriter} hands callers this writer. */
+    @Test
+    void shouldWriteTheSameFixFromThePrettyPrintingWriter() throws JsonProcessingException {
+        ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+
+        assertEquals(mapper.writeValueAsString(fullReport()), writer.writeValueAsString(fullReport()));
+    }
+
+    @Test
+    void shouldWriteFixBytesInTheQuickFixCharset() throws JsonProcessingException {
+        byte[] expected = mapper.writeValueAsString(fullReport()).getBytes(CharsetSupport.getCharsetInstance());
+
+        assertArrayEquals(expected, mapper.writeValueAsBytes(fullReport()));
+        assertArrayEquals(expected, mapper.writer().writeValueAsBytes(fullReport()));
+        assertNull(mapper.writeValueAsBytes(null));
+    }
+
+    @Test
+    void shouldKeepFixBehaviourInACopy() {
+        RuneFIXMapper copy = mapper.copy();
+
+        assertEquals(mapper.writeValueAsString(fullReport()), copy.writeValueAsString(fullReport()));
+    }
+
+    @Test
+    void shouldRejectReadingIntoATypeThatIsNotARuneModelObject() {
+        assertThrows(IllegalArgumentException.class, () -> mapper.readValue("35=AE\u0001", String.class));
+    }
+
+    @Test
+    void shouldFailToCreateWhenTheConfiguredDictionaryIsNotOnTheClasspath() {
+        RuneFIXConfiguration missingDictionary = RuneFIXConfiguration.builder()
+                .setDictionaryPath("serialisation/fix/does-not-exist.xml")
+                .build();
+
+        FileNotFoundException exception = assertThrows(FileNotFoundException.class,
+                () -> RosettaObjectMapperCreator.forFIX(missingDictionary));
+        assertTrue(exception.getMessage().contains("does-not-exist.xml"), exception.getMessage());
+    }
+
+    @Test
+    void shouldFailToCreateWhenTheConfiguredDictionaryIsInvalid() {
+        // A config file is on the classpath but is not a QuickFIX/J dictionary.
+        RuneFIXConfiguration invalidDictionary = RuneFIXConfiguration.builder()
+                .setDictionaryPath(CONFIG_PATH)
+                .build();
+
+        assertThrows(IOException.class, () -> RosettaObjectMapperCreator.forFIX(invalidDictionary));
     }
 
     // ---------------------------------------------------------------------------

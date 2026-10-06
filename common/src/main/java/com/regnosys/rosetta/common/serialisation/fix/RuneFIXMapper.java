@@ -20,12 +20,17 @@ package com.regnosys.rosetta.common.serialisation.fix;
  * ==============
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.regnosys.rosetta.common.serialisation.RosettaObjectMapperCreator;
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.path.RosettaPath;
 import com.regnosys.rosetta.common.serialisation.fix.processor.RuneFIXSerializerProcessor;
 import com.regnosys.rosetta.common.serialisation.fix.processor.RuneFIXSerializerReport;
+import org.quickfixj.CharsetSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import quickfix.DataDictionary;
@@ -49,28 +54,66 @@ import quickfix.ValidationSettings;
  * </li>
  * </ul>
  *
- * <p><b>Usage Note:</b> The mapper is structurally immutable and thread-safe. It is designed to be instantiated via its static factory method on application startup and safely reused across concurrent serialization requests. Deserialization workflows ({@code readValue}) are currently stubbed pending future implementation.</p>
+ * <p><b>Jackson integration.</b> Like {@code RosettaCsvMapper}, this is an {@link ObjectMapper}, so it can be
+ * used wherever one is expected. FIX is not a JSON-shaped format, so only the entry points below are
+ * overridden; the rest of the {@link ObjectMapper} API still produces JSON and should not be used:</p>
+ * <ul>
+ *   <li>{@link #writeValueAsString(Object)} and {@link #writeValueAsBytes(Object)};</li>
+ *   <li>{@link #writer()} and {@link #writerWithDefaultPrettyPrinter()}, whose writers override the same two
+ *       methods. FIX has no pretty form, so both write the same message;</li>
+ *   <li>{@link #readValue(String, Class)}.</li>
+ * </ul>
+ *
+ * <p>Create one through {@link RosettaObjectMapperCreator#forFIX(RuneFIXConfiguration, DataDictionary)} or one
+ * of its overloads, or {@link #createFIXMapper(RuneFIXConfiguration, DataDictionary)}.</p>
+ *
+ * <p><b>Usage Note:</b> The mapper is structurally immutable and thread-safe. It is designed to be instantiated on application startup and safely reused across concurrent serialization requests. Deserialization workflows ({@code readValue}) are currently stubbed pending future implementation.</p>
  */
-public class RuneFIXMapper {
+public class RuneFIXMapper extends ObjectMapper {
+
+    private static final long serialVersionUID = 1L;
 
     private static final Logger logger = LoggerFactory.getLogger(RuneFIXMapper.class);
 
     private final RuneFIXConfiguration config;
-    private final DataDictionary dictionary;
+    private final transient DataDictionary dictionary;
 
-    private RuneFIXMapper(RuneFIXConfiguration config, DataDictionary dictionary) {
-        this.config = config;
-        this.dictionary = dictionary;
-    }
-
-    public static RuneFIXMapper createFIXMapper(RuneFIXConfiguration config, DataDictionary dictionary) {
+    /**
+     * @throws IllegalArgumentException if either argument is {@code null}
+     */
+    public RuneFIXMapper(RuneFIXConfiguration config, DataDictionary dictionary) {
         if (config == null) {
             throw new IllegalArgumentException("RuneFIXConfiguration is required to resolve MsgTypes. Cannot be null.");
         }
         if (dictionary == null) {
             throw new IllegalArgumentException("DataDictionary is required for FIX metadata resolution. Cannot be null.");
         }
-        return new RuneFIXMapper(config, dictionary);
+        this.config = config;
+        this.dictionary = dictionary;
+    }
+
+    protected RuneFIXMapper(RuneFIXMapper src) {
+        super(src);
+        this.config = src.config;
+        this.dictionary = src.dictionary;
+    }
+
+    public static RuneFIXMapper createFIXMapper(RuneFIXConfiguration config, DataDictionary dictionary) {
+        return (RuneFIXMapper) RosettaObjectMapperCreator.forFIX(config, dictionary).create();
+    }
+
+    @Override
+    public RuneFIXMapper copy() {
+        _checkInvalidCopy(RuneFIXMapper.class);
+        return new RuneFIXMapper(this);
+    }
+
+    public RuneFIXConfiguration getConfiguration() {
+        return config;
+    }
+
+    public DataDictionary getDataDictionary() {
+        return dictionary;
     }
 
     public RuneFIXSerializerReport writeValueAsFIXReport(Object value, boolean validate) {
@@ -109,15 +152,41 @@ public class RuneFIXMapper {
         return fixMessage != null ? fixMessage.toString() : null;
     }
 
+    @Override
     public String writeValueAsString(Object value) {
         return writeValueAsString(value, false);
     }
 
-    public <T extends RosettaModelObject> T readValue(String content, Class<T> valueType) throws IllegalArgumentException {
+    /**
+     * The FIX message encoded in the QuickFIX/J charset ({@link CharsetSupport#getCharsetInstance()}), or
+     * {@code null} for a {@code null} value.
+     */
+    @Override
+    public byte[] writeValueAsBytes(Object value) {
+        String fix = writeValueAsString(value);
+        return fix == null ? null : fix.getBytes(CharsetSupport.getCharsetInstance());
+    }
+
+    @Override
+    public ObjectWriter writer() {
+        return new RuneFIXObjectWriter(this, getSerializationConfig());
+    }
+
+    @Override
+    public ObjectWriter writerWithDefaultPrettyPrinter() {
+        return writer();
+    }
+
+    @Override
+    public <T> T readValue(String content, Class<T> valueType) {
+        if (valueType == null || !RosettaModelObject.class.isAssignableFrom(valueType)) {
+            throw new IllegalArgumentException("RuneFIXMapper reads rune model objects, not "
+                    + (valueType == null ? null : valueType.getName()));
+        }
         try {
             Message fixMessage = new Message();
             fixMessage.fromString(content, dictionary, new ValidationSettings(), false);
-            return readValueFromFIXMessage(fixMessage, valueType);
+            return valueType.cast(readValueFromFIXMessage(fixMessage, valueType.asSubclass(RosettaModelObject.class)));
         } catch (InvalidMessage e) {
             logger.error("Failed to parse FIX string content into a valid QuickFIX/J Message.", e);
             throw new IllegalArgumentException("Malformed FIX string provided to readValue.", e);
@@ -126,5 +195,26 @@ public class RuneFIXMapper {
 
     public <T extends RosettaModelObject> T readValueFromFIXMessage(Message message, Class<T> valueType) {
         throw new UnsupportedOperationException("FIX to Rune deserialization is pending implementation.");
+    }
+
+    private static final class RuneFIXObjectWriter extends ObjectWriter {
+        private static final long serialVersionUID = 1L;
+
+        private final RuneFIXMapper mapper;
+
+        RuneFIXObjectWriter(RuneFIXMapper mapper, SerializationConfig config) {
+            super(mapper, config);
+            this.mapper = mapper;
+        }
+
+        @Override
+        public String writeValueAsString(Object value) {
+            return mapper.writeValueAsString(value);
+        }
+
+        @Override
+        public byte[] writeValueAsBytes(Object value) {
+            return mapper.writeValueAsBytes(value);
+        }
     }
 }

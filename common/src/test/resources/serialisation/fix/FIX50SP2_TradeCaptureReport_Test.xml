@@ -1,0 +1,77 @@
+<!--
+  ==============
+  Rune Common
+  ==============
+  Copyright (C) 2018 - 2026 REGnosys
+  ==============
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+       http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  ==============
+  -->
+<!-- A minimal FIX 5.0 SP2 application dictionary for RuneFIXMapper tests. Tag numbers and
+     field types match the published FIX 5.0 SP2 dictionary; only the fields the test model in
+     rosetta/fix-trade-capture-report-type.rosetta uses are defined. -->
+<fix major="5" minor="0">
+    <header/>
+    <trailer/>
+    <messages>
+        <message name="TradeCaptureReport" msgtype="AE" msgcat="app">
+            <field name="TradeReportID" required="Y"/>
+            <field name="TotNumTradeReports" required="N"/>
+            <field name="PreviouslyReported" required="N"/>
+            <component name="Instrument" required="N"/>
+            <field name="LastQty" required="N"/>
+            <field name="LastPx" required="N"/>
+            <field name="TransactTime" required="N"/>
+            <group name="NoTradePriceConditions" required="N">
+                <field name="TradePriceCondition" required="N"/>
+            </group>
+            <group name="NoSides" required="Y">
+                <field name="Side" required="Y"/>
+                <group name="NoPartyIDs" required="N">
+                    <field name="PartyID" required="N"/>
+                    <field name="PartyRole" required="N"/>
+                </group>
+            </group>
+        </message>
+    </messages>
+    <components>
+        <component name="Instrument">
+            <field name="SecurityID" required="N"/>
+            <field name="Currency" required="N"/>
+        </component>
+    </components>
+    <fields>
+        <field number="15" name="Currency" type="CURRENCY"/>
+        <field number="31" name="LastPx" type="PRICE"/>
+        <field number="32" name="LastQty" type="QTY"/>
+        <field number="35" name="MsgType" type="STRING"/>
+        <field number="48" name="SecurityID" type="STRING"/>
+        <field number="54" name="Side" type="CHAR">
+            <value enum="1" description="BUY"/>
+            <value enum="2" description="SELL"/>
+        </field>
+        <field number="60" name="TransactTime" type="UTCTIMESTAMP"/>
+        <field number="448" name="PartyID" type="STRING"/>
+        <field number="452" name="PartyRole" type="INT"/>
+        <field number="453" name="NoPartyIDs" type="NUMINGROUP"/>
+        <field number="552" name="NoSides" type="NUMINGROUP"/>
+        <field number="570" name="PreviouslyReported" type="BOOLEAN"/>
+        <field number="571" name="TradeReportID" type="STRING"/>
+        <field number="748" name="TotNumTradeReports" type="INT"/>
+        <field number="1838" name="NoTradePriceConditions" type="NUMINGROUP"/>
+        <field number="1839" name="TradePriceCondition" type="INT">
+            <value enum="0" description="SPECIAL_CUM_DIVIDEND"/>
+            <value enum="1" description="SPECIAL_CUM_RIGHTS"/>
+        </field>
+    </fields>
+</fix>

@@ -48,7 +48,7 @@ import quickfix.ValidationSettings;
  *
  * <p>Core responsibilities include:</p>
  * <ul>
- *   <li><b>Routing & Orchestration:</b> Dynamically resolves the appropriate FIX MsgType (Tag 35) for a given {@link RosettaModelObject} using the rules defined in the {@link RuneFIXConfiguration}.</li>
+ *   <li><b>Routing &amp; Orchestration:</b> Dynamically resolves the appropriate FIX MsgType (Tag 35) for a given {@link RosettaModelObject} using the rules defined in the {@link RuneFIXConfiguration}.</li>
  *   <li><b>Serialization:</b> Initializes isolated processor instances to translate hierarchical domain models into flat, SOH-delimited FIX payloads or programmatic QuickFIX/J {@link Message} objects.</li>
  *   <li><b>Validation:</b> Each write operation can optionally validate the generated transactional FIX body against the application {@link DataDictionary}. Validation diagnostics are returned through {@link RuneFIXSerializerReport} and are disabled by default.
  * </li>

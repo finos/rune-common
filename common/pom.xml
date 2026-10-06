@@ -86,6 +86,10 @@
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.quickfixj</groupId>
+            <artifactId>quickfixj-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.finos.rune</groupId>
             <artifactId>rune-maven-plugin</artifactId>
             <version>${rune.dsl.version}</version>

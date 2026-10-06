@@ -104,6 +104,7 @@
         <slf4j-api.version>2.0.20</slf4j-api.version>
         <commons.io.version>2.22.0</commons.io.version>
         <xtext.version>2.38.0</xtext.version>
+        <quickfixj.version>3.0.2</quickfixj.version>
 
         <!-- test -->
         <junit.version>6.1.3</junit.version>
@@ -172,6 +173,11 @@
                 <groupId>org.finos.rune</groupId>
                 <artifactId>rune-runtime</artifactId>
                 <version>${rune.dsl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.quickfixj</groupId>
+                <artifactId>quickfixj-core</artifactId>
+                <version>${quickfixj.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -338,6 +344,11 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

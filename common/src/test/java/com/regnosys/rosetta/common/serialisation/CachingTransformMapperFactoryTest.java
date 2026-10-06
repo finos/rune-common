@@ -99,6 +99,13 @@ class CachingTransformMapperFactoryTest {
     }
 
     @Test
+    void fixMappersShareOneMapperPerClassLoader() {
+        TransformSerialization fix = new TransformSerialization(SerializationFormat.FIX, "serialisation/fix/fix-test-config.json");
+        assertSame(factory.create(fix, LabelledFunctionA.class, null), factory.create(fix, LabelledFunctionB.class, null),
+                "functions loaded by the same classloader must share one FIX mapper");
+    }
+
+    @Test
     void classLoaderSensitiveFormatsShareOneMapperPerClassLoader() {
         TransformSerialization runeJson = new TransformSerialization(SerializationFormat.RUNE_JSON, null);
         assertSame(factory.create(runeJson, LabelledFunctionA.class, null), factory.create(runeJson, LabelledFunctionB.class, null),

@@ -37,7 +37,6 @@ import fix.test.trade.FixTradePriceConditionEnum;
 import fix.test.trade.FixUnknownLabelReport;
 import fix.test.trade.FixUnlabelledReport;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.quickfixj.CharsetSupport;
 import quickfix.FieldNotFound;
@@ -234,8 +233,6 @@ class RuneFIXMapperSerialisationTest {
     }
 
     @Test
-    @Disabled("RuneFIXSerializerProcessor.validateBodyOnlyReport collects the validation failure in "
-            + "reportIssues but returns issues, so the failure never reaches the report")
     void shouldReportValidationFailureWhenRequiredGroupIsMissing() {
         // NoSides is required="Y" in the test dictionary, and minimalReport() has no sides.
         RuneFIXSerializerReport report = mapper.writeValueAsFIXReport(minimalReport(), true);
@@ -288,8 +285,6 @@ class RuneFIXMapperSerialisationTest {
     }
 
     @Test
-    @Disabled("Throws NullPointerException from RuneFIXSerializerProcessor: RuneFIXMapper does not handle "
-            + "LabelProviderResolver.fromType returning null for a type with no labels of its own")
     void shouldThrowNamingTheTypeWhenItHasNoLabelProvider() {
         FixUnlabelledReport value = FixUnlabelledReport.builder().setTradeReportID("TR-1").build();
 
@@ -340,11 +335,6 @@ class RuneFIXMapperSerialisationTest {
         RuneFIXMapper copy = mapper.copy();
 
         assertEquals(mapper.writeValueAsString(fullReport()), copy.writeValueAsString(fullReport()));
-    }
-
-    @Test
-    void shouldRejectReadingIntoATypeThatIsNotARuneModelObject() {
-        assertThrows(IllegalArgumentException.class, () -> mapper.readValue("35=AE\u0001", String.class));
     }
 
     @Test

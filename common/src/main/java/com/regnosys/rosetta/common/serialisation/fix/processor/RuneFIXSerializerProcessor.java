@@ -160,7 +160,7 @@ public class RuneFIXSerializerProcessor implements Processor {
                 logger.warn("Body validation failed: {}", e.getMessage());
         }
 
-        return new RuneFIXSerializerReport(rootMessage, issues);
+        return new RuneFIXSerializerReport(rootMessage, reportIssues);
     }
 
     private ValidationSettings buildValidationSettings() {

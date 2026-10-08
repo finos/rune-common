@@ -205,7 +205,7 @@
             </dependency>
             <dependency>
                 <groupId>org.quickfixj</groupId>
-                <artifactId>quickfixj-core</artifactId>
+                <artifactId>quickfixj-base</artifactId>
                 <version>${quickfixj.version}</version>
             </dependency>
             <dependency>

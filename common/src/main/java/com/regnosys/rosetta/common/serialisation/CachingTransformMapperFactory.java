@@ -45,9 +45,10 @@ import java.util.concurrent.ConcurrentMap;
  *       holds whatever the delegate does. The scope is strictly narrower than the classloader scope
  *       below, since a function class determines its own classloader, so it can only reduce sharing,
  *       never serve a mapper built for another model.</li>
- *   <li>{@code RUNE_JSON} and {@code XML} — the function class's {@link ClassLoader}: these mappers
- *       resolve model types against it, so functions from the same model share one mapper while
- *       models in different classloaders never cross. The root does not affect their construction.</li>
+ *   <li>{@code RUNE_JSON}, {@code XML} and {@code FIX} — the function class's {@link ClassLoader}: these
+ *       mappers resolve model types, or their configuration and FIX dictionary, against it, so functions
+ *       from the same model share one mapper while models in different classloaders never cross. The root
+ *       does not affect their construction.</li>
  *   <li>{@code JSON} — nothing: one mapper per factory.</li>
  * </ul>
  * <p>
@@ -100,6 +101,7 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
                 return Arrays.asList(functionClass, root);
             case RUNE_JSON:
             case XML:
+            case FIX:
                 return functionClass != null ? functionClass.getClassLoader() : null;
             default:
                 return null;

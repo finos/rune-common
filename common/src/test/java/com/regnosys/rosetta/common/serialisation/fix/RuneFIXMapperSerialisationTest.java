@@ -338,11 +338,6 @@ class RuneFIXMapperSerialisationTest {
     }
 
     @Test
-    void shouldRejectReadingIntoATypeThatIsNotARuneModelObject() {
-        assertThrows(IllegalArgumentException.class, () -> mapper.readValue("35=AE\u0001", String.class));
-    }
-
-    @Test
     void shouldFailToCreateWhenTheConfiguredDictionaryIsNotOnTheClasspath() {
         RuneFIXConfiguration missingDictionary = RuneFIXConfiguration.builder()
                 .setDictionaryPath("serialisation/fix/does-not-exist.xml")

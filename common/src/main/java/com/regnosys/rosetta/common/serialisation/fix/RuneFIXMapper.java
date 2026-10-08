@@ -31,12 +31,8 @@ import com.rosetta.model.lib.path.RosettaPath;
 import com.regnosys.rosetta.common.serialisation.fix.processor.RuneFIXSerializerProcessor;
 import com.regnosys.rosetta.common.serialisation.fix.processor.RuneFIXSerializerReport;
 import org.quickfixj.CharsetSupport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import quickfix.DataDictionary;
-import quickfix.InvalidMessage;
 import quickfix.Message;
-import quickfix.ValidationSettings;
 
 /**
  * Primary orchestrator for converting Rune domain models into QuickFIX/J messages and FIX-formatted strings.
@@ -61,7 +57,7 @@ import quickfix.ValidationSettings;
  *   <li>{@link #writeValueAsString(Object)} and {@link #writeValueAsBytes(Object)};</li>
  *   <li>{@link #writer()} and {@link #writerWithDefaultPrettyPrinter()}, whose writers override the same two
  *       methods. FIX has no pretty form, so both write the same message;</li>
- *   <li>{@link #readValue(String, Class)}.</li>
+ *   <li>{@link #readValue(String, Class)}, which throws: deserialisation is not supported yet.</li>
  * </ul>
  *
  * <p>Create one through {@link RosettaObjectMapperCreator#forFIX(RuneFIXConfiguration, DataDictionary)} or one
@@ -72,8 +68,6 @@ import quickfix.ValidationSettings;
 public class RuneFIXMapper extends ObjectMapper {
 
     private static final long serialVersionUID = 1L;
-
-    private static final Logger logger = LoggerFactory.getLogger(RuneFIXMapper.class);
 
     private final RuneFIXConfiguration config;
     private final transient DataDictionary dictionary;
@@ -180,23 +174,13 @@ public class RuneFIXMapper extends ObjectMapper {
         return writer();
     }
 
+    /**
+     * Not supported yet: always throws, rather than parsing the content as JSON like {@link ObjectMapper}.
+     *
+     * @throws UnsupportedOperationException always
+     */
     @Override
     public <T> T readValue(String content, Class<T> valueType) {
-        if (valueType == null || !RosettaModelObject.class.isAssignableFrom(valueType)) {
-            throw new IllegalArgumentException("RuneFIXMapper reads rune model objects, not "
-                    + (valueType == null ? null : valueType.getName()));
-        }
-        try {
-            Message fixMessage = new Message();
-            fixMessage.fromString(content, dictionary, new ValidationSettings(), false);
-            return valueType.cast(readValueFromFIXMessage(fixMessage, valueType.asSubclass(RosettaModelObject.class)));
-        } catch (InvalidMessage e) {
-            logger.error("Failed to parse FIX string content into a valid QuickFIX/J Message.", e);
-            throw new IllegalArgumentException("Malformed FIX string provided to readValue.", e);
-        }
-    }
-
-    public <T extends RosettaModelObject> T readValueFromFIXMessage(Message message, Class<T> valueType) {
         throw new UnsupportedOperationException("FIX to Rune deserialization is pending implementation.");
     }
 

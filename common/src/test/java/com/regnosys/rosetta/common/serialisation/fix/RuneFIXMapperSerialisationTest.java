@@ -37,7 +37,6 @@ import fix.test.trade.FixTradePriceConditionEnum;
 import fix.test.trade.FixUnknownLabelReport;
 import fix.test.trade.FixUnlabelledReport;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.quickfixj.CharsetSupport;
 import quickfix.FieldNotFound;
@@ -286,8 +285,6 @@ class RuneFIXMapperSerialisationTest {
     }
 
     @Test
-    @Disabled("Throws NullPointerException from RuneFIXSerializerProcessor: RuneFIXMapper does not handle "
-            + "LabelProviderResolver.fromType returning null for a type with no labels of its own")
     void shouldThrowNamingTheTypeWhenItHasNoLabelProvider() {
         FixUnlabelledReport value = FixUnlabelledReport.builder().setTradeReportID("TR-1").build();
 

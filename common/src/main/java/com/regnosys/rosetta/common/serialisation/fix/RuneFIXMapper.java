@@ -126,6 +126,9 @@ public class RuneFIXMapper extends ObjectMapper {
         Class<? extends RosettaModelObject> valueType = instance.getType();
 
         LabelProvider activeLabelProvider = LabelProviderResolver.fromType(valueType);
+        if (activeLabelProvider == null) {
+            throw new IllegalArgumentException("No FIX labels found for model type " + valueType.getName());
+        }
         String msgType = config.getMsgTypeFor(valueType);
         RosettaPath rootPath = RosettaPath.valueOf(valueType.getSimpleName());
 

@@ -167,9 +167,8 @@
         </profile>
     </profiles>
 
-    <!-- Integration testing only, like the snapshot rune.dsl.version above: lets Codefresh resolve the
+    <!-- Integration testing only: uncomment, with a snapshot rune.dsl.version, to let Codefresh resolve a
          rune-dsl branch snapshot, including rune-maven-plugin, from the Central Portal snapshot repository.
-         Remove together with the snapshot version before merging. -->
     <repositories>
         <repository>
             <name>Central Portal Snapshots</name>
@@ -196,6 +195,7 @@
             </snapshots>
         </pluginRepository>
     </pluginRepositories>
+    -->
 
     <dependencyManagement>
         <dependencies>

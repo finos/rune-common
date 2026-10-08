@@ -234,8 +234,6 @@ class RuneFIXMapperSerialisationTest {
     }
 
     @Test
-    @Disabled("RuneFIXSerializerProcessor.validateBodyOnlyReport collects the validation failure in "
-            + "reportIssues but returns issues, so the failure never reaches the report")
     void shouldReportValidationFailureWhenRequiredGroupIsMissing() {
         // NoSides is required="Y" in the test dictionary, and minimalReport() has no sides.
         RuneFIXSerializerReport report = mapper.writeValueAsFIXReport(minimalReport(), true);

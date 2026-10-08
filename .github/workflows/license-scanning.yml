@@ -55,6 +55,9 @@ env:
     licenses/license/name!='CDDL + GPLv2 with classpath exception' and
     not(contains(licenses/license/url, '://github.com/javaee/javax.annotation/blob/master/LICENSE')) and
     
+    licenses/license/name!='The QuickFIX Software License, Version 1.0' and
+    not(contains(licenses/license/url, '://www.quickfixj.org/documentation/license.html')) and
+
     licenses/license/name!='Public Domain'
     "
   REPORT_PATH: "target/generated-resources"

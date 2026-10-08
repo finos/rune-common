@@ -68,6 +68,12 @@ type DateAttributeContainer:
 
     tradeDate date (1..1)
 
+type ListValueContainer:
+
+    units UnitEnum (0..*)
+    codes string (0..*)
+    amounts number (0..*)
+
 type MulticardinalityContainer:
 
     foo Foo (0..*)

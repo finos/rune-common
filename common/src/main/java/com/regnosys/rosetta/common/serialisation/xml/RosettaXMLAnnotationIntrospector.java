@@ -44,6 +44,8 @@ import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLConfigur
 import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLRepresentation;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.deserialization.XmlListValueDeserializer;
+import com.regnosys.rosetta.common.serialisation.xml.serialization.XmlListValueSerializer;
 import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.model.lib.annotations.*;
 import com.rosetta.util.DottedPath;
@@ -385,6 +387,28 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     @Override
+    public Object findSerializer(Annotated a) {
+        if (isXmlList(mapper.getSerializationConfig(), a)) {
+            return XmlListValueSerializer.class;
+        }
+        return super.findSerializer(a);
+    }
+
+    @Override
+    public Object findDeserializer(Annotated a) {
+        if (isXmlList(mapper.getDeserializationConfig(), a)) {
+            return XmlListValueDeserializer.class;
+        }
+        return super.findDeserializer(a);
+    }
+
+    private boolean isXmlList(MapperConfig<?> config, Annotated a) {
+        return getAttributeXMLConfiguration(config, a)
+                .flatMap(AttributeXMLConfiguration::getXmlList)
+                .orElse(false);
+    }
+
+    @Override
     protected boolean _isIgnorable(Annotated a) {
         boolean isIgnorable= super._isIgnorable(a);
         if (isIgnorable) {
@@ -411,7 +435,16 @@ public class RosettaXMLAnnotationIntrospector extends JacksonXmlAnnotationIntros
     }
 
     private boolean shouldIncludeMember(Annotated m) {
-        return m.hasAnnotation(RosettaAttribute.class) && (!m.hasAnnotation(Multi.class) || getAccessorType(m) != AccessorType.SETTER);
+        if (!m.hasAnnotation(RosettaAttribute.class)) {
+            return false;
+        }
+        if (!m.hasAnnotation(Multi.class)) {
+            return true;
+        }
+        // A multi-cardinality attribute is read item by item through its adder, except an XSD list,
+        // which arrives as one value and so is read through the setter that takes the whole list.
+        AccessorType excluded = isXmlList(mapper.getDeserializationConfig(), m) ? AccessorType.ADDER : AccessorType.SETTER;
+        return getAccessorType(m) != excluded;
     }
     private AccessorType getAccessorType(Annotated m) {
         Accessor acc = m.getAnnotation(Accessor.class);

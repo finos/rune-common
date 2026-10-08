@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
+import com.regnosys.rosetta.common.serialisation.fix.RuneFIXConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
@@ -90,9 +91,10 @@ import java.util.function.Supplier;
  * <b>Extension points.</b> Only these methods are on the {@link #create} path, so overriding anything
  * else changes no constructed mapper. Per format: {@link #jsonMapper()},
  * {@link #runeJsonMapper(Class)}, {@link #csvMapper(String, Class, TransformRoot)},
- * {@link #csvLabelledMapper(Class, TransformRoot)} and {@link #xmlMapper(String, Class)}. Below
- * those: {@link #resolveLabelProvider(Class, TransformRoot)} for label resolution,
- * {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} for the config lookups,
+ * {@link #csvLabelledMapper(Class, TransformRoot)}, {@link #xmlMapper(String, Class)} and
+ * {@link #fixMapper(String, Class)}. Below those: {@link #resolveLabelProvider(Class, TransformRoot)} for
+ * label resolution, {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} /
+ * {@link #openFixConfig(String, Class)} for the config lookups,
  * and {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader.
  * <p>
  * Three narrower overloads predate the parameters above and are <b>deprecated since 12.10.0, for removal
@@ -145,6 +147,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
                 return csvLabelledMapper(functionClass, root);
             case XML:
                 return xmlMapper(serialization.getConfigPath(), functionClass);
+            case FIX:
+                return fixMapper(serialization.getConfigPath(), functionClass);
             default:
                 throw new IllegalArgumentException("Unsupported serialization format: " + serialization.getFormat());
         }
@@ -391,6 +395,42 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read XML configuration '" + configPath + "'", e);
         }
+    }
+
+    /**
+     * The {@code FIX} mapper. Unlike XML and CSV, a FIX transform must declare a {@code configPath}: the
+     * {@link RuneFIXConfiguration} names the FIX {@code DataDictionary} and routes each model type to its
+     * MsgType, and neither has a default. The configuration is read via {@link #openFixConfig(String, Class)},
+     * and the dictionary it names resolves against the model classloader.
+     *
+     * @throws IllegalArgumentException if the transform declares no {@code configPath}
+     */
+    protected ObjectMapper fixMapper(String configPath, Class<?> functionClass) {
+        if (configPath == null || configPath.isEmpty()) {
+            throw new IllegalArgumentException("FIX transform "
+                    + (functionClass != null ? functionClass.getName() : "(unknown function)")
+                    + " declares no configPath. A FIX serialization needs a FIX configuration naming the "
+                    + "DataDictionary and the MsgType for each model type.");
+        }
+        try (InputStream inputStream = openFixConfig(configPath, functionClass)) {
+            return RosettaObjectMapperCreator.forFIX(inputStream, resolveModelClassLoader(functionClass)).create();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read FIX configuration '" + configPath + "'", e);
+        }
+    }
+
+    /**
+     * Opens the FIX serialization config, resolving it exactly like {@link #openXmlConfig(String, Class)}.
+     * Override to look it up elsewhere first. The FIX dictionary the config names is not opened here: it
+     * resolves against the model classloader.
+     */
+    protected InputStream openFixConfig(String configPath, Class<?> functionClass) throws IOException {
+        ClassLoader classLoader = classLoader(functionClass);
+        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
+        if (configUrl == null) {
+            throw new IllegalStateException("Could not find FIX configuration '" + configPath + "' on the classpath");
+        }
+        return configUrl.openStream();
     }
 
     /**

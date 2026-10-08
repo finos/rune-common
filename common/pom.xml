@@ -87,7 +87,7 @@
         </dependency>
         <dependency>
             <groupId>org.quickfixj</groupId>
-            <artifactId>quickfixj-core</artifactId>
+            <artifactId>quickfixj-base</artifactId>
         </dependency>
         <dependency>
             <groupId>org.finos.rune</groupId>

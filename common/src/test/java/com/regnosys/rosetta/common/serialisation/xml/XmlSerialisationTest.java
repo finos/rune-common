@@ -56,6 +56,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XmlSerialisationTest {
     private static final String XSD_SCHEMA = "/serialisation/xml/schema/extension-schema.xsd";
@@ -185,6 +187,70 @@ public class XmlSerialisationTest {
         DateAttributeContainer actual = xmlMapper.readValue(xml, DateAttributeContainer.class);
 
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testListValueSerialisation() throws JsonProcessingException {
+        ListValueContainer container = ListValueContainer.builder()
+                .addUnits(UnitEnum.METER).addUnits(UnitEnum.KILOGRAM)
+                .addCodes("A").addCodes("B")
+                .addAmounts(new BigDecimal("1.5")).addAmounts(new BigDecimal("2"))
+                .build();
+
+        String actualXML = xmlMapper.writeValueAsString(container);
+        String expectedXML = "<ListValueContainer Units=\"Meter Kilogram\" Codes=\"A B\"><Amounts>1.5 2</Amounts></ListValueContainer>";
+        assertEquals(expectedXML, actualXML);
+
+        ListValueContainer actual = xmlMapper.readValue(expectedXML, ListValueContainer.class);
+        assertEquals(container, actual);
+    }
+
+    @Test
+    public void testListValueDeserialisationSplitsOnAnyWhitespace() throws JsonProcessingException {
+        ListValueContainer expected = ListValueContainer.builder()
+                .addCodes("A").addCodes("B").addCodes("C")
+                .addUnits(UnitEnum.KILOGRAM)
+                .build();
+        String xml = "<ListValueContainer Units=\"Kilogram\" Codes=\"  A \tB\n C \"/>";
+
+        ListValueContainer actual = xmlMapper.readValue(xml, ListValueContainer.class);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testEmptyListValueIsOmitted() throws JsonProcessingException {
+        ListValueContainer container = ListValueContainer.builder().addCodes("A").build();
+
+        assertEquals("<ListValueContainer Codes=\"A\"/>", xmlMapper.writeValueAsString(container));
+        assertEquals(container, xmlMapper.readValue("<ListValueContainer Codes=\"A\" Units=\"\"/>", ListValueContainer.class));
+    }
+
+    @Test
+    public void testEmptyListValueElementIsEmpty() throws JsonProcessingException {
+        ListValueContainer expected = ListValueContainer.builder().addCodes("A").build();
+
+        assertEquals(expected, xmlMapper.readValue("<ListValueContainer Codes=\"A\"><Amounts/></ListValueContainer>", ListValueContainer.class));
+    }
+
+    @Test
+    public void testRepeatedListValueElementFails() {
+        String xml = "<ListValueContainer><Amounts>1</Amounts><Amounts>2</Amounts></ListValueContainer>";
+
+        JsonProcessingException e = assertThrows(JsonProcessingException.class,
+                () -> xmlMapper.readValue(xml, ListValueContainer.class));
+        assertTrue(e.getMessage().contains("more than once"), e.getMessage());
+    }
+
+    @Test
+    public void testListValueOnSingleCardinalityAttributeFails() throws IOException {
+        String config = "{ \"com.rosetta.test.DateAttributeContainer\" : { \"xmlElementName\" : \"DateAttributeContainer\", "
+                + "\"attributes\" : { \"tradeDate\" : { \"xmlName\" : \"TradeDate\", \"xmlRepresentation\" : \"ATTRIBUTE\", \"xmlList\" : true } } } }";
+        ObjectMapper mapper = RosettaObjectMapperCreator.forXML(new ByteArrayInputStream(config.getBytes(StandardCharsets.UTF_8))).create();
+
+        JsonProcessingException e = assertThrows(JsonProcessingException.class,
+                () -> mapper.readValue("<DateAttributeContainer TradeDate=\"2026-05-09\"/>", DateAttributeContainer.class));
+        assertTrue(e.getMessage().contains("xmlList"), e.getMessage());
     }
 
     @Test

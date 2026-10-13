@@ -1,0 +1,65 @@
+namespace fix.test.trade
+version "${project.version}"
+
+type FixTradeCaptureReport:
+    [rootType]
+    tradeReportID string (1..1)
+        [label "TradeReportID"]
+    totNumTradeReports int (0..1)
+        [label "TotNumTradeReports"]
+    lastPx number (0..1)
+        [label "LastPx"]
+    lastQty number (0..1)
+        [label "LastQty"]
+    previouslyReported boolean (0..1)
+        [label "PreviouslyReported"]
+    transactTime string (0..1)
+        [label "TransactTime"]
+    tradePriceCondition FixTradePriceConditionEnum (0..*)
+        [label "NoTradePriceConditions"]
+    instrument FixInstrument (0..1)
+    side FixSide (0..*)
+        [label "NoSides"]
+
+type FixInstrument:
+    securityID string (0..1)
+        [label "SecurityID"]
+    currency string (0..1)
+        [label "Currency"]
+
+type FixSide:
+    side FixSideEnum (1..1)
+        [label "Side"]
+    party FixParty (0..*)
+        [label "NoPartyIDs"]
+
+type FixParty:
+    partyID string (1..1)
+        [label "PartyID"]
+    partyRole int (0..1)
+        [label "PartyRole"]
+
+enum FixSideEnum:
+    BUY displayName "1"
+    SELL displayName "2"
+
+enum FixTradePriceConditionEnum:
+    SPECIAL_CUM_DIVIDEND displayName "0"
+    SPECIAL_CUM_RIGHTS displayName "1"
+
+type FixPartiallyLabelledReport:
+    [rootType]
+    tradeReportID string (1..1)
+        [label "TradeReportID"]
+    notLabelled string (0..1)
+
+type FixUnknownLabelReport:
+    [rootType]
+    tradeReportID string (1..1)
+        [label "TradeReportID"]
+    unknown string (0..1)
+        [label "NotAFixField"]
+
+type FixUnlabelledReport:
+    [rootType]
+    tradeReportID string (1..1)

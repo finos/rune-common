@@ -41,6 +41,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
+import com.regnosys.rosetta.common.serialisation.fix.RuneFIXConfiguration;
+import com.regnosys.rosetta.common.serialisation.fix.RuneFIXMapper;
 import com.regnosys.rosetta.common.serialisation.mixin.*;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyGlobalKeyFieldsMixIn;
 import com.regnosys.rosetta.common.serialisation.mixin.legacy.LegacyKeyMixIn;
@@ -52,7 +54,10 @@ import com.rosetta.model.lib.meta.GlobalKeyFields;
 import com.rosetta.model.lib.meta.Key;
 import com.rosetta.model.lib.meta.Reference;
 import com.rosetta.model.lib.meta.ReferenceWithMeta;
+import quickfix.ConfigError;
+import quickfix.DataDictionary;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -145,6 +150,45 @@ public class RosettaObjectMapperCreator implements ObjectMapperCreator {
     public static RosettaObjectMapperCreator forCSV(LabelProvider labelProvider) {
         RosettaCsvMapper csvMapper = new RosettaCsvMapper(labelProvider);
         return new RosettaObjectMapperCreator(new RosettaJSONModule(true), csvMapper);
+    }
+
+    public static RosettaObjectMapperCreator forFIX(RuneFIXConfiguration config, DataDictionary dictionary) {
+        RuneFIXMapper fixMapper = new RuneFIXMapper(config, dictionary);
+        return new RosettaObjectMapperCreator(new RosettaJSONModule(true), fixMapper);
+    }
+
+    /**
+     * Loads the application {@link DataDictionary} from {@link RuneFIXConfiguration#getDictionaryPath()} through
+     * {@code classLoader}.
+     *
+     * @throws IOException if the dictionary is not found, or is not a valid QuickFIX/J dictionary
+     */
+    public static RosettaObjectMapperCreator forFIX(RuneFIXConfiguration config, ClassLoader classLoader) throws IOException {
+        return forFIX(config, loadFIXDictionary(config.getDictionaryPath(), classLoader));
+    }
+
+    public static RosettaObjectMapperCreator forFIX(RuneFIXConfiguration config) throws IOException {
+        return forFIX(config, RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
+    public static RosettaObjectMapperCreator forFIX(InputStream configInputStream, ClassLoader classLoader) throws IOException {
+        RuneFIXConfiguration config = RuneFIXConfiguration.load(configInputStream);
+        return forFIX(config, classLoader);
+    }
+
+    public static RosettaObjectMapperCreator forFIX(InputStream configInputStream) throws IOException {
+        return forFIX(configInputStream, RosettaObjectMapperCreator.class.getClassLoader());
+    }
+
+    private static DataDictionary loadFIXDictionary(String dictionaryPath, ClassLoader classLoader) throws IOException {
+        try (InputStream dictionaryXml = classLoader.getResourceAsStream(dictionaryPath)) {
+            if (dictionaryXml == null) {
+                throw new FileNotFoundException("FIX DataDictionary not found on the classpath: " + dictionaryPath);
+            }
+            return new DataDictionary(dictionaryXml);
+        } catch (ConfigError e) {
+            throw new IOException("Invalid FIX DataDictionary " + dictionaryPath + ": " + e.getMessage(), e);
+        }
     }
 
     @Override

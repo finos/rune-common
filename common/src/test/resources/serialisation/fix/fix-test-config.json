@@ -1,0 +1,9 @@
+{
+  "dictionaryPath": "serialisation/fix/FIX50SP2_TradeCaptureReport_Test.xml",
+  "messageTypeRouting": {
+    "FixTradeCaptureReport": "AE",
+    "FixPartiallyLabelledReport": "AE",
+    "FixUnknownLabelReport": "AE",
+    "FixUnlabelledReport": "AE"
+  }
+}

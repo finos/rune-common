@@ -63,6 +63,26 @@
       }
     }
   },
+  "com.rosetta.test.ListValueContainer" : {
+    "xmlElementName" : "ListValueContainer",
+    "abstract" : false,
+    "attributes" : {
+      "units" : {
+        "xmlName" : "Units",
+        "xmlRepresentation" : "ATTRIBUTE",
+        "xmlList" : true
+      },
+      "codes" : {
+        "xmlName" : "Codes",
+        "xmlRepresentation" : "ATTRIBUTE",
+        "xmlList" : true
+      },
+      "amounts" : {
+        "xmlName" : "Amounts",
+        "xmlList" : true
+      }
+    }
+  },
   "com.rosetta.test.Document" : {
     "attributes" : {
       "attr" : {

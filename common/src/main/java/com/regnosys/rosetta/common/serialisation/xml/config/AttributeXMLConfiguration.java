@@ -34,19 +34,31 @@ public class AttributeXMLConfiguration {
 	@Deprecated
 	private final Optional<String> substitutionGroup;
 	private final Optional<String> elementRef;
-	
+	private final Optional<Boolean> xmlList;
+
+	public AttributeXMLConfiguration(
+            Optional<String> xmlName,
+            Optional<Map<String, String>> xmlAttributes,
+            Optional<AttributeXMLRepresentation> xmlRepresentation,
+            Optional<String> substitutionGroup,
+			Optional<String> elementRef) {
+		this(xmlName, xmlAttributes, xmlRepresentation, substitutionGroup, elementRef, Optional.empty());
+	}
+
 	@JsonCreator
 	public AttributeXMLConfiguration(
             @JsonProperty("xmlName") Optional<String> xmlName,
             @JsonProperty("xmlAttributes") Optional<Map<String, String>> xmlAttributes,
             @JsonProperty("xmlRepresentation") Optional<AttributeXMLRepresentation> xmlRepresentation,
             @JsonProperty("substitutionGroup") Optional<String> substitutionGroup,
-			@JsonProperty("elementRef") Optional<String> elementRef) {
+			@JsonProperty("elementRef") Optional<String> elementRef,
+			@JsonProperty("xmlList") Optional<Boolean> xmlList) {
 		this.xmlName = xmlName;
 		this.xmlAttributes = xmlAttributes;
 		this.xmlRepresentation = xmlRepresentation;
 		this.substitutionGroup = substitutionGroup;
         this.elementRef = elementRef;
+		this.xmlList = xmlList;
     }
 
 	public Optional<String> getXmlName() {
@@ -73,9 +85,17 @@ public class AttributeXMLConfiguration {
 		return elementRef;
 	}
 
+	/**
+	 * Whether the value is an XSD list type: the attribute's items written as one whitespace-separated
+	 * string, in an XML attribute or as element text. Only valid on a multi-cardinality attribute.
+	 */
+	public Optional<Boolean> getXmlList() {
+		return xmlList;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(xmlAttributes, xmlName, xmlRepresentation, substitutionGroup, elementRef);
+		return Objects.hash(xmlAttributes, xmlName, xmlRepresentation, substitutionGroup, elementRef, xmlList);
 	}
 
 	@Override
@@ -90,6 +110,7 @@ public class AttributeXMLConfiguration {
 		return Objects.equals(xmlAttributes, other.xmlAttributes)
 				&& Objects.equals(xmlName, other.xmlName) && Objects.equals(xmlRepresentation, other.xmlRepresentation)
 				&& Objects.equals(substitutionGroup, other.substitutionGroup)
-				&& Objects.equals(elementRef, other.elementRef);
+				&& Objects.equals(elementRef, other.elementRef)
+				&& Objects.equals(xmlList, other.xmlList);
 	}
 }

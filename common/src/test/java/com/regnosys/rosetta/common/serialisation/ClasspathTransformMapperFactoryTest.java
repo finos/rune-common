@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.regnosys.rosetta.common.serialisation.csv.config.CsvDialect;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
+import com.regnosys.rosetta.common.serialisation.fix.RuneFIXMapper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
@@ -39,6 +40,7 @@ import com.rosetta.model.lib.transform.Ingest;
 import com.rosetta.model.lib.transform.Projection;
 import com.rosetta.model.lib.transform.SerializationFormat;
 import csv.test.user.User;
+import fix.test.trade.FixTradeCaptureReport;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -68,6 +70,7 @@ class ClasspathTransformMapperFactoryTest {
     private static final String XML_CONFIG = "serialisation/xml/xml-config/extension-schema-xml-config.json";
     private static final String CSV_CONFIG = "serialisation/csv/csv-config/semicolon-csv-config.json";
     private static final String CSV_LABELLED_CONFIG = "serialisation/csv/csv-config/labelled-semicolon-csv-config.json";
+    private static final String FIX_CONFIG = "serialisation/fix/fix-test-config.json";
 
     private final ClasspathTransformMapperFactory factory = new ClasspathTransformMapperFactory();
 
@@ -89,6 +92,14 @@ class ClasspathTransformMapperFactoryTest {
 
     @Ingest(format = SerializationFormat.JSON)
     private static class JsonIngest {
+    }
+
+    @Projection(id = "fixSchema", format = SerializationFormat.FIX, configPath = FIX_CONFIG)
+    private static class FixProjection {
+    }
+
+    @Projection(format = SerializationFormat.FIX)
+    private static class BareFixProjection {
     }
 
     @Projection(format = SerializationFormat.RUNE_JSON)
@@ -969,6 +980,33 @@ class ClasspathTransformMapperFactoryTest {
         assertFalse(outputMapper(JsonIngest.class).isPresent());
         assertTrue(outputMapper(CsvProjection.class).isPresent());
         assertFalse(inputMapper(CsvProjection.class).isPresent());
+    }
+
+    @Test
+    void buildsFixMapperFromProjectionConfigPath() throws JsonProcessingException {
+        ObjectMapper mapper = outputMapper(FixProjection.class).orElseThrow(AssertionError::new);
+
+        RuneFIXMapper fixMapper = assertInstanceOf(RuneFIXMapper.class, mapper);
+        assertEquals("serialisation/fix/FIX50SP2_TradeCaptureReport_Test.xml",
+                fixMapper.getConfiguration().getDictionaryPath());
+        String fix = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(
+                FixTradeCaptureReport.builder().setTradeReportID("TR-1").build());
+        assertTrue(fix.contains("\u0001571=TR-1\u0001"), fix);
+    }
+
+    @Test
+    void fixProjectionWithoutConfigPathIsRejectedNamingTheFunction() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> outputMapper(BareFixProjection.class));
+        assertTrue(e.getMessage().contains(BareFixProjection.class.getName()), e.getMessage());
+    }
+
+    @Test
+    void missingFixConfigResourceIsReported() {
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+                () -> factory.create(new TransformSerialization(SerializationFormat.FIX, "does/not/exist.json"),
+                        ClasspathTransformMapperFactoryTest.class, null));
+        assertTrue(e.getMessage().contains("does/not/exist.json"));
     }
 
     @Test

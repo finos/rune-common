@@ -92,7 +92,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>8</maven.compiler.release>
-        <rune.dsl.version>10.13.1</rune.dsl.version>
+        <rune.dsl.version>10.15.1</rune.dsl.version>
 
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
@@ -104,6 +104,7 @@
         <slf4j-api.version>2.0.20</slf4j-api.version>
         <commons.io.version>2.22.0</commons.io.version>
         <xtext.version>2.38.0</xtext.version>
+        <quickfixj.version>3.0.2</quickfixj.version>
 
         <!-- test -->
         <junit.version>6.1.3</junit.version>
@@ -166,12 +167,47 @@
         </profile>
     </profiles>
 
+    <!-- Integration testing only: uncomment, with a snapshot rune.dsl.version, to let Codefresh resolve a
+         rune-dsl branch snapshot, including rune-maven-plugin, from the Central Portal snapshot repository.
+    <repositories>
+        <repository>
+            <name>Central Portal Snapshots</name>
+            <id>central-portal-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <name>Central Portal Snapshots</name>
+            <id>central-portal-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+    -->
+
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.finos.rune</groupId>
                 <artifactId>rune-runtime</artifactId>
                 <version>${rune.dsl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.quickfixj</groupId>
+                <artifactId>quickfixj-base</artifactId>
+                <version>${quickfixj.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -338,6 +374,11 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -100,7 +100,9 @@
 
         <jackson.version>2.18.12</jackson.version>
         <guice.version>6.0.0</guice.version>
-        <guava.version>33.3.1-jre</guava.version>
+        <guava.version>33.7.1-jre</guava.version>
+        <!-- org.checkerframework.checker.nullness.qual.Nullable, used by common - came through guava until 33.7, which dropped it -->
+        <checker-qual.version>3.43.0</checker-qual.version>
         <slf4j-api.version>2.0.20</slf4j-api.version>
         <commons.io.version>2.22.0</commons.io.version>
         <xtext.version>2.38.0</xtext.version>
@@ -273,6 +275,11 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>${checker-qual.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.inject</groupId>

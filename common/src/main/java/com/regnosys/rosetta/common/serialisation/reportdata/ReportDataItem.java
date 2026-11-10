@@ -21,7 +21,6 @@ package com.regnosys.rosetta.common.serialisation.reportdata;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.xtext.xbase.lib.Exceptions;
 
 import java.util.*;
 
@@ -54,9 +53,17 @@ public class ReportDataItem {
 
     public Object getInput() {
         if(error != null){
-            Exceptions.sneakyThrow(error);
+            throw ReportDataItem.<RuntimeException>sneakyThrow(error);
         }
         return input;
+    }
+
+    /**
+     * Rethrows {@code error} as it is, checked or not, without wrapping it.
+     */
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> E sneakyThrow(Throwable error) throws E {
+        throw (E) error;
     }
 
     public Object getExpected() {

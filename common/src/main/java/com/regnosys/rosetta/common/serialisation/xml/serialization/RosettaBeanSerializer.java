@@ -225,12 +225,7 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
                     xgen.setNextIsUnwrapped(false);
                 }
             }
-            if (_anyGetterWriter != null) {
-                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up
-                // with accidental attributes otherwise
-                xgen.setNextIsAttribute(false);
-                _anyGetterWriter.getAndSerialize(bean, xgen, provider);
-            }
+            // Since Jackson 2.19 an any-getter is a BeanPropertyWriter inside `props`, so the loop above writes it.
         } catch (Exception e) {
             String name = (i == props.length) ? "[anySetter]" : props[order[i]].getName();
             wrapAndThrow(provider, e, bean, name);

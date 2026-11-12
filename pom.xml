@@ -104,7 +104,7 @@
         <guice.version>6.0.0</guice.version>
         <guava.version>33.8.0-jre</guava.version>
         <!-- org.checkerframework.checker.nullness.qual.Nullable, used by common - came through guava until 33.7, which dropped it -->
-        <checker-qual.version>3.43.0</checker-qual.version>
+        <checker-qual.version>4.4.0</checker-qual.version>
         <slf4j-api.version>2.0.20</slf4j-api.version>
         <commons.io.version>2.22.0</commons.io.version>
         <xtext.version>2.38.0</xtext.version>

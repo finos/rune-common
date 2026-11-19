@@ -33,6 +33,7 @@ import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.config.RuneConfiguration;
 import com.regnosys.rosetta.config.RuneGeneratorsConfiguration;
 import com.regnosys.rosetta.config.RuneModelConfiguration;
+import com.regnosys.rosetta.generator.java.scoping.JavaPackageName;
 import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
@@ -66,7 +67,7 @@ public class RuneSerializerTestHelper {
         Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-        String rootClassName = namespacePrefix + groupName + ".Root";
+        String rootClassName = toJavaRootClassName(namespacePrefix + groupName);
         Class<?> aClass = compiledCode.get(rootClassName);
         if (aClass == null) {
             throw new AssertionError("Unable to locate generated Root type " + rootClassName);
@@ -84,7 +85,7 @@ public class RuneSerializerTestHelper {
         Map<String, String> generatedCode = helper.generateCode(rosettaFileContents);
         Map<String, Class<?>> compiledCode = helper.compileToClasses(generatedCode);
         dynamicCompiledClassLoader.setCompiledCode(compiledCode);
-        String rootClassName = namespacePrefix + groupName + ".Root";
+        String rootClassName = toJavaRootClassName(namespacePrefix + groupName);
         Class<?> rootClass = compiledCode.get(rootClassName);
         if (rootClass == null) {
             throw new AssertionError("Unable to locate generated Root type " + rootClassName);
@@ -101,6 +102,11 @@ public class RuneSerializerTestHelper {
         @SuppressWarnings("unchecked")
         Class<RosettaModelObject> rootType = (Class<RosettaModelObject>) rootClass;
         return new CompiledGroup(rootType, classNamesBySimpleName, compiledCode, dynamicCompiledClassLoader);
+    }
+
+    /** The generated Java class of a namespace's Root type: namespace segments that are Java keywords are escaped. */
+    private static String toJavaRootClassName(String namespace) {
+        return JavaPackageName.splitOnDotsAndEscape(namespace) + ".Root";
     }
 
     public static String readAsString(Path jsonPath) {

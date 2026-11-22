@@ -58,6 +58,6 @@ final class RosettaXmlFactory extends XmlFactory {
     protected FromXmlParser createParser(IOContext ctxt, int genericParserFeatures, int xmlFeatures, ObjectCodec codec,
                                          XMLStreamReader xmlReader, XmlNameProcessor tagProcessor) throws IOException {
         XMLStreamReader resolving = new XsiTypeResolvingStreamReader(Stax2JacksonReaderAdapter.wrapIfNecessary(xmlReader));
-        return super.createParser(ctxt, genericParserFeatures, xmlFeatures, codec, resolving, tagProcessor);
+        return new RosettaXmlParser(ctxt, genericParserFeatures, xmlFeatures, codec, resolving, tagProcessor);
     }
 }

@@ -21,20 +21,19 @@ package com.regnosys.rosetta.common.serialisation.xml.deserialization;
  */
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.std.DelegatingDeserializer;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
-import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+import com.regnosys.rosetta.common.serialisation.xml.RosettaXmlParser;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap.XMLFullyQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.util.Map;
 
@@ -48,9 +47,9 @@ import java.util.Map;
  *
  * <p>The parser gives the attribute's value with its prefix already resolved, as
  * {@code {namespace}localName} (see {@code RosettaXmlFactory}). When the element is read straight from the
- * XML, the value is taken from the StAX reader. When Jackson has buffered the element first, as it does for
- * the children of a type with a VIRTUAL attribute or a content model, it is taken from the buffered
- * {@code xsi:type} field.
+ * XML, the value is taken from the StAX reader, once {@link RosettaXmlParser} confirms the reader is still
+ * on the element. Otherwise, as for the children of a type with a VIRTUAL attribute or a content model,
+ * which Jackson has buffered, it is taken from the element's own {@code xsi:type} field.
  */
 final class XsiTypeDeserializer extends DelegatingDeserializer {
     private static final long serialVersionUID = 1L;
@@ -79,11 +78,11 @@ final class XsiTypeDeserializer extends DelegatingDeserializer {
         if (!p.hasToken(JsonToken.START_OBJECT)) {
             return _delegatee.deserialize(p, ctxt);
         }
-        String elementName = p.currentName();
-        if (p instanceof FromXmlParser) {
-            XMLStreamReader reader = ((FromXmlParser) p).getStaxReader();
-            String xsiType = reader.getEventType() == XMLStreamConstants.START_ELEMENT
-                    ? reader.getAttributeValue(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type")
+        String elementName = elementName(p);
+        if (p instanceof RosettaXmlParser) {
+            RosettaXmlParser xmlParser = (RosettaXmlParser) p;
+            String xsiType = xmlParser.readerIsOnStartedElement()
+                    ? xmlParser.getStaxReader().getAttributeValue(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type")
                     : null;
             return deserializerFor(xsiType, elementName, ctxt).deserialize(p, ctxt);
         }
@@ -92,6 +91,12 @@ final class XsiTypeDeserializer extends DelegatingDeserializer {
         try (JsonParser buffered = buffer.asParserOnFirstToken()) {
             return deserializerFor(xsiType, elementName, ctxt).deserialize(buffered, ctxt);
         }
+    }
+
+    // For warnings only. FromXmlParser.currentName() throws on the root element, which has no name here.
+    private static String elementName(JsonParser p) {
+        JsonStreamContext parent = p.getParsingContext().getParent();
+        return parent == null ? null : parent.getCurrentName();
     }
 
     private JsonDeserializer<?> deserializerFor(String xsiType, String elementName, DeserializationContext ctxt) throws IOException {

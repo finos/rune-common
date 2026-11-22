@@ -152,6 +152,38 @@
         </xs:complexContent>
     </xs:complexType>
 
+    <xs:element name="ShapeContainer" type="ShapeContainer"/>
+    <xs:complexType name="ShapeContainer">
+        <xs:sequence>
+            <xs:element name="shape" type="Shape" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="WrappedShapeContainer" type="WrappedShapeContainer"/>
+    <xs:complexType name="WrappedShapeContainer">
+        <xs:group ref="WrappedShapeContainer.model"/>
+    </xs:complexType>
+    <xs:group name="WrappedShapeContainer.model">
+        <xs:sequence>
+            <xs:element name="shape" type="Shape" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:group>
+    <!-- `Circle` (here) and `Square` (extension schema) extend `Shape`. No element is declared for either,
+         so an instance can only select them with xsi:type. -->
+    <xs:complexType name="Shape">
+        <xs:sequence>
+            <xs:element name="colour" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Circle">
+        <xs:complexContent>
+            <xs:extension base="Shape">
+                <xs:sequence>
+                    <xs:element name="radius" type="xs:decimal"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
     <xs:complexType name="Zoo">
         <xs:sequence>
             <xs:element ref="animal" maxOccurs="unbounded"/>

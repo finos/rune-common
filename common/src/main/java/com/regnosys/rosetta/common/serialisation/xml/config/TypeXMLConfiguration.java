@@ -39,7 +39,27 @@ public class TypeXMLConfiguration {
 	private final Optional<Map<String, AttributeXMLConfiguration>> attributes;
 	private final Optional<Map<String, String>> enumValues;
 	private final Optional<XMLContentModel> contentModel;
+	private final Optional<String> xmlTypeFullyQualifiedName;
 
+	public TypeXMLConfiguration(
+			Optional<ModelSymbolId> substitutionFor,
+			Optional<String> substitutionGroup,
+			Optional<String> xmlElementName,
+			Optional<String> xmlElementFullyQualifiedName,
+			Optional<Boolean> isAbstract,
+			Optional<Map<String, String>> xmlAttributes,
+			Optional<Map<String, AttributeXMLConfiguration>> attributes,
+			Optional<Map<String, String>> enumValues,
+			Optional<XMLContentModel> contentModel) {
+		this(substitutionFor, substitutionGroup, xmlElementName, xmlElementFullyQualifiedName, isAbstract,
+				xmlAttributes, attributes, enumValues, contentModel, Optional.empty());
+	}
+
+	/**
+	 * @param xmlTypeFullyQualifiedName the XSD type this Rune type was generated from, as
+	 *        {@code namespace/localName}, e.g. {@code urn:my.schema/Circle}. An {@code xsi:type}
+	 *        attribute naming this XSD type selects this Rune type.
+	 */
 	@JsonCreator
 	public TypeXMLConfiguration(
 			@JsonProperty("substitutionFor") @Deprecated Optional<ModelSymbolId> substitutionFor,
@@ -50,7 +70,8 @@ public class TypeXMLConfiguration {
 			@JsonProperty("xmlAttributes") Optional<Map<String, String>> xmlAttributes,
 			@JsonProperty("attributes") Optional<Map<String, AttributeXMLConfiguration>> attributes,
 			@JsonProperty("enumValues") Optional<Map<String, String>> enumValues,
-			@JsonProperty("contentModel") Optional<XMLContentModel> contentModel) {
+			@JsonProperty("contentModel") Optional<XMLContentModel> contentModel,
+			@JsonProperty("xmlTypeFullyQualifiedName") Optional<String> xmlTypeFullyQualifiedName) {
 		this.substitutionFor = substitutionFor;
 		this.substitutionGroup = substitutionGroup;
 		this.xmlElementName = xmlElementName;
@@ -60,6 +81,7 @@ public class TypeXMLConfiguration {
 		this.attributes = attributes;
 		this.enumValues = enumValues;
 		this.contentModel = contentModel;
+		this.xmlTypeFullyQualifiedName = xmlTypeFullyQualifiedName;
 	}
 	
 	@Deprecated // Use getSubstitutionGroup instead
@@ -99,9 +121,13 @@ public class TypeXMLConfiguration {
 		return contentModel;
 	}
 
+	public Optional<String> getXmlTypeFullyQualifiedName() {
+		return xmlTypeFullyQualifiedName;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(substitutionGroup, xmlAttributes, xmlElementName, xmlElementFullyQualifiedName, isAbstract, attributes, enumValues, contentModel);
+		return Objects.hash(substitutionGroup, xmlAttributes, xmlElementName, xmlElementFullyQualifiedName, isAbstract, attributes, enumValues, contentModel, xmlTypeFullyQualifiedName);
 	}
 
 	@Override
@@ -120,6 +146,7 @@ public class TypeXMLConfiguration {
 				&& Objects.equals(isAbstract, other.isAbstract)
 				&& Objects.equals(attributes, other.attributes)
 				&& Objects.equals(enumValues, other.enumValues)
-				&& Objects.equals(contentModel, other.contentModel);
+				&& Objects.equals(contentModel, other.contentModel)
+				&& Objects.equals(xmlTypeFullyQualifiedName, other.xmlTypeFullyQualifiedName);
 	}
 }

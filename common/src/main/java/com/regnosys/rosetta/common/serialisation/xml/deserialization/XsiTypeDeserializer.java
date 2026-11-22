@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.XMLConstants;
-import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.util.Map;
 
@@ -130,15 +129,23 @@ final class XsiTypeDeserializer extends DelegatingDeserializer {
         return null;
     }
 
+    // The value is in the form {namespace}localName that XsiTypeResolvingStreamReader gives every value.
     private Class<?> resolve(String xsiType, String elementName) {
-        QName qName = QName.valueOf(xsiType.trim());
-        if (qName.getLocalPart().indexOf(':') >= 0) {
-            LOGGER.warn("Reading <{}> as {}: its xsi:type \"{}\" uses an undeclared namespace prefix.",
+        String value = xsiType.trim();
+        int close = value.indexOf('}');
+        if (!value.startsWith("{") || close < 0) {
+            LOGGER.warn("Reading <{}> as {}: its xsi:type \"{}\" was not resolved to a namespace by the parser.",
                     elementName, runeType.getName(), xsiType);
             return null;
         }
-        String namespace = qName.getNamespaceURI();
-        XMLFullyQualifiedName name = new XMLFullyQualifiedName(qName.getLocalPart(), namespace.isEmpty() ? null : namespace);
+        String namespace = value.substring(1, close);
+        String localName = value.substring(close + 1);
+        if (localName.indexOf(':') >= 0) {
+            LOGGER.warn("Reading <{}> as {}: its xsi:type \"{}\" uses an undeclared namespace prefix.",
+                    elementName, runeType.getName(), localName);
+            return null;
+        }
+        XMLFullyQualifiedName name = new XMLFullyQualifiedName(localName, namespace.isEmpty() ? null : namespace);
         Class<?> type = typesByXsdTypeName.get(name);
         if (type == null) {
             LOGGER.warn("Reading <{}> as {}: its xsi:type {} is not the XSD type of {} or of a subtype in the XML configuration, "

@@ -24,18 +24,18 @@ import org.codehaus.stax2.XMLStreamReader2;
 import org.codehaus.stax2.util.StreamReader2Delegate;
 
 import javax.xml.XMLConstants;
-import javax.xml.namespace.QName;
 
 /**
- * Returns the value of an {@code xsi:type} attribute with its namespace prefix resolved, in the
- * {@link QName#toString()} form {@code {namespace}localName}, e.g. {@code xsi:type="ext:Square"} reads as
- * {@code {urn:my.extension}Square}.
+ * Returns the value of an {@code xsi:type} attribute with its namespace prefix resolved, in the form
+ * {@code {namespace}localName}, e.g. {@code xsi:type="ext:Square"} reads as {@code {urn:my.extension}Square}.
  *
  * <p>A prefix can only be resolved while the reader is on the element that carries it. Resolving it here
  * means the value still identifies the type after Jackson has buffered the element's tokens, which it
  * does for the children of a type with a VIRTUAL attribute or a content model.
  *
- * <p>A value whose prefix is not declared is returned unchanged.
+ * <p>Every value comes back in that form, so one the document wrote cannot pass for a resolved one. A value
+ * without a namespace, or whose prefix is not declared, comes back as {@code {}} followed by the trimmed
+ * value; an undeclared prefix keeps its colon, which shows it was not resolved.
  */
 final class XsiTypeResolvingStreamReader extends StreamReader2Delegate {
 
@@ -73,9 +73,9 @@ final class XsiTypeResolvingStreamReader extends StreamReader2Delegate {
         int colon = trimmed.indexOf(':');
         String prefix = colon < 0 ? XMLConstants.DEFAULT_NS_PREFIX : trimmed.substring(0, colon);
         String namespaceURI = getNamespaceURI(prefix);
-        if (namespaceURI == null) {
-            return colon < 0 ? trimmed : value;
+        if (namespaceURI == null || namespaceURI.isEmpty()) {
+            return "{}" + trimmed;
         }
-        return new QName(namespaceURI, trimmed.substring(colon + 1)).toString();
+        return "{" + namespaceURI + "}" + trimmed.substring(colon + 1);
     }
 }

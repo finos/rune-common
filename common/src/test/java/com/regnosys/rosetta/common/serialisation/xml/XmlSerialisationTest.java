@@ -554,6 +554,58 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testSubtypeWithoutXsdTypeIsWrittenAsItsNearestConfiguredSupertype() throws Exception {
+        // RuneOnlyCircle has no XSD type of its own; Circle is the nearest supertype that has one.
+        ShapeContainer container = ShapeContainer.builder()
+                .addShape(RuneOnlyCircle.builder().setColour("red").setRadius(new BigDecimal("2")))
+                .build();
+
+        String xml = xmlMapper.writeValueAsString(container);
+
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+        assertEquals(Arrays.asList("{urn:my.schema}Circle"), xsiTypesOfShapeElements(xml));
+        assertEquals(ShapeContainer.builder().addShape(Circle.builder().setColour("red").setRadius(new BigDecimal("2"))).build(),
+                xmlMapper.readValue(xml, ShapeContainer.class));
+    }
+
+    @Test
+    public void testXsiTypeThatIsNotAQNameReadsTheDeclaredType() throws IOException {
+        // Neither value is a QName an XML document can write: `{abc` does not even parse as one, and
+        // `{urn:my.schema}Circle` must not be taken as the Circle type.
+        String input = "<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\"{abc\"><colour>red</colour></shape>"
+                + "<shape xsi:type=\"{urn:my.schema}Circle\"><colour>blue</colour></shape>"
+                + "</ShapeContainer>";
+
+        ShapeContainer actual = xmlMapper.readValue(input, ShapeContainer.class);
+
+        assertEquals(ShapeContainer.builder()
+                .addShape(Shape.builder().setColour("red"))
+                .addShape(Shape.builder().setColour("blue"))
+                .build(), actual);
+    }
+
+    @Test
+    public void testXsiTypeReachesAPropertyNamedTypeWhenNoXsdTypeIsConfigured() throws IOException {
+        // Without any xmlTypeFullyQualifiedName in the configuration, reading is as it was before xsi:type
+        // support: the attribute reaches a model property named `type`.
+        RosettaXMLConfiguration config;
+        try (InputStream inputStream = configUrl.openStream()) {
+            config = RosettaXMLConfiguration.load(inputStream);
+        }
+        Map<ModelSymbolId, TypeXMLConfiguration> typeConfigs = new HashMap<>();
+        config.getTypeConfigMap().forEach((id, c) -> typeConfigs.put(id, new TypeXMLConfiguration(
+                c.getSubstitutionFor(), c.getSubstitutionGroup(), c.getXmlElementName(), c.getXmlElementFullyQualifiedName(),
+                c.getAbstract(), c.getXmlAttributes(), c.getAttributes(), c.getEnumValues(), c.getContentModel())));
+        ObjectMapper mapper = RosettaObjectMapperCreator.forXML(new RosettaXMLConfiguration(typeConfigs)).create();
+
+        TypeWithTypeElement actual = mapper.readValue("<TypeWithTypeElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+                + "xmlns:p=\"urn:p\" xsi:type=\"p:Foo\"><firstElement>first</firstElement></TypeWithTypeElement>", TypeWithTypeElement.class);
+
+        assertEquals(TypeWithTypeElement.builder().setFirstElement("first").setType("p:Foo").build(), actual);
+    }
+
+    @Test
     public void testRootOfTypeWithConfiguredSubtypesIsRead() throws IOException {
         // `Shape` has configured subtypes, so the root element is read through the xsi:type check too.
         Shape plain = xmlMapper.readValue("<shape xmlns=\"urn:my.schema\"><colour>red</colour></shape>", Shape.class);

@@ -129,6 +129,8 @@ type Circle extends Shape:
 
     radius number (1..1)
 
+type RuneOnlyCircle extends Circle: <"A subtype with no XSD type of its own, so no xmlTypeFullyQualifiedName.">
+
 type Pen extends Shape:
 
     animal Animal (0..1)

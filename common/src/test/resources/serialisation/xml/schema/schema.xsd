@@ -108,6 +108,7 @@
     <xs:element name="salmon" type="Salmon" substitutionGroup="fish"/>
     <xs:element name="snake" type="Snake" substitutionGroup="animal"/>
     <xs:element name="camel" type="Camel" substitutionGroup="animal"/>
+    <xs:element name="llama" type="Llama" substitutionGroup="animal"/>
 
     <!-- Types: `Cow` and `Goat` extend from `Animal` -->
     <xs:complexType name="Animal">
@@ -152,6 +153,25 @@
         </xs:complexContent>
     </xs:complexType>
 
+    <!-- Base-namespace llama: content model is a flat sequence -->
+    <xs:complexType name="Llama">
+        <xs:complexContent>
+            <xs:extension base="Animal">
+                <xs:sequence>
+                    <xs:element name="fluffiness" type="xs:int"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- Same content model as Llama, exposed as a group so the extension
+         schema's llama can accept identical instance content -->
+    <xs:group name="LlamaDetails.model">
+        <xs:sequence>
+            <xs:element name="fluffiness" type="xs:int"/>
+        </xs:sequence>
+    </xs:group>
+
     <xs:element name="ShapeContainer" type="ShapeContainer"/>
     <xs:complexType name="ShapeContainer">
         <xs:sequence>
@@ -173,6 +193,15 @@
         <xs:sequence>
             <xs:element name="colour" type="xs:string" minOccurs="0"/>
         </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="Pen">
+        <xs:complexContent>
+            <xs:extension base="Shape">
+                <xs:sequence>
+                    <xs:element ref="animal" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
     <xs:complexType name="Circle">
         <xs:complexContent>

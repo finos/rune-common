@@ -20,6 +20,9 @@ package com.regnosys.rosetta.common.serialisation.xml;
  * ==============
  */
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -34,6 +37,7 @@ import com.rosetta.test.*;
 import com.rosetta.util.DottedPath;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -558,6 +562,44 @@ public class XmlSerialisationTest {
 
         assertEquals(Shape.builder().setColour("red").build(), plain);
         assertEquals(Circle.builder().setColour("red").setRadius(new BigDecimal("2")).build(), circle);
+    }
+
+    @Test
+    public void testXsiTypeWarningNamesTheRootElement() throws IOException {
+        Logger logger = (Logger) LoggerFactory.getLogger(
+                "com.regnosys.rosetta.common.serialisation.xml.deserialization.XsiTypeDeserializer");
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            xmlMapper.readValue("<shape xmlns=\"urn:my.schema\" xmlns:ext=\"urn:my.extension\" "
+                    + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"ext:Triangle\">"
+                    + "<colour>red</colour></shape>", Shape.class);
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        assertEquals(1, appender.list.size());
+        assertTrue(appender.list.get(0).getFormattedMessage().startsWith("Reading <shape> as com.rosetta.test.Shape"),
+                appender.list.get(0).getFormattedMessage());
+    }
+
+    @Test
+    public void testSubtypeSelectedByXsiTypeIsReadInPlace() throws IOException, SAXException {
+        // The base-namespace <llama> is told apart from the extension one only by its namespace, which is
+        // lost once an element's tokens are buffered (see testBaseNamespaceSubstitutionDeserialisation).
+        // Reading the <shape> that xsi:type selects without buffering it keeps that namespace.
+        String input = "<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\"Pen\"><colour>green</colour><llama name=\"Fluffy\"><fluffiness>3</fluffiness></llama></shape>"
+                + "</ShapeContainer>";
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8))));
+
+        ShapeContainer actual = xmlMapper.readValue(input, ShapeContainer.class);
+
+        ShapeContainer expected = ShapeContainer.builder()
+                .addShape(Pen.builder().setColour("green").setAnimal(Llama.builder().setName("Fluffy").setFluffiness(3)))
+                .build();
+        assertEquals(expected, actual);
     }
 
     @Test

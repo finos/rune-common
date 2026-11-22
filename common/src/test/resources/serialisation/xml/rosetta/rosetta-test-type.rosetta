@@ -25,6 +25,14 @@ type Snake extends Animal:
 
 type Camel extends Animal:
 
+type Llama extends Animal:
+
+    fluffiness int (1..1)
+
+type LlamaDetailsModel:
+
+    fluffiness int (1..1)
+
 type Document:
 
     attr Foo (1..1)
@@ -120,6 +128,10 @@ type Shape:
 type Circle extends Shape:
 
     radius number (1..1)
+
+type Pen extends Shape:
+
+    animal Animal (0..1)
 
 type WrappedAnimalContainerModel:
 

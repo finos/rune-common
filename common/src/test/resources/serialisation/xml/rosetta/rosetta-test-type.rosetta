@@ -109,6 +109,26 @@ type Zoo:
 
     animal Animal (1..*)
 
+type ShapeContainer:
+
+    shape Shape (0..*)
+
+type WrappedShapeContainer:
+
+    wrappedShapeContainerModel WrappedShapeContainerModel (1..1)
+
+type WrappedShapeContainerModel:
+
+    shape Shape (0..*)
+
+type Shape:
+
+    colour string (0..1)
+
+type Circle extends Shape:
+
+    radius number (1..1)
+
 type WrappedAnimalContainerModel:
 
     animal Animal (1..1)

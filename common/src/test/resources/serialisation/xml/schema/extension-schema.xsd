@@ -39,4 +39,12 @@
     </xs:complexType>
 
     <xs:element name="llama" type="Llama" substitutionGroup="parent:animal"/>
+
+    <xs:complexType name="Square">
+        <xs:complexContent>
+            <xs:extension base="parent:Shape">
+                <xs:attribute name="side" type="xs:decimal" use="required"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 </xs:schema>

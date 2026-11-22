@@ -34,9 +34,13 @@ import com.rosetta.test.*;
 import com.rosetta.util.DottedPath;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -44,13 +48,17 @@ import javax.xml.validation.Validator;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -414,6 +422,144 @@ public class XmlSerialisationTest {
                                 .setSnakeExtensionModel(SnakeExtensionModel.builder().setDeadliness("MostlyHarmless"))
                         ).build();
 
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testXsiTypeSelectsSubtypeOfDeclaredType() throws IOException, SAXException {
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/xsi-type.xml"), StandardCharsets.UTF_8);
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8))));
+
+        ShapeContainer actual = xmlMapper.readValue(input, ShapeContainer.class);
+
+        // `shape` is declared as `Shape`. The first two elements select a subtype with xsi:type, one from
+        // the same namespace (unprefixed, so resolved against the default namespace) and one from the
+        // extension namespace. The third has no xsi:type, so it stays a `Shape`.
+        ShapeContainer expected = ShapeContainer.builder()
+                .addShape(Circle.builder().setColour("red").setRadius(new BigDecimal("2")))
+                .addShape(com.rosetta.extension.test.Square.builder().setColour("blue").setSide(new BigDecimal("3")))
+                .addShape(Shape.builder().setColour("green"))
+                .build();
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testXsiTypeSelectsSubtypeInsideVirtualWrapper() throws IOException, SAXException {
+        String input = Resources.toString(Resources.getResource(XML_TEST_RESOURCES + "input/xsi-type-virtual.xml"), StandardCharsets.UTF_8);
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8))));
+
+        // The VIRTUAL wrapper makes Jackson buffer the container's children before reading them, so the
+        // `shape` elements are read from buffered tokens rather than straight from the XML.
+        WrappedShapeContainer actual = xmlMapper.readValue(input, WrappedShapeContainer.class);
+
+        WrappedShapeContainer expected = WrappedShapeContainer.builder()
+                .setWrappedShapeContainerModel(WrappedShapeContainerModel.builder()
+                        .addShape(Circle.builder().setColour("red").setRadius(new BigDecimal("2")))
+                        .addShape(com.rosetta.extension.test.Square.builder().setColour("blue").setSide(new BigDecimal("3")))
+                        .addShape(Shape.builder().setColour("green")))
+                .build();
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testSubtypeIsWrittenWithXsiType() throws Exception {
+        ShapeContainer container = ShapeContainer.builder()
+                .addShape(Circle.builder().setColour("red").setRadius(new BigDecimal("2")))
+                .addShape(com.rosetta.extension.test.Square.builder().setColour("blue").setSide(new BigDecimal("3")))
+                .addShape(Shape.builder().setColour("green"))
+                .build();
+
+        String xml = xmlMapper.writeValueAsString(container);
+
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+        assertEquals(Arrays.asList("{urn:my.schema}Circle", "{urn:my.extension}Square", null), xsiTypesOfShapeElements(xml));
+        assertEquals(container, xmlMapper.readValue(xml, ShapeContainer.class));
+    }
+
+    @Test
+    public void testSubtypeInsideVirtualWrapperIsWrittenWithXsiType() throws Exception {
+        WrappedShapeContainer container = WrappedShapeContainer.builder()
+                .setWrappedShapeContainerModel(WrappedShapeContainerModel.builder()
+                        .addShape(Circle.builder().setColour("red").setRadius(new BigDecimal("2")))
+                        .addShape(com.rosetta.extension.test.Square.builder().setColour("blue").setSide(new BigDecimal("3")))
+                        .addShape(Shape.builder().setColour("green")))
+                .build();
+
+        String xml = xmlMapper.writeValueAsString(container);
+
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+        assertEquals(Arrays.asList("{urn:my.schema}Circle", "{urn:my.extension}Square", null), xsiTypesOfShapeElements(xml));
+        assertEquals(container, xmlMapper.readValue(xml, WrappedShapeContainer.class));
+    }
+
+    @Test
+    public void testXsiTypeDeclaresItsNamespacesWhenNoEnclosingElementDoes() throws Exception {
+        // Without the root's configured xmlns and xmlns:xsi attributes, the writer has to declare both
+        // namespaces the xsi:type attribute needs on the element itself.
+        RosettaXMLConfiguration config;
+        try (InputStream inputStream = configUrl.openStream()) {
+            config = RosettaXMLConfiguration.load(inputStream);
+        }
+        Map<ModelSymbolId, TypeXMLConfiguration> typeConfigs = new HashMap<>(config.getTypeConfigMap());
+        typeConfigs.remove(ModelSymbolId.fromQualifiedName("com.rosetta.test.ShapeContainer"));
+        ObjectMapper mapper = RosettaObjectMapperCreator.forXML(new RosettaXMLConfiguration(typeConfigs)).create();
+        ShapeContainer container = ShapeContainer.builder()
+                .addShape(Circle.builder().setColour("red").setRadius(new BigDecimal("2")))
+                .addShape(com.rosetta.extension.test.Square.builder().setColour("blue").setSide(new BigDecimal("3")))
+                .build();
+
+        String xml = mapper.writeValueAsString(container);
+
+        assertEquals(Arrays.asList("{urn:my.schema}Circle", "{urn:my.extension}Square"), xsiTypesOfShapeElements(xml));
+        assertEquals(container, mapper.readValue(xml, ShapeContainer.class));
+    }
+
+    /** The xsi:type of each {@code shape} element, resolved to {@code {namespace}localName}, or null where it has none. */
+    private static List<String> xsiTypesOfShapeElements(String xml) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        org.w3c.dom.Document document = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+        NodeList shapes = document.getElementsByTagNameNS("*", "shape");
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < shapes.getLength(); i++) {
+            Element shape = (Element) shapes.item(i);
+            if (!shape.hasAttributeNS(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type")) {
+                result.add(null);
+                continue;
+            }
+            String value = shape.getAttributeNS(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type");
+            int colon = value.indexOf(':');
+            String prefix = colon < 0 ? null : value.substring(0, colon);
+            result.add("{" + shape.lookupNamespaceURI(prefix) + "}" + value.substring(colon + 1));
+        }
+        return result;
+    }
+
+    @Test
+    public void testXsiTypeNamingAnUnconfiguredTypeReadsTheDeclaredType() throws IOException {
+        String input = "<ShapeContainer xmlns=\"urn:my.schema\" xmlns:ext=\"urn:my.extension\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\"ext:Triangle\"><colour>red</colour></shape>"
+                + "</ShapeContainer>";
+
+        ShapeContainer actual = xmlMapper.readValue(input, ShapeContainer.class);
+
+        ShapeContainer expected = ShapeContainer.builder()
+                .addShape(Shape.builder().setColour("red"))
+                .build();
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testXsiTypeWithUndeclaredPrefixReadsTheDeclaredType() throws IOException {
+        String input = "<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\"undeclared:Square\"><colour>red</colour></shape>"
+                + "</ShapeContainer>";
+
+        ShapeContainer actual = xmlMapper.readValue(input, ShapeContainer.class);
+
+        ShapeContainer expected = ShapeContainer.builder()
+                .addShape(Shape.builder().setColour("red"))
+                .build();
         assertEquals(expected, actual);
     }
 

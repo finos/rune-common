@@ -32,9 +32,18 @@ import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.fasterxml.jackson.dataformat.xml.ser.XmlBeanSerializer;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap.XMLFullyQualifiedName;
 import com.regnosys.rosetta.common.serialisation.xml.VirtualXMLAttribute;
+import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
+import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
+import com.rosetta.model.lib.ModelSymbolId;
+import com.rosetta.model.lib.RosettaModelObject;
 
+import javax.xml.XMLConstants;
+import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -44,6 +53,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -56,10 +66,18 @@ import java.util.Set;
  *     .writerWithDefaultPrettyPrinter()
  *     .withAttribute("schemaLocation", "urn:my.schema ../schema/schema.xsd")
  * </pre>
+ *
+ * <p>Also writes an {@code xsi:type} attribute on an element whose value is a strict subtype of the type
+ * the element is declared with, naming the subtype's XSD type from {@code xmlTypeFullyQualifiedName} in
+ * the XML configuration. The declared type comes from the property this serializer is contextualized for.
  */
 public class RosettaBeanSerializer extends XmlBeanSerializer {
     public static final String SCHEMA_LOCATION_ATTRIBUTE_NAME = "schemaLocation";
     private static final String SCHEMA_LOCATION_ATTRIBUTE_PREFIXED_NAME = "xsi:" + SCHEMA_LOCATION_ATTRIBUTE_NAME;
+    /** Provider attribute carrying the xsi:type for the element being started, from serialize() to serializeFields(). */
+    private static final Object PENDING_XSI_TYPE = new Object();
+    /** Provider attribute: prefix to namespace, for the xmlns attributes the elements being written declare literally. */
+    private static final Object LITERAL_NAMESPACES = new Object();
 
     private final SubstitutionMap _substitutionMap;
 
@@ -67,33 +85,95 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
     // (computed per object against the present data), rather than the default property order.
     private final XMLContentModelOrderer _contentModelOrderer;
 
+    // Where the XSD type of a subtype is looked up, to write it as xsi:type. Null when not configured.
+    private final RosettaXMLConfiguration _xmlConfiguration;
+
+    // The type of the property this serializer writes, when it has been contextualized for one.
+    private final Class<?> _declaredType;
+
+    // Prefix to namespace, for the `xmlns` and `xmlns:<prefix>` attributes this type's XML configuration
+    // writes. They are plain attributes to the XML writer, which therefore does not know these prefixes
+    // are bound.
+    private final Map<String, String> _literalNamespaces;
+
     public RosettaBeanSerializer(XmlBeanSerializer src, SubstitutionMap substitutionMap) {
         this(src, substitutionMap, null);
     }
 
     public RosettaBeanSerializer(XmlBeanSerializer src, SubstitutionMap substitutionMap,
                                  XMLContentModelOrderer contentModelOrderer) {
+        this(src, substitutionMap, contentModelOrderer, null, Collections.emptyMap());
+    }
+
+    public RosettaBeanSerializer(XmlBeanSerializer src, SubstitutionMap substitutionMap,
+                                 XMLContentModelOrderer contentModelOrderer, RosettaXMLConfiguration xmlConfiguration,
+                                 Map<String, String> literalNamespaces) {
         super(src);
         this._substitutionMap = substitutionMap;
         this._contentModelOrderer = contentModelOrderer;
+        this._xmlConfiguration = xmlConfiguration;
+        this._declaredType = null;
+        this._literalNamespaces = literalNamespaces;
+    }
+
+    private RosettaBeanSerializer(RosettaBeanSerializer src, Class<?> declaredType) {
+        super(src);
+        this._substitutionMap = src._substitutionMap;
+        this._contentModelOrderer = src._contentModelOrderer;
+        this._xmlConfiguration = src._xmlConfiguration;
+        this._declaredType = declaredType;
+        this._literalNamespaces = src._literalNamespaces;
     }
 
     public RosettaBeanSerializer(RosettaBeanSerializer src, ObjectIdWriter objectIdWriter, Object filterId) {
         super(src, objectIdWriter, filterId);
         this._substitutionMap = src._substitutionMap;
         this._contentModelOrderer = src._contentModelOrderer;
+        this._xmlConfiguration = src._xmlConfiguration;
+        this._declaredType = src._declaredType;
+        this._literalNamespaces = src._literalNamespaces;
     }
 
     public RosettaBeanSerializer(RosettaBeanSerializer src, Set<String> toIgnore, Set<String> toInclude) {
         super(src, toIgnore, toInclude);
         this._substitutionMap = src._substitutionMap;
         this._contentModelOrderer = src._contentModelOrderer;
+        this._xmlConfiguration = src._xmlConfiguration;
+        this._declaredType = src._declaredType;
+        this._literalNamespaces = src._literalNamespaces;
     }
 
     protected RosettaBeanSerializer(RosettaBeanSerializer src, BeanPropertyWriter[] properties, BeanPropertyWriter[] filteredProperties) {
         super(src, properties, filteredProperties);
         this._substitutionMap = src._substitutionMap;
         this._contentModelOrderer = src._contentModelOrderer;
+        this._xmlConfiguration = src._xmlConfiguration;
+        this._declaredType = src._declaredType;
+        this._literalNamespaces = src._literalNamespaces;
+    }
+
+    @Override
+    public JsonSerializer<?> createContextual(SerializerProvider provider, BeanProperty property) throws JsonMappingException {
+        JsonSerializer<?> contextual = super.createContextual(provider, property);
+        Class<?> declaredType = declaredTypeOf(property);
+        if (contextual instanceof RosettaBeanSerializer
+                && !Objects.equals(declaredType, ((RosettaBeanSerializer) contextual)._declaredType)) {
+            return new RosettaBeanSerializer((RosettaBeanSerializer) contextual, declaredType);
+        }
+        return contextual;
+    }
+
+    // A property written through a substitution group names the subtype by its element name, so it
+    // needs no xsi:type.
+    private static Class<?> declaredTypeOf(BeanProperty property) {
+        if (property == null || property instanceof SubstitutingBeanPropertyWriter) {
+            return null;
+        }
+        JavaType type = property.getType();
+        if (type.isContainerType() && type.getContentType() != null) {
+            type = type.getContentType();
+        }
+        return type.getRawClass();
     }
 
     @Override
@@ -125,11 +205,121 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
                 ((ToXmlGenerator) g).setNextName(new QName(substitutedName));
             }
         }
-        if (g instanceof ToXmlGenerator && ((ToXmlGenerator) g).inRoot()) {
-            serializeRootElement(bean, (ToXmlGenerator) g, provider);
-        } else {
-            super.serialize(bean, g, provider);
+        Object enclosingLiteralNamespaces = provider.getAttribute(LITERAL_NAMESPACES);
+        if (!_literalNamespaces.isEmpty()) {
+            Map<String, String> inScope = new LinkedHashMap<>();
+            if (enclosingLiteralNamespaces != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, String> enclosing = (Map<String, String>) enclosingLiteralNamespaces;
+                inScope.putAll(enclosing);
+            }
+            inScope.putAll(_literalNamespaces);
+            provider.setAttribute(LITERAL_NAMESPACES, inScope);
         }
+        try {
+            if (g instanceof ToXmlGenerator && ((ToXmlGenerator) g).inRoot()) {
+                serializeRootElement(bean, (ToXmlGenerator) g, provider);
+            } else {
+                XMLFullyQualifiedName xsiType = g instanceof ToXmlGenerator ? xsiTypeOf(bean) : null;
+                if (xsiType == null) {
+                    super.serialize(bean, g, provider);
+                } else {
+                    // Consumed by serializeFields once the start tag is written, before any child bean is.
+                    provider.setAttribute(PENDING_XSI_TYPE, xsiType);
+                    try {
+                        super.serialize(bean, g, provider);
+                    } finally {
+                        provider.setAttribute(PENDING_XSI_TYPE, null);
+                    }
+                }
+            }
+        } finally {
+            provider.setAttribute(LITERAL_NAMESPACES, enclosingLiteralNamespaces);
+        }
+    }
+
+    private XMLFullyQualifiedName xsiTypeOf(Object bean) {
+        if (_declaredType == null || _xmlConfiguration == null || !(bean instanceof RosettaModelObject)) {
+            return null;
+        }
+        Class<?> type = ((RosettaModelObject) bean).getType();
+        if (type.equals(_declaredType) || !_declaredType.isAssignableFrom(type)) {
+            return null;
+        }
+        return _xmlConfiguration.getConfigurationForType(ModelSymbolId.fromQualifiedName(type.getName()))
+                .flatMap(TypeXMLConfiguration::getXmlTypeFullyQualifiedName)
+                .map(XMLFullyQualifiedName::new)
+                .orElse(null);
+    }
+
+    // Called with the element's start tag written and no attributes yet, so namespace declarations can
+    // still be added to it.
+    private void writePendingXsiType(JsonGenerator gen, SerializerProvider provider) throws IOException {
+        Object pending = provider.getAttribute(PENDING_XSI_TYPE);
+        if (pending == null || !(gen instanceof ToXmlGenerator)) {
+            return;
+        }
+        provider.setAttribute(PENDING_XSI_TYPE, null);
+        XMLFullyQualifiedName xsiType = (XMLFullyQualifiedName) pending;
+        XMLStreamWriter writer = ((ToXmlGenerator) gen).getStaxWriter();
+        @SuppressWarnings("unchecked")
+        Map<String, String> literalNamespaces = (Map<String, String>) provider.getAttribute(LITERAL_NAMESPACES);
+        Map<String, String> literal = literalNamespaces == null ? Collections.emptyMap() : literalNamespaces;
+        try {
+            String typeNamespace = xsiType.getNamespace();
+            String typePrefix = typeNamespace == null ? "" : prefixFor(writer, literal, typeNamespace, "ns");
+            String value = typePrefix.isEmpty() ? xsiType.getName() : typePrefix + ":" + xsiType.getName();
+            String literalXsiPrefix = literalPrefixFor(writer, literal, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
+            if (literalXsiPrefix != null && !literalXsiPrefix.isEmpty()) {
+                // Written by name, like xsi:schemaLocation: the writer does not know the prefix is bound, and
+                // would otherwise declare it again on this element.
+                writer.writeAttribute(literalXsiPrefix + ":type", value);
+            } else {
+                String xsiPrefix = prefixFor(writer, Collections.emptyMap(), XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "xsi");
+                writer.writeAttribute(xsiPrefix, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type", value);
+            }
+        } catch (XMLStreamException e) {
+            throw new IOException("Could not write xsi:type " + xsiType, e);
+        }
+    }
+
+    // The prefix bound to the namespace here, declaring one on the current element if there is none.
+    // A literal declaration on an enclosing element counts unless the writer has bound its prefix since.
+    private static String prefixFor(XMLStreamWriter writer, Map<String, String> literalNamespaces,
+                                    String namespace, String preferredPrefix) throws XMLStreamException {
+        String prefix = writer.getPrefix(namespace);
+        if (prefix != null && !(prefix.isEmpty() && XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI.equals(namespace))) {
+            return prefix;
+        }
+        String literalPrefix = literalPrefixFor(writer, literalNamespaces, namespace);
+        if (literalPrefix != null) {
+            return literalPrefix;
+        }
+        NamespaceContext context = writer.getNamespaceContext();
+        prefix = preferredPrefix;
+        for (int i = 1; isBoundByWriter(context, prefix) || literalNamespaces.containsKey(prefix); i++) {
+            prefix = preferredPrefix + i;
+        }
+        writer.setPrefix(prefix, namespace);
+        writer.writeNamespace(prefix, namespace);
+        return prefix;
+    }
+
+    // The prefix an enclosing element's literal declaration binds to the namespace, unless the writer has
+    // bound that prefix to something else since.
+    private static String literalPrefixFor(XMLStreamWriter writer, Map<String, String> literalNamespaces, String namespace) {
+        NamespaceContext context = writer.getNamespaceContext();
+        for (Map.Entry<String, String> literal : literalNamespaces.entrySet()) {
+            if (literal.getValue().equals(namespace) && !isBoundByWriter(context, literal.getKey())) {
+                return literal.getKey();
+            }
+        }
+        return null;
+    }
+
+    private static boolean isBoundByWriter(NamespaceContext context, String prefix) {
+        String namespace = context.getNamespaceURI(prefix);
+        return namespace != null && !namespace.isEmpty();
     }
 
     public void serializeRootElement(Object bean, ToXmlGenerator g, SerializerProvider provider) throws IOException {
@@ -153,11 +343,18 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
     // root-only attribute, so nested beans must NOT emit it (addSchemaLocation = false).
     @Override
     protected void serializeFields(Object bean, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        writePendingXsiType(gen, provider);
         if (_contentModelOrderer != null && gen instanceof ToXmlGenerator) {
             serializeFieldsInContentModelOrder(bean, (ToXmlGenerator) gen, provider, false);
         } else {
             super.serializeFields(bean, gen, provider);
         }
+    }
+
+    @Override
+    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        writePendingXsiType(gen, provider);
+        super.serializeFieldsFiltered(bean, gen, provider);
     }
 
     // Serialize fields as usual, but add the `schemaLocation` attribute at the end of all XML attributes.

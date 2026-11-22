@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
@@ -46,10 +47,17 @@ public class RosettaXmlMapper extends XmlMapper {
     private final ClassLoader classLoader;
 
     public RosettaXmlMapper(RosettaXMLConfiguration config, ClassLoader classLoader) {
-        super(new RosettaXmlFactory(), null);
+        // Without an XSD type name in the configuration nothing can use xsi:type, so the attribute is read
+        // as it was before xsi:type support.
+        super(namesXsdTypes(config) ? new RosettaXmlFactory() : new XmlFactory(), null);
         this.config = config;
         this.classLoader = classLoader;
 
+    }
+
+    private static boolean namesXsdTypes(RosettaXMLConfiguration config) {
+        return config.getTypeConfigMap().values().stream()
+                .anyMatch(typeConfig -> typeConfig.getXmlTypeFullyQualifiedName().isPresent());
     }
 
     @Override

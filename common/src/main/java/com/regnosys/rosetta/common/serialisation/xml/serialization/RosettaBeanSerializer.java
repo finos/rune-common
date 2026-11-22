@@ -54,6 +54,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -243,13 +244,30 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
             return null;
         }
         Class<?> type = ((RosettaModelObject) bean).getType();
-        if (type.equals(_declaredType) || !_declaredType.isAssignableFrom(type)) {
+        if (!_declaredType.isAssignableFrom(type)) {
             return null;
         }
-        return _xmlConfiguration.getConfigurationForType(ModelSymbolId.fromQualifiedName(type.getName()))
-                .flatMap(TypeXMLConfiguration::getXmlTypeFullyQualifiedName)
-                .map(XMLFullyQualifiedName::new)
-                .orElse(null);
+        // A type with no XSD type of its own is written as its nearest supertype that has one, so that it
+        // reads back as that type rather than as the declared one.
+        for (Class<?> candidate = type; candidate != null && !candidate.equals(_declaredType);
+             candidate = runeSupertypeBelowDeclaredType(candidate)) {
+            Optional<String> xsdTypeName = _xmlConfiguration.getConfigurationForType(ModelSymbolId.fromQualifiedName(candidate.getName()))
+                    .flatMap(TypeXMLConfiguration::getXmlTypeFullyQualifiedName);
+            if (xsdTypeName.isPresent()) {
+                return new XMLFullyQualifiedName(xsdTypeName.get());
+            }
+        }
+        return null;
+    }
+
+    // The Rune type the given one extends, if that is still a subtype of the declared type.
+    private Class<?> runeSupertypeBelowDeclaredType(Class<?> type) {
+        for (Class<?> supertype : type.getInterfaces()) {
+            if (_declaredType.isAssignableFrom(supertype)) {
+                return supertype;
+            }
+        }
+        return null;
     }
 
     // Called with the element's start tag written and no attributes yet, so namespace declarations can

@@ -58,7 +58,9 @@ public class TypeXMLConfiguration {
 	/**
 	 * @param xmlTypeFullyQualifiedName the XSD type this Rune type was generated from, as
 	 *        {@code namespace/localName}, e.g. {@code urn:my.schema/Circle}. An {@code xsi:type}
-	 *        attribute naming this XSD type selects this Rune type.
+	 *        attribute naming this XSD type selects this Rune type, and a value of this Rune type, or
+	 *        of a subtype without its own, is written with that {@code xsi:type}. Leave it out for an
+	 *        abstract complex type, which an {@code xsi:type} in a valid document cannot name.
 	 */
 	@JsonCreator
 	public TypeXMLConfiguration(

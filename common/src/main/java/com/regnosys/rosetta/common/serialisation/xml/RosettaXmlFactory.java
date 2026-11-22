@@ -31,18 +31,16 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 
 /**
- * An {@link XmlFactory} whose parsers expose an element's {@code xsi:type} attribute as the field
- * {@code xsi:type}, with its namespace prefix resolved (see {@link XsiTypeResolvingStreamReader}).
- *
- * <p>The field name cannot clash with an attribute or element of the model, since an XML name has no
- * prefix once Jackson has read it.
+ * The {@link XmlFactory} of {@link RosettaXmlMapper}. Its parsers are {@link RosettaXmlParser}s, which can
+ * tell whether the StAX reader is on the element just started, and read through an
+ * {@link XsiTypeResolvingStreamReader}, which gives an element's xsi:type with its prefix resolved as an
+ * extra {@link XsiTypeValue#FIELD_NAME} attribute. {@code XsiTypeDeserializer} relies on both.
  */
 final class RosettaXmlFactory extends XmlFactory {
     private static final long serialVersionUID = 1L;
 
     RosettaXmlFactory() {
         super();
-        _xmlParserFeatures |= FromXmlParser.Feature.AUTO_DETECT_XSI_TYPE.getMask();
     }
 
     private RosettaXmlFactory(RosettaXmlFactory src, ObjectCodec codec) {

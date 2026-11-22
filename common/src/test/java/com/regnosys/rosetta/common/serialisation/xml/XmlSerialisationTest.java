@@ -60,6 +60,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -586,23 +587,109 @@ public class XmlSerialisationTest {
     }
 
     @Test
-    public void testXsiTypeReachesAPropertyNamedTypeWhenNoXsdTypeIsConfigured() throws IOException {
-        // Without any xmlTypeFullyQualifiedName in the configuration, reading is as it was before xsi:type
-        // support: the attribute reaches a model property named `type`.
+    public void testXsiTypeStillReachesAPropertyNamedType() throws IOException {
+        // The configuration names XSD types, but TypeWithTypeElement has no configured subtypes, so its
+        // xsi:type attribute reaches its property named `type` as the document wrote it.
+        TypeWithTypeElement actual = xmlMapper.readValue("<TypeWithTypeElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+                + "xmlns:p=\"urn:p\" xsi:type=\"p:Foo\"><firstElement>first</firstElement></TypeWithTypeElement>", TypeWithTypeElement.class);
+
+        assertEquals(TypeWithTypeElement.builder().setFirstElement("first").setType("p:Foo").build(), actual);
+    }
+
+    @Test
+    public void testXsiTypeInANamespaceContainingABrace() throws IOException {
+        ObjectMapper mapper = mapperWithXsdTypeNames(Collections.singletonMap("com.rosetta.test.Circle", "urn:a}b/Circle"));
+
+        ShapeContainer actual = mapper.readValue("<ShapeContainer xmlns=\"urn:my.schema\" xmlns:p=\"urn:a}b\" "
+                + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\"p:Circle\"><colour>red</colour><radius>2</radius></shape></ShapeContainer>", ShapeContainer.class);
+
+        assertEquals(Circle.class, actual.getShape().get(0).getType());
+    }
+
+    @Test
+    public void testXsiTypeNamingANoNamespaceType() throws IOException {
+        ObjectMapper mapper = mapperWithXsdTypeNames(Collections.singletonMap("com.rosetta.test.Circle", "Circle"));
+
+        // No default namespace, so the unprefixed xsi:type names a type in no namespace.
+        ShapeContainer actual = mapper.readValue("<ShapeContainer xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\"Circle\"><colour>red</colour><radius>2</radius></shape></ShapeContainer>", ShapeContainer.class);
+
+        assertEquals(Circle.class, actual.getShape().get(0).getType());
+    }
+
+    @Test
+    public void testXsiTypeThatIsNotAValidQNameReadsTheDeclaredType() throws IOException {
+        String input = "<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\":Circle\"><colour>red</colour></shape>"
+                + "<shape xsi:type=\"Circle:\"><colour>blue</colour></shape>"
+                + "</ShapeContainer>";
+
+        ShapeContainer actual = xmlMapper.readValue(input, ShapeContainer.class);
+
+        assertEquals(ShapeContainer.builder()
+                .addShape(Shape.builder().setColour("red"))
+                .addShape(Shape.builder().setColour("blue"))
+                .build(), actual);
+    }
+
+    @Test
+    public void testXsiTypeWarningEscapesControlCharacters() throws IOException {
+        Logger logger = (Logger) LoggerFactory.getLogger(
+                "com.regnosys.rosetta.common.serialisation.xml.deserialization.XsiTypeDeserializer");
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            xmlMapper.readValue("<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                    + "<shape xsi:type=\"un:Tri&#10;angle\"><colour>red</colour></shape></ShapeContainer>", ShapeContainer.class);
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        assertEquals(1, appender.list.size());
+        String message = appender.list.get(0).getFormattedMessage();
+        assertTrue(message.contains("un:Tri\\u000aangle"), message);
+    }
+
+    @Test
+    public void testSubtypeTwoLevelsBelowAConfiguredTypeIsWrittenAsThatType() throws Exception {
+        ShapeContainer container = ShapeContainer.builder()
+                .addShape(RuneOnlyCircleChild.builder().setColour("red").setRadius(new BigDecimal("2")))
+                .build();
+
+        String xml = xmlMapper.writeValueAsString(container);
+
+        assertEquals(Arrays.asList("{urn:my.schema}Circle"), xsiTypesOfShapeElements(xml));
+    }
+
+    @Test
+    public void testSubtypeWithNoConfiguredTypeBelowTheDeclaredOneIsWrittenWithoutXsiType() throws Exception {
+        ShapeContainer container = ShapeContainer.builder()
+                .addShape(RuneOnlyShape.builder().setColour("red"))
+                .build();
+
+        String xml = xmlMapper.writeValueAsString(container);
+
+        xsdValidator.validate(new StreamSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+        assertEquals(Collections.singletonList(null), xsiTypesOfShapeElements(xml));
+    }
+
+    /** The test mapper, with the XSD type names of the given Rune types replaced. */
+    private ObjectMapper mapperWithXsdTypeNames(Map<String, String> xsdTypeNames) throws IOException {
         RosettaXMLConfiguration config;
         try (InputStream inputStream = configUrl.openStream()) {
             config = RosettaXMLConfiguration.load(inputStream);
         }
-        Map<ModelSymbolId, TypeXMLConfiguration> typeConfigs = new HashMap<>();
-        config.getTypeConfigMap().forEach((id, c) -> typeConfigs.put(id, new TypeXMLConfiguration(
-                c.getSubstitutionFor(), c.getSubstitutionGroup(), c.getXmlElementName(), c.getXmlElementFullyQualifiedName(),
-                c.getAbstract(), c.getXmlAttributes(), c.getAttributes(), c.getEnumValues(), c.getContentModel())));
-        ObjectMapper mapper = RosettaObjectMapperCreator.forXML(new RosettaXMLConfiguration(typeConfigs)).create();
-
-        TypeWithTypeElement actual = mapper.readValue("<TypeWithTypeElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-                + "xmlns:p=\"urn:p\" xsi:type=\"p:Foo\"><firstElement>first</firstElement></TypeWithTypeElement>", TypeWithTypeElement.class);
-
-        assertEquals(TypeWithTypeElement.builder().setFirstElement("first").setType("p:Foo").build(), actual);
+        Map<ModelSymbolId, TypeXMLConfiguration> typeConfigs = new HashMap<>(config.getTypeConfigMap());
+        xsdTypeNames.forEach((type, xsdTypeName) -> {
+            ModelSymbolId id = ModelSymbolId.fromQualifiedName(type);
+            TypeXMLConfiguration c = typeConfigs.get(id);
+            typeConfigs.put(id, new TypeXMLConfiguration(c.getSubstitutionFor(), c.getSubstitutionGroup(), c.getXmlElementName(),
+                    c.getXmlElementFullyQualifiedName(), c.getAbstract(), c.getXmlAttributes(), c.getAttributes(),
+                    c.getEnumValues(), c.getContentModel(), Optional.of(xsdTypeName)));
+        });
+        return RosettaObjectMapperCreator.forXML(new RosettaXMLConfiguration(typeConfigs)).create();
     }
 
     @Test

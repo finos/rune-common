@@ -69,8 +69,10 @@ import java.util.Set;
  * </pre>
  *
  * <p>Also writes an {@code xsi:type} attribute on an element whose value is a strict subtype of the type
- * the element is declared with, naming the subtype's XSD type from {@code xmlTypeFullyQualifiedName} in
- * the XML configuration. The declared type comes from the property this serializer is contextualized for.
+ * the element is declared with. It names the XSD type, from {@code xmlTypeFullyQualifiedName} in the XML
+ * configuration, of the value's type, or else of its nearest supertype that is still a strict subtype of
+ * the declared type and has one. When none has one, no {@code xsi:type} is written. The declared type
+ * comes from the property this serializer is contextualized for.
  */
 public class RosettaBeanSerializer extends XmlBeanSerializer {
     public static final String SCHEMA_LOCATION_ATTRIBUTE_NAME = "schemaLocation";
@@ -250,7 +252,7 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
         // A type with no XSD type of its own is written as its nearest supertype that has one, so that it
         // reads back as that type rather than as the declared one.
         for (Class<?> candidate = type; candidate != null && !candidate.equals(_declaredType);
-             candidate = runeSupertypeBelowDeclaredType(candidate)) {
+             candidate = findExtendedRuneTypeWithinDeclaredType(candidate)) {
             Optional<String> xsdTypeName = _xmlConfiguration.getConfigurationForType(ModelSymbolId.fromQualifiedName(candidate.getName()))
                     .flatMap(TypeXMLConfiguration::getXmlTypeFullyQualifiedName);
             if (xsdTypeName.isPresent()) {
@@ -260,8 +262,8 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
         return null;
     }
 
-    // The Rune type the given one extends, if that is still a subtype of the declared type.
-    private Class<?> runeSupertypeBelowDeclaredType(Class<?> type) {
+    // The Rune type the given one extends, if that is the declared type or a subtype of it; otherwise null.
+    private Class<?> findExtendedRuneTypeWithinDeclaredType(Class<?> type) {
         for (Class<?> supertype : type.getInterfaces()) {
             if (_declaredType.isAssignableFrom(supertype)) {
                 return supertype;

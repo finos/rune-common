@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.std.DelegatingDeserializer;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
+import com.regnosys.rosetta.common.serialisation.xml.XsiTypeValue;
 import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.AttributeXMLRepresentation;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
@@ -317,7 +318,8 @@ final class XMLContentModelDisambiguatingDeserializer extends DelegatingDeserial
             }
             TokenBuffer value = new TokenBuffer(p, ctxt);
             value.copyCurrentStructure(p);
-            boolean isAttribute = attributeNames.contains(xmlName);
+            // The resolved xsi:type the parser adds is an attribute too, never content to route.
+            boolean isAttribute = attributeNames.contains(xmlName) || XsiTypeValue.FIELD_NAME.equals(xmlName);
             fields.add(new BufferedField(xmlName, namespace, isAttribute, value));
             token = p.nextToken();
         }

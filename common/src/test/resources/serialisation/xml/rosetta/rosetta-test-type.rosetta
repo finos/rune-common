@@ -131,6 +131,10 @@ type Circle extends Shape:
 
 type RuneOnlyCircle extends Circle: <"A subtype with no XSD type of its own, so no xmlTypeFullyQualifiedName.">
 
+type RuneOnlyCircleChild extends RuneOnlyCircle: <"Two levels below Circle, with no XSD type of its own.">
+
+type RuneOnlyShape extends Shape: <"A subtype of Shape with no XSD type of its own, nor any supertype below Shape with one.">
+
 type Pen extends Shape:
 
     animal Animal (0..1)

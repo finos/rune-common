@@ -196,6 +196,15 @@
             <xs:element name="colour" type="xs:string" minOccurs="0"/>
         </xs:sequence>
     </xs:complexType>
+    <xs:complexType name="Pen">
+        <xs:complexContent>
+            <xs:extension base="Shape">
+                <xs:sequence>
+                    <xs:element ref="animal" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
     <xs:complexType name="Circle">
         <xs:complexContent>
             <xs:extension base="Shape">

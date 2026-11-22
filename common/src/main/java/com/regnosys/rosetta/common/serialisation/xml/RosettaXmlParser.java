@@ -33,7 +33,12 @@ import java.io.IOException;
 
 /**
  * The parser {@link RosettaXmlFactory} creates. It can tell whether the StAX reader is on the element
- * whose {@link JsonToken#START_OBJECT} was just returned.
+ * whose {@link JsonToken#START_OBJECT} was just returned, which {@code XsiTypeDeserializer} needs before
+ * it reads that element's xsi:type from the reader.
+ *
+ * <p>This relies on how jackson-dataformat-xml positions its token stream when it returns a
+ * {@code START_OBJECT}, which is internal to it. It was checked against 2.23.0, and
+ * {@code RosettaXmlParserTest} fails if a Jackson version changes it.
  */
 public final class RosettaXmlParser extends FromXmlParser {
 
@@ -61,5 +66,18 @@ public final class RosettaXmlParser extends FromXmlParser {
         }
         JsonStreamContext parent = _parsingContext.getParent();
         return state == XmlTokenStream.XML_START_ELEMENT && parent != null && parent.inRoot();
+    }
+
+    /**
+     * The local name of the element whose {@code START_OBJECT} is the current token, or null if it is not
+     * known. Unlike {@link #currentName()}, this does not throw for the root element.
+     */
+    public String startedElementName() {
+        JsonStreamContext parent = _parsingContext.getParent();
+        String name = parent == null ? null : parent.getCurrentName();
+        if (name == null && readerIsOnStartedElement()) {
+            name = getStaxReader().getLocalName();
+        }
+        return name;
     }
 }

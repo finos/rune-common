@@ -129,6 +129,10 @@ type Circle extends Shape:
 
     radius number (1..1)
 
+type Pen extends Shape:
+
+    animal Animal (0..1)
+
 type WrappedAnimalContainerModel:
 
     animal Animal (1..1)

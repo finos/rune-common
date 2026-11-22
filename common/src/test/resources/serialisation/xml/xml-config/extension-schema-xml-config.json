@@ -143,6 +143,14 @@
     "xmlElementFullyQualifiedName" : "urn:my.schema/llama",
     "abstract" : false
   },
+  "com.rosetta.test.Pen" : {
+    "xmlTypeFullyQualifiedName" : "urn:my.schema/Pen",
+    "attributes" : {
+      "animal" : {
+        "elementRef" : "urn:my.schema/animal"
+      }
+    }
+  },
   "com.rosetta.test.Measure" : {
     "attributes" : {
       "value" : {

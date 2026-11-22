@@ -46,10 +46,11 @@ import java.util.Map;
  * wraps, the element is read with that subtype's deserializer. Otherwise it is read as the wrapped type.
  *
  * <p>The parser gives the attribute's value with its prefix already resolved, as
- * {@code {namespace}localName} (see {@code RosettaXmlFactory}). When the element is read straight from the
- * XML, the value is taken from the StAX reader, once {@link RosettaXmlParser} confirms the reader is still
- * on the element. Otherwise, as for the children of a type with a VIRTUAL attribute or a content model,
- * which Jackson has buffered, it is taken from the element's own {@code xsi:type} field.
+ * {@code {namespace}localName} (see {@code RosettaXmlFactory}). With a {@link RosettaXmlParser}, the element
+ * is read in place, and the value is taken from the StAX reader when the parser confirms the reader is on
+ * the element; when it is not, the element has no attributes, so no xsi:type. With any other parser, such
+ * as the buffer Jackson reads the children of a type with a VIRTUAL attribute or a content model from, the
+ * element is buffered and the value is taken from its own {@code xsi:type} field.
  */
 final class XsiTypeDeserializer extends DelegatingDeserializer {
     private static final long serialVersionUID = 1L;
@@ -93,8 +94,11 @@ final class XsiTypeDeserializer extends DelegatingDeserializer {
         }
     }
 
-    // For warnings only. FromXmlParser.currentName() throws on the root element, which has no name here.
+    // For warnings only. FromXmlParser.currentName() throws on the root element.
     private static String elementName(JsonParser p) {
+        if (p instanceof RosettaXmlParser) {
+            return ((RosettaXmlParser) p).startedElementName();
+        }
         JsonStreamContext parent = p.getParsingContext().getParent();
         return parent == null ? null : parent.getCurrentName();
     }

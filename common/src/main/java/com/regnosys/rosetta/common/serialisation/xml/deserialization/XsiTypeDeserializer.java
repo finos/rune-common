@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.std.DelegatingDeserializer;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXmlParser;
+import com.regnosys.rosetta.common.serialisation.xml.XsiTypeValue;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap.XMLFullyQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import javax.xml.XMLConstants;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Reads an element as the subtype its {@code xsi:type} attribute names, instead of the type the
@@ -44,17 +46,16 @@ import java.util.Map;
  * XML configuration. When {@code xsi:type} names a configured subtype of the type this deserializer
  * wraps, the element is read with that subtype's deserializer. Otherwise it is read as the wrapped type.
  *
- * <p>The parser gives the attribute's value with its prefix already resolved, as
- * {@code {namespace}localName} (see {@code RosettaXmlFactory}). With a {@link RosettaXmlParser}, the element
- * is read in place, and the value is taken from the StAX reader when the parser confirms the reader is on
- * the element; when it is not, the element has no attributes, so no xsi:type. With any other parser, such
- * as the buffer Jackson reads the children of a type with a VIRTUAL attribute or a content model from, the
- * element is buffered and the value is taken from its own {@code xsi:type} field.
+ * <p>The xsi:type is read from the attribute {@link XsiTypeValue#FIELD_NAME}, which {@code RosettaXmlFactory}'s
+ * parsers add with the prefix already resolved. With a {@link RosettaXmlParser}, the element is read in
+ * place, and the value is taken from the StAX reader when the parser confirms the reader is on the element;
+ * when it is not, the element has no attributes, so no xsi:type. With any other parser, such as the buffer
+ * Jackson reads the children of a type with a VIRTUAL attribute or a content model from, the element is
+ * buffered and the value is taken from its own field of that name.
  */
 final class XsiTypeDeserializer extends DelegatingDeserializer {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = LoggerFactory.getLogger(XsiTypeDeserializer.class);
-    private static final String XSI_TYPE_FIELD = "xsi:type";
 
     private final Class<?> runeType;
     /** The configured XSD type names of {@code runeType} and its subtypes, mapped to their Rune types. */
@@ -82,7 +83,7 @@ final class XsiTypeDeserializer extends DelegatingDeserializer {
         if (p instanceof RosettaXmlParser) {
             RosettaXmlParser xmlParser = (RosettaXmlParser) p;
             String xsiType = xmlParser.readerIsOnStartedElement()
-                    ? xmlParser.getStaxReader().getAttributeValue(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type")
+                    ? xmlParser.getStaxReader().getAttributeValue(XMLConstants.NULL_NS_URI, XsiTypeValue.FIELD_NAME)
                     : null;
             return deserializerFor(xsiType, elementName, ctxt).deserialize(p, ctxt);
         }
@@ -119,7 +120,7 @@ final class XsiTypeDeserializer extends DelegatingDeserializer {
             while (token == JsonToken.FIELD_NAME) {
                 String name = scan.currentName();
                 scan.nextToken();
-                if (XSI_TYPE_FIELD.equals(name) && scan.hasToken(JsonToken.VALUE_STRING)) {
+                if (XsiTypeValue.FIELD_NAME.equals(name) && scan.hasToken(JsonToken.VALUE_STRING)) {
                     return scan.getText();
                 }
                 scan.skipChildren();
@@ -129,28 +130,18 @@ final class XsiTypeDeserializer extends DelegatingDeserializer {
         return null;
     }
 
-    // The value is in the form {namespace}localName that XsiTypeResolvingStreamReader gives every value.
     private Class<?> resolve(String xsiType, String elementName) {
-        String value = xsiType.trim();
-        int close = value.indexOf('}');
-        if (!value.startsWith("{") || close < 0) {
-            LOGGER.warn("Reading <{}> as {}: its xsi:type \"{}\" was not resolved to a namespace by the parser.",
-                    elementName, runeType.getName(), xsiType);
+        Optional<XMLFullyQualifiedName> name = XsiTypeValue.typeName(xsiType);
+        if (!name.isPresent()) {
+            LOGGER.warn("Reading <{}> as {}: its xsi:type \"{}\" is not a QName with a declared namespace prefix.",
+                    elementName, runeType.getName(), XsiTypeValue.describe(xsiType));
             return null;
         }
-        String namespace = value.substring(1, close);
-        String localName = value.substring(close + 1);
-        if (localName.indexOf(':') >= 0) {
-            LOGGER.warn("Reading <{}> as {}: its xsi:type \"{}\" uses an undeclared namespace prefix.",
-                    elementName, runeType.getName(), localName);
-            return null;
-        }
-        XMLFullyQualifiedName name = new XMLFullyQualifiedName(localName, namespace.isEmpty() ? null : namespace);
-        Class<?> type = typesByXsdTypeName.get(name);
+        Class<?> type = typesByXsdTypeName.get(name.get());
         if (type == null) {
             LOGGER.warn("Reading <{}> as {}: its xsi:type {} is not the XSD type of {} or of a subtype in the XML configuration, "
                             + "so any content that belongs only to that type is ignored.",
-                    elementName, runeType.getName(), name, runeType.getName());
+                    elementName, runeType.getName(), XsiTypeValue.describe(xsiType), runeType.getName());
         }
         return type;
     }

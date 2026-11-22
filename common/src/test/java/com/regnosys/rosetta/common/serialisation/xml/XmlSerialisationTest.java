@@ -550,6 +550,32 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testRootOfTypeWithConfiguredSubtypesIsRead() throws IOException {
+        // `Shape` has configured subtypes, so the root element is read through the xsi:type check too.
+        Shape plain = xmlMapper.readValue("<shape xmlns=\"urn:my.schema\"><colour>red</colour></shape>", Shape.class);
+        Shape circle = xmlMapper.readValue("<shape xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"Circle\">"
+                + "<colour>red</colour><radius>2</radius></shape>", Shape.class);
+
+        assertEquals(Shape.builder().setColour("red").build(), plain);
+        assertEquals(Circle.builder().setColour("red").setRadius(new BigDecimal("2")).build(), circle);
+    }
+
+    @Test
+    public void testElementWithoutAttributesIsNotReadAsItsFirstChildsXsiType() throws IOException {
+        // The first <shape> has no attributes, so the XML reader has already moved on to its first child
+        // when the element is read. That child's xsi:type must not select the type of the <shape>.
+        String input = "<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape><colour xsi:type=\"Circle\">red</colour></shape>"
+                + "<shape xsi:type=\"Circle\"><colour>blue</colour><radius>2</radius></shape>"
+                + "</ShapeContainer>";
+
+        ShapeContainer actual = xmlMapper.readValue(input, ShapeContainer.class);
+
+        assertEquals(Shape.class, actual.getShape().get(0).getType());
+        assertEquals(Circle.builder().setColour("blue").setRadius(new BigDecimal("2")).build(), actual.getShape().get(1));
+    }
+
+    @Test
     public void testXsiTypeWithUndeclaredPrefixReadsTheDeclaredType() throws IOException {
         String input = "<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
                 + "<shape xsi:type=\"undeclared:Square\"><colour>red</colour></shape>"

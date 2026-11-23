@@ -608,6 +608,26 @@ public class XmlSerialisationTest {
     }
 
     @Test
+    public void testXsiTypeSelectsATypeWhoseEntryIsMarkedAbstract() throws IOException {
+        // `abstract` belongs to an element of the same name, as when the importer merges an abstract element
+        // into its type's entry; it does not stop xsi:type selecting the type.
+        RosettaXMLConfiguration config;
+        try (InputStream inputStream = configUrl.openStream()) {
+            config = RosettaXMLConfiguration.load(inputStream);
+        }
+        Map<ModelSymbolId, TypeXMLConfiguration> typeConfigs = new HashMap<>(config.getTypeConfigMap());
+        typeConfigs.put(ModelSymbolId.fromQualifiedName("com.rosetta.test.Circle"), new TypeXMLConfiguration(
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(true), Optional.empty(),
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.of("urn:my.schema/Circle")));
+        ObjectMapper mapper = RosettaObjectMapperCreator.forXML(new RosettaXMLConfiguration(typeConfigs)).create();
+
+        ShapeContainer actual = mapper.readValue("<ShapeContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+                + "<shape xsi:type=\"Circle\"><colour>red</colour><radius>2</radius></shape></ShapeContainer>", ShapeContainer.class);
+
+        assertEquals(Circle.class, actual.getShape().get(0).getType());
+    }
+
+    @Test
     public void testXsiTypeNamingANoNamespaceType() throws IOException {
         ObjectMapper mapper = mapperWithXsdTypeNames(Collections.singletonMap("com.rosetta.test.Circle", "Circle"));
 

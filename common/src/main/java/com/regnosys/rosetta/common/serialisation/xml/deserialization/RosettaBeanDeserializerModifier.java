@@ -87,7 +87,7 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     private JsonDeserializer<?> wrapWithContentModelRouting(DeserializationConfig config,
                                                             BeanDescription beanDesc,
                                                             JsonDeserializer<?> deserializer) {
-        Optional<TypeXMLConfiguration> typeConfig = RosettaXMLTypeConfigLookup.getTypeXMLConfiguration(
+        Optional<TypeXMLConfiguration> typeConfig = RosettaXMLTypeConfigLookup.getTypeXMLConfigurationWithContentModel(
                 rosettaXMLConfiguration, config, beanDesc);
         if (!typeConfig.isPresent()) {
             return deserializer;

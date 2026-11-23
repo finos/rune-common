@@ -31,6 +31,7 @@ import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModelNodeT
 import com.rosetta.model.lib.ModelSymbolId;
 import com.rosetta.test.AllVirtualContainer;
 import com.rosetta.test.AnyVirtualContainer;
+import com.rosetta.test.MultiLeafContainerExtension;
 import com.rosetta.test.FpmlFxTargetKnockoutForward;
 import com.rosetta.test.FpmlTradeIdentifier;
 import com.rosetta.test.MultiLayerContainer;
@@ -188,6 +189,24 @@ public class XmlContentModelDisambiguationTest {
         assertEquals("A2", actual.getEntry().get(0).getSecondValue().getValue());
         assertEquals("B1", actual.getEntry().get(1).getFirstValue().getValue());
         assertEquals("B2", actual.getEntry().get(1).getSecondValue().getValue());
+    }
+
+    @Test
+    public void testSubtypeWhoseOnlyConfigurationIsItsXsdTypeNameKeepsItsSupertypesContentModel() throws IOException {
+        // MultiLeafContainerExtension has its own configuration entry, but only for its XSD type name. The
+        // content model is still found on its supertype's entry.
+        String xml = "<MultiLeafContainer>"
+                + "<firstValue>A1</firstValue>"
+                + "<secondValue>A2</secondValue>"
+                + "<firstValue>B1</firstValue>"
+                + "<secondValue>B2</secondValue>"
+                + "</MultiLeafContainer>";
+
+        MultiLeafContainerExtension actual = xmlMapper.readValue(xml, MultiLeafContainerExtension.class);
+
+        assertEquals(2, actual.getEntry().size());
+        assertEquals("A2", actual.getEntry().get(0).getSecondValue().getValue());
+        assertEquals("B1", actual.getEntry().get(1).getFirstValue().getValue());
     }
 
     // -------------- Additional node kinds: ALL and ANY --------------

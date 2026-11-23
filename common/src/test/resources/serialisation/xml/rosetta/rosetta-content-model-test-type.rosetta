@@ -43,6 +43,8 @@ type FpmlFxTargetKnockoutForwardChoice:
 type MultiLeafContainer:
     entry MultiLeafEntry (0..*)
 
+type MultiLeafContainerExtension extends MultiLeafContainer: <"A subtype whose only XML configuration is its XSD type name.">
+
 type MultiLeafEntry:
     firstValue FpmlTextValue (0..1)
     secondValue FpmlTextValue (0..1)

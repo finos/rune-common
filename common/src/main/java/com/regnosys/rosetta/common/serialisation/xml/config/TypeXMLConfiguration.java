@@ -61,6 +61,9 @@ public class TypeXMLConfiguration {
 	 *        attribute naming this XSD type selects this Rune type, and a value of this Rune type, or
 	 *        of a subtype without its own, is written with that {@code xsi:type}. Leave it out for an
 	 *        abstract complex type, which an {@code xsi:type} in a valid document cannot name.
+	 *        <p>An {@code xsi:type} only selects a subtype of the Rune type its element is declared
+	 *        with. {@code abstract} describes the element of the same name, if any, not the XSD type,
+	 *        and does not affect {@code xsi:type}.
 	 */
 	@JsonCreator
 	public TypeXMLConfiguration(
@@ -125,6 +128,18 @@ public class TypeXMLConfiguration {
 
 	public Optional<String> getXmlTypeFullyQualifiedName() {
 		return xmlTypeFullyQualifiedName;
+	}
+
+	/** A copy of this configuration with the given content model. */
+	public TypeXMLConfiguration withContentModel(Optional<XMLContentModel> contentModel) {
+		return new TypeXMLConfiguration(substitutionFor, substitutionGroup, xmlElementName, xmlElementFullyQualifiedName,
+				isAbstract, xmlAttributes, attributes, enumValues, contentModel, xmlTypeFullyQualifiedName);
+	}
+
+	/** A copy of this configuration with the given XSD type name. */
+	public TypeXMLConfiguration withXmlTypeFullyQualifiedName(Optional<String> xmlTypeFullyQualifiedName) {
+		return new TypeXMLConfiguration(substitutionFor, substitutionGroup, xmlElementName, xmlElementFullyQualifiedName,
+				isAbstract, xmlAttributes, attributes, enumValues, contentModel, xmlTypeFullyQualifiedName);
 	}
 
 	@Override

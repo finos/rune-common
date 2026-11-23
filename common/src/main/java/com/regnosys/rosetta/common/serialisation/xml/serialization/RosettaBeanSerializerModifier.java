@@ -81,7 +81,7 @@ public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
 
         XMLContentModelOrderer contentModelOrderer = null;
         Optional<TypeXMLConfiguration> typeConfig =
-                RosettaXMLTypeConfigLookup.getTypeXMLConfiguration(rosettaXMLConfiguration, config, beanDesc);
+                RosettaXMLTypeConfigLookup.getTypeXMLConfigurationWithContentModel(rosettaXMLConfiguration, config, beanDesc);
         if (typeConfig.isPresent()) {
             Optional<XMLContentModel> contentModel = typeConfig.get().getContentModel();
             if (contentModel.isPresent()) {

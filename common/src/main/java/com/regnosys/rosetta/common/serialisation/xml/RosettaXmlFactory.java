@@ -39,12 +39,17 @@ import java.io.IOException;
 final class RosettaXmlFactory extends XmlFactory {
     private static final long serialVersionUID = 1L;
 
-    RosettaXmlFactory() {
+    /** Without any XSD type names nothing selects a type by xsi:type, so parsers don't add the resolved attribute. */
+    private final boolean resolveXsiType;
+
+    RosettaXmlFactory(boolean resolveXsiType) {
         super();
+        this.resolveXsiType = resolveXsiType;
     }
 
     private RosettaXmlFactory(RosettaXmlFactory src, ObjectCodec codec) {
         super(src, codec);
+        this.resolveXsiType = src.resolveXsiType;
     }
 
     @Override
@@ -55,7 +60,9 @@ final class RosettaXmlFactory extends XmlFactory {
     @Override
     protected FromXmlParser createParser(IOContext ctxt, int genericParserFeatures, int xmlFeatures, ObjectCodec codec,
                                          XMLStreamReader xmlReader, XmlNameProcessor tagProcessor) throws IOException {
-        XMLStreamReader resolving = new XsiTypeResolvingStreamReader(Stax2JacksonReaderAdapter.wrapIfNecessary(xmlReader));
-        return new RosettaXmlParser(ctxt, genericParserFeatures, xmlFeatures, codec, resolving, tagProcessor);
+        XMLStreamReader reader = resolveXsiType
+                ? new XsiTypeResolvingStreamReader(Stax2JacksonReaderAdapter.wrapIfNecessary(xmlReader))
+                : xmlReader;
+        return new RosettaXmlParser(ctxt, genericParserFeatures, xmlFeatures, codec, reader, tagProcessor);
     }
 }

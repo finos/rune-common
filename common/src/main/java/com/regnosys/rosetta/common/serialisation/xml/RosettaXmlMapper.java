@@ -46,10 +46,15 @@ public class RosettaXmlMapper extends XmlMapper {
     private final ClassLoader classLoader;
 
     public RosettaXmlMapper(RosettaXMLConfiguration config, ClassLoader classLoader) {
-        super(new RosettaXmlFactory(), null);
+        super(new RosettaXmlFactory(hasXsdTypeName(config)), null);
         this.config = config;
         this.classLoader = classLoader;
 
+    }
+
+    private static boolean hasXsdTypeName(RosettaXMLConfiguration config) {
+        return config != null && config.getTypeConfigMap().values().stream()
+                .anyMatch(typeConfig -> typeConfig.getXmlTypeFullyQualifiedName().isPresent());
     }
 
     @Override

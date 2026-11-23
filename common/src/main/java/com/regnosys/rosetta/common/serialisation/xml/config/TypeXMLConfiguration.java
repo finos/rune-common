@@ -41,20 +41,6 @@ public class TypeXMLConfiguration {
 	private final Optional<XMLContentModel> contentModel;
 	private final Optional<String> xmlTypeFullyQualifiedName;
 
-	public TypeXMLConfiguration(
-			Optional<ModelSymbolId> substitutionFor,
-			Optional<String> substitutionGroup,
-			Optional<String> xmlElementName,
-			Optional<String> xmlElementFullyQualifiedName,
-			Optional<Boolean> isAbstract,
-			Optional<Map<String, String>> xmlAttributes,
-			Optional<Map<String, AttributeXMLConfiguration>> attributes,
-			Optional<Map<String, String>> enumValues,
-			Optional<XMLContentModel> contentModel) {
-		this(substitutionFor, substitutionGroup, xmlElementName, xmlElementFullyQualifiedName, isAbstract,
-				xmlAttributes, attributes, enumValues, contentModel, Optional.empty());
-	}
-
 	/**
 	 * @param xmlTypeFullyQualifiedName the XSD type this Rune type was generated from, as
 	 *        {@code namespace/localName}, e.g. {@code urn:my.schema/Circle}. An {@code xsi:type}

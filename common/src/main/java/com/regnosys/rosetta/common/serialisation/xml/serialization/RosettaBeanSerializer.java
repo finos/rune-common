@@ -287,6 +287,15 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
         Map<String, String> literal = literalNamespaces == null ? Collections.emptyMap() : literalNamespaces;
         try {
             String typeNamespace = xsiType.getNamespace();
+            if (typeNamespace == null) {
+                // An unprefixed QName is in the default namespace, so a type in no namespace cannot be named here.
+                String defaultNamespace = findDefaultNamespaceInScope(writer, literal);
+                if (defaultNamespace != null) {
+                    throw new IOException("Cannot write xsi:type " + xsiType.getName() + ": its XSD type is in no namespace, "
+                            + "but the default namespace here is " + defaultNamespace + ", so it would read back as "
+                            + "{" + defaultNamespace + "}" + xsiType.getName() + ". Give xmlTypeFullyQualifiedName as namespace/localName.");
+                }
+            }
             String typePrefix = typeNamespace == null ? "" : prefixFor(writer, literal, typeNamespace, "ns");
             String value = typePrefix.isEmpty() ? xsiType.getName() : typePrefix + ":" + xsiType.getName();
             String literalXsiPrefix = literalPrefixFor(writer, literal, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
@@ -335,6 +344,13 @@ public class RosettaBeanSerializer extends XmlBeanSerializer {
             }
         }
         return null;
+    }
+
+    // The non-empty default namespace in scope, bound by the writer or by an enclosing literal xmlns; otherwise null.
+    private static String findDefaultNamespaceInScope(XMLStreamWriter writer, Map<String, String> literalNamespaces) {
+        String bound = writer.getNamespaceContext().getNamespaceURI(XMLConstants.DEFAULT_NS_PREFIX);
+        String namespace = bound != null && !bound.isEmpty() ? bound : literalNamespaces.get(XMLConstants.DEFAULT_NS_PREFIX);
+        return namespace == null || namespace.isEmpty() ? null : namespace;
     }
 
     private static boolean isBoundByWriter(NamespaceContext context, String prefix) {

@@ -41,7 +41,7 @@ import java.util.Map;
  *       how an attribute held only as a reference ({@code {"@ref:external": "..."}}) disappears, along with
  *       any object or list that held nothing but such references.</li>
  * </ul>
- * The root is never omitted: a root left empty is written as {@code {}}.
+ * The root is never omitted: a root left empty is written as an empty object or array, matching its type.
  */
 public final class AttributesOnlyStripper {
 
@@ -57,7 +57,10 @@ public final class AttributesOnlyStripper {
      */
     public static JsonNode strip(JsonNode root) {
         JsonNode stripped = stripNode(root);
-        return stripped != null ? stripped : JsonNodeFactory.instance.objectNode();
+        if (stripped != null) {
+            return stripped;
+        }
+        return root.isArray() ? JsonNodeFactory.instance.arrayNode() : JsonNodeFactory.instance.objectNode();
     }
 
     /**

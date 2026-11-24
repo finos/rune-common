@@ -38,7 +38,7 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.attributesonly.AttributesOnlySerializerProvider;
 import org.finos.rune.mapper.attributesonly.AttributesOnlyStripper;
-import org.finos.rune.mapper.attributesonly.WriteOnlyDeserializationContext;
+import org.finos.rune.mapper.attributesonly.ModelReadRejectingIntrospector;
 import org.finos.rune.mapper.date.RuneDateModule;
 import org.finos.rune.mapper.filters.SubtypeFilter;
 import org.finos.rune.mapper.introspector.RuneJsonModule;
@@ -84,8 +84,14 @@ public class RuneJsonObjectMapper extends ObjectMapper {
     }
 
     private RuneJsonObjectMapper(boolean attributesOnly) {
-        super(create(attributesOnly));
+        super(create());
         this.attributesOnly = attributesOnly;
+        if (attributesOnly) {
+            setSerializerProvider(new AttributesOnlySerializerProvider(this));
+            DeserializationConfig deserializationConfig = getDeserializationConfig();
+            setConfig(deserializationConfig.with(AnnotationIntrospector.pair(
+                    new ModelReadRejectingIntrospector(), deserializationConfig.getAnnotationIntrospector())));
+        }
     }
 
     /**
@@ -120,11 +126,8 @@ public class RuneJsonObjectMapper extends ObjectMapper {
         return RuneJsonConfig.getMetaProperties();
     }
 
-    private static ObjectMapper create(boolean attributesOnly) {
-        ObjectMapper base = attributesOnly
-                ? new ObjectMapper(null, new AttributesOnlySerializerProvider(), new WriteOnlyDeserializationContext())
-                : new ObjectMapper();
-        return base
+    private static ObjectMapper create() {
+        return new ObjectMapper()
                 .registerModule(new GuavaModule())
                 .registerModule(new JodaModule())
                 .registerModule(new ParameterNamesModule())

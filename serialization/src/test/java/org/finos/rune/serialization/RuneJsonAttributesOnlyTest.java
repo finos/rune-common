@@ -20,6 +20,8 @@ package org.finos.rune.serialization;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +36,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.StringWriter;
+import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +113,56 @@ class RuneJsonAttributesOnlyTest {
     }
 
     @Test
+    void refusesToConvertToModelObject() {
+        RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
+        Class<RosettaModelObject> rootType = compiledBasicRootType();
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> mapper.convertValue(Collections.emptyMap(), rootType));
+        assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
+    }
+
+    @Test
+    void refusesToReadModelObjectsAsSequence() {
+        RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
+        Class<RosettaModelObject> rootType = compiledBasicRootType();
+
+        InvalidDefinitionException error = assertThrows(InvalidDefinitionException.class,
+                () -> mapper.readerFor(rootType).readValues("{} {}").next());
+        assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
+    }
+
+    @Test
+    void writesEmptiedRootListAsEmptyArray() throws Exception {
+        RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly();
+
+        String json = mapper.writeValueAsString(Collections.singletonList(Collections.singletonMap("@ref", "a")));
+
+        assertEquals("[]", json);
+    }
+
+    @Test
+    void wrapsRootNameOnce() throws Exception {
+        RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly();
+
+        String json = mapper.writer().withRootName("trade").writeValueAsString(Collections.singletonMap("x", 1));
+
+        assertEquals("{\"trade\":{\"x\":1}}", json);
+    }
+
+    @Test
+    void writesToGeneratorWithoutCodec() throws Exception {
+        RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly();
+        StringWriter out = new StringWriter();
+
+        try (JsonGenerator generator = new JsonFactory().createGenerator(out)) {
+            mapper.writeValue(generator, Collections.singletonMap("amount", new BigDecimal("1.50")));
+        }
+
+        assertEquals("{\"amount\":1.50}", out.toString());
+    }
+
+    @Test
     void readsJsonTree() throws Exception {
         RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
 
@@ -119,6 +174,12 @@ class RuneJsonAttributesOnlyTest {
         assertTrue(RuneJsonObjectMapper.attributesOnly().isAttributesOnly());
         assertFalse(new RuneJsonObjectMapper().isAttributesOnly());
         assertFalse(new RuneJsonObjectMapper(dynamicCompiledClassLoader).isAttributesOnly());
+    }
+
+    private static Class<RosettaModelObject> compiledBasicRootType() {
+        return generateCompileAndGetRootDataType(NAMESPACE_PREFIX, "basic",
+                listFiles(getGroupPath(RuneJsonSerializerRoundTripTest.TEST_TYPE, "basic"), ".rosetta"),
+                helper, new DynamicCompiledClassLoader());
     }
 
     static Stream<Arguments> testCases() {

@@ -163,7 +163,12 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * The {@code RUNE_JSON} mapper. With no {@code configPath}, or a {@link RuneJSONConfiguration} that does
      * not set {@code attributesOnly}, this is {@link #runeJsonMapper(Class)}'s standard mapper. With
      * {@code attributesOnly: true} it is {@link RuneJsonObjectMapper#attributesOnly(ClassLoader)}, which
-     * writes only model attributes and refuses to read model objects.
+     * writes only model attributes and refuses to read model objects; {@link #runeJsonMapper(Class)} is not
+     * called, so a subclass's customisation there does not apply to it.
+     * <p>
+     * A {@code configPath} that cannot be found or read as a Rune JSON configuration is logged as a warning
+     * and the standard mapper is used, because {@code RUNE_JSON} transforms ignored their {@code configPath}
+     * before this configuration existed.
      *
      * @throws IllegalArgumentException if the configuration sets {@code attributesOnly: true} and
      *                                  {@code root} says this is the transform's input side
@@ -189,7 +194,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
 
     /**
      * The standard {@code RUNE_JSON} mapper, for a transform whose configuration does not set
-     * {@code attributesOnly}.
+     * {@code attributesOnly}. Not called for an attributes-only transform: see
+     * {@link #runeJsonMapper(String, Class, TransformRoot)}.
      */
     protected ObjectMapper runeJsonMapper(Class<?> functionClass) {
         // Rune JSON resolves model types (e.g. for global-key hashing) so it needs the model classloader.
@@ -466,11 +472,18 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return configUrl.openStream();
     }
 
+    /**
+     * Reads the configuration, or returns {@link RuneJSONConfiguration#EMPTY} with a warning when it cannot
+     * be found or read.
+     */
     private RuneJSONConfiguration loadRuneJsonConfig(String configPath, Class<?> functionClass) {
         try (InputStream inputStream = openRuneJsonConfig(configPath, functionClass)) {
-            return RuneJSONConfiguration.load(inputStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read Rune JSON configuration '" + configPath + "'", e);
+            return RuneJSONConfiguration.load(inputStream, "Rune JSON configuration '" + configPath + "'");
+        } catch (IOException | UncheckedIOException | IllegalStateException | IllegalArgumentException e) {
+            LOGGER.warn("RUNE_JSON transform {} declares configPath '{}', which could not be read as a Rune JSON "
+                            + "configuration ({}). It was NOT applied: standard Rune JSON is in use.",
+                    functionClass != null ? functionClass.getName() : "(unknown function)", configPath, e.getMessage());
+            return RuneJSONConfiguration.EMPTY;
         }
     }
 

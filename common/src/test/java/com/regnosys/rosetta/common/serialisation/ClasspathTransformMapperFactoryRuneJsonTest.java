@@ -20,8 +20,13 @@ package com.regnosys.rosetta.common.serialisation;
  * ==============
  */
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
+import com.regnosys.rosetta.common.serialisation.runejson.RuneJSONConfiguration;
 import com.rosetta.model.lib.transform.Ingest;
 import com.rosetta.model.lib.transform.Projection;
 import com.rosetta.model.lib.transform.SerializationFormat;
@@ -30,6 +35,11 @@ import com.rosetta.model.metafields.MetaFields;
 import csv.test.metadata.MetadataAttributeHolder;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -140,7 +150,47 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
     }
 
     @Test
-    void missingConfigFails() {
-        assertThrows(IllegalStateException.class, () -> outputMapper("serialisation/runejson/does-not-exist.json"));
+    void missingConfigWarnsAndWritesStandardRuneJson() throws Exception {
+        assertWarnsAndWritesStandardRuneJson("serialisation/runejson/does-not-exist.json", "could not be read");
+    }
+
+    @Test
+    void invalidConfigWarnsAndWritesStandardRuneJson() throws Exception {
+        assertWarnsAndWritesStandardRuneJson("serialisation/runejson/invalid-config.json", "could not be read");
+    }
+
+    @Test
+    void misspeltSettingWarnsAndWritesStandardRuneJson() throws Exception {
+        assertWarnsAndWritesStandardRuneJson("serialisation/runejson/misspelt-config.json", "[attributeOnly]");
+    }
+
+    private void assertWarnsAndWritesStandardRuneJson(String configPath, String expectedWarning) throws Exception {
+        ObjectMapper[] mapper = new ObjectMapper[1];
+        List<String> warnings = warningsWhile(() -> mapper[0] = outputMapper(configPath));
+
+        assertEquals(1, warnings.size(), "expected exactly one WARN, got " + warnings);
+        assertTrue(warnings.get(0).contains(configPath), warnings.get(0));
+        assertTrue(warnings.get(0).contains(expectedWarning), warnings.get(0));
+        assertStandardRuneJson(mapper[0]);
+    }
+
+    /** The WARNs logged by the factory and the configuration loader while {@code work} runs. */
+    private static List<String> warningsWhile(Runnable work) {
+        List<Logger> loggers = Arrays.asList(
+                (Logger) LoggerFactory.getLogger(ClasspathTransformMapperFactory.class),
+                (Logger) LoggerFactory.getLogger(RuneJSONConfiguration.class));
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        loggers.forEach(logger -> logger.addAppender(appender));
+        try {
+            work.run();
+        } finally {
+            loggers.forEach(logger -> logger.detachAppender(appender));
+            appender.stop();
+        }
+        return appender.list.stream()
+                .filter(event -> event.getLevel() == Level.WARN)
+                .map(ILoggingEvent::getFormattedMessage)
+                .collect(Collectors.toList());
     }
 }

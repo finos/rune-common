@@ -21,10 +21,11 @@ package org.finos.rune.mapper.attributesonly;
  */
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializable;
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.cfg.CacheProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
@@ -33,31 +34,51 @@ import com.fasterxml.jackson.databind.ser.SerializerFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Writes each root value as standard Rune JSON into a buffer, then writes that JSON through
  * {@link AttributesOnlyStripper}. The standard serializers are not aware of the attributes-only setting.
  * <p>
- * Root writes from both {@code ObjectMapper} and {@code ObjectWriter} pass through here.
+ * Root writes from both {@code ObjectMapper} and {@code ObjectWriter} pass through here. So do the nested
+ * {@code writeTree} calls a serializer makes while the root is being buffered; those are written as they are,
+ * because stripping a fragment on its own would turn a reference-only value into {@code {}} instead of
+ * omitting it.
  */
 public class AttributesOnlySerializerProvider extends DefaultSerializerProvider {
 
     private static final long serialVersionUID = 1L;
 
-    public AttributesOnlySerializerProvider() {
+    /**
+     * Set while a root value is being buffered on this thread. Jackson builds a new provider for each call,
+     * so the nested calls cannot be told apart by instance state.
+     */
+    private static final ThreadLocal<Boolean> BUFFERING_ROOT = ThreadLocal.withInitial(() -> false);
+
+    /**
+     * Reads the buffer back with the mapper's own settings, so decimals keep their scale whatever generator
+     * the caller supplied.
+     */
+    private final transient ObjectMapper owner;
+
+    public AttributesOnlySerializerProvider(ObjectMapper owner) {
         super();
+        this.owner = Objects.requireNonNull(owner, "owner must not be null");
     }
 
     private AttributesOnlySerializerProvider(AttributesOnlySerializerProvider src) {
         super(src);
+        this.owner = src.owner;
     }
 
     private AttributesOnlySerializerProvider(AttributesOnlySerializerProvider src, SerializationConfig config, SerializerFactory factory) {
         super(src, config, factory);
+        this.owner = src.owner;
     }
 
     private AttributesOnlySerializerProvider(AttributesOnlySerializerProvider src, CacheProvider cacheProvider) {
         super(src, cacheProvider);
+        this.owner = src.owner;
     }
 
     @Override
@@ -77,55 +98,63 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
 
     @Override
     public void serializeValue(JsonGenerator gen, Object value) throws IOException {
-        TokenBuffer buffer = newBuffer(gen);
-        super.serializeValue(buffer, value);
-        writeStripped(gen, buffer);
+        if (BUFFERING_ROOT.get()) {
+            super.serializeValue(gen, value);
+            return;
+        }
+        writeStripped(gen, buffer -> super.serializeValue(buffer, value));
     }
 
     @Override
     public void serializeValue(JsonGenerator gen, Object value, JavaType rootType) throws IOException {
-        TokenBuffer buffer = newBuffer(gen);
-        super.serializeValue(buffer, value, rootType);
-        writeStripped(gen, buffer);
+        if (BUFFERING_ROOT.get()) {
+            super.serializeValue(gen, value, rootType);
+            return;
+        }
+        writeStripped(gen, buffer -> super.serializeValue(buffer, value, rootType));
     }
 
     @Override
     public void serializeValue(JsonGenerator gen, Object value, JavaType rootType, JsonSerializer<Object> ser) throws IOException {
-        TokenBuffer buffer = newBuffer(gen);
-        super.serializeValue(buffer, value, rootType, ser);
-        writeStripped(gen, buffer);
+        if (BUFFERING_ROOT.get()) {
+            super.serializeValue(gen, value, rootType, ser);
+            return;
+        }
+        writeStripped(gen, buffer -> super.serializeValue(buffer, value, rootType, ser));
     }
 
     @Override
     public void serializePolymorphic(JsonGenerator gen, Object value, JavaType rootType, JsonSerializer<Object> valueSer, TypeSerializer typeSer) throws IOException {
-        TokenBuffer buffer = newBuffer(gen);
-        super.serializePolymorphic(buffer, value, rootType, valueSer, typeSer);
-        writeStripped(gen, buffer);
-    }
-
-    private static TokenBuffer newBuffer(JsonGenerator gen) {
-        return new TokenBuffer(requireCodec(gen), false);
-    }
-
-    private void writeStripped(JsonGenerator gen, TokenBuffer buffer) throws IOException {
-        JsonNode tree = requireCodec(gen).readTree(buffer.asParser());
-        // A root null is buffered as a null token, which readTree reports as no content.
-        if (tree == null) {
-            super.serializeValue(gen, null);
+        if (BUFFERING_ROOT.get()) {
+            super.serializePolymorphic(gen, value, rootType, valueSer, typeSer);
             return;
         }
-        super.serializeValue(gen, AttributesOnlyStripper.strip(tree));
+        writeStripped(gen, buffer -> super.serializePolymorphic(buffer, value, rootType, valueSer, typeSer));
     }
 
     /**
-     * The codec reads the buffer back with the mapper's own settings, so decimals keep their scale.
+     * Root wrapping ({@code withRootName}) is applied while buffering, so the stripped tree is written
+     * directly rather than serialized again.
      */
-    private static ObjectCodec requireCodec(JsonGenerator gen) {
-        ObjectCodec codec = gen.getCodec();
-        if (codec == null) {
-            throw new IllegalStateException("Attributes-only Rune JSON needs a JsonGenerator created by its "
-                    + "RuneJsonObjectMapper; this generator has no ObjectCodec.");
+    private void writeStripped(JsonGenerator gen, BufferWrite bufferWrite) throws IOException {
+        TokenBuffer buffer = new TokenBuffer(owner, false);
+        BUFFERING_ROOT.set(true);
+        try {
+            bufferWrite.writeTo(buffer);
+        } finally {
+            BUFFERING_ROOT.remove();
         }
-        return codec;
+        JsonNode tree = owner.readTree(buffer.asParser());
+        // A root null is buffered as a null token, which readTree reports as no content.
+        if (tree == null) {
+            gen.writeNull();
+            return;
+        }
+        ((JsonSerializable) AttributesOnlyStripper.strip(tree)).serialize(gen, this);
+    }
+
+    @FunctionalInterface
+    private interface BufferWrite {
+        void writeTo(TokenBuffer buffer) throws IOException;
     }
 }

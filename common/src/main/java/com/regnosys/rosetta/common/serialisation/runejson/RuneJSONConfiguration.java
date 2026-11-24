@@ -23,11 +23,17 @@ package com.regnosys.rosetta.common.serialisation.runejson;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -41,12 +47,19 @@ import java.util.Objects;
  * See {@link org.finos.rune.mapper.RuneJsonObjectMapper#attributesOnly()}. Such JSON cannot be read back,
  * so the setting is for projections only.
  * <p>
- * Create one with {@link #load(InputStream)} or {@link #builder()}. An absent setting takes its default,
- * and {@link #EMPTY} is the configuration of a transform with no {@code configPath}.
+ * Create one with {@link #load(InputStream)} or {@link #builder()}. An absent setting takes its default, an
+ * unknown one is ignored with a warning, and {@link #EMPTY} is the configuration of a transform with no
+ * {@code configPath}.
  */
 public class RuneJSONConfiguration {
 
     public static final RuneJSONConfiguration EMPTY = builder().build();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuneJSONConfiguration.class);
+    private static final List<String> KNOWN_SETTINGS = Collections.singletonList("attributesOnly");
+    private static final ObjectMapper CONFIGURATION_MAPPER = JsonMapper.builder()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .build();
 
     private final boolean attributesOnly;
 
@@ -64,16 +77,39 @@ public class RuneJSONConfiguration {
     }
 
     /**
-     * Loads a configuration from JSON. An unknown property is tolerated, not rejected.
+     * Loads a configuration from JSON. An unknown property is ignored, with a warning.
      *
-     * @throws IOException if the stream cannot be read or does not hold valid JSON
+     * @throws IOException if the stream cannot be read or does not hold a valid configuration
      */
     public static RuneJSONConfiguration load(InputStream input) throws IOException {
-        ObjectMapper configurationMapper = JsonMapper.builder()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .build();
-        RuneJSONConfiguration configuration = configurationMapper.readValue(input, RuneJSONConfiguration.class);
-        return configuration != null ? configuration : EMPTY;
+        return load(input, "Rune JSON configuration");
+    }
+
+    /**
+     * {@link #load(InputStream)}, naming {@code source} in the warning for an unknown property.
+     */
+    public static RuneJSONConfiguration load(InputStream input, String source) throws IOException {
+        JsonNode document = CONFIGURATION_MAPPER.readTree(input);
+        if (document == null || document.isNull() || document.isMissingNode()) {
+            return EMPTY;
+        }
+        warnOfUnknownSettings(document, source);
+        return CONFIGURATION_MAPPER.treeToValue(document, RuneJSONConfiguration.class);
+    }
+
+    private static void warnOfUnknownSettings(JsonNode document, String source) {
+        if (!document.isObject()) {
+            return;
+        }
+        List<String> unknown = new ArrayList<>();
+        document.fieldNames().forEachRemaining(name -> {
+            if (!KNOWN_SETTINGS.contains(name)) {
+                unknown.add(name);
+            }
+        });
+        if (!unknown.isEmpty()) {
+            LOGGER.warn("{} has unknown settings {}, which are ignored. Known settings: {}.", source, unknown, KNOWN_SETTINGS);
+        }
     }
 
     public boolean isAttributesOnly() {

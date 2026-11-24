@@ -109,7 +109,8 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
                     RuneJsonConfig.MetaProperties.TYPE,
                     JsonTypeInfo.class,
                     false,
-                    false);
+                    false,
+                    null);
         }
         return super.findPolymorphicTypeInfo(config, ann);
     }

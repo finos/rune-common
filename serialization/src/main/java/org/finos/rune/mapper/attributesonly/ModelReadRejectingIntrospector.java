@@ -83,7 +83,8 @@ public class ModelReadRejectingIntrospector extends NopAnnotationIntrospector {
 
         private <T> T reject(DeserializationContext ctxt) throws JsonMappingException {
             return ctxt.reportBadDefinition(ctxt.constructType(handledType()), "Cannot read "
-                    + handledType().getName() + ": this RuneJsonObjectMapper writes attributes-only Rune JSON, which has no @type or reference metadata to read a model object back from. "
+                    + handledType().getName() + ": this RuneJsonObjectMapper writes attributes-only Rune JSON, "
+                    + "which has no @type or reference metadata to read a model object back from. "
                     + "Read Rune JSON with a RuneJsonObjectMapper that is not attributes-only.");
         }
     }

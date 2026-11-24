@@ -37,6 +37,10 @@ import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -147,6 +151,24 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> cachingFactory.create(runeJson(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyIngest.class, TransformRoot.input()));
+    }
+
+    @Test
+    void openConfigOverrideSuppliesRuneJsonConfig() throws Exception {
+        List<SerializationFormat> formats = new ArrayList<>();
+        ClasspathTransformMapperFactory workspaceFactory = new ClasspathTransformMapperFactory() {
+            @Override
+            protected InputStream openConfig(SerializationFormat format, String configPath, Class<?> functionClass) {
+                formats.add(format);
+                return new ByteArrayInputStream("{\"attributesOnly\": true}".getBytes(StandardCharsets.UTF_8));
+            }
+        };
+
+        ObjectMapper mapper = workspaceFactory.create(runeJson("workspace/not-on-classpath.json"),
+                AttributesOnlyProjection.class, TransformRoot.output());
+
+        assertEquals(Arrays.asList(SerializationFormat.RUNE_JSON), formats);
+        assertEquals("{\"head\":\"h1\",\"scheme\":\"S1\",\"tail\":\"t1\"}", mapper.writeValueAsString(holderWithScheme()));
     }
 
     @Test

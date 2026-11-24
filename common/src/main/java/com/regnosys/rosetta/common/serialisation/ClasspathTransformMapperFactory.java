@@ -31,6 +31,7 @@ import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
+import com.rosetta.model.lib.transform.SerializationFormat;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,8 +95,9 @@ import java.util.function.Supplier;
  * {@link #runeJsonMapper(Class)}, {@link #csvMapper(String, Class, TransformRoot)},
  * {@link #csvLabelledMapper(Class, TransformRoot)}, {@link #xmlMapper(String, Class)} and
  * {@link #fixMapper(String, Class)}. Below those: {@link #resolveLabelProvider(Class, TransformRoot)} for
- * label resolution, {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} /
- * {@link #openFixConfig(String, Class)} for the config lookups,
+ * label resolution, {@link #openConfig(SerializationFormat, String, Class)} for every config lookup, or
+ * {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} /
+ * {@link #openFixConfig(String, Class)} / {@link #openRuneJsonConfig(String, Class)} for one format's,
  * and {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader.
  * <p>
  * Three narrower overloads predate the parameters above and are <b>deprecated since 12.10.0, for removal
@@ -464,12 +466,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * resolves against the model classloader.
      */
     protected InputStream openFixConfig(String configPath, Class<?> functionClass) throws IOException {
-        ClassLoader classLoader = classLoader(functionClass);
-        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
-        if (configUrl == null) {
-            throw new IllegalStateException("Could not find FIX configuration '" + configPath + "' on the classpath");
-        }
-        return configUrl.openStream();
+        return openConfig(SerializationFormat.FIX, configPath, functionClass);
     }
 
     /**
@@ -492,10 +489,23 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * Override to look it up elsewhere first.
      */
     protected InputStream openRuneJsonConfig(String configPath, Class<?> functionClass) throws IOException {
+        return openConfig(SerializationFormat.RUNE_JSON, configPath, functionClass);
+    }
+
+    /**
+     * Opens a serialization config for any format. Each {@code openXxxConfig} method delegates here, so a
+     * runtime that looks every config up elsewhere first (e.g. a workspace directory) overrides this one
+     * method, and a format added later is covered too; override a format's own method to change only that
+     * format. The classpath implementation resolves {@code configPath} against {@link #classLoader(Class)},
+     * falling back to the legacy Guava classpath lookup when that is {@code null}.
+     *
+     * @param format the format whose config is wanted: {@code XML}, {@code CSV}, {@code FIX} or {@code RUNE_JSON}
+     */
+    protected InputStream openConfig(SerializationFormat format, String configPath, Class<?> functionClass) throws IOException {
         ClassLoader classLoader = classLoader(functionClass);
         URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
         if (configUrl == null) {
-            throw new IllegalStateException("Could not find Rune JSON configuration '" + configPath + "' on the classpath");
+            throw new IllegalStateException("Could not find " + format + " configuration '" + configPath + "' on the classpath");
         }
         return configUrl.openStream();
     }
@@ -507,12 +517,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * delegating to {@code super}.
      */
     protected InputStream openXmlConfig(String configPath, Class<?> functionClass) throws IOException {
-        ClassLoader classLoader = classLoader(functionClass);
-        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
-        if (configUrl == null) {
-            throw new IllegalStateException("Could not find XML configuration '" + configPath + "' on the classpath");
-        }
-        return configUrl.openStream();
+        return openConfig(SerializationFormat.XML, configPath, functionClass);
     }
 
     /**
@@ -531,12 +536,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * such a transform is reported dropped instead.
      */
     protected InputStream openCsvConfig(String configPath, Class<?> functionClass) throws IOException {
-        ClassLoader classLoader = classLoader(functionClass);
-        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
-        if (configUrl == null) {
-            throw new IllegalStateException("Could not find CSV configuration '" + configPath + "' on the classpath");
-        }
-        return configUrl.openStream();
+        return openConfig(SerializationFormat.CSV, configPath, functionClass);
     }
 
     /**

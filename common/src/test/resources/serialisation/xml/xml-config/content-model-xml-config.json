@@ -90,6 +90,9 @@
       ]
     }
   },
+  "com.rosetta.test.MultiLeafContainerExtension": {
+    "xmlTypeFullyQualifiedName": "urn:test/MultiLeafContainerExtension"
+  },
   "com.rosetta.test.AllVirtualContainer": {
     "attributes": {
       "entry": { "xmlRepresentation": "VIRTUAL" }

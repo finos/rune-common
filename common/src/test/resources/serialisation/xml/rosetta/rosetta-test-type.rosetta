@@ -25,6 +25,14 @@ type Snake extends Animal:
 
 type Camel extends Animal:
 
+type Llama extends Animal:
+
+    fluffiness int (1..1)
+
+type LlamaDetailsModel:
+
+    fluffiness int (1..1)
+
 type Document:
 
     attr Foo (1..1)
@@ -100,6 +108,36 @@ type Animal:
 type Zoo:
 
     animal Animal (1..*)
+
+type ShapeContainer:
+
+    shape Shape (0..*)
+
+type WrappedShapeContainer:
+
+    wrappedShapeContainerModel WrappedShapeContainerModel (1..1)
+
+type WrappedShapeContainerModel:
+
+    shape Shape (0..*)
+
+type Shape:
+
+    colour string (0..1)
+
+type Circle extends Shape:
+
+    radius number (1..1)
+
+type RuneOnlyCircle extends Circle: <"A subtype with no XSD type of its own, so no xmlTypeFullyQualifiedName.">
+
+type RuneOnlyCircleChild extends RuneOnlyCircle: <"Two levels below Circle, with no XSD type of its own.">
+
+type RuneOnlyShape extends Shape: <"A subtype of Shape with no XSD type of its own, nor any supertype below Shape with one.">
+
+type Pen extends Shape:
+
+    animal Animal (0..1)
 
 type WrappedAnimalContainerModel:
 

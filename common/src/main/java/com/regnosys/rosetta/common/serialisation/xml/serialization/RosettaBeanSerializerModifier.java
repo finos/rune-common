@@ -32,7 +32,10 @@ import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfigurat
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -78,7 +81,7 @@ public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
 
         XMLContentModelOrderer contentModelOrderer = null;
         Optional<TypeXMLConfiguration> typeConfig =
-                RosettaXMLTypeConfigLookup.getTypeXMLConfiguration(rosettaXMLConfiguration, config, beanDesc);
+                RosettaXMLTypeConfigLookup.getTypeXMLConfigurationWithContentModel(rosettaXMLConfiguration, config, beanDesc);
         if (typeConfig.isPresent()) {
             Optional<XMLContentModel> contentModel = typeConfig.get().getContentModel();
             if (contentModel.isPresent()) {
@@ -86,6 +89,23 @@ public class RosettaBeanSerializerModifier extends BeanSerializerModifier {
             }
         }
 
-        return new RosettaBeanSerializer((XmlBeanSerializer) serializer, null, contentModelOrderer);
+        return new RosettaBeanSerializer((XmlBeanSerializer) serializer, null, contentModelOrderer, rosettaXMLConfiguration,
+                literalNamespaces(config, beanDesc));
+    }
+
+    // Prefix to namespace for the `xmlns` and `xmlns:<prefix>` attributes in the type's xmlAttributes.
+    private Map<String, String> literalNamespaces(SerializationConfig config, BeanDescription beanDesc) {
+        Map<String, String> namespaces = new LinkedHashMap<>();
+        for (TypeXMLConfiguration typeConfig : RosettaXMLTypeConfigLookup.getTypeXMLConfigurations(
+                rosettaXMLConfiguration, config, beanDesc.getClassInfo())) {
+            typeConfig.getXmlAttributes().ifPresent(attributes -> attributes.forEach((name, value) -> {
+                if (name.equals("xmlns")) {
+                    namespaces.putIfAbsent("", value);
+                } else if (name.startsWith("xmlns:")) {
+                    namespaces.putIfAbsent(name.substring("xmlns:".length()), value);
+                }
+            }));
+        }
+        return namespaces.isEmpty() ? Collections.<String, String>emptyMap() : Collections.unmodifiableMap(namespaces);
     }
 }

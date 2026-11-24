@@ -26,14 +26,23 @@ import com.fasterxml.jackson.databind.deser.impl.MethodProperty;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
+import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap.XMLFullyQualifiedName;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLTypeConfigLookup;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.XMLContentModel;
 
+import com.rosetta.model.lib.ModelSymbolId;
+import com.rosetta.model.lib.RosettaModelObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -41,12 +50,16 @@ import java.util.Optional;
  * Support for deserialising substitution groups by adding additional properties
  * to the `BeanDeserializerBuilder` for each additional name of a substitution. Also wraps the
  * generated deserializer with a {@link XMLContentModelDisambiguatingDeserializer} for Rosetta
- * types whose XML configuration provides a {@code contentModel}.
+ * types whose XML configuration provides a {@code contentModel}, and with a {@link XsiTypeDeserializer}
+ * for Rosetta types that have a subtype an {@code xsi:type} attribute can select.
  */
 public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RosettaBeanDeserializerModifier.class);
+
     private final SubstitutionMapLoader substitutionMapLoader;
     private final RosettaXMLConfiguration rosettaXMLConfiguration;
     private final VirtualPathBuilderHelper virtualPathBuilderHelper;
+    private volatile Map<XMLFullyQualifiedName, Class<?>> typesByXsdTypeName;
 
     public RosettaBeanDeserializerModifier(SubstitutionMapLoader substitutionMapLoader,
                                            RosettaXMLConfiguration rosettaXMLConfiguration) {
@@ -67,7 +80,14 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
     public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config,
                                                   BeanDescription beanDesc,
                                                   JsonDeserializer<?> deserializer) {
-        Optional<TypeXMLConfiguration> typeConfig = RosettaXMLTypeConfigLookup.getTypeXMLConfiguration(
+        JsonDeserializer<?> modified = wrapWithContentModelRouting(config, beanDesc, deserializer);
+        return wrapWithXsiTypeSelection(beanDesc, modified);
+    }
+
+    private JsonDeserializer<?> wrapWithContentModelRouting(DeserializationConfig config,
+                                                            BeanDescription beanDesc,
+                                                            JsonDeserializer<?> deserializer) {
+        Optional<TypeXMLConfiguration> typeConfig = RosettaXMLTypeConfigLookup.getTypeXMLConfigurationWithContentModel(
                 rosettaXMLConfiguration, config, beanDesc);
         if (!typeConfig.isPresent()) {
             return deserializer;
@@ -85,6 +105,59 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
                 typeConfig.get(),
                 contentModel.get(),
                 virtualPathBuilderHelper);
+    }
+
+    private JsonDeserializer<?> wrapWithXsiTypeSelection(BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+        Class<?> runeType = builtType(beanDesc.getBeanClass());
+        Map<XMLFullyQualifiedName, Class<?>> selectable = new HashMap<>();
+        getTypesByXsdTypeName().forEach((name, type) -> {
+            if (runeType.isAssignableFrom(type)) {
+                selectable.put(name, type);
+            }
+        });
+        boolean hasSubtype = selectable.values().stream().anyMatch(type -> !type.equals(runeType));
+        if (!hasSubtype) {
+            return deserializer;
+        }
+        return new XsiTypeDeserializer(deserializer, runeType, Collections.unmodifiableMap(selectable));
+    }
+
+    /**
+     * Rosetta types are read through their builders, so the bean being deserialized is a builder such as
+     * {@code Shape.ShapeBuilderImpl}. Its covariant {@code build()} method returns the Rune type, {@code Shape}.
+     */
+    private static Class<?> builtType(Class<?> beanClass) {
+        if (RosettaModelObjectBuilder.class.isAssignableFrom(beanClass)) {
+            try {
+                return beanClass.getMethod("build").getReturnType();
+            } catch (NoSuchMethodException e) {
+                return beanClass;
+            }
+        }
+        return beanClass;
+    }
+
+    private Map<XMLFullyQualifiedName, Class<?>> getTypesByXsdTypeName() {
+        Map<XMLFullyQualifiedName, Class<?>> result = typesByXsdTypeName;
+        if (result == null) {
+            result = new HashMap<>();
+            ClassLoader classLoader = substitutionMapLoader.getClassLoader();
+            for (Map.Entry<ModelSymbolId, TypeXMLConfiguration> entry : rosettaXMLConfiguration.getTypeConfigMap().entrySet()) {
+                Optional<String> xsdTypeName = entry.getValue().getXmlTypeFullyQualifiedName();
+                if (!xsdTypeName.isPresent()) {
+                    continue;
+                }
+                String className = entry.getKey().getQualifiedName().toString();
+                try {
+                    result.put(new XMLFullyQualifiedName(xsdTypeName.get()), classLoader.loadClass(className));
+                } catch (ClassNotFoundException e) {
+                    LOGGER.warn("The XML configuration gives the XSD type {} for {}, but that class cannot be loaded, "
+                            + "so xsi:type cannot select it.", xsdTypeName.get(), className);
+                }
+            }
+            typesByXsdTypeName = result;
+        }
+        return result;
     }
 
     private void addSubstitutionProperties(DeserializationConfig config,

@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.ser.ResolvableSerializer;
 import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneDataType;
-import org.finos.rune.mapper.RuneJsonConfig;
+import org.finos.rune.mapper.RuneJsonPropertyNames;
 import org.finos.rune.mapper.processor.SerializationPreProcessor;
 
 import java.io.IOException;
@@ -184,7 +184,7 @@ public class PreProcessingSerializer<T> extends JsonSerializer<T> implements Con
         private String version;
         private RosettaModelObject rosettaModelObject;
 
-        @JsonGetter(RuneJsonConfig.MetaProperties.MODEL)
+        @JsonGetter(RuneJsonPropertyNames.MetaProperties.MODEL)
         public String getModel() {
             return model;
         }
@@ -193,7 +193,7 @@ public class PreProcessingSerializer<T> extends JsonSerializer<T> implements Con
             this.model = model;
         }
 
-        @JsonGetter(RuneJsonConfig.MetaProperties.TYPE)
+        @JsonGetter(RuneJsonPropertyNames.MetaProperties.TYPE)
         public String getType() {
             return type;
         }
@@ -202,7 +202,7 @@ public class PreProcessingSerializer<T> extends JsonSerializer<T> implements Con
             this.type = type;
         }
 
-        @JsonGetter(RuneJsonConfig.MetaProperties.VERSION)
+        @JsonGetter(RuneJsonPropertyNames.MetaProperties.VERSION)
         public String getVersion() {
             return version;
         }

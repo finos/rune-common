@@ -23,9 +23,9 @@ package org.finos.rune.mapper;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.finos.rune.mapper.RuneJsonConfig.MetaProperties.*;
+import static org.finos.rune.mapper.RuneJsonPropertyNames.MetaProperties.*;
 
-public class RuneJsonConfig {
+public class RuneJsonPropertyNames {
     public static class MetaProperties {
         public static final String MODEL = "@model";
         public static final String TYPE = "@type";
@@ -35,7 +35,7 @@ public class RuneJsonConfig {
         private MetaProperties() {}
     }
 
-    private RuneJsonConfig() {}
+    private RuneJsonPropertyNames() {}
 
     public static List<String> getMetaProperties() {
         return Arrays.asList(MODEL, TYPE, VERSION);

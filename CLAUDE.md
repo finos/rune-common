@@ -34,7 +34,7 @@ The project is a two-module Maven library for serializing/deserializing Rosetta 
 The **new** Rune-specific serialization layer, still under active development. Not yet production-ready — consumers should still use `RosettaObjectMapper` from `common` for now.
 
 - `RuneJsonObjectMapper` — Jackson `ObjectMapper` pre-configured for Rune DSL objects; the main entry point
-- `RuneJsonConfig` — constants for meta-property names (`@type`, `@model`, `@version`)
+- `RuneJsonPropertyNames` — constants for meta-property names (`@type`, `@model`, `@version`)
 - `serializer/PreProcessingSerializer` — wraps the root-level serializer; triggers `SerializationPreProcessor` before writing JSON, and adds top-level `@type`/`@model`/`@version` headers
 - `serializer/PruningDeserializer` — wraps the root-level deserializer; calls `.toBuilder().prune().build()` on the fully-deserialized object to remove empty/redundant nodes
 - `serializer/RuneChoiceTypeSerializer` / `RuneChoiceTypeDeserializer` — handles Rune choice types (union types)

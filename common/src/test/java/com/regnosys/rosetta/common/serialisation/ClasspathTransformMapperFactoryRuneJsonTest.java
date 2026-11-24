@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -172,13 +173,38 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
     }
 
     @Test
-    void missingConfigWarnsAndWritesStandardRuneJson() throws Exception {
-        assertWarnsAndWritesStandardRuneJson("serialisation/runejson/does-not-exist.json", "could not be read");
+    void missingConfigFails() {
+        String configPath = "serialisation/runejson/does-not-exist.json";
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> outputMapper(configPath));
+
+        assertTrue(error.getMessage().contains(configPath), error.getMessage());
     }
 
     @Test
-    void invalidConfigWarnsAndWritesStandardRuneJson() throws Exception {
-        assertWarnsAndWritesStandardRuneJson("serialisation/runejson/invalid-config.json", "could not be read");
+    void invalidConfigFails() {
+        assertFailsToRead("serialisation/runejson/invalid-config.json");
+    }
+
+    @Test
+    void nonBooleanSettingFails() {
+        assertFailsToRead("serialisation/runejson/non-boolean-config.json");
+    }
+
+    @Test
+    void failedConfigIsNotCached() {
+        CachingTransformMapperFactory cachingFactory = new CachingTransformMapperFactory(factory);
+        String configPath = "serialisation/runejson/invalid-config.json";
+
+        assertThrows(UncheckedIOException.class,
+                () -> cachingFactory.create(runeJson(configPath), AttributesOnlyProjection.class, TransformRoot.output()));
+        assertThrows(UncheckedIOException.class,
+                () -> cachingFactory.create(runeJson(configPath), AttributesOnlyProjection.class, TransformRoot.output()));
+    }
+
+    private void assertFailsToRead(String configPath) {
+        UncheckedIOException error = assertThrows(UncheckedIOException.class, () -> outputMapper(configPath));
+
+        assertTrue(error.getMessage().contains(configPath), error.getMessage());
     }
 
     @Test

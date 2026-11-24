@@ -168,10 +168,11 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * writes only model attributes and refuses to read model objects; {@link #runeJsonMapper(Class)} is not
      * called, so a subclass's customisation there does not apply to it.
      * <p>
-     * A {@code configPath} that cannot be found or read as a Rune JSON configuration is logged as a warning
-     * and the standard mapper is used, because {@code RUNE_JSON} transforms ignored their {@code configPath}
-     * before this configuration existed.
+     * Like the XML, CSV and FIX configurations, a declared {@code configPath} that cannot be found or read
+     * fails the build of the mapper.
      *
+     * @throws IllegalStateException    if the configuration cannot be found
+     * @throws UncheckedIOException     if the configuration cannot be read or is not a valid configuration
      * @throws IllegalArgumentException if the configuration sets {@code attributesOnly: true} and
      *                                  {@code root} says this is the transform's input side
      */
@@ -469,18 +470,11 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return openConfig(SerializationFormat.FIX, configPath, functionClass);
     }
 
-    /**
-     * Reads the configuration, or returns {@link RuneJSONConfiguration#EMPTY} with a warning when it cannot
-     * be found or read.
-     */
     private RuneJSONConfiguration loadRuneJsonConfig(String configPath, Class<?> functionClass) {
         try (InputStream inputStream = openRuneJsonConfig(configPath, functionClass)) {
             return RuneJSONConfiguration.load(inputStream, "Rune JSON configuration '" + configPath + "'");
-        } catch (IOException | UncheckedIOException | IllegalStateException | IllegalArgumentException e) {
-            LOGGER.warn("RUNE_JSON transform {} declares configPath '{}', which could not be read as a Rune JSON "
-                            + "configuration ({}). It was NOT applied: standard Rune JSON is in use.",
-                    functionClass != null ? functionClass.getName() : "(unknown function)", configPath, e.getMessage());
-            return RuneJSONConfiguration.EMPTY;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read Rune JSON configuration '" + configPath + "'", e);
         }
     }
 

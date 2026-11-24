@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
@@ -47,10 +46,15 @@ public class RosettaXmlMapper extends XmlMapper {
     private final ClassLoader classLoader;
 
     public RosettaXmlMapper(RosettaXMLConfiguration config, ClassLoader classLoader) {
-        super((JacksonXmlModule) null);
+        super(new RosettaXmlFactory(hasXsdTypeName(config)), null);
         this.config = config;
         this.classLoader = classLoader;
 
+    }
+
+    private static boolean hasXsdTypeName(RosettaXMLConfiguration config) {
+        return config != null && config.getTypeConfigMap().values().stream()
+                .anyMatch(typeConfig -> typeConfig.getXmlTypeFullyQualifiedName().isPresent());
     }
 
     @Override

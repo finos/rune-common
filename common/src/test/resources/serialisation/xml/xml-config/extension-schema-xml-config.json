@@ -27,6 +27,14 @@
       }
     }
   },
+  "com.rosetta.extension.test.Square" : {
+    "xmlTypeFullyQualifiedName" : "urn:my.extension/Square",
+    "attributes" : {
+      "side" : {
+        "xmlRepresentation" : "ATTRIBUTE"
+      }
+    }
+  },
   "com.rosetta.test.Animal" : {
     "attributes" : {
       "name" : {
@@ -46,6 +54,9 @@
     "xmlElementName" : "camel",
     "xmlElementFullyQualifiedName" : "urn:my.schema/camel",
     "abstract" : false
+  },
+  "com.rosetta.test.Circle" : {
+    "xmlTypeFullyQualifiedName" : "urn:my.schema/Circle"
   },
   "com.rosetta.test.Cow" : {
     "substitutionGroup" : "urn:my.schema/animal",
@@ -132,6 +143,14 @@
     "xmlElementFullyQualifiedName" : "urn:my.schema/llama",
     "abstract" : false
   },
+  "com.rosetta.test.Pen" : {
+    "xmlTypeFullyQualifiedName" : "urn:my.schema/Pen",
+    "attributes" : {
+      "animal" : {
+        "elementRef" : "urn:my.schema/animal"
+      }
+    }
+  },
   "com.rosetta.test.Measure" : {
     "attributes" : {
       "value" : {
@@ -168,6 +187,18 @@
     "xmlElementName" : "salmon",
     "xmlElementFullyQualifiedName" : "urn:my.schema/salmon",
     "abstract" : false
+  },
+  "com.rosetta.test.Shape" : {
+    "xmlTypeFullyQualifiedName" : "urn:my.schema/Shape"
+  },
+  "com.rosetta.test.ShapeContainer" : {
+    "xmlElementName" : "ShapeContainer",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/ShapeContainer",
+    "abstract" : false,
+    "xmlAttributes" : {
+      "xmlns" : "urn:my.schema",
+      "xmlns:xsi" : "http://www.w3.org/2001/XMLSchema-instance"
+    }
   },
   "com.rosetta.test.Shark" : {
     "substitutionGroup" : "urn:my.schema/fish",
@@ -228,6 +259,20 @@
     "attributes" : {
       "animal" : {
         "elementRef" : "urn:my.schema/animal"
+      }
+    }
+  },
+  "com.rosetta.test.WrappedShapeContainer" : {
+    "xmlElementName" : "WrappedShapeContainer",
+    "xmlElementFullyQualifiedName" : "urn:my.schema/WrappedShapeContainer",
+    "abstract" : false,
+    "xmlAttributes" : {
+      "xmlns" : "urn:my.schema",
+      "xmlns:xsi" : "http://www.w3.org/2001/XMLSchema-instance"
+    },
+    "attributes" : {
+      "wrappedShapeContainerModel" : {
+        "xmlRepresentation" : "VIRTUAL"
       }
     }
   },

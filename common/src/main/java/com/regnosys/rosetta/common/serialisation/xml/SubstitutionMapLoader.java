@@ -31,6 +31,10 @@ public class SubstitutionMapLoader {
         this.classLoader = classLoader;
     }
 
+    public ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
     public SubstitutionMap findSubstitutionMap(MapperConfig<?> config,
                                                       AnnotationIntrospector ai,
                                                       AnnotatedMember prop) {

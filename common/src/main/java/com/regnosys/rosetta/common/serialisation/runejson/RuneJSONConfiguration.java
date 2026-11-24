@@ -48,8 +48,8 @@ import java.util.Objects;
  * so the setting is for projections only.
  * <p>
  * Create one with {@link #load(InputStream)} or {@link #builder()}. An absent setting takes its default, an
- * unknown one is ignored with a warning, and {@link #EMPTY} is the configuration of a transform with no
- * {@code configPath}.
+ * unknown one is ignored with a warning, and {@link #EMPTY} is the configuration with every setting at its
+ * default.
  */
 public class RuneJSONConfiguration {
 

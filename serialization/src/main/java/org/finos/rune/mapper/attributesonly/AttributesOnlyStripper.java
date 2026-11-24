@@ -42,6 +42,9 @@ import java.util.Map;
  *       any object or list that held nothing but such references.</li>
  * </ul>
  * The root is never omitted: a root left empty is written as an empty object or array, matching its type.
+ * <p>
+ * {@link AttributesOnlySerializerProvider} applies this to each root value an attributes-only mapper writes,
+ * so the input is always the whole standard Rune JSON tree, never a fragment of it.
  */
 public final class AttributesOnlyStripper {
 

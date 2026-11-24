@@ -39,9 +39,10 @@ import java.io.IOException;
  * {@code @type} to resolve choice options and subtypes, and no {@code @key}/{@code @ref} to restore references,
  * so reading it would build the wrong objects. Other reads, such as a JSON tree, still work.
  * <p>
- * Jackson asks the introspector for a deserializer before any other source, on every read path
- * ({@code readValue}, {@code convertValue}, {@code ObjectReader}, {@code readValues}), so it must be the
- * primary deserialization introspector.
+ * Installed by {@link org.finos.rune.mapper.RuneJsonObjectMapper#attributesOnly()} as the primary
+ * deserialization introspector. Jackson asks the introspector for a deserializer before any other source, on
+ * every read path ({@code readValue}, {@code convertValue}, {@code ObjectReader}, {@code readValues}), so it
+ * must be the primary one.
  */
 public class ModelReadRejectingIntrospector extends NopAnnotationIntrospector {
 

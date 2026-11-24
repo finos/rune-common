@@ -92,7 +92,8 @@ import java.util.function.Supplier;
  * <p>
  * <b>Extension points.</b> Only these methods are on the {@link #create} path, so overriding anything
  * else changes no constructed mapper. Per format: {@link #jsonMapper()},
- * {@link #runeJsonMapper(Class)}, {@link #csvMapper(String, Class, TransformRoot)},
+ * {@link #runeJsonMapper(String, Class, TransformRoot)} (which calls {@link #runeJsonMapper(Class)} for the
+ * standard mapper, but not for an attributes-only one), {@link #csvMapper(String, Class, TransformRoot)},
  * {@link #csvLabelledMapper(Class, TransformRoot)}, {@link #xmlMapper(String, Class)} and
  * {@link #fixMapper(String, Class)}. Below those: {@link #resolveLabelProvider(Class, TransformRoot)} for
  * label resolution, {@link #openConfig(SerializationFormat, String, Class)} for every config lookup, or

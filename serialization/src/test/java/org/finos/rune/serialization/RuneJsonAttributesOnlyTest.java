@@ -41,6 +41,7 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -160,6 +161,17 @@ class RuneJsonAttributesOnlyTest {
         }
 
         assertEquals("{\"amount\":1.50}", out.toString());
+    }
+
+    @Test
+    void writesFloatingPointNumbersAsStandardMapperDoes() throws Exception {
+        Map<String, Object> numbers = new LinkedHashMap<>();
+        numbers.put("float", 0.1f);
+        numbers.put("double", 0.1d);
+        numbers.put("decimal", new BigDecimal("1.50"));
+
+        assertEquals(new RuneJsonObjectMapper().writeValueAsString(numbers),
+                RuneJsonObjectMapper.attributesOnly().writeValueAsString(numbers));
     }
 
     @Test

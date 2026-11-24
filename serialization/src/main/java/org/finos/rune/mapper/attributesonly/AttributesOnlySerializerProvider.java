@@ -21,11 +21,13 @@ package org.finos.rune.mapper.attributesonly;
  */
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializable;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.cfg.CacheProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
@@ -55,30 +57,39 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
      */
     private static final ThreadLocal<Boolean> BUFFERING_ROOT = ThreadLocal.withInitial(() -> false);
 
+    /** The attributes-only mapper this provider belongs to; the buffer's codec. */
+    private final transient ObjectMapper owner;
+
     /**
      * Reads the buffer back with the mapper's own settings, so decimals keep their scale whatever generator
-     * the caller supplied.
+     * the caller supplied. It is {@link #owner}'s reader without {@code USE_BIG_DECIMAL_FOR_FLOATS}. The buffer keeps each number's own
+     * type, and that feature would turn a {@code float} into the {@code BigDecimal} of its widened
+     * {@code double} ({@code 0.1f} as {@code 0.10000000149011612}); a {@code BigDecimal} is read as one either way.
      */
-    private final transient ObjectMapper owner;
+    private final transient ObjectReader treeReader;
 
     public AttributesOnlySerializerProvider(ObjectMapper owner) {
         super();
         this.owner = Objects.requireNonNull(owner, "owner must not be null");
+        this.treeReader = owner.reader().without(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
     }
 
     private AttributesOnlySerializerProvider(AttributesOnlySerializerProvider src) {
         super(src);
         this.owner = src.owner;
+        this.treeReader = src.treeReader;
     }
 
     private AttributesOnlySerializerProvider(AttributesOnlySerializerProvider src, SerializationConfig config, SerializerFactory factory) {
         super(src, config, factory);
         this.owner = src.owner;
+        this.treeReader = src.treeReader;
     }
 
     private AttributesOnlySerializerProvider(AttributesOnlySerializerProvider src, CacheProvider cacheProvider) {
         super(src, cacheProvider);
         this.owner = src.owner;
+        this.treeReader = src.treeReader;
     }
 
     @Override
@@ -144,7 +155,7 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
         } finally {
             BUFFERING_ROOT.remove();
         }
-        JsonNode tree = owner.readTree(buffer.asParser());
+        JsonNode tree = treeReader.readTree(buffer.asParser());
         // A root null is buffered as a null token, which readTree reports as no content.
         if (tree == null) {
             gen.writeNull();

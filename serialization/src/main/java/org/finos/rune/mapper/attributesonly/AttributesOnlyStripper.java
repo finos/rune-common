@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.finos.rune.mapper.RuneJsonPropertyNames;
 
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -54,8 +55,10 @@ public final class AttributesOnlyStripper {
     }
 
     /**
-     * @param root a Rune JSON tree, as written by a standard {@code RuneJsonObjectMapper}
-     * @return a new tree holding only model attributes; {@code root} is not modified
+     * @param root a Rune JSON tree, as written by a standard {@code RuneJsonObjectMapper}; it is modified in
+     *             place, so pass a tree nothing else holds
+     * @return the tree holding only model attributes: {@code root} itself, a node within it, or an empty
+     *         container when nothing is left
      */
     public static JsonNode strip(JsonNode root) {
         JsonNode stripped = stripNode(root);
@@ -83,31 +86,34 @@ public final class AttributesOnlyStripper {
         if (data != null) {
             return stripNode(data);
         }
-        ObjectNode result = JsonNodeFactory.instance.objectNode();
-        for (Map.Entry<String, JsonNode> field : node.properties()) {
-            if (field.getKey().startsWith(META_PREFIX)) {
-                continue;
-            }
-            JsonNode value = stripNode(field.getValue());
-            if (value != null) {
-                result.set(field.getKey(), value);
+        if (node.isEmpty()) {
+            return node;
+        }
+        Iterator<Map.Entry<String, JsonNode>> fields = node.properties().iterator();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            JsonNode value = field.getKey().startsWith(META_PREFIX) ? null : stripNode(field.getValue());
+            if (value == null) {
+                fields.remove();
+            } else {
+                field.setValue(value);
             }
         }
-        return emptiedByStripping(node, result) ? null : result;
+        return node.isEmpty() ? null : node;
     }
 
     private static JsonNode stripArray(ArrayNode node) {
-        ArrayNode result = JsonNodeFactory.instance.arrayNode();
-        for (JsonNode element : node) {
-            JsonNode value = stripNode(element);
-            if (value != null) {
-                result.add(value);
+        if (node.isEmpty()) {
+            return node;
+        }
+        for (int i = node.size() - 1; i >= 0; i--) {
+            JsonNode value = stripNode(node.get(i));
+            if (value == null) {
+                node.remove(i);
+            } else {
+                node.set(i, value);
             }
         }
-        return emptiedByStripping(node, result) ? null : result;
-    }
-
-    private static boolean emptiedByStripping(JsonNode original, JsonNode stripped) {
-        return stripped.isEmpty() && !original.isEmpty();
+        return node.isEmpty() ? null : node;
     }
 }

@@ -92,7 +92,7 @@ import java.util.function.Supplier;
  * <p>
  * <b>Extension points.</b> Only these methods are on the {@link #create} path, so overriding anything
  * else changes no constructed mapper. Per format: {@link #jsonMapper()},
- * {@link #runeJsonMapper(String, Class, TransformRoot)} (which calls {@link #runeJsonMapper(Class)} for the
+ * {@link #runeJsonMapper(String, Class)} (which calls {@link #runeJsonMapper(Class)} for the
  * standard mapper, but not for an attributes-only one), {@link #csvMapper(String, Class, TransformRoot)},
  * {@link #csvLabelledMapper(Class, TransformRoot)}, {@link #xmlMapper(String, Class)} and
  * {@link #fixMapper(String, Class)}. Below those: {@link #resolveLabelProvider(Class, TransformRoot)} for
@@ -143,7 +143,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
             case JSON:
                 return jsonMapper();
             case RUNE_JSON:
-                return runeJsonMapper(serialization.getConfigPath(), functionClass, root);
+                return runeJsonMapper(serialization.getConfigPath(), functionClass);
             case CSV:
                 return csvMapper(serialization.getConfigPath(), functionClass, root);
             case CSV_LABELLED:
@@ -169,25 +169,19 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * writes only model attributes and refuses to read model objects; {@link #runeJsonMapper(Class)} is not
      * called, so a subclass's customisation there does not apply to it.
      * <p>
+     * The transform side is not checked: an attributes-only mapper built for an input side is built, and
+     * refuses the first model read instead, without naming {@code configPath}.
+     * <p>
      * Like the XML, CSV and FIX configurations, a declared {@code configPath} that cannot be found or read
      * fails the build of the mapper.
      *
-     * @throws IllegalStateException    if the configuration cannot be found
-     * @throws UncheckedIOException     if the configuration cannot be read or is not a valid configuration
-     * @throws IllegalArgumentException if the configuration sets {@code attributesOnly: true} and
-     *                                  {@code root} says this is the transform's input side
+     * @throws IllegalStateException if the configuration cannot be found
+     * @throws UncheckedIOException  if the configuration cannot be read or is not a valid configuration
      */
-    protected ObjectMapper runeJsonMapper(String configPath, Class<?> functionClass, TransformRoot root) {
+    protected ObjectMapper runeJsonMapper(String configPath, Class<?> functionClass) {
         if (configPath == null || configPath.isEmpty()
                 || !loadRuneJsonConfig(configPath, functionClass).isAttributesOnly()) {
             return runeJsonMapper(functionClass);
-        }
-        if (isInputSide(root)) {
-            throw new IllegalArgumentException(String.format("Rune JSON configuration '%s' sets attributesOnly, "
-                            + "which writes JSON without the @type and reference metadata needed to read it back, so "
-                            + "it cannot be used to ingest%s. Remove attributesOnly from '%s', or use a schema "
-                            + "without it for the ingest.", configPath,
-                    functionClass != null ? " in " + functionClass.getName() : "", configPath));
         }
         ClassLoader classLoader = classLoader(functionClass);
         return classLoader != null ? RuneJsonObjectMapper.attributesOnly(classLoader) : RuneJsonObjectMapper.attributesOnly();
@@ -196,7 +190,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
     /**
      * The standard {@code RUNE_JSON} mapper, for a transform whose configuration does not set
      * {@code attributesOnly}. Not called for an attributes-only transform: see
-     * {@link #runeJsonMapper(String, Class, TransformRoot)}.
+     * {@link #runeJsonMapper(String, Class)}.
      */
     protected ObjectMapper runeJsonMapper(Class<?> functionClass) {
         // Rune JSON resolves model types (e.g. for global-key hashing) so it needs the model classloader.

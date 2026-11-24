@@ -125,33 +125,14 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
     }
 
     @Test
-    void attributesOnlyIngestFailsWhenMapperIsBuilt() {
+    void attributesOnlyMapperBuiltForIngestRefusesToRead() {
         TransformSerialization serialization = TransformSerializationResolver.input(AttributesOnlyIngest.class).get();
-
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-                () -> factory.create(serialization, AttributesOnlyIngest.class, TransformRoot.input()));
-
-        assertTrue(error.getMessage().contains(ATTRIBUTES_ONLY_CONFIG), error.getMessage());
-        assertTrue(error.getMessage().contains("cannot be used to ingest"), error.getMessage());
-    }
-
-    @Test
-    void attributesOnlyMapperWithNoDeclaredSideFailsToRead() {
-        ObjectMapper mapper = factory.create(newRuneJsonSerialization(ATTRIBUTES_ONLY_CONFIG), null, null);
+        ObjectMapper mapper = factory.create(serialization, AttributesOnlyIngest.class, TransformRoot.input());
 
         assertInstanceOf(RuneJsonObjectMapper.class, mapper);
         InvalidDefinitionException error = assertThrows(InvalidDefinitionException.class,
                 () -> mapper.readValue("{\"head\":\"h1\"}", MetadataAttributeHolder.class));
         assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
-    }
-
-    @Test
-    void cachedProjectionMapperIsNotServedToIngest() {
-        CachingTransformMapperFactory cachingFactory = new CachingTransformMapperFactory(factory);
-        cachingFactory.create(newRuneJsonSerialization(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyProjection.class, TransformRoot.output());
-
-        assertThrows(IllegalArgumentException.class,
-                () -> cachingFactory.create(newRuneJsonSerialization(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyIngest.class, TransformRoot.input()));
     }
 
     @Test

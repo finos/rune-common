@@ -30,6 +30,7 @@ public class RuneJsonConfig {
         public static final String MODEL = "@model";
         public static final String TYPE = "@type";
         public static final String VERSION = "@version";
+        public static final String DATA = "@data";
 
         private MetaProperties() {}
     }

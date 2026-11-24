@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -46,7 +47,6 @@ import java.util.Map;
 public final class AttributesOnlyStripper {
 
     private static final String META_PREFIX = "@";
-    private static final String DATA = "@data";
 
     private AttributesOnlyStripper() {
     }
@@ -77,7 +77,7 @@ public final class AttributesOnlyStripper {
     }
 
     private static JsonNode stripObject(ObjectNode node) {
-        JsonNode data = node.get(DATA);
+        JsonNode data = node.get(RuneJsonConfig.MetaProperties.DATA);
         if (data != null) {
             return stripNode(data);
         }

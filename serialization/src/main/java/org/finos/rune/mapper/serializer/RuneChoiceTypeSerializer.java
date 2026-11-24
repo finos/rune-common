@@ -42,8 +42,6 @@ import java.util.Map;
 
 public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject> {
 
-    private static final String DATA = "@data";
-
     @Override
     public void serialize(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         ChoiceValue choiceValue = getChoiceValue(value);
@@ -78,7 +76,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
             gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.choiceOptionType);
-            gen.writeFieldName(DATA);
+            gen.writeFieldName(RuneJsonConfig.MetaProperties.DATA);
             serializers.defaultSerializeValue(selectedValue, gen);
         }
     }

@@ -41,7 +41,7 @@ import java.util.Objects;
  * whole document.
  * <p>
  * Not to be confused with {@link org.finos.rune.mapper.RuneJsonConfig}, which only names the Rune JSON meta
- * properties ({@code @type}, {@code @model}, {@code @version}).
+ * properties.
  * <p>
  * {@code attributesOnly} (default {@code false}): write only model attributes, with no {@code @} properties.
  * See {@link org.finos.rune.mapper.RuneJsonObjectMapper#attributesOnly()}. Such JSON cannot be read back,

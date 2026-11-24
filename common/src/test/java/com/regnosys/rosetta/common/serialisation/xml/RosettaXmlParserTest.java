@@ -54,7 +54,7 @@ class RosettaXmlParserTest {
     /** For each element read as an object, in document order: its name, and whether the reader was on it. */
     private static Map<String, Boolean> startedElements(String xml) throws IOException {
         Map<String, Boolean> result = new LinkedHashMap<>();
-        try (RosettaXmlParser parser = (RosettaXmlParser) new RosettaXmlFactory().createParser(xml)) {
+        try (RosettaXmlParser parser = (RosettaXmlParser) new RosettaXmlFactory(true).createParser(xml)) {
             JsonToken token;
             while ((token = parser.nextToken()) != null) {
                 if (token == JsonToken.START_OBJECT) {

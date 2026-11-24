@@ -24,6 +24,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.Resources;
@@ -495,6 +496,41 @@ public class XmlSerialisationTest {
         xsdValidator.validate(new StreamSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
         assertEquals(Arrays.asList("{urn:my.schema}Circle", "{urn:my.extension}Square", null), xsiTypesOfShapeElements(xml));
         assertEquals(container, xmlMapper.readValue(xml, WrappedShapeContainer.class));
+    }
+
+    @Test
+    public void testXsiTypeInNoNamespaceUnderADefaultNamespaceFailsToWrite() throws Exception {
+        // Unprefixed, `Circle` would read back as {urn:my.schema}Circle under the root's xmlns="urn:my.schema".
+        ObjectMapper mapper = mapperWithXsdTypeNames(Collections.singletonMap("com.rosetta.test.Circle", "Circle"));
+        ShapeContainer container = ShapeContainer.builder()
+                .addShape(Circle.builder().setColour("red").setRadius(new BigDecimal("2")))
+                .build();
+
+        IOException e = assertThrows(IOException.class, () -> mapper.writeValueAsString(container));
+
+        assertTrue(e.getMessage().contains("no namespace") && e.getMessage().contains("urn:my.schema"), e.getMessage());
+    }
+
+    @Test
+    public void testXsiTypeIsNotReadAsAFieldWhenNoTypeHasAnXsdTypeName() throws Exception {
+        ObjectMapper mapper = RosettaObjectMapperCreator.forXML(new RosettaXMLConfiguration(Collections.emptyMap())).create();
+
+        String tree = mapper.readTree("<a xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:type=\"Foo\"><b>1</b></a>").toString();
+
+        assertEquals("{\"type\":\"Foo\",\"b\":\"1\"}", tree);
+    }
+
+    @Test
+    public void testXsiTypeIsNotAnUnknownPropertyOfATypeWithoutSubtypes() throws Exception {
+        // AnimalContainer has no subtype with an XSD type name, but other types in the configuration do.
+        String xml = "<AnimalContainer xmlns=\"urn:my.schema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+                + "xsi:type=\"AnimalContainer\"></AnimalContainer>";
+
+        AnimalContainer actual = xmlMapper.readerFor(AnimalContainer.class)
+                .with(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .readValue(xml);
+
+        assertEquals(AnimalContainer.builder().build(), actual);
     }
 
     @Test

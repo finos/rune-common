@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMap.XMLFullyQualifiedName;
 import com.regnosys.rosetta.common.serialisation.xml.SubstitutionMapLoader;
+import com.regnosys.rosetta.common.serialisation.xml.XsiTypeValue;
 import com.regnosys.rosetta.common.serialisation.xml.RosettaXMLTypeConfigLookup;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.TypeXMLConfiguration;
@@ -73,6 +74,8 @@ public class RosettaBeanDeserializerModifier extends BeanDeserializerModifier {
                                                  BeanDescription beanDesc, BeanDeserializerBuilder builder) {
         final AnnotationIntrospector intr = config.getAnnotationIntrospector();
         addSubstitutionProperties(config, builder, intr);
+        // Only XsiTypeDeserializer reads it; every other type would see an unknown property.
+        builder.addIgnorable(XsiTypeValue.FIELD_NAME);
         return builder;
     }
 

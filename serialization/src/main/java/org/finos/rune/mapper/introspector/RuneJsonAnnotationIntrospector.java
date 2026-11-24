@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.google.common.collect.Lists;
 import com.rosetta.model.lib.annotations.*;
 import com.rosetta.model.metafields.MetaFields;
-import org.finos.rune.mapper.RuneJsonPropertyNames;
+import org.finos.rune.mapper.RuneJsonConfig;
 import org.finos.rune.mapper.serializer.RuneChoiceTypeDeserializer;
 import org.finos.rune.mapper.serializer.RuneChoiceTypeSerializer;
 
@@ -106,7 +106,7 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
         if (t != null && !ann.hasAnnotation(RuneChoiceType.class) && !isAnnotatedTypeMetaFields(ann)) {
             return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
                     JsonTypeInfo.As.EXISTING_PROPERTY,
-                    RuneJsonPropertyNames.MetaProperties.TYPE,
+                    RuneJsonConfig.MetaProperties.TYPE,
                     JsonTypeInfo.class,
                     false,
                     false,

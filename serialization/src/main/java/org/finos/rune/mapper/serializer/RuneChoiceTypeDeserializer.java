@@ -32,7 +32,7 @@ import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
-import org.finos.rune.mapper.RuneJsonPropertyNames;
+import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -73,7 +73,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         RosettaModelObjectBuilder builder = newBuilder(targetChoiceType);
         for (Method setter : builder.getClass().getMethods()) {
             RuneAttribute attribute = setter.getAnnotation(RuneAttribute.class);
-            if (attribute == null || setter.getParameterCount() != 1 || RuneJsonPropertyNames.MetaProperties.TYPE.equals(attribute.value())) {
+            if (attribute == null || setter.getParameterCount() != 1 || RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
                 continue;
             }
 
@@ -97,14 +97,14 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             }
             if (isMetaWrapperForType(optionType, runeType)) {
                 ObjectNode metaWrapperNode = node.deepCopy();
-                metaWrapperNode.remove(RuneJsonPropertyNames.MetaProperties.TYPE);
+                metaWrapperNode.remove(RuneJsonConfig.MetaProperties.TYPE);
                 return mapper.treeToValue(metaWrapperNode, optionType);
             }
             return null;
         }
 
         if (runeType.equals(optionName)) {
-            JsonNode data = node.get(RuneJsonPropertyNames.MetaProperties.DATA);
+            JsonNode data = node.get(RuneJsonConfig.MetaProperties.DATA);
             return data == null || data.isNull() ? null : mapper.treeToValue(data, optionType);
         }
         return null;
@@ -123,13 +123,13 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
     }
 
     private String getRuneType(JsonNode node, DeserializationContext ctxt) throws IOException {
-        JsonNode type = node.get(RuneJsonPropertyNames.MetaProperties.TYPE);
+        JsonNode type = node.get(RuneJsonConfig.MetaProperties.TYPE);
         if (type == null || type.isNull()) {
-            ctxt.reportInputMismatch(choiceType, "Missing required '%s' metadata property", RuneJsonPropertyNames.MetaProperties.TYPE);
+            ctxt.reportInputMismatch(choiceType, "Missing required '%s' metadata property", RuneJsonConfig.MetaProperties.TYPE);
             return null;
         }
         if (!type.isTextual()) {
-            ctxt.reportInputMismatch(choiceType, "'%s' metadata property must be a string", RuneJsonPropertyNames.MetaProperties.TYPE);
+            ctxt.reportInputMismatch(choiceType, "'%s' metadata property must be a string", RuneJsonConfig.MetaProperties.TYPE);
             return null;
         }
         return type.asText();

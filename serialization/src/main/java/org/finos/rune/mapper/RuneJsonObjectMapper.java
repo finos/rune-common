@@ -122,7 +122,7 @@ public class RuneJsonObjectMapper extends ObjectMapper {
     }
 
     public static List<String> getMetaProperties() {
-        return RuneJsonPropertyNames.getMetaProperties();
+        return RuneJsonConfig.getMetaProperties();
     }
 
     private static ObjectMapper create() {

@@ -32,7 +32,7 @@ import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
-import org.finos.rune.mapper.RuneJsonPropertyNames;
+import org.finos.rune.mapper.RuneJsonConfig;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -71,11 +71,11 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                 return;
             }
 
-            gen.writeStringField(RuneJsonPropertyNames.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue));
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue));
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
-            gen.writeStringField(RuneJsonPropertyNames.MetaProperties.TYPE, choiceValue.choiceOptionType);
-            gen.writeFieldName(RuneJsonPropertyNames.MetaProperties.DATA);
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.choiceOptionType);
+            gen.writeFieldName(RuneJsonConfig.MetaProperties.DATA);
             serializers.defaultSerializeValue(selectedValue, gen);
         }
     }
@@ -87,7 +87,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
 
         if (node instanceof ObjectNode) {
             for (Map.Entry<String, JsonNode> field : node.properties()) {
-                if (!RuneJsonPropertyNames.getMetaProperties().contains(field.getKey())) {
+                if (!RuneJsonConfig.getMetaProperties().contains(field.getKey())) {
                     gen.writeFieldName(field.getKey());
                     gen.writeTree(field.getValue());
                 }
@@ -107,7 +107,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                     // getter and keep the base-typed accessor, so a single option counts once and
                     // declaredType matches the runtime built type in validateDeclaredChoiceOptionType.
                     && !RosettaModelObjectBuilder.class.isAssignableFrom(method.getReturnType())
-                    && !RuneJsonPropertyNames.getMetaProperties().contains(attribute.value())
+                    && !RuneJsonConfig.getMetaProperties().contains(attribute.value())
                     && !isChoiceMetadataAttribute(method)) {
                 Object selectedValue = invoke(method, value);
                 if (!isEmptyChoiceValue(selectedValue)) {

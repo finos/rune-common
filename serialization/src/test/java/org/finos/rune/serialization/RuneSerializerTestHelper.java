@@ -37,7 +37,7 @@ import com.regnosys.rosetta.tests.util.CodeGeneratorTestHelper;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneDataType;
-import org.finos.rune.mapper.RuneJsonPropertyNames;
+import org.finos.rune.mapper.RuneJsonConfig;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.eclipse.xtext.common.TerminalsStandaloneSetup;
 
@@ -161,8 +161,8 @@ public class RuneSerializerTestHelper {
      */
     public static String withoutModelAndVersion(ObjectMapper objectMapper, String runeJson) throws JsonProcessingException {
         ObjectNode root = (ObjectNode) objectMapper.readTree(runeJson);
-        root.remove(RuneJsonPropertyNames.MetaProperties.MODEL);
-        root.remove(RuneJsonPropertyNames.MetaProperties.VERSION);
+        root.remove(RuneJsonConfig.MetaProperties.MODEL);
+        root.remove(RuneJsonConfig.MetaProperties.VERSION);
         return objectMapper.writeValueAsString(root);
     }
 

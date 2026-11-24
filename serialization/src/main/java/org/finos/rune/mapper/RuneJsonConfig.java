@@ -23,9 +23,14 @@ package org.finos.rune.mapper;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.finos.rune.mapper.RuneJsonPropertyNames.MetaProperties.*;
+import static org.finos.rune.mapper.RuneJsonConfig.MetaProperties.*;
 
-public class RuneJsonPropertyNames {
+/**
+ * The names of the {@code @}-prefixed meta properties that Rune JSON writes alongside model attributes.
+ * Holds constants only; it is not a serialization configuration. For the settings a {@code RUNE_JSON}
+ * transform reads from its {@code configPath}, see {@code RuneJSONConfiguration} in {@code rune-common}.
+ */
+public class RuneJsonConfig {
     public static class MetaProperties {
         public static final String MODEL = "@model";
         public static final String TYPE = "@type";
@@ -35,7 +40,7 @@ public class RuneJsonPropertyNames {
         private MetaProperties() {}
     }
 
-    private RuneJsonPropertyNames() {}
+    private RuneJsonConfig() {}
 
     public static List<String> getMetaProperties() {
         return Arrays.asList(MODEL, TYPE, VERSION);

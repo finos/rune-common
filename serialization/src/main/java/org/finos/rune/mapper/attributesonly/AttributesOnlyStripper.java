@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.finos.rune.mapper.RuneJsonConfig;
 
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -82,9 +81,7 @@ public final class AttributesOnlyStripper {
             return stripNode(data);
         }
         ObjectNode result = JsonNodeFactory.instance.objectNode();
-        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
+        for (Map.Entry<String, JsonNode> field : node.properties()) {
             if (field.getKey().startsWith(META_PREFIX)) {
                 continue;
             }

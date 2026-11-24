@@ -37,7 +37,6 @@ import org.finos.rune.mapper.RuneJsonConfig;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Iterator;
 import java.util.Map;
 
 public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject> {
@@ -87,9 +86,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         JsonNode node = gen.getCodec().readTree(buffer.asParser());
 
         if (node instanceof ObjectNode) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
+            for (Map.Entry<String, JsonNode> field : node.properties()) {
                 if (!RuneJsonConfig.getMetaProperties().contains(field.getKey())) {
                     gen.writeFieldName(field.getKey());
                     gen.writeTree(field.getValue());

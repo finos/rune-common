@@ -25,6 +25,7 @@ import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.regnosys.rosetta.common.serialisation.fix.RuneFIXConfiguration;
+import com.regnosys.rosetta.common.serialisation.runejson.RuneJSONConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
@@ -139,7 +140,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
             case JSON:
                 return jsonMapper();
             case RUNE_JSON:
-                return runeJsonMapper(functionClass);
+                return runeJsonMapper(serialization.getConfigPath(), functionClass, root);
             case CSV:
                 return csvMapper(serialization.getConfigPath(), functionClass, root);
             case CSV_LABELLED:
@@ -158,6 +159,38 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return RosettaObjectMapper.getNewRosettaObjectMapper();
     }
 
+    /**
+     * The {@code RUNE_JSON} mapper. With no {@code configPath}, or a {@link RuneJSONConfiguration} that does
+     * not set {@code attributesOnly}, this is {@link #runeJsonMapper(Class)}'s standard mapper. With
+     * {@code attributesOnly: true} it is {@link RuneJsonObjectMapper#attributesOnly(ClassLoader)}, which
+     * writes only model attributes and refuses to read model objects.
+     *
+     * @throws IllegalArgumentException if the configuration sets {@code attributesOnly: true} and
+     *                                  {@code root} says this is the transform's input side
+     */
+    protected ObjectMapper runeJsonMapper(String configPath, Class<?> functionClass, TransformRoot root) {
+        if (configPath == null || configPath.isEmpty()) {
+            return runeJsonMapper(functionClass);
+        }
+        RuneJSONConfiguration configuration = loadRuneJsonConfig(configPath, functionClass);
+        if (!configuration.isAttributesOnly()) {
+            return runeJsonMapper(functionClass);
+        }
+        if (isInputSide(root)) {
+            throw new IllegalArgumentException(String.format("Rune JSON configuration '%s' sets attributesOnly, "
+                            + "which writes JSON without the @type and reference metadata needed to read it back, so "
+                            + "it cannot be used to ingest%s. Remove attributesOnly from '%s', or use a schema "
+                            + "without it for the ingest.", configPath,
+                    functionClass != null ? " in " + functionClass.getName() : "", configPath));
+        }
+        ClassLoader classLoader = classLoader(functionClass);
+        return classLoader != null ? RuneJsonObjectMapper.attributesOnly(classLoader) : RuneJsonObjectMapper.attributesOnly();
+    }
+
+    /**
+     * The standard {@code RUNE_JSON} mapper, for a transform whose configuration does not set
+     * {@code attributesOnly}.
+     */
     protected ObjectMapper runeJsonMapper(Class<?> functionClass) {
         // Rune JSON resolves model types (e.g. for global-key hashing) so it needs the model classloader.
         ClassLoader classLoader = classLoader(functionClass);
@@ -429,6 +462,27 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
         if (configUrl == null) {
             throw new IllegalStateException("Could not find FIX configuration '" + configPath + "' on the classpath");
+        }
+        return configUrl.openStream();
+    }
+
+    private RuneJSONConfiguration loadRuneJsonConfig(String configPath, Class<?> functionClass) {
+        try (InputStream inputStream = openRuneJsonConfig(configPath, functionClass)) {
+            return RuneJSONConfiguration.load(inputStream);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read Rune JSON configuration '" + configPath + "'", e);
+        }
+    }
+
+    /**
+     * Opens the Rune JSON serialization config, resolving it exactly like {@link #openXmlConfig(String, Class)}.
+     * Override to look it up elsewhere first.
+     */
+    protected InputStream openRuneJsonConfig(String configPath, Class<?> functionClass) throws IOException {
+        ClassLoader classLoader = classLoader(functionClass);
+        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
+        if (configUrl == null) {
+            throw new IllegalStateException("Could not find Rune JSON configuration '" + configPath + "' on the classpath");
         }
         return configUrl.openStream();
     }

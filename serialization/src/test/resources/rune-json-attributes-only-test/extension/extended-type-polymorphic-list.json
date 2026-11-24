@@ -1,0 +1,8 @@
+{
+  "typeAList" : [ {
+    "fieldA" : "bar1",
+    "fieldB" : "foo1"
+  }, {
+    "fieldA" : "bar2"
+  } ]
+}

@@ -45,7 +45,10 @@ import java.util.concurrent.ConcurrentMap;
  *       holds whatever the delegate does. The scope is strictly narrower than the classloader scope
  *       below, since a function class determines its own classloader, so it can only reduce sharing,
  *       never serve a mapper built for another model.</li>
- *   <li>{@code RUNE_JSON}, {@code XML} and {@code FIX} — the function class's {@link ClassLoader}: these
+ *   <li>{@code RUNE_JSON} — the function class's {@link ClassLoader}, as for {@code XML} below, and the
+ *       transform side: a configuration setting {@code attributesOnly} is refused when the mapper is built
+ *       for the input side, so a mapper built for the output side must not be served to an input request.</li>
+ *   <li>{@code XML} and {@code FIX} — the function class's {@link ClassLoader}: these
  *       mappers resolve model types, or their configuration and FIX dictionary, against it, so functions
  *       from the same model share one mapper while models in different classloaders never cross. The root
  *       does not affect their construction.</li>
@@ -95,6 +98,9 @@ public class CachingTransformMapperFactory implements TransformMapperFactory {
                 // cannot see, so every CSV request takes the scope its labelled case needs.
                 return Arrays.asList(functionClass, root);
             case RUNE_JSON:
+                // A mapper built for the output side may be one the input side must refuse.
+                return Arrays.asList(functionClass != null ? functionClass.getClassLoader() : null,
+                        root != null ? root.getSide() : null);
             case XML:
             case FIX:
                 return functionClass != null ? functionClass.getClassLoader() : null;

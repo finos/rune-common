@@ -209,17 +209,14 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
 
     @Test
     void misspeltSettingWarnsAndWritesStandardRuneJson() throws Exception {
-        assertWarnsAndWritesStandardRuneJson("serialisation/runejson/misspelt-config.json", "[attributeOnly]");
-    }
-
-    private void assertWarnsAndWritesStandardRuneJson(String configPath, String expectedWarning) throws Exception {
-        ObjectMapper[] mapper = new ObjectMapper[1];
-        List<String> warnings = collectWarningsWhile(() -> mapper[0] = createOutputMapper(configPath));
+        String configPath = "serialisation/runejson/misspelt-config.json";
+        List<ObjectMapper> mapper = new ArrayList<>();
+        List<String> warnings = collectWarningsWhile(() -> mapper.add(createOutputMapper(configPath)));
 
         assertEquals(1, warnings.size(), "expected exactly one WARN, got " + warnings);
         assertTrue(warnings.get(0).contains(configPath), warnings.get(0));
-        assertTrue(warnings.get(0).contains(expectedWarning), warnings.get(0));
-        assertStandardRuneJson(mapper[0]);
+        assertTrue(warnings.get(0).contains("[attributeOnly]"), warnings.get(0));
+        assertStandardRuneJson(mapper.get(0));
     }
 
     /** The WARNs logged by the factory and the configuration loader while {@code work} runs. */

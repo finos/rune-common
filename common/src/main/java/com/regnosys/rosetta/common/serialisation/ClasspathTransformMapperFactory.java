@@ -178,11 +178,8 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      *                                  {@code root} says this is the transform's input side
      */
     protected ObjectMapper runeJsonMapper(String configPath, Class<?> functionClass, TransformRoot root) {
-        if (configPath == null || configPath.isEmpty()) {
-            return runeJsonMapper(functionClass);
-        }
-        RuneJSONConfiguration configuration = loadRuneJsonConfig(configPath, functionClass);
-        if (!configuration.isAttributesOnly()) {
+        if (configPath == null || configPath.isEmpty()
+                || !loadRuneJsonConfig(configPath, functionClass).isAttributesOnly()) {
             return runeJsonMapper(functionClass);
         }
         if (isInputSide(root)) {

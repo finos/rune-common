@@ -22,9 +22,13 @@ package com.regnosys.rosetta.common.serialisation.runejson;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -53,7 +57,6 @@ public class RuneJSONConfiguration {
     public static final RuneJSONConfiguration EMPTY = builder().build();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuneJSONConfiguration.class);
-    private static final List<String> KNOWN_SETTINGS = Collections.singletonList("attributesOnly");
     private static final ObjectMapper CONFIGURATION_MAPPER = JsonMapper.builder()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .build();
@@ -61,8 +64,8 @@ public class RuneJSONConfiguration {
     private final boolean attributesOnly;
 
     @JsonCreator
-    private RuneJSONConfiguration(@JsonProperty("attributesOnly") Boolean attributesOnly) {
-        this.attributesOnly = attributesOnly != null && attributesOnly;
+    private RuneJSONConfiguration(@JsonProperty("attributesOnly") boolean attributesOnly) {
+        this.attributesOnly = attributesOnly;
     }
 
     public static Builder builder() {
@@ -86,26 +89,17 @@ public class RuneJSONConfiguration {
      * {@link #load(InputStream)}, naming {@code source} in the warning for an unknown property.
      */
     public static RuneJSONConfiguration load(InputStream input, String source) throws IOException {
-        JsonNode document = CONFIGURATION_MAPPER.readTree(input);
-        if (document == null || document.isNull() || document.isMissingNode()) {
-            return EMPTY;
-        }
-        warnOfUnknownSettings(document, source);
-        return CONFIGURATION_MAPPER.treeToValue(document, RuneJSONConfiguration.class);
-    }
-
-    private static void warnOfUnknownSettings(JsonNode document, String source) {
-        if (!document.isObject()) {
-            return;
-        }
-        List<String> unknown = new ArrayList<>();
-        document.fieldNames().forEachRemaining(name -> {
-            if (!KNOWN_SETTINGS.contains(name)) {
-                unknown.add(name);
+        try (JsonParser parser = CONFIGURATION_MAPPER.createParser(input)) {
+            JsonToken first = parser.nextToken();
+            if (first == null || first == JsonToken.VALUE_NULL) {
+                return EMPTY;
             }
-        });
-        if (!unknown.isEmpty()) {
-            LOGGER.warn("{} has unknown settings {}, which are ignored. Known settings: {}.", source, unknown, KNOWN_SETTINGS);
+            UnknownSettingsCollector unknownSettings = new UnknownSettingsCollector();
+            RuneJSONConfiguration configuration = CONFIGURATION_MAPPER.readerFor(RuneJSONConfiguration.class)
+                    .withHandler(unknownSettings)
+                    .readValue(parser);
+            unknownSettings.warnIfAny(source);
+            return configuration;
         }
     }
 
@@ -132,6 +126,26 @@ public class RuneJSONConfiguration {
     @Override
     public String toString() {
         return "RuneJSONConfiguration{attributesOnly=" + attributesOnly + '}';
+    }
+
+    private static class UnknownSettingsCollector extends DeserializationProblemHandler {
+        private final List<String> unknown = new ArrayList<>();
+        private Collection<Object> known;
+
+        @Override
+        public boolean handleUnknownProperty(DeserializationContext ctxt, JsonParser p, JsonDeserializer<?> deserializer,
+                                             Object beanOrClass, String propertyName) throws IOException {
+            unknown.add(propertyName);
+            known = deserializer.getKnownPropertyNames();
+            p.skipChildren();
+            return true;
+        }
+
+        void warnIfAny(String source) {
+            if (!unknown.isEmpty()) {
+                LOGGER.warn("{} has unknown settings {}, which are ignored. Known settings: {}.", source, unknown, known);
+            }
+        }
     }
 
     public static class Builder {

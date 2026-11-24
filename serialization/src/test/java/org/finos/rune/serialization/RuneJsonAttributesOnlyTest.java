@@ -32,6 +32,7 @@ import com.rosetta.model.lib.RosettaModelObject;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -90,27 +91,24 @@ class RuneJsonAttributesOnlyTest {
     void refusesToReadModelObject() {
         RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
 
-        InvalidDefinitionException error = assertThrows(InvalidDefinitionException.class,
+        assertRefusesRead(InvalidDefinitionException.class,
                 () -> mapper.readValue("{}", RosettaModelObject.class));
-        assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
     }
 
     @Test
     void refusesToReadModelObjectThroughObjectReader() {
         RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
 
-        InvalidDefinitionException error = assertThrows(InvalidDefinitionException.class,
+        assertRefusesRead(InvalidDefinitionException.class,
                 () -> mapper.readerFor(RosettaModelObject.class).readValue("{}"));
-        assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
     }
 
     @Test
     void refusesToReadListOfModelObjects() {
         RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
 
-        InvalidDefinitionException error = assertThrows(InvalidDefinitionException.class,
+        assertRefusesRead(InvalidDefinitionException.class,
                 () -> mapper.readValue("[]", new TypeReference<List<RosettaModelObject>>() {}));
-        assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
     }
 
     @Test
@@ -118,9 +116,8 @@ class RuneJsonAttributesOnlyTest {
         RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
         Class<RosettaModelObject> rootType = compiledBasicRootType();
 
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        assertRefusesRead(IllegalArgumentException.class,
                 () -> mapper.convertValue(Collections.emptyMap(), rootType));
-        assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
     }
 
     @Test
@@ -128,8 +125,12 @@ class RuneJsonAttributesOnlyTest {
         RuneJsonObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
         Class<RosettaModelObject> rootType = compiledBasicRootType();
 
-        InvalidDefinitionException error = assertThrows(InvalidDefinitionException.class,
+        assertRefusesRead(InvalidDefinitionException.class,
                 () -> mapper.readerFor(rootType).readValues("{} {}").next());
+    }
+
+    private static void assertRefusesRead(Class<? extends Throwable> expected, Executable read) {
+        Throwable error = assertThrows(expected, read);
         assertTrue(error.getMessage().contains("attributes-only Rune JSON"), error.getMessage());
     }
 

@@ -110,49 +110,38 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
 
     @Override
     public void serializeValue(JsonGenerator gen, Object value) throws IOException {
-        if (BUFFERING_ROOT.get()) {
-            super.serializeValue(gen, value);
-            return;
-        }
-        writeStripped(gen, buffer -> super.serializeValue(buffer, value));
+        writeStrippedIfRoot(gen, target -> super.serializeValue(target, value));
     }
 
     @Override
     public void serializeValue(JsonGenerator gen, Object value, JavaType rootType) throws IOException {
-        if (BUFFERING_ROOT.get()) {
-            super.serializeValue(gen, value, rootType);
-            return;
-        }
-        writeStripped(gen, buffer -> super.serializeValue(buffer, value, rootType));
+        writeStrippedIfRoot(gen, target -> super.serializeValue(target, value, rootType));
     }
 
     @Override
     public void serializeValue(JsonGenerator gen, Object value, JavaType rootType, JsonSerializer<Object> ser) throws IOException {
-        if (BUFFERING_ROOT.get()) {
-            super.serializeValue(gen, value, rootType, ser);
-            return;
-        }
-        writeStripped(gen, buffer -> super.serializeValue(buffer, value, rootType, ser));
+        writeStrippedIfRoot(gen, target -> super.serializeValue(target, value, rootType, ser));
     }
 
     @Override
     public void serializePolymorphic(JsonGenerator gen, Object value, JavaType rootType, JsonSerializer<Object> valueSer, TypeSerializer typeSer) throws IOException {
-        if (BUFFERING_ROOT.get()) {
-            super.serializePolymorphic(gen, value, rootType, valueSer, typeSer);
-            return;
-        }
-        writeStripped(gen, buffer -> super.serializePolymorphic(buffer, value, rootType, valueSer, typeSer));
+        writeStrippedIfRoot(gen, target -> super.serializePolymorphic(target, value, rootType, valueSer, typeSer));
     }
 
     /**
-     * Root wrapping ({@code withRootName}) is applied while buffering, so the stripped tree is written
-     * directly rather than serialized again.
+     * A nested call, made while a root is being buffered, writes straight to {@code gen}. A root call is
+     * buffered and its stripped tree written directly, since root wrapping ({@code withRootName}) was
+     * already applied while buffering.
      */
-    private void writeStripped(JsonGenerator gen, BufferWriter bufferWriter) throws IOException {
+    private void writeStrippedIfRoot(JsonGenerator gen, ValueWriter valueWriter) throws IOException {
+        if (BUFFERING_ROOT.get()) {
+            valueWriter.writeTo(gen);
+            return;
+        }
         TokenBuffer buffer = new TokenBuffer(owner, false);
         BUFFERING_ROOT.set(true);
         try {
-            bufferWriter.writeTo(buffer);
+            valueWriter.writeTo(buffer);
         } finally {
             BUFFERING_ROOT.remove();
         }
@@ -161,7 +150,7 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
     }
 
     @FunctionalInterface
-    private interface BufferWriter {
-        void writeTo(TokenBuffer buffer) throws IOException;
+    private interface ValueWriter {
+        void writeTo(JsonGenerator target) throws IOException;
     }
 }

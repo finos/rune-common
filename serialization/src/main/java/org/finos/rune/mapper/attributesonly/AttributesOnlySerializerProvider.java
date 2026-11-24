@@ -41,6 +41,7 @@ import java.util.Objects;
 /**
  * Writes each root value as standard Rune JSON into a buffer, then writes that JSON through
  * {@link AttributesOnlyStripper}. The standard serializers are not aware of the attributes-only setting.
+ * Installed by {@link org.finos.rune.mapper.RuneJsonObjectMapper#attributesOnly()}; no other code constructs it.
  * <p>
  * Root writes from both {@code ObjectMapper} and {@code ObjectWriter} pass through here. So do the nested
  * {@code writeTree} calls a serializer makes while the root is being buffered; those are written as they are,
@@ -147,25 +148,20 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
      * Root wrapping ({@code withRootName}) is applied while buffering, so the stripped tree is written
      * directly rather than serialized again.
      */
-    private void writeStripped(JsonGenerator gen, BufferWrite bufferWrite) throws IOException {
+    private void writeStripped(JsonGenerator gen, BufferWriter bufferWriter) throws IOException {
         TokenBuffer buffer = new TokenBuffer(owner, false);
         BUFFERING_ROOT.set(true);
         try {
-            bufferWrite.writeTo(buffer);
+            bufferWriter.writeTo(buffer);
         } finally {
             BUFFERING_ROOT.remove();
         }
         JsonNode tree = treeReader.readTree(buffer.asParser());
-        // A root null is buffered as a null token, which readTree reports as no content.
-        if (tree == null) {
-            gen.writeNull();
-            return;
-        }
         ((JsonSerializable) AttributesOnlyStripper.strip(tree)).serialize(gen, this);
     }
 
     @FunctionalInterface
-    private interface BufferWrite {
+    private interface BufferWriter {
         void writeTo(TokenBuffer buffer) throws IOException;
     }
 }

@@ -78,7 +78,7 @@ class RuneJsonAttributesOnlyTest {
 
     @ParameterizedTest(name = "{0} - {1}")
     @MethodSource("testCases")
-    void writesNoMetaPropertyThroughObjectMapper(String group, String testCaseName, RosettaModelObject model, String expectedJson) throws Exception {
+    void writesOnlyModelAttributesThroughObjectMapper(String group, String testCaseName, RosettaModelObject model, String expectedJson) throws Exception {
         ObjectMapper mapper = RuneJsonObjectMapper.attributesOnly(dynamicCompiledClassLoader);
 
         JsonNode actual = mapper.readTree(mapper.writeValueAsString(model));
@@ -172,6 +172,11 @@ class RuneJsonAttributesOnlyTest {
 
         assertEquals(new RuneJsonObjectMapper().writeValueAsString(numbers),
                 RuneJsonObjectMapper.attributesOnly().writeValueAsString(numbers));
+    }
+
+    @Test
+    void writesRootNullAsNull() throws Exception {
+        assertEquals("null", RuneJsonObjectMapper.attributesOnly().writeValueAsString(null));
     }
 
     @Test

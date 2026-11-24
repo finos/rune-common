@@ -68,11 +68,11 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
     private static class AttributesOnlyIngest {
     }
 
-    private static TransformSerialization runeJson(String configPath) {
+    private static TransformSerialization newRuneJsonSerialization(String configPath) {
         return new TransformSerialization(SerializationFormat.RUNE_JSON, configPath);
     }
 
-    private static MetadataAttributeHolder holderWithScheme() {
+    private static MetadataAttributeHolder newHolderWithScheme() {
         return MetadataAttributeHolder.builder()
                 .setHead("h1")
                 .setScheme(FieldWithMetaString.builder()
@@ -82,8 +82,8 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
                 .build();
     }
 
-    private ObjectMapper outputMapper(String configPath) {
-        return factory.create(runeJson(configPath), AttributesOnlyProjection.class, TransformRoot.output());
+    private ObjectMapper createOutputMapper(String configPath) {
+        return factory.create(newRuneJsonSerialization(configPath), AttributesOnlyProjection.class, TransformRoot.output());
     }
 
     @Test
@@ -92,36 +92,36 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
                 .map(s -> factory.create(s, AttributesOnlyProjection.class, TransformRoot.output()))
                 .get();
 
-        assertEquals("{\"head\":\"h1\",\"scheme\":\"S1\",\"tail\":\"t1\"}", mapper.writeValueAsString(holderWithScheme()));
+        assertEquals("{\"head\":\"h1\",\"scheme\":\"S1\",\"tail\":\"t1\"}", mapper.writeValueAsString(newHolderWithScheme()));
     }
 
     @Test
     void attributesOnlyProjectionWriterWritesOnlyModelAttributes() throws Exception {
-        String json = factory.createWriter(runeJson(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyProjection.class, TransformRoot.output())
-                .writeValueAsString(holderWithScheme());
+        String json = factory.createWriter(newRuneJsonSerialization(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyProjection.class, TransformRoot.output())
+                .writeValueAsString(newHolderWithScheme());
 
         assertFalse(json.contains("@"), json);
     }
 
     @Test
     void noConfigPathWritesStandardRuneJson() throws Exception {
-        assertStandardRuneJson(outputMapper(null));
+        assertStandardRuneJson(createOutputMapper(null));
     }
 
     @Test
     void attributesOnlyFalseWritesStandardRuneJson() throws Exception {
-        assertStandardRuneJson(outputMapper(NOT_ATTRIBUTES_ONLY_CONFIG));
+        assertStandardRuneJson(createOutputMapper(NOT_ATTRIBUTES_ONLY_CONFIG));
     }
 
     @Test
     void absentAttributesOnlyWritesStandardRuneJson() throws Exception {
-        assertStandardRuneJson(outputMapper(EMPTY_CONFIG));
+        assertStandardRuneJson(createOutputMapper(EMPTY_CONFIG));
     }
 
     private static void assertStandardRuneJson(ObjectMapper mapper) throws Exception {
         assertFalse(((RuneJsonObjectMapper) mapper).isAttributesOnly());
-        assertEquals(new RuneJsonObjectMapper().writeValueAsString(holderWithScheme()),
-                mapper.writeValueAsString(holderWithScheme()));
+        assertEquals(new RuneJsonObjectMapper().writeValueAsString(newHolderWithScheme()),
+                mapper.writeValueAsString(newHolderWithScheme()));
     }
 
     @Test
@@ -137,7 +137,7 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
 
     @Test
     void attributesOnlyMapperWithNoDeclaredSideFailsToRead() {
-        ObjectMapper mapper = factory.create(runeJson(ATTRIBUTES_ONLY_CONFIG), null, null);
+        ObjectMapper mapper = factory.create(newRuneJsonSerialization(ATTRIBUTES_ONLY_CONFIG), null, null);
 
         assertInstanceOf(RuneJsonObjectMapper.class, mapper);
         InvalidDefinitionException error = assertThrows(InvalidDefinitionException.class,
@@ -148,10 +148,10 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
     @Test
     void cachedProjectionMapperIsNotServedToIngest() {
         CachingTransformMapperFactory cachingFactory = new CachingTransformMapperFactory(factory);
-        cachingFactory.create(runeJson(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyProjection.class, TransformRoot.output());
+        cachingFactory.create(newRuneJsonSerialization(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyProjection.class, TransformRoot.output());
 
         assertThrows(IllegalArgumentException.class,
-                () -> cachingFactory.create(runeJson(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyIngest.class, TransformRoot.input()));
+                () -> cachingFactory.create(newRuneJsonSerialization(ATTRIBUTES_ONLY_CONFIG), AttributesOnlyIngest.class, TransformRoot.input()));
     }
 
     @Test
@@ -165,17 +165,17 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
             }
         };
 
-        ObjectMapper mapper = workspaceFactory.create(runeJson("workspace/not-on-classpath.json"),
+        ObjectMapper mapper = workspaceFactory.create(newRuneJsonSerialization("workspace/not-on-classpath.json"),
                 AttributesOnlyProjection.class, TransformRoot.output());
 
         assertEquals(Arrays.asList(SerializationFormat.RUNE_JSON), formats);
-        assertEquals("{\"head\":\"h1\",\"scheme\":\"S1\",\"tail\":\"t1\"}", mapper.writeValueAsString(holderWithScheme()));
+        assertEquals("{\"head\":\"h1\",\"scheme\":\"S1\",\"tail\":\"t1\"}", mapper.writeValueAsString(newHolderWithScheme()));
     }
 
     @Test
     void missingConfigFails() {
         String configPath = "serialisation/runejson/does-not-exist.json";
-        IllegalStateException error = assertThrows(IllegalStateException.class, () -> outputMapper(configPath));
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> createOutputMapper(configPath));
 
         assertTrue(error.getMessage().contains(configPath), error.getMessage());
     }
@@ -196,13 +196,13 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
         String configPath = "serialisation/runejson/invalid-config.json";
 
         assertThrows(UncheckedIOException.class,
-                () -> cachingFactory.create(runeJson(configPath), AttributesOnlyProjection.class, TransformRoot.output()));
+                () -> cachingFactory.create(newRuneJsonSerialization(configPath), AttributesOnlyProjection.class, TransformRoot.output()));
         assertThrows(UncheckedIOException.class,
-                () -> cachingFactory.create(runeJson(configPath), AttributesOnlyProjection.class, TransformRoot.output()));
+                () -> cachingFactory.create(newRuneJsonSerialization(configPath), AttributesOnlyProjection.class, TransformRoot.output()));
     }
 
     private void assertFailsToRead(String configPath) {
-        UncheckedIOException error = assertThrows(UncheckedIOException.class, () -> outputMapper(configPath));
+        UncheckedIOException error = assertThrows(UncheckedIOException.class, () -> createOutputMapper(configPath));
 
         assertTrue(error.getMessage().contains(configPath), error.getMessage());
     }
@@ -214,7 +214,7 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
 
     private void assertWarnsAndWritesStandardRuneJson(String configPath, String expectedWarning) throws Exception {
         ObjectMapper[] mapper = new ObjectMapper[1];
-        List<String> warnings = warningsWhile(() -> mapper[0] = outputMapper(configPath));
+        List<String> warnings = collectWarningsWhile(() -> mapper[0] = createOutputMapper(configPath));
 
         assertEquals(1, warnings.size(), "expected exactly one WARN, got " + warnings);
         assertTrue(warnings.get(0).contains(configPath), warnings.get(0));
@@ -223,7 +223,7 @@ class ClasspathTransformMapperFactoryRuneJsonTest {
     }
 
     /** The WARNs logged by the factory and the configuration loader while {@code work} runs. */
-    private static List<String> warningsWhile(Runnable work) {
+    private static List<String> collectWarningsWhile(Runnable work) {
         List<Logger> loggers = Arrays.asList(
                 (Logger) LoggerFactory.getLogger(ClasspathTransformMapperFactory.class),
                 (Logger) LoggerFactory.getLogger(RuneJSONConfiguration.class));

@@ -12,3 +12,7 @@ type Camel extends com.rosetta.test.Animal:
 type Llama extends com.rosetta.test.Animal:
 
     llamaDetailsModel com.rosetta.test.LlamaDetailsModel (1..1)
+
+type Square extends com.rosetta.test.Shape:
+
+    side number (1..1)

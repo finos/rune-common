@@ -51,6 +51,19 @@ public final class RosettaXMLTypeConfigLookup {
                 .findFirst();
     }
 
+    /**
+     * The configuration of the nearest type up the hierarchy that has a content model. A subtype can have
+     * its own configuration for other reasons, such as its XSD type name, and that must not hide the content
+     * model it inherits.
+     */
+    public static Optional<TypeXMLConfiguration> getTypeXMLConfigurationWithContentModel(RosettaXMLConfiguration rosettaXMLConfiguration,
+                                                                                         MapperConfig<?> config,
+                                                                                         BeanDescription beanDesc) {
+        return getTypeXMLConfigurations(rosettaXMLConfiguration, config, beanDesc.getClassInfo()).stream()
+                .filter(typeConfig -> typeConfig.getContentModel().isPresent())
+                .findFirst();
+    }
+
     public static List<TypeXMLConfiguration> getTypeXMLConfigurations(RosettaXMLConfiguration rosettaXMLConfiguration,
                                                                       MapperConfig<?> config,
                                                                       AnnotatedClass ac) {

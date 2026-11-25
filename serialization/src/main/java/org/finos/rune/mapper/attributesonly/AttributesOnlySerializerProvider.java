@@ -52,12 +52,6 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Set while a root value is being buffered on this thread. Jackson builds a new provider for each call,
-     * so the nested calls cannot be told apart by instance state.
-     */
-    private static final ThreadLocal<Boolean> BUFFERING_ROOT = ThreadLocal.withInitial(() -> false);
-
     /** The attributes-only mapper this provider belongs to; the buffer's codec. */
     private final transient ObjectMapper owner;
 
@@ -134,19 +128,24 @@ public class AttributesOnlySerializerProvider extends DefaultSerializerProvider 
      * already applied while buffering.
      */
     private void writeStrippedIfRoot(JsonGenerator gen, ValueWriter valueWriter) throws IOException {
-        if (BUFFERING_ROOT.get()) {
+        if (gen instanceof RootBuffer) {
             valueWriter.writeTo(gen);
             return;
         }
-        TokenBuffer buffer = new TokenBuffer(owner, false);
-        BUFFERING_ROOT.set(true);
-        try {
-            valueWriter.writeTo(buffer);
-        } finally {
-            BUFFERING_ROOT.remove();
-        }
+        TokenBuffer buffer = new RootBuffer(owner);
+        valueWriter.writeTo(buffer);
         JsonNode tree = treeReader.readTree(buffer.asParser());
         ((JsonSerializable) AttributesOnlyStripper.strip(tree)).serialize(gen, this);
+    }
+
+    /**
+     * The buffer a root value is written into. Jackson builds a new provider for each call, so a nested
+     * call is recognised by the generator it writes to, not by provider state.
+     */
+    private static final class RootBuffer extends TokenBuffer {
+        RootBuffer(ObjectMapper codec) {
+            super(codec, false);
+        }
     }
 
     @FunctionalInterface

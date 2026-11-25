@@ -1063,7 +1063,6 @@ public class XmlSerialisationTest {
                             typeXMLConfiguration.getXmlAttributes(),
                             newAttributeXmlConfiguration,
                             typeXMLConfiguration.getEnumValues(),
-                            Optional.empty(),
                             Optional.empty()
                     );
                     newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);
@@ -1121,7 +1120,6 @@ public class XmlSerialisationTest {
                             typeXMLConfiguration.getXmlAttributes(),
                             newAttributeXmlConfiguration,
                             typeXMLConfiguration.getEnumValues(),
-                            Optional.empty(),
                             Optional.empty()
                     );
                     newTypeConfigMap.put(modelSymbolId, newTypeXmlConfiguration);

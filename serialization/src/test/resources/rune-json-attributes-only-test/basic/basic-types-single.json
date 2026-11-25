@@ -1,0 +1,10 @@
+{
+  "basicSingle" : {
+    "booleanType" : true,
+    "numberType" : 123.456,
+    "parameterisedNumberType" : 123.99,
+    "parameterisedStringType" : "abcDEF",
+    "stringType" : "foo",
+    "timeType" : "12:00:00"
+  }
+}

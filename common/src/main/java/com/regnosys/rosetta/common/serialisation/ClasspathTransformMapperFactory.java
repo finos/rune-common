@@ -25,11 +25,13 @@ import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.regnosys.rosetta.common.serialisation.fix.RuneFIXConfiguration;
+import com.regnosys.rosetta.common.serialisation.runejson.config.RuneJSONConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;
 import com.rosetta.model.lib.functions.LabelProvider;
 import com.rosetta.model.lib.functions.RosettaFunction;
+import com.rosetta.model.lib.transform.SerializationFormat;
 import org.finos.rune.mapper.RuneJsonObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,11 +92,13 @@ import java.util.function.Supplier;
  * <p>
  * <b>Extension points.</b> Only these methods are on the {@link #create} path, so overriding anything
  * else changes no constructed mapper. Per format: {@link #jsonMapper()},
- * {@link #runeJsonMapper(Class)}, {@link #csvMapper(String, Class, TransformRoot)},
+ * {@link #runeJsonMapper(String, Class)} (which calls {@link #runeJsonMapper(Class)} for the
+ * standard mapper, but not for an attributes-only one), {@link #csvMapper(String, Class, TransformRoot)},
  * {@link #csvLabelledMapper(Class, TransformRoot)}, {@link #xmlMapper(String, Class)} and
  * {@link #fixMapper(String, Class)}. Below those: {@link #resolveLabelProvider(Class, TransformRoot)} for
- * label resolution, {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} /
- * {@link #openFixConfig(String, Class)} for the config lookups,
+ * label resolution, {@link #openConfig(SerializationFormat, String, Class)} for every config lookup, or
+ * {@link #openXmlConfig(String, Class)} / {@link #openCsvConfig(String, Class)} /
+ * {@link #openFixConfig(String, Class)} / {@link #openRuneJsonConfig(String, Class)} for one format's,
  * and {@link #classLoader(Class)} / {@link #defaultClassLoader()} for the model classloader.
  * <p>
  * Three narrower overloads predate the parameters above and are <b>deprecated since 12.10.0, for removal
@@ -139,7 +143,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
             case JSON:
                 return jsonMapper();
             case RUNE_JSON:
-                return runeJsonMapper(functionClass);
+                return runeJsonMapper(serialization.getConfigPath(), functionClass);
             case CSV:
                 return csvMapper(serialization.getConfigPath(), functionClass, root);
             case CSV_LABELLED:
@@ -158,6 +162,36 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
         return RosettaObjectMapper.getNewRosettaObjectMapper();
     }
 
+    /**
+     * The {@code RUNE_JSON} mapper. With no {@code configPath}, or a {@link RuneJSONConfiguration} that does
+     * not set {@code attributesOnly}, this is {@link #runeJsonMapper(Class)}'s standard mapper. With
+     * {@code attributesOnly: true} it is {@link RuneJsonObjectMapper#attributesOnly(ClassLoader)}, which
+     * writes only model attributes and refuses to read model objects; {@link #runeJsonMapper(Class)} is not
+     * called, so a subclass's customisation there does not apply to it.
+     * <p>
+     * The transform side is not checked: an attributes-only mapper built for an input side is built, and
+     * refuses the first model read instead, without naming {@code configPath}.
+     * <p>
+     * Like the XML, CSV and FIX configurations, a declared {@code configPath} that cannot be found or read
+     * fails the build of the mapper.
+     *
+     * @throws IllegalStateException if the configuration cannot be found
+     * @throws UncheckedIOException  if the configuration cannot be read or is not a valid configuration
+     */
+    protected ObjectMapper runeJsonMapper(String configPath, Class<?> functionClass) {
+        if (configPath == null || configPath.isEmpty()
+                || !loadRuneJsonConfig(configPath, functionClass).isAttributesOnly()) {
+            return runeJsonMapper(functionClass);
+        }
+        ClassLoader classLoader = classLoader(functionClass);
+        return classLoader != null ? RuneJsonObjectMapper.attributesOnly(classLoader) : RuneJsonObjectMapper.attributesOnly();
+    }
+
+    /**
+     * The standard {@code RUNE_JSON} mapper, for a transform whose configuration does not set
+     * {@code attributesOnly}. Not called for an attributes-only transform: see
+     * {@link #runeJsonMapper(String, Class)}.
+     */
     protected ObjectMapper runeJsonMapper(Class<?> functionClass) {
         // Rune JSON resolves model types (e.g. for global-key hashing) so it needs the model classloader.
         ClassLoader classLoader = classLoader(functionClass);
@@ -425,10 +459,39 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * resolves against the model classloader.
      */
     protected InputStream openFixConfig(String configPath, Class<?> functionClass) throws IOException {
+        return openConfig(SerializationFormat.FIX, configPath, functionClass);
+    }
+
+    private RuneJSONConfiguration loadRuneJsonConfig(String configPath, Class<?> functionClass) {
+        try (InputStream inputStream = openRuneJsonConfig(configPath, functionClass)) {
+            return RuneJSONConfiguration.load(inputStream, "Rune JSON configuration '" + configPath + "'");
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read Rune JSON configuration '" + configPath + "'", e);
+        }
+    }
+
+    /**
+     * Opens the Rune JSON serialization config, resolving it exactly like {@link #openXmlConfig(String, Class)}.
+     * Override to look it up elsewhere first.
+     */
+    protected InputStream openRuneJsonConfig(String configPath, Class<?> functionClass) throws IOException {
+        return openConfig(SerializationFormat.RUNE_JSON, configPath, functionClass);
+    }
+
+    /**
+     * Opens a serialization config for any format. Each {@code openXxxConfig} method delegates here, so a
+     * runtime that looks every config up elsewhere first (e.g. a workspace directory) overrides this one
+     * method, and a format added later is covered too; override a format's own method to change only that
+     * format. The classpath implementation resolves {@code configPath} against {@link #classLoader(Class)},
+     * falling back to the legacy Guava classpath lookup when that is {@code null}.
+     *
+     * @param format the format whose config is wanted: {@code XML}, {@code CSV}, {@code FIX} or {@code RUNE_JSON}
+     */
+    protected InputStream openConfig(SerializationFormat format, String configPath, Class<?> functionClass) throws IOException {
         ClassLoader classLoader = classLoader(functionClass);
         URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
         if (configUrl == null) {
-            throw new IllegalStateException("Could not find FIX configuration '" + configPath + "' on the classpath");
+            throw new IllegalStateException("Could not find " + format + " configuration '" + configPath + "' on the classpath");
         }
         return configUrl.openStream();
     }
@@ -440,12 +503,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * delegating to {@code super}.
      */
     protected InputStream openXmlConfig(String configPath, Class<?> functionClass) throws IOException {
-        ClassLoader classLoader = classLoader(functionClass);
-        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
-        if (configUrl == null) {
-            throw new IllegalStateException("Could not find XML configuration '" + configPath + "' on the classpath");
-        }
-        return configUrl.openStream();
+        return openConfig(SerializationFormat.XML, configPath, functionClass);
     }
 
     /**
@@ -464,12 +522,7 @@ public class ClasspathTransformMapperFactory implements TransformMapperFactory {
      * such a transform is reported dropped instead.
      */
     protected InputStream openCsvConfig(String configPath, Class<?> functionClass) throws IOException {
-        ClassLoader classLoader = classLoader(functionClass);
-        URL configUrl = (classLoader != null) ? classLoader.getResource(configPath) : Resources.getResource(configPath);
-        if (configUrl == null) {
-            throw new IllegalStateException("Could not find CSV configuration '" + configPath + "' on the classpath");
-        }
-        return configUrl.openStream();
+        return openConfig(SerializationFormat.CSV, configPath, functionClass);
     }
 
     /**

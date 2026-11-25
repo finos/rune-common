@@ -40,8 +40,6 @@ import java.lang.reflect.Method;
 
 public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObject> {
 
-    private static final String DATA = "@data";
-
     private final Class<?> choiceType;
 
     public RuneChoiceTypeDeserializer(Class<?> choiceType) {
@@ -106,7 +104,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         }
 
         if (runeType.equals(optionName)) {
-            JsonNode data = node.get(DATA);
+            JsonNode data = node.get(RuneJsonConfig.MetaProperties.DATA);
             return data == null || data.isNull() ? null : mapper.treeToValue(data, optionType);
         }
         return null;

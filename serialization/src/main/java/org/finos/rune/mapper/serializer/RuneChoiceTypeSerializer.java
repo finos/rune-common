@@ -37,12 +37,9 @@ import org.finos.rune.mapper.RuneJsonConfig;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Iterator;
 import java.util.Map;
 
 public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject> {
-
-    private static final String DATA = "@data";
 
     @Override
     public void serialize(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
@@ -78,7 +75,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
             gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.choiceOptionType);
-            gen.writeFieldName(DATA);
+            gen.writeFieldName(RuneJsonConfig.MetaProperties.DATA);
             serializers.defaultSerializeValue(selectedValue, gen);
         }
     }
@@ -89,9 +86,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         JsonNode node = gen.getCodec().readTree(buffer.asParser());
 
         if (node instanceof ObjectNode) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> field = fields.next();
+            for (Map.Entry<String, JsonNode> field : node.properties()) {
                 if (!RuneJsonConfig.getMetaProperties().contains(field.getKey())) {
                     gen.writeFieldName(field.getKey());
                     gen.writeTree(field.getValue());

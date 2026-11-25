@@ -1,0 +1,6 @@
+{
+  "choiceDeepNested" : {
+    "fieldA" : "foo",
+    "fieldExt" : "bar"
+  }
+}

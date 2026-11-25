@@ -1,0 +1,9 @@
+{
+  "choiceDataList" : [ {
+    "fieldA" : "foo"
+  }, {
+    "fieldB" : "foo"
+  }, {
+    "fieldA" : "foo2"
+  } ]
+}

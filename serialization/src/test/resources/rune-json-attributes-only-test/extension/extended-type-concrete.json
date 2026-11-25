@@ -1,0 +1,6 @@
+{
+  "typeB" : {
+    "fieldA" : "bar",
+    "fieldB" : "foo"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "typeG" : {
+    "fieldG" : "foo"
+  },
+  "choiceWithReferences" : {
+    "fieldH" : "bar"
+  }
+}

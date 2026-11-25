@@ -28,15 +28,16 @@ import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.cfg.JsonNodeFeature;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.rosetta.model.lib.RosettaModelObject;
+import org.finos.rune.mapper.attributesonly.AttributesOnlySerializerProvider;
+import org.finos.rune.mapper.attributesonly.AttributesOnlyStripper;
+import org.finos.rune.mapper.attributesonly.ModelReadRejectingIntrospector;
 import org.finos.rune.mapper.date.RuneDateModule;
 import org.finos.rune.mapper.filters.SubtypeFilter;
 import org.finos.rune.mapper.introspector.RuneJsonModule;
@@ -70,14 +71,54 @@ import java.util.List;
  * @see ObjectMapper
  */
 public class RuneJsonObjectMapper extends ObjectMapper {
+    private final boolean attributesOnly;
+
     public RuneJsonObjectMapper() {
-        super(create());
+        this(false);
     }
 
     public RuneJsonObjectMapper(ClassLoader classLoader) {
+        this(false);
+        useClassLoader(classLoader);
+    }
+
+    private RuneJsonObjectMapper(boolean attributesOnly) {
         super(create());
-        TypeFactory typeFactory = getTypeFactory().withClassLoader(classLoader);
-        setTypeFactory(typeFactory);
+        this.attributesOnly = attributesOnly;
+        if (attributesOnly) {
+            setSerializerProvider(new AttributesOnlySerializerProvider(this));
+            DeserializationConfig deserializationConfig = getDeserializationConfig();
+            setConfig(deserializationConfig.with(AnnotationIntrospector.pair(
+                    new ModelReadRejectingIntrospector(), deserializationConfig.getAnnotationIntrospector())));
+        }
+    }
+
+    /**
+     * A mapper that writes only model attributes: no {@code @}-prefixed property anywhere, each
+     * {@code {"@data": ...}} written as its bare value, and an attribute held only as a reference omitted.
+     * See {@link AttributesOnlyStripper} for the rules.
+     * <p>
+     * The JSON it writes cannot be read back, so the mapper refuses to read model objects.
+     */
+    public static RuneJsonObjectMapper attributesOnly() {
+        return new RuneJsonObjectMapper(true);
+    }
+
+    /**
+     * {@link #attributesOnly()}, resolving model types against {@code classLoader}.
+     */
+    public static RuneJsonObjectMapper attributesOnly(ClassLoader classLoader) {
+        RuneJsonObjectMapper mapper = new RuneJsonObjectMapper(true);
+        mapper.useClassLoader(classLoader);
+        return mapper;
+    }
+
+    public boolean isAttributesOnly() {
+        return attributesOnly;
+    }
+
+    private void useClassLoader(ClassLoader classLoader) {
+        setTypeFactory(getTypeFactory().withClassLoader(classLoader));
     }
 
     public static List<String> getMetaProperties() {
@@ -93,8 +134,7 @@ public class RuneJsonObjectMapper extends ObjectMapper {
                 .registerModule(new JavaTimeModule())
                 .registerModule(new RuneDateModule())
                 .registerModule(new RuneJsonModule())
-                .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                .setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)

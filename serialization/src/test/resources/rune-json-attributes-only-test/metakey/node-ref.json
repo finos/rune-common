@@ -1,0 +1,7 @@
+{
+  "nodeRef" : {
+    "typeA" : {
+      "fieldA" : "foo"
+    }
+  }
+}

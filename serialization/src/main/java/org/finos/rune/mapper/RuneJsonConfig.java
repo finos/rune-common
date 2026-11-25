@@ -25,11 +25,17 @@ import java.util.List;
 
 import static org.finos.rune.mapper.RuneJsonConfig.MetaProperties.*;
 
+/**
+ * The names of the {@code @}-prefixed meta properties that Rune JSON writes alongside model attributes.
+ * Holds constants only; it is not a serialization configuration. For the settings a {@code RUNE_JSON}
+ * transform reads from its {@code configPath}, see {@code RuneJSONConfiguration} in {@code rune-common}.
+ */
 public class RuneJsonConfig {
     public static class MetaProperties {
         public static final String MODEL = "@model";
         public static final String TYPE = "@type";
         public static final String VERSION = "@version";
+        public static final String DATA = "@data";
 
         private MetaProperties() {}
     }

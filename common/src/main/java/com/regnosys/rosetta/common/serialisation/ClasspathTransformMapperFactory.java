@@ -25,7 +25,7 @@ import com.google.common.io.Resources;
 import com.regnosys.rosetta.common.serialisation.csv.config.HeaderStyle;
 import com.regnosys.rosetta.common.serialisation.csv.config.RosettaCSVConfiguration;
 import com.regnosys.rosetta.common.serialisation.fix.RuneFIXConfiguration;
-import com.regnosys.rosetta.common.serialisation.runejson.RuneJSONConfiguration;
+import com.regnosys.rosetta.common.serialisation.runejson.config.RuneJSONConfiguration;
 import com.regnosys.rosetta.common.serialisation.xml.config.RosettaXMLConfiguration;
 import com.regnosys.rosetta.common.transform.LabelProviderResolver;
 import com.rosetta.model.lib.annotations.RuneLabelProvider;

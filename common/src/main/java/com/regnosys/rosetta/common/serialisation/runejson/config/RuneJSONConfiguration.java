@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.common.serialisation.runejson;
+package com.regnosys.rosetta.common.serialisation.runejson.config;
 
 /*-
  * ==============

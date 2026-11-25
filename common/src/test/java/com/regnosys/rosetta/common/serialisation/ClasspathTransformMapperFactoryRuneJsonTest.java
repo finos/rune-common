@@ -26,7 +26,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.regnosys.rosetta.common.serialisation.runejson.RuneJSONConfiguration;
+import com.regnosys.rosetta.common.serialisation.runejson.config.RuneJSONConfiguration;
 import com.rosetta.model.lib.transform.Ingest;
 import com.rosetta.model.lib.transform.Projection;
 import com.rosetta.model.lib.transform.SerializationFormat;

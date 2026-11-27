@@ -1,0 +1,9 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.new.Root",
+  "@version" : "0.0.0",
+  "typeA" : {
+    "@type" : "serialization.test.passing.new.Missing",
+    "fieldA" : "foo"
+  }
+}

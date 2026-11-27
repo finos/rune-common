@@ -35,7 +35,9 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -149,9 +151,12 @@ final class RuneChoiceOptionRegistry {
         // Two plain or two metadata-wrapped options sharing an @type, reachable only through two nested
         // choices, which rune-dsl warns about, resolve to the first one.
         if (existing != null && existing.metaWrapped != option.metaWrapped) {
+            // Option order follows Class.getMethods(), which is unspecified, so the message orders the paths itself.
+            List<String> paths = new ArrayList<>(Arrays.asList(String.join(".", existing.path), String.join(".", option.path)));
+            paths.sort(Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder()));
             ambiguousTypeNames.putIfAbsent(option.typeName, String.format(
                     "Rune choice type %s has two options written with @type '%s', %s and %s, which cannot be told apart",
-                    choiceType.getName(), option.typeName, String.join(".", existing.path), String.join(".", option.path)));
+                    choiceType.getName(), option.typeName, paths.get(0), paths.get(1)));
         }
     }
 

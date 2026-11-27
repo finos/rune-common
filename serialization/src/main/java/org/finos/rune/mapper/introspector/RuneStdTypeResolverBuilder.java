@@ -36,24 +36,12 @@ import java.util.Collection;
 
 public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
 
-    private final boolean runeTypeIds;
-
-    /**
-     * @param runeTypeIds whether {@code typeInfo} is the type info {@link RuneJsonAnnotationIntrospector} gives a
-     *                    polymorphic Rune data type, whose type ids are then read by {@link RuneTypeIdResolver}
-     */
-    public RuneStdTypeResolverBuilder(JsonTypeInfo.Value typeInfo, boolean runeTypeIds) {
-        super(typeInfo);
-        this.runeTypeIds = runeTypeIds;
-    }
-
     public RuneStdTypeResolverBuilder(JsonTypeInfo.Value typeInfo) {
-        this(typeInfo, false);
+        super(typeInfo);
     }
 
     public RuneStdTypeResolverBuilder() {
         super();
-        this.runeTypeIds = false;
     }
 
     @Override
@@ -70,7 +58,8 @@ public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
     protected TypeIdResolver idResolver(MapperConfig<?> config, JavaType baseType, PolymorphicTypeValidator subtypeValidator,
                                         Collection<NamedType> subtypes, boolean forSer, boolean forDeser) {
         // A custom resolver set through @JsonTypeIdResolver still takes precedence.
-        if (runeTypeIds && _customIdResolver == null) {
+        if (_customIdResolver == null && _idType == JsonTypeInfo.Id.CLASS
+                && RuneJsonAnnotationIntrospector.isPolymorphicRuneDataType(AnnotatedClassResolver.resolve(config, baseType, config))) {
             return new RuneTypeIdResolver(baseType, config.getTypeFactory(), subtypes, subtypeValidator);
         }
         return super.idResolver(config, baseType, subtypeValidator, subtypes, forSer, forDeser);

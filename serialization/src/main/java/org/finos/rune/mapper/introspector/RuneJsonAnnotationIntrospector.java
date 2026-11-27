@@ -105,13 +105,12 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     @Override
     protected TypeResolverBuilder<?> _constructStdTypeResolverBuilder(MapperConfig<?> config,
                                                                       JsonTypeInfo.Value typeInfo, JavaType baseType) {
-        return new RuneStdTypeResolverBuilder(typeInfo, RUNE_TYPE_INFO.equals(typeInfo));
+        return new RuneStdTypeResolverBuilder(typeInfo);
     }
 
     @Override
     public JsonTypeInfo.Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated ann) {
-        RuneDataType t = _findAnnotation(ann, RuneDataType.class);
-        if (t != null && !ann.hasAnnotation(RuneChoiceType.class) && !isAnnotatedTypeMetaFields(ann)) {
+        if (isPolymorphicRuneDataType(ann)) {
             return RUNE_TYPE_INFO;
         }
         return super.findPolymorphicTypeInfo(config, ann);
@@ -223,8 +222,11 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
                 .collect(Collectors.toSet());
     }
 
-    private boolean isAnnotatedTypeMetaFields(Annotated ann) {
-        return ann.getType().getRawClass() == MetaFields.class;
+    /** Whether {@code ann} is a polymorphic Rune data type, whose {@code @type} holds its Rune name. */
+    static boolean isPolymorphicRuneDataType(Annotated ann) {
+        return ann.hasAnnotation(RuneDataType.class)
+                && !ann.hasAnnotation(RuneChoiceType.class)
+                && ann.getType().getRawClass() != MetaFields.class;
     }
 
     @Override

@@ -70,7 +70,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             );
             return null;
         }
-        return (RosettaModelObject) setOption(option, value);
+        return (RosettaModelObject) wrapInEnclosingChoices(option, value);
     }
 
     private Object readOptionValue(RuneChoiceOptionRegistry.Option option, ObjectNode node, ObjectMapper mapper) throws IOException {
@@ -86,8 +86,8 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         return data == null || data.isNull() ? null : mapper.treeToValue(data, option.type);
     }
 
-    /** Sets {@code value} on the builder of each enclosing choice in turn, innermost first, and returns the outermost. */
-    private Object setOption(RuneChoiceOptionRegistry.Option option, Object value) throws IOException {
+    /** Wraps {@code value} in a built instance of each enclosing choice, innermost first, and returns the outermost. */
+    private Object wrapInEnclosingChoices(RuneChoiceOptionRegistry.Option option, Object value) throws IOException {
         Object result = value;
         for (int i = option.setters.size() - 1; i >= 0; i--) {
             Class<?> enclosingChoiceType = i == 0 ? choiceType : option.setters.get(i - 1).getParameterTypes()[0];

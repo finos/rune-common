@@ -338,7 +338,7 @@ public class RuneJsonChoiceTypeSerializerTest {
         invokeSetter(innerBuilder, "setString", build(metaStringBuilder));
 
         JsonMappingException exception = Assertions.assertThrows(JsonMappingException.class,
-                () -> toJson(rootWithOption(group, "Outer", "setInner", build(innerBuilder))));
+                () -> toJson(newRootWithOption(group, "Outer", "setInner", build(innerBuilder))));
 
         Assertions.assertTrue(exception.getMessage().contains("two options written with @type 'string', string and Inner.string"),
                 exception.getMessage());
@@ -349,7 +349,7 @@ public class RuneJsonChoiceTypeSerializerTest {
         RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "ambiguousmetaoption"));
 
         JsonMappingException exception = Assertions.assertThrows(JsonMappingException.class,
-                () -> toJson(rootWithOption(group, "Outer", "setString", "foo")));
+                () -> toJson(newRootWithOption(group, "Outer", "setString", "foo")));
 
         Assertions.assertTrue(exception.getMessage().contains("cannot be told apart"), exception.getMessage());
     }
@@ -371,7 +371,7 @@ public class RuneJsonChoiceTypeSerializerTest {
         RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "ambiguousmetaoption"));
         RosettaModelObjectBuilder innerBuilder = newBuilder(group.getType("Inner"));
         invokeSetter(innerBuilder, "setInt", 1);
-        RosettaModelObject root = rootWithOption(group, "Outer", "setInner", build(innerBuilder));
+        RosettaModelObject root = newRootWithOption(group, "Outer", "setInner", build(innerBuilder));
 
         String json = toJson(root);
 
@@ -386,7 +386,7 @@ public class RuneJsonChoiceTypeSerializerTest {
         invokeSetter(innerBuilder, "setFoo", newReferenceToFoo(group));
 
         JsonMappingException exception = Assertions.assertThrows(JsonMappingException.class,
-                () -> toJson(rootWithOption(group, "OuterData", "setInnerData", build(innerBuilder))));
+                () -> toJson(newRootWithOption(group, "OuterData", "setInnerData", build(innerBuilder))));
 
         Assertions.assertTrue(exception.getMessage().contains(
                 "two options written with @type 'serialization.test.passing.ambiguousmetaoption.Foo', Foo and InnerData.Foo"),
@@ -416,11 +416,25 @@ public class RuneJsonChoiceTypeSerializerTest {
         RosettaModelObjectBuilder innerBuilder = newBuilder(innerType);
         invokeSetter(innerBuilder, "setString", build(metaStringBuilder));
 
-        String plain = attributesOnlyMapper.writeValueAsString(rootWithOption(group, "Outer", "setString", "foo"));
-        String nested = attributesOnlyMapper.writeValueAsString(rootWithOption(group, "Outer", "setInner", build(innerBuilder)));
+        String plain = attributesOnlyMapper.writeValueAsString(newRootWithOption(group, "Outer", "setString", "foo"));
+        String nested = attributesOnlyMapper.writeValueAsString(newRootWithOption(group, "Outer", "setInner", build(innerBuilder)));
 
         Assertions.assertEquals("{\"outer\":\"foo\"}", plain);
         Assertions.assertEquals("{\"outer\":\"foo\"}", nested);
+    }
+
+    @Test
+    void shouldRoundTripSharedTypeOfTwoNestedPlainOptionsAsAnOptionOfTheChoice() throws IOException {
+        RuneSerializerTestHelper.CompiledGroup group = getCompiledGroup(getGroupPath(TEST_TYPE, "ambiguousmetaoption"));
+        RosettaModelObjectBuilder innerBBuilder = newBuilder(group.getType("InnerB"));
+        invokeSetter(innerBBuilder, "setString", "foo");
+
+        String json = toJson(newRootWithOption(group, "Both", "setInnerB", build(innerBBuilder)));
+        RosettaModelObject readBack = objectMapper.readValue(json, group.getRootType());
+
+        // Which nested option the value comes back in is the first match, so only the value is asserted.
+        Assertions.assertEquals("string", objectMapper.readTree(json).path("both").path("@type").asText());
+        Assertions.assertEquals(json, toJson(readBack));
     }
 
     private RosettaModelObject newReferenceToFoo(RuneSerializerTestHelper.CompiledGroup group) throws IOException {
@@ -440,7 +454,7 @@ public class RuneJsonChoiceTypeSerializerTest {
     }
 
     /** Builds a Root holding {@code option} in its attribute of the choice type {@code choiceTypeName}. */
-    private RosettaModelObject rootWithOption(RuneSerializerTestHelper.CompiledGroup group, String choiceTypeName,
+    private RosettaModelObject newRootWithOption(RuneSerializerTestHelper.CompiledGroup group, String choiceTypeName,
                                               String optionSetter, Object option) throws IOException {
         RosettaModelObjectBuilder choiceBuilder = newBuilder(group.getType(choiceTypeName));
         invokeSetter(choiceBuilder, optionSetter, option);

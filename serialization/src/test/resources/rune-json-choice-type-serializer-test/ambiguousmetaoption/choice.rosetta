@@ -24,7 +24,20 @@ choice OuterData:
   Foo
   InnerData
 
+choice InnerA:
+  string
+  int
+
+choice InnerB:
+  string
+  date
+
+choice Both:
+  InnerA
+  InnerB
+
 type Root:
   [rootType]
   outer Outer (0..1)
   outerData OuterData (0..1)
+  both Both (0..1)

@@ -68,7 +68,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldDeserializeChoiceDataUsingExactTypeFromTypeMetadata() throws JsonProcessingException {
         Path groupPath = getGroupPath(TEST_TYPE, "extension");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = readAsString(getFile(groupPath, "choice-data-extension.json"));
 
         RosettaModelObject deserializedObject = fromJson(json, rootDataType);
@@ -88,7 +88,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldDeserializeNestedChoiceDataUsingExactTypeFromTypeMetadata() throws JsonProcessingException {
         Path groupPath = getGroupPath(TEST_TYPE, "extension");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = readAsString(getFile(groupPath, "choice-deep-nested-extended.json"));
 
         RosettaModelObject deserializedObject = fromJson(json, rootDataType);
@@ -114,7 +114,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldDeserializeChoiceDataWhenFailingOnUnknownProperties() throws JsonProcessingException {
         Path groupPath = getGroupPath(TEST_TYPE, "extension");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = withoutModelAndVersion(objectMapper, readAsString(getFile(groupPath, "choice-data-extension.json")));
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 
@@ -128,7 +128,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldDeserializeNestedChoiceDataWhenFailingOnUnknownProperties() throws JsonProcessingException {
         Path groupPath = getGroupPath(TEST_TYPE, "extension");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = withoutModelAndVersion(objectMapper, readAsString(getFile(groupPath, "choice-deep-nested-extended.json")));
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 
@@ -146,7 +146,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldFailOnUnknownChoiceOptionFieldWhenUnknownPropertiesAreRejected() throws JsonProcessingException {
         Path groupPath = getGroupPath(TEST_TYPE, "extension");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = withoutModelAndVersion(objectMapper, readAsString(getFile(groupPath, "choice-data-unknown-field.json")));
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 
@@ -159,7 +159,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldFailWhenChoiceDoesNotDeclareTypeFromTypeMetadata() {
         Path groupPath = getGroupPath(TEST_TYPE, "invalidchoiceoption");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = readAsString(getFile(groupPath, "invalid-choice-option.json"));
 
         MismatchedInputException exception = Assertions.assertThrows(MismatchedInputException.class,
@@ -171,7 +171,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldFailWhenNestedChoiceDoesNotDeclareTypeFromTypeMetadata() {
         Path groupPath = getGroupPath(TEST_TYPE, "invalidnestedchoiceoption");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = readAsString(getFile(groupPath, "invalid-nested-choice-option.json"));
 
         MismatchedInputException exception = Assertions.assertThrows(MismatchedInputException.class,
@@ -183,7 +183,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldFailToReadHeaderWrittenWithTheJavaPackageName() {
         Path groupPath = getGroupPath(TEST_TYPE, "new");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = readAsString(getFile(groupPath, "java-name-header.json"));
 
         InvalidTypeIdException exception = Assertions.assertThrows(InvalidTypeIdException.class,
@@ -195,7 +195,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldFailToReadSubtypeWrittenWithTheJavaPackageName() {
         Path groupPath = getGroupPath(TEST_TYPE, "new");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = readAsString(getFile(groupPath, "java-name-subtype.json"));
 
         InvalidTypeIdException exception = Assertions.assertThrows(InvalidTypeIdException.class,
@@ -207,7 +207,7 @@ public class RuneJsonChoiceTypeDeserializerTest {
     @Test
     void shouldReportUnknownSubtypeByItsRuneName() {
         Path groupPath = getGroupPath(TEST_TYPE, "new");
-        Class<RosettaModelObject> rootDataType = getRootRosettaModelObjectClass(groupPath);
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
         String json = readAsString(getFile(groupPath, "unknown-subtype.json"));
 
         InvalidTypeIdException exception = Assertions.assertThrows(InvalidTypeIdException.class,
@@ -217,7 +217,21 @@ public class RuneJsonChoiceTypeDeserializerTest {
         Assertions.assertTrue(exception.getMessage().contains("'serialization.test.passing.new.Missing'"), exception.getMessage());
     }
 
-    private Class<RosettaModelObject> getRootRosettaModelObjectClass(Path groupPath) {
+    @Test
+    void shouldReportNonSubtypeByItsRuneName() {
+        Path groupPath = getGroupPath(TEST_TYPE, "new");
+        Class<RosettaModelObject> rootDataType = loadGroupRootType(groupPath);
+        String json = readAsString(getFile(groupPath, "non-subtype.json"));
+
+        InvalidTypeIdException exception = Assertions.assertThrows(InvalidTypeIdException.class,
+                () -> fromJson(json, rootDataType));
+
+        Assertions.assertEquals("serialization.test.passing.new.Root", exception.getTypeId());
+        Assertions.assertTrue(exception.getMessage().contains("type id 'serialization.test.passing.new.Root'"), exception.getMessage());
+    }
+
+    /** Compiles the group on first use, makes its classes the ones the shared class loader serves, and returns its root type. */
+    private Class<RosettaModelObject> loadGroupRootType(Path groupPath) {
         RuneSerializerTestHelper.CompiledGroup existing = COMPILED_GROUPS.get(groupPath);
         if (existing != null) {
             dynamicCompiledClassLoader.setCompiledCode(existing.getCompiledCode());

@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import org.finos.rune.mapper.RuneJsonConfig;
+import org.finos.rune.mapper.RuneTypeNameConverter;
 import org.finos.rune.mapper.processor.SerializationPreProcessor;
 
 import java.io.IOException;
@@ -150,7 +151,7 @@ public class PreProcessingSerializer<T> extends JsonSerializer<T> implements Con
                     RuneDataType runeDataType = (RuneDataType) a;
                     TopLevel topLevel = new TopLevel();
                     topLevel.setModel(runeDataType.model());
-                    topLevel.setType(runeType.getCanonicalName());
+                    topLevel.setType(RuneTypeNameConverter.toRuneName(runeType));
                     topLevel.setVersion(getVersion(runeDataType));
                     topLevel.setRosettaModelObject(rosettaModelObject);
                     return topLevel;

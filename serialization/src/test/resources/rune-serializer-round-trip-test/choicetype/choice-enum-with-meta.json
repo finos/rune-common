@@ -3,7 +3,7 @@
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
   "choiceEnumWithMeta" : {
-    "@type" : "serialization.test.passing.choicetype.Colour",
+    "@type" : "Colour",
     "@scheme" : "https://www.example.com/scheme1",
     "@data" : "Green"
   }

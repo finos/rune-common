@@ -81,6 +81,14 @@ import static com.rosetta.model.lib.SerializedNameConstants.*;
  */
 public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
+    /** The type info of a polymorphic Rune data type, whose {@code @type} holds its Rune name. */
+    private static final JsonTypeInfo.Value RUNE_TYPE_INFO = JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
+            JsonTypeInfo.As.EXISTING_PROPERTY,
+            RuneJsonConfig.MetaProperties.TYPE,
+            JsonTypeInfo.class,
+            false,
+            false,
+            null);
     private static final ArrayList<String> SERIALIZATION_PROPERTY_ORDER = Lists.newArrayList(META, REFERENCE, EXTERNAL_REFERENCE, SCOPED_REFERENCE, DATA);
 
     private final RuneEnumBuilderIntrospector runeEnumBuilderIntrospector;
@@ -97,20 +105,14 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
     @Override
     protected TypeResolverBuilder<?> _constructStdTypeResolverBuilder(MapperConfig<?> config,
                                                                       JsonTypeInfo.Value typeInfo, JavaType baseType) {
-        return new RuneStdTypeResolverBuilder(typeInfo);
+        return new RuneStdTypeResolverBuilder(typeInfo, RUNE_TYPE_INFO.equals(typeInfo));
     }
 
     @Override
     public JsonTypeInfo.Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated ann) {
         RuneDataType t = _findAnnotation(ann, RuneDataType.class);
         if (t != null && !ann.hasAnnotation(RuneChoiceType.class) && !isAnnotatedTypeMetaFields(ann)) {
-            return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
-                    JsonTypeInfo.As.EXISTING_PROPERTY,
-                    RuneJsonConfig.MetaProperties.TYPE,
-                    JsonTypeInfo.class,
-                    false,
-                    false,
-                    null);
+            return RUNE_TYPE_INFO;
         }
         return super.findPolymorphicTypeInfo(config, ann);
     }

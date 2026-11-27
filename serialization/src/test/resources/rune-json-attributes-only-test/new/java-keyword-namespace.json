@@ -2,6 +2,13 @@
   "choiceA" : {
     "fieldA" : "foo"
   },
+  "choiceB" : {
+    "fieldA" : "qux",
+    "fieldB" : "quux"
+  },
+  "choiceWithMeta" : {
+    "fieldC" : "corge"
+  },
   "typeA" : {
     "fieldA" : "bar",
     "fieldB" : "baz"

@@ -8,10 +8,21 @@ type A:
 type B extends A:
   fieldB string (1..1)
 
+type C:
+  fieldC string (1..1)
+
 choice ChoiceA:
   A
+  B
+
+choice ChoiceWithMeta:
+  C
+  [metadata scheme]
+  string
 
 type Root:
   [rootType]
   choiceA ChoiceA (0..1)
+  choiceB ChoiceA (0..1)
+  choiceWithMeta ChoiceWithMeta (0..1)
   typeA A (0..1)

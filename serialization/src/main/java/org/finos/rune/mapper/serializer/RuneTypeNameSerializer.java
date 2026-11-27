@@ -28,7 +28,8 @@ import org.finos.rune.mapper.RuneTypeNameConverter;
 import java.io.IOException;
 
 /**
- * Writes a generated Java class as the qualified name of its Rune type.
+ * Writes a generated Java class as the qualified name of its Rune type. {@code RosettaModelObjectMixin}
+ * puts it on {@code getType()}, which Jackson writes as {@code @type}.
  */
 @SuppressWarnings("rawtypes")
 public class RuneTypeNameSerializer extends StdSerializer<Class> {

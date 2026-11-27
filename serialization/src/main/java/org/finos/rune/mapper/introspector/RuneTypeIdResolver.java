@@ -20,8 +20,11 @@ package org.finos.rune.mapper.introspector;
  * ==============
  */
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DatabindContext;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.impl.ClassNameIdResolver;
@@ -32,7 +35,12 @@ import java.io.IOException;
 import java.util.Collection;
 
 /**
- * Resolves {@code @type} as the qualified Rune name of a type rather than its Java class name.
+ * Reads {@code @type} as the qualified Rune name of a type, accepting no other spelling of it.
+ * {@link RuneStdTypeResolverBuilder} installs it for the polymorphic Rune data types that
+ * {@link RuneJsonAnnotationIntrospector} gives type info.
+ * <p>
+ * Only reading is overridden: {@code @type} is written as an existing property, from {@code getType()},
+ * so the id Jackson computes on write is discarded.
  */
 public class RuneTypeIdResolver extends ClassNameIdResolver {
 
@@ -44,12 +52,25 @@ public class RuneTypeIdResolver extends ClassNameIdResolver {
     }
 
     @Override
-    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory) {
-        return RuneTypeNameConverter.toRuneName(super._idFrom(value, cls, typeFactory));
-    }
-
-    @Override
     protected JavaType _typeFromId(String id, DatabindContext ctxt) throws IOException {
-        return super._typeFromId(RuneTypeNameConverter.toJavaClassName(id), ctxt);
+        String javaClassName = RuneTypeNameConverter.toJavaClassName(id);
+        JavaType type;
+        try {
+            type = ctxt.resolveAndValidateSubType(_baseType, javaClassName, _subTypeValidator);
+        } catch (InvalidTypeIdException e) {
+            if (javaClassName.equals(id)) {
+                throw e;
+            }
+            JsonParser parser = ctxt instanceof DeserializationContext ? ((DeserializationContext) ctxt).getParser() : null;
+            throw InvalidTypeIdException.from(parser, e.getOriginalMessage().replace(javaClassName, id), _baseType, id);
+        }
+        // Rejects any other spelling that still loads the class, such as the Java name a._new.Root.
+        if (type != null && id.equals(RuneTypeNameConverter.toRuneName(type.getRawClass()))) {
+            return type;
+        }
+        if (ctxt instanceof DeserializationContext) {
+            return ((DeserializationContext) ctxt).handleUnknownTypeId(_baseType, id, this, "no Rune type with this name");
+        }
+        return null;
     }
 }

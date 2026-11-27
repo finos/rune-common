@@ -24,10 +24,13 @@ import javax.lang.model.SourceVersion;
 import java.util.function.UnaryOperator;
 
 /**
- * Converts between the qualified name of a Rune type and the name of the Java class generated for it.
+ * Converts between the qualified name of a Rune type and the name of the Java class generated for it,
+ * for the serializers and the type id resolver that write and read {@code @type}, which holds the Rune name.
  * <p>
  * The generator puts {@code _} before each namespace segment that is a Java keyword, so namespace
- * {@code a.new.b} is generated as package {@code a._new.b}. {@code @type} holds the Rune name.
+ * {@code a.new.b} is generated as package {@code a._new.b}. The generated class does not record its Rune
+ * namespace, so a namespace segment that is itself {@code _new} cannot be told from {@code new}, and
+ * {@link #toRuneName(String)} gives {@code new}.
  */
 public final class RuneTypeNameConverter {
 

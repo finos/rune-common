@@ -28,12 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
-import com.rosetta.model.lib.annotations.RuneAttribute;
-import com.rosetta.model.lib.annotations.RuneChoiceType;
-import com.rosetta.model.lib.annotations.RuneDataType;
-import com.rosetta.model.lib.meta.FieldWithMeta;
 import org.finos.rune.mapper.RuneJsonConfig;
-import org.finos.rune.mapper.RuneTypeNameConverter;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -56,74 +51,51 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
         }
 
         String runeType = getRuneType(node, ctxt);
-        RosettaModelObject result = tryDeserialize((ObjectNode) node, runeType, choiceType, mapper);
-        if (result != null) {
-            return result;
-        }
-        ctxt.reportInputMismatch(
-                choiceType,
-                "Unable to resolve Rune choice option '%s' for choice type '%s'. "
-                        + "The @type value must exactly match one of the declared choice options.",
-                runeType,
-                choiceType.getName()
-        );
-        return null;
-    }
-
-    private RosettaModelObject tryDeserialize(ObjectNode node, String runeType, Class<?> targetChoiceType, ObjectMapper mapper) throws IOException {
-        RosettaModelObjectBuilder builder = newBuilder(targetChoiceType);
-        for (Method setter : builder.getClass().getMethods()) {
-            RuneAttribute attribute = setter.getAnnotation(RuneAttribute.class);
-            if (attribute == null || setter.getParameterCount() != 1 || RuneJsonConfig.MetaProperties.TYPE.equals(attribute.value())) {
-                continue;
-            }
-
-            Object value = resolveValue(attribute.value(), setter.getParameterTypes()[0], runeType, node, mapper);
-            if (value != null) {
-                invoke(setter, builder, value);
-                return builder.build();
-            }
-        }
-        return null;
-    }
-
-    private Object resolveValue(String optionName, Class<?> optionType, String runeType, ObjectNode node, ObjectMapper mapper) throws IOException {
-        if (RosettaModelObject.class.isAssignableFrom(optionType)) {
-            if (optionType.isAnnotationPresent(RuneChoiceType.class)) {
-                return tryDeserialize(node, runeType, optionType, mapper);
-            }
-
-            if (isExactRuneType(optionType, runeType)) {
-                return mapper.treeToValue(node, optionType);
-            }
-            if (isMetaWrapperForOption(optionType, optionName, runeType)) {
-                ObjectNode metaWrapperNode = node.deepCopy();
-                metaWrapperNode.remove(RuneJsonConfig.MetaProperties.TYPE);
-                return mapper.treeToValue(metaWrapperNode, optionType);
-            }
+        RuneChoiceOptionRegistry options = RuneChoiceOptionRegistry.of(choiceType);
+        RuneChoiceOptionRegistry.Option option;
+        try {
+            option = options.findByTypeName(runeType);
+        } catch (IOException e) {
+            ctxt.reportInputMismatch(choiceType, "%s", e.getMessage());
             return null;
         }
-
-        if (runeType.equals(optionName)) {
-            JsonNode data = node.get(RuneJsonConfig.MetaProperties.DATA);
-            return data == null || data.isNull() ? null : mapper.treeToValue(data, optionType);
+        Object value = option == null ? null : readOptionValue(option, (ObjectNode) node, mapper);
+        if (value == null) {
+            ctxt.reportInputMismatch(
+                    choiceType,
+                    "Unable to resolve Rune choice option '%s' for choice type '%s'. "
+                            + "The @type value must exactly match one of the declared choice options.",
+                    runeType,
+                    choiceType.getName()
+            );
+            return null;
         }
-        return null;
+        return (RosettaModelObject) setOption(option, value);
     }
 
-    private boolean isExactRuneType(Class<?> optionType, String runeType) {
-        return runeType.equals(RuneTypeNameConverter.toRuneName(optionType));
+    private Object readOptionValue(RuneChoiceOptionRegistry.Option option, ObjectNode node, ObjectMapper mapper) throws IOException {
+        if (option.metaWrapped) {
+            ObjectNode metaWrapperNode = node.deepCopy();
+            metaWrapperNode.remove(RuneJsonConfig.MetaProperties.TYPE);
+            return mapper.treeToValue(metaWrapperNode, option.type);
+        }
+        if (RosettaModelObject.class.isAssignableFrom(option.type)) {
+            return mapper.treeToValue(node, option.type);
+        }
+        JsonNode data = node.get(RuneJsonConfig.MetaProperties.DATA);
+        return data == null || data.isNull() ? null : mapper.treeToValue(data, option.type);
     }
 
-    private boolean isMetaWrapperForOption(Class<?> optionType, String optionName, String runeType) throws IOException {
-        if (!FieldWithMeta.class.isAssignableFrom(optionType)) {
-            return false;
+    /** Sets {@code value} on the builder of each enclosing choice in turn, innermost first, and returns the outermost. */
+    private Object setOption(RuneChoiceOptionRegistry.Option option, Object value) throws IOException {
+        Object result = value;
+        for (int i = option.setters.size() - 1; i >= 0; i--) {
+            Class<?> enclosingChoiceType = i == 0 ? choiceType : option.setters.get(i - 1).getParameterTypes()[0];
+            RosettaModelObjectBuilder builder = RuneChoiceOptionRegistry.newBuilder(enclosingChoiceType);
+            invoke(option.setters.get(i), builder, result);
+            result = builder.build();
         }
-        Class<?> valueType = ((FieldWithMeta<?>) newBuilder(optionType)).getValueType();
-        if (valueType == null) {
-            return false;
-        }
-        return runeType.equals(RuneChoiceTypeSerializer.resolveMetaWrappedOptionTypeName(valueType, optionName));
+        return result;
     }
 
     private String getRuneType(JsonNode node, DeserializationContext ctxt) throws IOException {
@@ -137,18 +109,6 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             return null;
         }
         return type.asText();
-    }
-
-    private RosettaModelObjectBuilder newBuilder(Class<?> choiceType) throws IOException {
-        RuneDataType runeDataType = choiceType.getAnnotation(RuneDataType.class);
-        if (runeDataType == null) {
-            throw new IOException("Unable to find Rune data type metadata for " + choiceType.getName());
-        }
-        try {
-            return runeDataType.builder().getDeclaredConstructor().newInstance();
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
-            throw new IOException("Unable to create Rune choice type builder for " + choiceType.getName(), e);
-        }
     }
 
     private Object invoke(Method method, Object target, Object... args) throws IOException {

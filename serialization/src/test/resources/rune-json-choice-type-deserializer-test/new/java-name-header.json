@@ -1,0 +1,5 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing._new.Root",
+  "@version" : "0.0.0"
+}

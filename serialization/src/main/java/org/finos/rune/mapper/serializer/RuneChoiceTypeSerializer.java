@@ -30,14 +30,15 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
-import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import org.finos.rune.mapper.RuneJsonConfig;
-import org.finos.rune.mapper.RuneTypeNameConverter;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject> {
@@ -48,7 +49,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
 
         gen.writeStartObject();
         if (choiceValue != null) {
-            writeChoiceValue(choiceValue, gen, serializers);
+            writeChoiceValue(RuneChoiceOptionRegistry.of(value.getType()), Collections.emptyList(), choiceValue, gen, serializers);
         }
         gen.writeEndObject();
     }
@@ -58,7 +59,10 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         return RosettaModelObject.class;
     }
 
-    private void writeChoiceValue(ChoiceValue choiceValue, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    private void writeChoiceValue(RuneChoiceOptionRegistry options, List<String> enclosingOptionNames, ChoiceValue choiceValue,
+                                  JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        List<String> optionNames = new ArrayList<>(enclosingOptionNames);
+        optionNames.add(choiceValue.choiceOptionName);
         Object selectedValue = choiceValue.value;
         validateDeclaredChoiceOptionType(choiceValue, serializers);
         if (selectedValue instanceof RosettaModelObject) {
@@ -68,14 +72,14 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                 if (nestedChoiceValue == null) {
                     throw new IOException("Nested Rune choice has no selected value for " + selectedRosettaValue.getType().getName());
                 }
-                writeChoiceValue(nestedChoiceValue, gen, serializers);
+                writeChoiceValue(options, optionNames, nestedChoiceValue, gen, serializers);
                 return;
             }
 
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue, choiceValue.choiceOptionType));
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, options.resolveTypeName(optionNames));
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.choiceOptionType);
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, options.resolveTypeName(optionNames));
             gen.writeFieldName(RuneJsonConfig.MetaProperties.DATA);
             serializers.defaultSerializeValue(selectedValue, gen);
         }
@@ -122,7 +126,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                     if (selected != null) {
                         // Choice types must have exactly one populated option.
                         throw new IOException(
-                                String.format("Multiple Rune choice options selected for %s: %s and %s", value.getType().getName(), selected.choiceOptionType, candidate.choiceOptionType)
+                                String.format("Multiple Rune choice options selected for %s: %s and %s", value.getType().getName(), selected.choiceOptionName, candidate.choiceOptionName)
                         );
                     }
                     selected = candidate;
@@ -156,7 +160,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             serializers.reportMappingProblem(
                     "Unable to serialize Rune choice option '%s' for choice type '%s': declared type is '%s' but runtime type is '%s'. "
                             + "The runtime type must exactly match the declared choice option type.",
-                    choiceValue.choiceOptionType,
+                    choiceValue.choiceOptionName,
                     choiceValue.choiceType,
                     choiceValue.declaredType.getName(),
                     actualType.getName()
@@ -172,37 +176,15 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         return type != null && type.isAnnotationPresent(RuneChoiceType.class);
     }
 
-    /**
-     * A data type option is named by its Rune type. Any other option, such as a basic type held in a
-     * metadata wrapper, is named by the option itself, as it is without metadata.
-     */
-    private String resolveChoiceTypeName(RosettaModelObject selectedValue, String optionName) throws IOException {
-        Class<?> selectedType = selectedValue.getType();
-        if (selectedType == null) {
-            throw new IOException("Unable to resolve Rune choice value type");
-        }
-
-        if (selectedValue instanceof FieldWithMeta) {
-            return resolveMetaWrappedOptionTypeName(((FieldWithMeta<?>) selectedValue).getValueType(), optionName);
-        }
-
-        return RuneTypeNameConverter.toRuneName(selectedType);
-    }
-
-    /** The {@code @type} of a choice option whose value of {@code valueType} is held in a metadata wrapper. */
-    static String resolveMetaWrappedOptionTypeName(Class<?> valueType, String optionName) {
-        return RosettaModelObject.class.isAssignableFrom(valueType) ? RuneTypeNameConverter.toRuneName(valueType) : optionName;
-    }
-
     private static class ChoiceValue {
         private final String choiceType;
-        private final String choiceOptionType;
+        private final String choiceOptionName;
         private final Class<?> declaredType;
         private final Object value;
 
-        private ChoiceValue(String choiceType, String choiceOptionType, Class<?> declaredType, Object value) {
+        private ChoiceValue(String choiceType, String choiceOptionName, Class<?> declaredType, Object value) {
             this.choiceType = choiceType;
-            this.choiceOptionType = choiceOptionType;
+            this.choiceOptionName = choiceOptionName;
             this.declaredType = declaredType;
             this.value = value;
         }

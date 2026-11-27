@@ -1,0 +1,16 @@
+namespace serialization.test.passing.ambiguousmetaoption
+
+annotation rootType: <"Mark a type as a root of the rosetta model">
+
+choice Inner:
+  string
+  [metadata scheme]
+  int
+
+choice Outer:
+  string
+  Inner
+
+type Root:
+  [rootType]
+  outer Outer (0..1)

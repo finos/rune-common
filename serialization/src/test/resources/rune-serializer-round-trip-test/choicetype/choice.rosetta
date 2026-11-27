@@ -10,6 +10,34 @@ choice ChoiceBasic2:
   string
   int
 
+typeAlias Medium: int(digits: 12)
+
+choice ChoiceBasicWithAlias:
+  string
+  Medium
+
+choice ChoiceBasicWithMeta:
+  string
+    [metadata scheme]
+  date
+    [metadata scheme]
+  Medium
+    [metadata scheme]
+
+enum Colour:
+  Red
+  Green
+
+choice ChoiceEnum:
+  string
+  Colour
+
+choice ChoiceEnumWithMeta:
+  string
+    [metadata scheme]
+  Colour
+    [metadata scheme]
+
 type A:
   fieldA string (1..1)
 
@@ -88,6 +116,10 @@ type Root:
   [rootType]
   choiceBasic ChoiceBasic (0..1)
   choiceBasic2 ChoiceBasic2 (0..1)
+  choiceBasicWithAlias ChoiceBasicWithAlias (0..1)
+  choiceBasicWithMeta ChoiceBasicWithMeta (0..1)
+  choiceEnum ChoiceEnum (0..1)
+  choiceEnumWithMeta ChoiceEnumWithMeta (0..1)
   choiceData ChoiceData (0..1)
   choiceMixed ChoiceMixed (0..1)
   choiceNested ChoiceNested (0..1)

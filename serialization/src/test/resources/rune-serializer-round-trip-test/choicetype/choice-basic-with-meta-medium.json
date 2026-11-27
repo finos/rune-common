@@ -1,0 +1,10 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing.choicetype.Root",
+  "@version" : "0.0.0",
+  "choiceBasicWithMeta" : {
+    "@type" : "java.lang.Long",
+    "@scheme" : "https://www.example.com/scheme1",
+    "@data" : 123456789012
+  }
+}

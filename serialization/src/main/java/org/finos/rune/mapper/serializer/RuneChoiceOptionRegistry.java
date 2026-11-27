@@ -149,7 +149,10 @@ final class RuneChoiceOptionRegistry {
         optionsByPath.put(option.path, option);
         Option existing = optionsByTypeName.putIfAbsent(option.typeName, option);
         // Two plain or two metadata-wrapped options sharing an @type, reachable only through two nested
-        // choices, which rune-dsl warns about, resolve to the first one.
+        // choices, resolve to the first one. That includes two enums of different types with one short name,
+        // such as a.Colour and b.Colour, so a value can be read as the wrong enum. rune-dsl warns about such a
+        // model rather than rejecting it, to keep existing models compiling within a major version, so the
+        // ambiguity is accepted here too.
         if (existing != null && existing.metaWrapped != option.metaWrapped) {
             // Option order follows Class.getMethods(), which is unspecified, so the message orders the paths itself.
             String paths = Stream.of(String.join(".", existing.path), String.join(".", option.path))

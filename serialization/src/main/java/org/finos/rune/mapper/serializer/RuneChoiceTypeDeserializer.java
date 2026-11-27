@@ -33,6 +33,7 @@ import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.annotations.RuneDataType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import org.finos.rune.mapper.RuneJsonConfig;
+import org.finos.rune.mapper.RuneTypeNameConverter;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -95,7 +96,7 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
             if (isExactRuneType(optionType, runeType)) {
                 return mapper.treeToValue(node, optionType);
             }
-            if (isMetaWrapperForType(optionType, runeType)) {
+            if (isMetaWrapperForOption(optionType, optionName, runeType)) {
                 ObjectNode metaWrapperNode = node.deepCopy();
                 metaWrapperNode.remove(RuneJsonConfig.MetaProperties.TYPE);
                 return mapper.treeToValue(metaWrapperNode, optionType);
@@ -111,15 +112,18 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
     }
 
     private boolean isExactRuneType(Class<?> optionType, String runeType) {
-        return runeType.equals(optionType.getName());
+        return runeType.equals(RuneTypeNameConverter.toRuneName(optionType));
     }
 
-    private boolean isMetaWrapperForType(Class<?> optionType, String runeType) throws IOException {
+    private boolean isMetaWrapperForOption(Class<?> optionType, String optionName, String runeType) throws IOException {
         if (!FieldWithMeta.class.isAssignableFrom(optionType)) {
             return false;
         }
         Class<?> valueType = ((FieldWithMeta<?>) newBuilder(optionType)).getValueType();
-        return valueType != null && runeType.equals(valueType.getName());
+        if (valueType == null) {
+            return false;
+        }
+        return runeType.equals(RuneChoiceTypeSerializer.resolveMetaWrappedOptionTypeName(valueType, optionName));
     }
 
     private String getRuneType(JsonNode node, DeserializationContext ctxt) throws IOException {

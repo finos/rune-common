@@ -33,6 +33,7 @@ import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.meta.FieldWithMeta;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import org.finos.rune.mapper.RuneJsonConfig;
+import org.finos.rune.mapper.RuneTypeNameConverter;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -71,7 +72,7 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                 return;
             }
 
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue));
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveChoiceTypeName(selectedRosettaValue, choiceValue.choiceOptionType));
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
             gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, choiceValue.choiceOptionType);
@@ -171,25 +172,26 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         return type != null && type.isAnnotationPresent(RuneChoiceType.class);
     }
 
-    private String resolveChoiceTypeName(RosettaModelObject selectedValue) throws IOException {
+    /**
+     * A data type option is named by its Rune type. Any other option, such as a basic type held in a
+     * metadata wrapper, is named by the option itself, as it is without metadata.
+     */
+    private String resolveChoiceTypeName(RosettaModelObject selectedValue, String optionName) throws IOException {
         Class<?> selectedType = selectedValue.getType();
         if (selectedType == null) {
             throw new IOException("Unable to resolve Rune choice value type");
         }
 
-        Class<?> metaWrappedType = findMetaWrappedType(selectedValue);
-        if (metaWrappedType != null) {
-            return metaWrappedType.getName();
+        if (selectedValue instanceof FieldWithMeta) {
+            return resolveMetaWrappedOptionTypeName(((FieldWithMeta<?>) selectedValue).getValueType(), optionName);
         }
 
-        return selectedType.getName();
+        return RuneTypeNameConverter.toRuneName(selectedType);
     }
 
-    private Class<?> findMetaWrappedType(RosettaModelObject selectedValue) {
-        if (selectedValue instanceof FieldWithMeta) {
-            return ((FieldWithMeta<?>) selectedValue).getValueType();
-        }
-        return null;
+    /** The {@code @type} of a choice option whose value of {@code valueType} is held in a metadata wrapper. */
+    static String resolveMetaWrappedOptionTypeName(Class<?> valueType, String optionName) {
+        return RosettaModelObject.class.isAssignableFrom(valueType) ? RuneTypeNameConverter.toRuneName(valueType) : optionName;
     }
 
     private static class ChoiceValue {

@@ -3,7 +3,7 @@
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
   "choiceBasicWithMeta" : {
-    "@type" : "com.rosetta.model.lib.records.Date",
+    "@type" : "date",
     "@scheme" : "https://www.example.com/scheme1",
     "@data" : "2026-11-13"
   }

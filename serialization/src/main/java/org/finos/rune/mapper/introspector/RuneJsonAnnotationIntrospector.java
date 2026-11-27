@@ -81,6 +81,14 @@ import static com.rosetta.model.lib.SerializedNameConstants.*;
  */
 public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final long serialVersionUID = 1L;
+    /** The type info of a polymorphic Rune data type, whose {@code @type} holds its Rune name. */
+    private static final JsonTypeInfo.Value RUNE_TYPE_INFO = JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
+            JsonTypeInfo.As.EXISTING_PROPERTY,
+            RuneJsonConfig.MetaProperties.TYPE,
+            JsonTypeInfo.class,
+            false,
+            false,
+            null);
     private static final ArrayList<String> SERIALIZATION_PROPERTY_ORDER = Lists.newArrayList(META, REFERENCE, EXTERNAL_REFERENCE, SCOPED_REFERENCE, DATA);
 
     private final RuneEnumBuilderIntrospector runeEnumBuilderIntrospector;
@@ -102,15 +110,8 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
 
     @Override
     public JsonTypeInfo.Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated ann) {
-        RuneDataType t = _findAnnotation(ann, RuneDataType.class);
-        if (t != null && !ann.hasAnnotation(RuneChoiceType.class) && !isAnnotatedTypeMetaFields(ann)) {
-            return JsonTypeInfo.Value.construct(JsonTypeInfo.Id.CLASS,
-                    JsonTypeInfo.As.EXISTING_PROPERTY,
-                    RuneJsonConfig.MetaProperties.TYPE,
-                    JsonTypeInfo.class,
-                    false,
-                    false,
-                    null);
+        if (isPolymorphicRuneDataType(ann)) {
+            return RUNE_TYPE_INFO;
         }
         return super.findPolymorphicTypeInfo(config, ann);
     }
@@ -221,8 +222,11 @@ public class RuneJsonAnnotationIntrospector extends JacksonAnnotationIntrospecto
                 .collect(Collectors.toSet());
     }
 
-    private boolean isAnnotatedTypeMetaFields(Annotated ann) {
-        return ann.getType().getRawClass() == MetaFields.class;
+    /** Whether {@code ann} is a polymorphic Rune data type, whose {@code @type} holds its Rune name. */
+    static boolean isPolymorphicRuneDataType(Annotated ann) {
+        return ann.hasAnnotation(RuneDataType.class)
+                && !ann.hasAnnotation(RuneChoiceType.class)
+                && ann.getType().getRawClass() != MetaFields.class;
     }
 
     @Override

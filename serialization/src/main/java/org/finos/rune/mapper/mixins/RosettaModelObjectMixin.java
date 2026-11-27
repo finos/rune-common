@@ -21,12 +21,15 @@ package org.finos.rune.mapper.mixins;
  */
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.annotations.RuneAttribute;
+import org.finos.rune.mapper.serializer.RuneTypeNameSerializer;
 
 @JsonFilter("SubtypeFilter")
 public @interface RosettaModelObjectMixin {
 
     @RuneAttribute("@type")
+    @JsonSerialize(using = RuneTypeNameSerializer.class)
     Class<? extends RosettaModelObject> getType();
 }

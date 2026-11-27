@@ -1,14 +1,24 @@
 {
   "@model" : "serialization",
-  "@type" : "serialization.test.passing._new.Root",
+  "@type" : "serialization.test.passing.new.Root",
   "@version" : "0.0.0",
   "choiceA" : {
-    "@type" : "serialization.test.passing._new.A",
+    "@type" : "serialization.test.passing.new.A",
     "fieldA" : "foo"
+  },
+  "choiceB" : {
+    "@type" : "serialization.test.passing.new.B",
+    "fieldA" : "qux",
+    "fieldB" : "quux"
+  },
+  "choiceWithMeta" : {
+    "@type" : "serialization.test.passing.new.C",
+    "@scheme" : "https://www.example.com/scheme",
+    "fieldC" : "corge"
   },
   "typeA" : {
     "fieldA" : "bar",
     "fieldB" : "baz",
-    "@type" : "serialization.test.passing._new.B"
+    "@type" : "serialization.test.passing.new.B"
   }
 }

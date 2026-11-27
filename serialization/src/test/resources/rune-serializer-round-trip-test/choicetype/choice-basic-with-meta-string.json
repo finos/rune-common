@@ -3,7 +3,7 @@
   "@type" : "serialization.test.passing.choicetype.Root",
   "@version" : "0.0.0",
   "choiceBasicWithMeta" : {
-    "@type" : "java.lang.String",
+    "@type" : "string",
     "@scheme" : "https://www.example.com/scheme1",
     "@data" : "foo"
   }

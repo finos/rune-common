@@ -24,9 +24,15 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.rosetta.model.lib.annotations.RuneDataType;
+
+import java.util.Collection;
 
 public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
 
@@ -46,5 +52,16 @@ public class RuneStdTypeResolverBuilder extends StdTypeResolverBuilder {
         }
 
         return super._strictTypeIdHandling(config, baseType);
+    }
+
+    @Override
+    protected TypeIdResolver idResolver(MapperConfig<?> config, JavaType baseType, PolymorphicTypeValidator subtypeValidator,
+                                        Collection<NamedType> subtypes, boolean forSer, boolean forDeser) {
+        // A custom resolver set through @JsonTypeIdResolver still takes precedence.
+        if (_customIdResolver == null && _idType == JsonTypeInfo.Id.CLASS
+                && RuneJsonAnnotationIntrospector.isPolymorphicRuneDataType(AnnotatedClassResolver.resolve(config, baseType, config))) {
+            return new RuneTypeIdResolver(baseType, config.getTypeFactory(), subtypes, subtypeValidator);
+        }
+        return super.idResolver(config, baseType, subtypeValidator, subtypes, forSer, forDeser);
     }
 }

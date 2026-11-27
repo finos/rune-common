@@ -1,0 +1,14 @@
+{
+  "@model" : "serialization",
+  "@type" : "serialization.test.passing._new.Root",
+  "@version" : "0.0.0",
+  "choiceA" : {
+    "@type" : "serialization.test.passing._new.A",
+    "fieldA" : "foo"
+  },
+  "typeA" : {
+    "fieldA" : "bar",
+    "fieldB" : "baz",
+    "@type" : "serialization.test.passing._new.B"
+  }
+}

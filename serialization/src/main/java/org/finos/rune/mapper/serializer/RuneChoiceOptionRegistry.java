@@ -35,13 +35,14 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The options of one Rune choice type, with the options of nested choices flattened in, each with the
@@ -98,31 +99,30 @@ final class RuneChoiceOptionRegistry {
         return option.typeName;
     }
 
-    /**
-     * The option written with {@code typeName}, or {@code null} when no option has it.
-     *
-     * @throws IOException when two options share {@code typeName}
-     */
-    Option findByTypeName(String typeName) throws IOException {
-        failIfAmbiguous(typeName);
+    /** The option written with {@code typeName}, or {@code null} when no option has it. */
+    Option findByTypeName(String typeName) {
         return optionsByTypeName.get(typeName);
     }
 
-    /** @throws IOException when two options share {@code typeName}, naming both */
-    void failIfAmbiguous(String typeName) throws IOException {
-        String ambiguity = ambiguousTypeNames.get(typeName);
-        if (ambiguity != null) {
-            throw new IOException(ambiguity);
-        }
+    /** A message naming the two options that share {@code typeName}, or {@code null} when it is not ambiguous. */
+    String ambiguity(String typeName) {
+        return ambiguousTypeNames.get(typeName);
+    }
+
+    /**
+     * True for a member annotated {@code attribute} of type {@code optionType} that is a choice option,
+     * rather than metadata on the choice type.
+     */
+    static boolean isOption(RuneAttribute attribute, Class<?> optionType) {
+        return attribute != null
+                && !RuneJsonConfig.getMetaProperties().contains(attribute.value())
+                && !GlobalKeyFields.class.isAssignableFrom(optionType);
     }
 
     private void collectOptions(Class<?> currentChoiceType, List<Method> setters, List<String> path) throws IOException {
         for (Method setter : newBuilder(currentChoiceType).getClass().getMethods()) {
             RuneAttribute attribute = setter.getAnnotation(RuneAttribute.class);
-            if (attribute == null
-                    || setter.getParameterCount() != 1
-                    || RuneJsonConfig.getMetaProperties().contains(attribute.value())
-                    || GlobalKeyFields.class.isAssignableFrom(setter.getParameterTypes()[0])) {
+            if (setter.getParameterCount() != 1 || !isOption(attribute, setter.getParameterTypes()[0])) {
                 continue;
             }
             List<Method> optionSetters = append(setters, setter);
@@ -152,11 +152,12 @@ final class RuneChoiceOptionRegistry {
         // choices, which rune-dsl warns about, resolve to the first one.
         if (existing != null && existing.metaWrapped != option.metaWrapped) {
             // Option order follows Class.getMethods(), which is unspecified, so the message orders the paths itself.
-            List<String> paths = new ArrayList<>(Arrays.asList(String.join(".", existing.path), String.join(".", option.path)));
-            paths.sort(Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder()));
+            String paths = Stream.of(String.join(".", existing.path), String.join(".", option.path))
+                    .sorted(Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder()))
+                    .collect(Collectors.joining(" and "));
             ambiguousTypeNames.putIfAbsent(option.typeName, String.format(
-                    "Rune choice type %s has two options written with @type '%s', %s and %s, which cannot be told apart",
-                    choiceType.getName(), option.typeName, paths.get(0), paths.get(1)));
+                    "Rune choice type %s has two options written with @type '%s', %s, which cannot be told apart",
+                    choiceType.getName(), option.typeName, paths));
         }
     }
 
@@ -172,7 +173,7 @@ final class RuneChoiceOptionRegistry {
         }
     }
 
-    private static <T> List<T> append(List<T> list, T element) {
+    static <T> List<T> append(List<T> list, T element) {
         List<T> result = new ArrayList<>(list);
         result.add(element);
         return Collections.unmodifiableList(result);

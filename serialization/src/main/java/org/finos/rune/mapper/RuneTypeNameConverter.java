@@ -36,11 +36,18 @@ public final class RuneTypeNameConverter {
 
     private static final String ESCAPE_PREFIX = "_";
 
+    private static final ClassValue<String> RUNE_NAMES = new ClassValue<String>() {
+        @Override
+        protected String computeValue(Class<?> javaClass) {
+            return toRuneName(javaClass.getName());
+        }
+    };
+
     private RuneTypeNameConverter() {
     }
 
     public static String toRuneName(Class<?> javaClass) {
-        return toRuneName(javaClass.getName());
+        return RUNE_NAMES.get(javaClass);
     }
 
     /** {@code a._new.b.Root} becomes {@code a.new.b.Root}. */

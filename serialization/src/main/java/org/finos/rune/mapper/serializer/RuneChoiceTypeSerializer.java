@@ -30,14 +30,12 @@ import com.rosetta.model.lib.RosettaModelObject;
 import com.rosetta.model.lib.RosettaModelObjectBuilder;
 import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
-import com.rosetta.model.lib.meta.GlobalKeyFields;
 import org.finos.rune.mapper.RuneJsonConfig;
 import org.finos.rune.mapper.attributesonly.AttributesOnlySerializerProvider;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,25 +60,23 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
 
     private void writeChoiceValue(RuneChoiceOptionRegistry options, List<String> enclosingOptionNames, ChoiceValue choiceValue,
                                   JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        List<String> optionNames = new ArrayList<>(enclosingOptionNames);
-        optionNames.add(choiceValue.choiceOptionName);
+        List<String> optionNames = RuneChoiceOptionRegistry.append(enclosingOptionNames, choiceValue.choiceOptionName);
         Object selectedValue = choiceValue.value;
         validateDeclaredChoiceOptionType(choiceValue, serializers);
-        if (selectedValue instanceof RosettaModelObject) {
-            RosettaModelObject selectedRosettaValue = (RosettaModelObject) selectedValue;
-            if (isChoiceType(selectedRosettaValue.getType())) {
-                ChoiceValue nestedChoiceValue = getChoiceValue(selectedRosettaValue);
-                if (nestedChoiceValue == null) {
-                    throw new IOException("Nested Rune choice has no selected value for " + selectedRosettaValue.getType().getName());
-                }
-                writeChoiceValue(options, optionNames, nestedChoiceValue, gen, serializers);
-                return;
+        RosettaModelObject selectedRosettaValue = selectedValue instanceof RosettaModelObject ? (RosettaModelObject) selectedValue : null;
+        if (selectedRosettaValue != null && isChoiceType(selectedRosettaValue.getType())) {
+            ChoiceValue nestedChoiceValue = getChoiceValue(selectedRosettaValue);
+            if (nestedChoiceValue == null) {
+                throw new IOException("Nested Rune choice has no selected value for " + selectedRosettaValue.getType().getName());
             }
+            writeChoiceValue(options, optionNames, nestedChoiceValue, gen, serializers);
+            return;
+        }
 
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveTypeName(options, optionNames, serializers));
+        gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveTypeName(options, optionNames, serializers));
+        if (selectedRosettaValue != null) {
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveTypeName(options, optionNames, serializers));
             gen.writeFieldName(RuneJsonConfig.MetaProperties.DATA);
             serializers.defaultSerializeValue(selectedValue, gen);
         }
@@ -89,8 +85,9 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
     /** Attributes-only output drops {@code @type} and is never read back, so an ambiguous one does not matter there. */
     private String resolveTypeName(RuneChoiceOptionRegistry options, List<String> optionNames, SerializerProvider serializers) throws IOException {
         String typeName = options.resolveTypeName(optionNames);
-        if (!(serializers instanceof AttributesOnlySerializerProvider)) {
-            options.failIfAmbiguous(typeName);
+        String ambiguity = options.ambiguity(typeName);
+        if (ambiguity != null && !(serializers instanceof AttributesOnlySerializerProvider)) {
+            throw new IOException(ambiguity);
         }
         return typeName;
     }
@@ -114,16 +111,14 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
         ChoiceValue selected = null;
         for (Method method : value.getClass().getMethods()) {
             RuneAttribute attribute = method.getAnnotation(RuneAttribute.class);
-            if (attribute != null
-                    && method.getParameterCount() == 0
+            if (method.getParameterCount() == 0
                     // When serializing a builder, each choice option is exposed twice: by the
                     // covariant builder getter (e.g. A.ABuilder getA()) and by the synthetic
                     // bridge that satisfies the base interface (A getA()). Ignore the builder-typed
                     // getter and keep the base-typed accessor, so a single option counts once and
                     // declaredType matches the runtime built type in validateDeclaredChoiceOptionType.
                     && !RosettaModelObjectBuilder.class.isAssignableFrom(method.getReturnType())
-                    && !RuneJsonConfig.getMetaProperties().contains(attribute.value())
-                    && !isChoiceMetadataAttribute(method)) {
+                    && RuneChoiceOptionRegistry.isOption(attribute, method.getReturnType())) {
                 Object selectedValue = invoke(method, value);
                 if (!isEmptyChoiceValue(selectedValue)) {
                     Class<?> choiceType = value.getType();
@@ -144,10 +139,6 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
             }
         }
         return selected;
-    }
-
-    private boolean isChoiceMetadataAttribute(Method method) {
-        return GlobalKeyFields.class.isAssignableFrom(method.getReturnType());
     }
 
     private Object invoke(Method method, Object target) throws IOException {

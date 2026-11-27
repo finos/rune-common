@@ -52,13 +52,12 @@ public class RuneChoiceTypeDeserializer extends JsonDeserializer<RosettaModelObj
 
         String runeType = getRuneType(node, ctxt);
         RuneChoiceOptionRegistry options = RuneChoiceOptionRegistry.of(choiceType);
-        RuneChoiceOptionRegistry.Option option;
-        try {
-            option = options.findByTypeName(runeType);
-        } catch (IOException e) {
-            ctxt.reportInputMismatch(choiceType, "%s", e.getMessage());
+        String ambiguity = options.ambiguity(runeType);
+        if (ambiguity != null) {
+            ctxt.reportInputMismatch(choiceType, "%s", ambiguity);
             return null;
         }
+        RuneChoiceOptionRegistry.Option option = options.findByTypeName(runeType);
         Object value = option == null ? null : readOptionValue(option, (ObjectNode) node, mapper);
         if (value == null) {
             ctxt.reportInputMismatch(

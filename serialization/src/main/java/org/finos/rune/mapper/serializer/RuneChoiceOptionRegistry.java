@@ -48,8 +48,8 @@ import java.util.Map;
  * <p>
  * A data type option is named by its Rune type. Any other option, such as a basic type or an enum, with or
  * without metadata, is named by the option itself. A plain option and a metadata-wrapped option of the
- * same name, one of them in a nested choice, therefore share an {@code @type}: such an {@code @type} is
- * ambiguous and neither option can be written or read.
+ * same type, one of them in a nested choice, therefore share an {@code @type}: such an {@code @type} is
+ * ambiguous, and neither option can be written as JSON that is read back, nor read.
  */
 final class RuneChoiceOptionRegistry {
 
@@ -82,23 +82,32 @@ final class RuneChoiceOptionRegistry {
         collectOptions(choiceType, Collections.emptyList(), Collections.emptyList());
     }
 
-    /** The {@code @type} of the option reached through the option names in {@code path}, outermost first. */
+    /**
+     * The {@code @type} of the option reached through the option names in {@code path}, outermost first,
+     * whether or not it is ambiguous.
+     *
+     * @throws IOException when no option has that path
+     */
     String resolveTypeName(List<String> path) throws IOException {
         Option option = optionsByPath.get(path);
         if (option == null) {
             throw new IOException("Unknown Rune choice option " + String.join(".", path) + " for " + choiceType.getName());
         }
-        failIfAmbiguous(option.typeName);
         return option.typeName;
     }
 
-    /** The option written with {@code typeName}, or {@code null} when no option has it. */
+    /**
+     * The option written with {@code typeName}, or {@code null} when no option has it.
+     *
+     * @throws IOException when two options share {@code typeName}
+     */
     Option findByTypeName(String typeName) throws IOException {
         failIfAmbiguous(typeName);
         return optionsByTypeName.get(typeName);
     }
 
-    private void failIfAmbiguous(String typeName) throws IOException {
+    /** @throws IOException when two options share {@code typeName}, naming both */
+    void failIfAmbiguous(String typeName) throws IOException {
         String ambiguity = ambiguousTypeNames.get(typeName);
         if (ambiguity != null) {
             throw new IOException(ambiguity);
@@ -131,15 +140,15 @@ final class RuneChoiceOptionRegistry {
         Class<?> namedType = metaWrapped ? ((FieldWithMeta<?>) newBuilder(optionType)).getValueType() : optionType;
         boolean namedByOption = namedType == null || !RosettaModelObject.class.isAssignableFrom(namedType);
         String typeName = namedByOption ? optionName : RuneTypeNameConverter.toRuneName(namedType);
-        return new Option(setters, path, optionType, typeName, metaWrapped, namedByOption);
+        return new Option(setters, path, optionType, typeName, metaWrapped);
     }
 
     private void register(Option option) {
         optionsByPath.put(option.path, option);
         Option existing = optionsByTypeName.putIfAbsent(option.typeName, option);
-        // Only a plain and a metadata-wrapped option named by their option name are ambiguous here.
-        // Any other two options sharing an @type, which rune-dsl warns about, resolve to the first one.
-        if (existing != null && existing.namedByOption && option.namedByOption && existing.metaWrapped != option.metaWrapped) {
+        // Two plain or two metadata-wrapped options sharing an @type, reachable only through two nested
+        // choices, which rune-dsl warns about, resolve to the first one.
+        if (existing != null && existing.metaWrapped != option.metaWrapped) {
             ambiguousTypeNames.putIfAbsent(option.typeName, String.format(
                     "Rune choice type %s has two options written with @type '%s', %s and %s, which cannot be told apart",
                     choiceType.getName(), option.typeName, String.join(".", existing.path), String.join(".", option.path)));
@@ -171,15 +180,13 @@ final class RuneChoiceOptionRegistry {
         final Class<?> type;
         final String typeName;
         final boolean metaWrapped;
-        final boolean namedByOption;
 
-        private Option(List<Method> setters, List<String> path, Class<?> type, String typeName, boolean metaWrapped, boolean namedByOption) {
+        private Option(List<Method> setters, List<String> path, Class<?> type, String typeName, boolean metaWrapped) {
             this.setters = setters;
             this.path = path;
             this.type = type;
             this.typeName = typeName;
             this.metaWrapped = metaWrapped;
-            this.namedByOption = namedByOption;
         }
     }
 }

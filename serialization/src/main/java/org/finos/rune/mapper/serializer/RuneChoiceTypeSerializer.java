@@ -32,6 +32,7 @@ import com.rosetta.model.lib.annotations.RuneAttribute;
 import com.rosetta.model.lib.annotations.RuneChoiceType;
 import com.rosetta.model.lib.meta.GlobalKeyFields;
 import org.finos.rune.mapper.RuneJsonConfig;
+import org.finos.rune.mapper.attributesonly.AttributesOnlySerializerProvider;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -76,13 +77,22 @@ public class RuneChoiceTypeSerializer extends JsonSerializer<RosettaModelObject>
                 return;
             }
 
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, options.resolveTypeName(optionNames));
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveTypeName(options, optionNames, serializers));
             writeRosettaFields(selectedRosettaValue, gen, serializers);
         } else {
-            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, options.resolveTypeName(optionNames));
+            gen.writeStringField(RuneJsonConfig.MetaProperties.TYPE, resolveTypeName(options, optionNames, serializers));
             gen.writeFieldName(RuneJsonConfig.MetaProperties.DATA);
             serializers.defaultSerializeValue(selectedValue, gen);
         }
+    }
+
+    /** Attributes-only output drops {@code @type} and is never read back, so an ambiguous one does not matter there. */
+    private String resolveTypeName(RuneChoiceOptionRegistry options, List<String> optionNames, SerializerProvider serializers) throws IOException {
+        String typeName = options.resolveTypeName(optionNames);
+        if (!(serializers instanceof AttributesOnlySerializerProvider)) {
+            options.failIfAmbiguous(typeName);
+        }
+        return typeName;
     }
 
     private void writeRosettaFields(RosettaModelObject value, JsonGenerator gen, SerializerProvider serializers) throws IOException {

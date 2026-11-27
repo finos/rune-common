@@ -228,6 +228,8 @@ public class RuneJsonChoiceTypeDeserializerTest {
 
         Assertions.assertEquals("serialization.test.passing.new.Root", exception.getTypeId());
         Assertions.assertTrue(exception.getMessage().contains("type id 'serialization.test.passing.new.Root'"), exception.getMessage());
+        InvalidTypeIdException cause = Assertions.assertInstanceOf(InvalidTypeIdException.class, exception.getCause());
+        Assertions.assertEquals("serialization.test.passing._new.Root", cause.getTypeId());
     }
 
     /** Compiles the group on first use, makes its classes the ones the shared class loader serves, and returns its root type. */

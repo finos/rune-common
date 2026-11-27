@@ -62,7 +62,10 @@ public class RuneTypeIdResolver extends ClassNameIdResolver {
                 throw e;
             }
             JsonParser parser = ctxt instanceof DeserializationContext ? ((DeserializationContext) ctxt).getParser() : null;
-            throw InvalidTypeIdException.from(parser, e.getOriginalMessage().replace(javaClassName, id), _baseType, id);
+            InvalidTypeIdException renamed = InvalidTypeIdException.from(
+                    parser, e.getOriginalMessage().replace(javaClassName, id), _baseType, id);
+            renamed.withCause(e);
+            throw renamed;
         }
         // Rejects any other spelling that still loads the class, such as the Java name a._new.Root.
         if (type != null && id.equals(RuneTypeNameConverter.toRuneName(type.getRawClass()))) {

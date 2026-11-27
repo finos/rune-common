@@ -1,0 +1,9 @@
+{
+  "choiceA" : {
+    "fieldA" : "foo"
+  },
+  "typeA" : {
+    "fieldA" : "bar",
+    "fieldB" : "baz"
+  }
+}
